@@ -1317,6 +1317,7 @@ class FrozenBaselineDescriptorTestsAntigravity(unittest.TestCase):
         *,
         descriptor_mutation=None,
         loaded_mutation=None,
+        coordinated_mutation=None,
         pinned_mutation: str | None = None,
     ):
         from experiments.exp450_resampling_image_ablation_antigravity import (
@@ -1355,10 +1356,15 @@ class FrozenBaselineDescriptorTestsAntigravity(unittest.TestCase):
 
         def identity(manifest):
             identities, database_sha256, shards = original_identity(manifest)
-            if loaded_mutation is None or manifest.run_root != roots["classical"]:
+            if manifest.run_root != roots["classical"]:
                 return identities, database_sha256, shards
             changed = dict(shards)
-            loaded_mutation(changed)
+            if coordinated_mutation is not None:
+                coordinated_mutation(manifest, changed)
+            elif loaded_mutation is not None:
+                loaded_mutation(changed)
+            else:
+                return identities, database_sha256, shards
             return identities, database_sha256, changed
 
         return (
@@ -1406,11 +1412,17 @@ class FrozenBaselineDescriptorTestsAntigravity(unittest.TestCase):
         )
 
         session = self._session_antigravity()
-        calls: list[str] = []
-
-        def forbidden_require(_session):
-            calls.append("require")
-            raise AssertionError("proposal capability resolved")
+        require_guard = mock.Mock(
+            side_effect=AssertionError("proposal capability resolved")
+        )
+        loader_guard = mock.Mock(
+            side_effect=AssertionError("captured values loaded")
+        )
+        builder_guard = mock.Mock(
+            side_effect=AssertionError("A-D composition started")
+        )
+        session.verifier = type("FrozenVerifierAntigravity", (), {})()
+        session.verifier.build_exp467_score_manifests_antigravity = builder_guard
 
         with ExitStack() as stack:
             for patcher in self._frozen_patches_antigravity(**options):
@@ -1419,14 +1431,23 @@ class FrozenBaselineDescriptorTestsAntigravity(unittest.TestCase):
                 mock.patch.object(
                     source_authority,
                     "_require_captured_values_api_antigravity",
-                    side_effect=forbidden_require,
+                    require_guard,
+                )
+            )
+            stack.enter_context(
+                mock.patch.object(
+                    source_authority,
+                    "_load_captured_dataset_values_antigravity",
+                    loader_guard,
                 )
             )
             with self.assertRaisesRegex(
                 ValueError, "baseline descriptor binding|pinned baseline root authority"
             ):
                 cli._production_score_bundle_antigravity(session)
-        self.assertEqual(calls, [])
+        require_guard.assert_not_called()
+        loader_guard.assert_not_called()
+        builder_guard.assert_not_called()
 
     def test_real_frozen_descriptors_preflight_scored_and_abstained(self) -> None:
         """Canonical FrozenScoreManifest shards retain both legal v3 arms."""
@@ -1456,6 +1477,52 @@ class FrozenBaselineDescriptorTestsAntigravity(unittest.TestCase):
 
         self._assert_fails_before_proposal_antigravity(
             loaded_mutation=change_loaded
+        )
+
+    def test_coordinated_live_descriptor_and_payload_mutation_fails_snapshot(
+        self,
+    ) -> None:
+        """A live descriptor cannot reauthorize matching replacement payloads."""
+
+        from experiments.paper_public_baselines.artifacts import (
+            canonical_json_bytes as canonical_public_baseline_bytes,
+        )
+
+        def coordinate(manifest, shards):
+            abstained_key = ("knn_distance", self.DATASETS_ANTIGRAVITY[0])
+            scored_key = ("knn_distance", self.DATASETS_ANTIGRAVITY[5])
+            replacement_scored = dict(shards[abstained_key])
+            replacement_scored.update(
+                {
+                    "status": "complete",
+                    "reason": None,
+                    "train_oof_scores": [0.25, 1.25],
+                    "test_scores": [0.75, 1.75],
+                }
+            )
+            replacement_abstain = dict(shards[scored_key])
+            replacement_abstain.update(
+                {
+                    "status": "abstain",
+                    "reason": "insufficient_train_rows",
+                    "train_oof_scores": [],
+                    "test_scores": [],
+                }
+            )
+            shards[abstained_key] = replacement_scored
+            shards[scored_key] = replacement_abstain
+            for index, replacement in (
+                (0, replacement_scored),
+                (5, replacement_abstain),
+            ):
+                descriptor = manifest.shards[index]
+                descriptor["status"] = replacement["status"]
+                descriptor["sha256"] = sha256(
+                    canonical_public_baseline_bytes(replacement)
+                ).hexdigest()
+
+        self._assert_fails_before_proposal_antigravity(
+            coordinated_mutation=coordinate
         )
 
     def test_descriptor_fields_and_order_are_bound_before_proposal(self) -> None:

@@ -754,6 +754,15 @@ class _ProductionBaselinePreflightContextAntigravity:
     preflight: baseline_preflight.Exp471BaselinePreflightAntigravity
 
 
+@dataclass(frozen=True, slots=True)
+class _FrozenBaselineDescriptorAuthorityAntigravity:
+    method: str
+    dataset: str
+    status: str
+    path: str
+    sha256: str
+
+
 def _normalized_baseline_shard_antigravity(
     shard: Mapping[str, object],
 ) -> Mapping[str, object]:
@@ -771,13 +780,13 @@ def _normalized_baseline_shard_antigravity(
     return MappingProxyType(normalized)
 
 
-def _validate_frozen_baseline_descriptors_antigravity(
+def _capture_frozen_baseline_descriptors_antigravity(
     manifest: object,
     *,
     datasets: tuple[str, ...],
     root_name: str,
-) -> tuple[tuple[str, str], ...] | None:
-    """Require the verified descriptor table's exact identity and order."""
+) -> tuple[_FrozenBaselineDescriptorAuthorityAntigravity, ...] | None:
+    """Copy the exact verified descriptor authority into immutable values."""
 
     from experiments.paper_public_baselines.runner import FrozenScoreManifest
 
@@ -800,6 +809,7 @@ def _validate_frozen_baseline_descriptors_antigravity(
     ):
         raise ValueError("Exp471 production baseline descriptor binding differs")
     descriptor_fields = {"dataset", "method", "path", "sha256", "status"}
+    authority: list[_FrozenBaselineDescriptorAuthorityAntigravity] = []
     for (method, dataset), descriptor in zip(
         expected_pairs, descriptors, strict=True
     ):
@@ -807,45 +817,61 @@ def _validate_frozen_baseline_descriptors_antigravity(
             f"shards/{method}/"
             f"{sha256(dataset.encode('utf-8')).hexdigest()}.json"
         )
+        descriptor_sha256 = descriptor.get("sha256") if isinstance(
+            descriptor, Mapping
+        ) else None
+        descriptor_status = descriptor.get("status") if isinstance(
+            descriptor, Mapping
+        ) else None
         if (
             not isinstance(descriptor, Mapping)
             or set(descriptor) != descriptor_fields
             or descriptor.get("method") != method
             or descriptor.get("dataset") != dataset
             or descriptor.get("path") != expected_path
-            or descriptor.get("status") not in {"complete", "abstain"}
+            or descriptor_status not in {"complete", "abstain"}
+            or type(descriptor_sha256) is not str
+            or len(descriptor_sha256) != 64
+            or any(
+                character not in "0123456789abcdef"
+                for character in descriptor_sha256
+            )
         ):
             raise ValueError(
                 "Exp471 production baseline descriptor binding differs"
             )
-    return expected_pairs
+        authority.append(
+            _FrozenBaselineDescriptorAuthorityAntigravity(
+                method=method,
+                dataset=dataset,
+                status=descriptor_status,
+                path=expected_path,
+                sha256=descriptor_sha256,
+            )
+        )
+    return tuple(authority)
 
 
 def _bind_frozen_baseline_descriptors_antigravity(
-    manifest: object,
+    descriptor_authority: tuple[
+        _FrozenBaselineDescriptorAuthorityAntigravity, ...
+    ] | None,
     shards: Mapping[tuple[str, str], Mapping[str, object]],
-    *,
-    datasets: tuple[str, ...],
-    root_name: str,
 ) -> None:
-    """Bind reread shard mappings to the frozen descriptors already verified."""
+    """Bind reread mappings only to the immutable pre-loader authority."""
 
     from experiments.paper_public_baselines.artifacts import canonical_json_bytes
 
-    expected_pairs = _validate_frozen_baseline_descriptors_antigravity(
-        manifest,
-        datasets=datasets,
-        root_name=root_name,
-    )
-    if expected_pairs is None:
+    if descriptor_authority is None:
         return
-    descriptors = manifest.shards
+    expected_pairs = tuple(
+        (descriptor.method, descriptor.dataset)
+        for descriptor in descriptor_authority
+    )
     if tuple(shards) != expected_pairs:
         raise ValueError("Exp471 production baseline descriptor binding differs")
-    for (method, dataset), descriptor in zip(
-        expected_pairs, descriptors, strict=True
-    ):
-        shard = shards.get((method, dataset))
+    for descriptor in descriptor_authority:
+        shard = shards.get((descriptor.method, descriptor.dataset))
         if not isinstance(shard, Mapping):
             raise ValueError(
                 "Exp471 production baseline descriptor binding differs"
@@ -857,10 +883,10 @@ def _bind_frozen_baseline_descriptors_antigravity(
                 "Exp471 production baseline descriptor binding differs"
             ) from error
         if (
-            shard.get("method") != method
-            or shard.get("dataset") != dataset
-            or shard.get("status") != descriptor.get("status")
-            or descriptor.get("sha256") != loaded_sha256
+            shard.get("method") != descriptor.method
+            or shard.get("dataset") != descriptor.dataset
+            or shard.get("status") != descriptor.status
+            or descriptor.sha256 != loaded_sha256
         ):
             raise ValueError(
                 "Exp471 production baseline descriptor binding differs"
@@ -901,11 +927,6 @@ def _preflight_production_baselines_antigravity(
     source_authority_by_method: dict[str, Mapping[str, str]] = {}
     for root_name in ("classical", "deep_svdd", "drocc"):
         manifest = verified_baselines[root_name]
-        _validate_frozen_baseline_descriptors_antigravity(
-            manifest,
-            datasets=datasets,
-            root_name=root_name,
-        )
         root_authority = EXP471_BASELINE_ROOT_AUTHORITY_ANTIGRAVITY[root_name]
         manifest_path = Path(manifest.run_root) / "frozen_score_manifest.json"
         if (
@@ -916,14 +937,17 @@ def _preflight_production_baselines_antigravity(
             != root_authority["manifest_sha256"]
         ):
             raise ValueError("Exp471 pinned baseline root authority differs")
+        descriptor_authority = _capture_frozen_baseline_descriptors_antigravity(
+            manifest,
+            datasets=datasets,
+            root_name=root_name,
+        )
         baseline_identities, database_sha256, shards = (
             frozen_evaluation._baseline_identity_and_shards(manifest)
         )
         _bind_frozen_baseline_descriptors_antigravity(
-            manifest,
+            descriptor_authority,
             shards,
-            datasets=datasets,
-            root_name=root_name,
         )
         if (
             database_sha256 != EXP471_BASELINE_DATABASE_SHA256_ANTIGRAVITY
