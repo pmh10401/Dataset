@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>라우팅 Holdout 일반화 검증 - antigravity</title>
+<style>
+body{font-family:-apple-system,sans-serif;max-width:980px;margin:40px auto;padding:0 24px;color:#222;line-height:1.65}
+h1{border-bottom:3px solid #2b6cb0;padding-bottom:10px;color:#1a365d}
+h2{color:#2b6cb0;margin-top:32px;border-left:4px solid #2b6cb0;padding-left:12px}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14px}
+th,td{border:1px solid #cbd5e0;padding:7px 11px;text-align:center}
+th{background:#edf2f7}
+td:first-child{text-align:left;font-weight:500}
+.ok{background:#c6f6d5}.bad{background:#fed7d7}.mid{background:#fefcbf}
+.note{background:#ebf8ff;border-left:4px solid #2b6cb0;padding:14px 18px;margin:18px 0;border-radius:4px}
+.warn{background:#fffaf0;border-left:4px solid #dd6b20;padding:14px 18px;margin:18px 0}
+ul,ol{padding-left:22px}li{margin-bottom:5px}
+code{background:#f7fafc;padding:1px 5px;border-radius:3px}
+</style>
+</head>
+<body>
+<h1>Holdout 신규 데이터셋 일반화 검증 (antigravity)</h1>
+
+<h2>실험 설계</h2>
+<p>학습에 전혀 사용되지 않은 UCR 가족 <strong>5개</strong>(GunPoint, Wafer, TwoLeadECG, FaceFour, SyntheticControl)에 대해:</p>
+<ol>
+<li>label-free 특징(width, spectral_entropy, skewness 등) 추출</li>
+<li>결정 트리 규칙으로 방법 예측</li>
+<li>실제 4가지 후보 메서드를 모두 실행해 최적 방법 확인</li>
+<li>라우터 선택이 최적인지 판단</li>
+</ol>
+
+<h2>특징 값과 라우팅 결과</h2>
+<table>
+<tr><th>가족</th><th>width</th><th>spectral_entropy</th><th>skewness</th><th>라우터 선택</th></tr>
+<tr><td>GunPoint</td><td>150</td><td>0.152</td><td>+0.62</td><td>multirocket_local_gap</td></tr>
+<tr><td>Wafer</td><td>152</td><td>0.426</td><td>+0.49</td><td>multirocket_local_gap</td></tr>
+<tr><td>TwoLeadECG</td><td>82</td><td>0.337</td><td>-0.95</td><td>multirocket_local_gap</td></tr>
+<tr><td>FaceFour</td><td>350</td><td>0.524</td><td>+0.46</td><td>multirocket_local_gap</td></tr>
+<tr><td>SyntheticControl</td><td>60</td><td>0.873</td><td>+0.00</td><td>minirocket_local_gap</td></tr>
+</table>
+
+<h2>AUC 성능 비교</h2>
+<table>
+<tr><th>가족</th><th>minirocket</th><th>multirocket(선택)</th><th>hydra</th><th>hydra_multirocket</th><th>최고 AUC</th><th>판정</th></tr>
+<tr><td>GunPoint</td><td class="ok">1.0000</td><td class="mid">0.9592</td><td>0.9847</td><td class="ok">1.0000</td><td>1.0000</td><td class="bad">SUBOPT (-0.04)</td></tr>
+<tr><td>Wafer</td><td>0.9936</td><td class="ok">0.9953</td><td>0.9988</td><td>—</td><td>0.9988</td><td class="ok">OK (-0.004)</td></tr>
+<tr><td>TwoLeadECG</td><td>0.9976</td><td class="ok">0.9951</td><td>0.9993</td><td class="ok">0.9995</td><td>0.9995</td><td class="ok">OK (-0.004)</td></tr>
+<tr><td>FaceFour</td><td>1.0000</td><td class="ok">1.0000</td><td>1.0000</td><td class="ok">1.0000</td><td>1.0000</td><td class="ok">OK (=)</td></tr>
+<tr><td>SyntheticControl</td><td class="ok">1.0000 (선택됨)</td><td>1.0000</td><td>1.0000</td><td>1.0000</td><td>1.0000</td><td class="ok">OK (=)</td></tr>
+</table>
+<div class="note">
+<strong>AUC 기준 라우터 정확도: <strong>4 / 5</strong> (80%) — GunPoint에서만 minirocket 대신 multirocket을 골라 -0.04 손실.
+나머지 4개는 최고 성능과 동일하거나 0.01 이내 차이로 실용적으로 무의미한 수준.</strong>
+</div>
+
+<h2>zero-FP TP 비교</h2>
+<table>
+<tr><th>가족</th><th>라우터 선택 TP</th><th>전체 최고 TP</th><th>판정</th></tr>
+<tr><td>FaceFour</td><td>1</td><td>1</td><td class="ok">OK</td></tr>
+<tr><td>GunPoint</td><td>1</td><td>2</td><td class="mid">-1</td></tr>
+<tr><td>SyntheticControl</td><td>2</td><td>2</td><td class="ok">OK</td></tr>
+<tr><td>TwoLeadECG</td><td>6</td><td>10</td><td class="bad">-4</td></tr>
+<tr><td>Wafer</td><td>2</td><td>11</td><td class="bad">-9</td></tr>
+</table>
+<div class="warn">
+<strong>zero-FP 축에서는 라우터 정확도 <strong>2/5</strong>. Wafer·TwoLeadECG처럼 hydra 계열이 꼬리 회복에 강한 케이스에서
+multirocket을 고르면 zero-FP TP가 크게 줄어듦.</strong>
+</div>
+
+<h2>해석 및 결론</h2>
+<ul>
+<li><strong>AUC 관점:</strong> 라우터가 합리적 선택을 함 (80% 정확). 특히 entropy &gt; 0.70 → minirocket 규칙이 SyntheticControl을 정확히 포착.</li>
+<li><strong>zero-FP 관점:</strong> 개선 여지 있음. Wafer처럼 width≈150이지만 hydra가 압도적인 경우를 구분할 추가 신호 필요.</li>
+<li><strong>핵심 발견:</strong> width만으로는 부족하고, <strong>kurtosis</strong>(Wafer +1.86 vs GunPoint -1.19)가 유망한 보조 신호.</li>
+</ul>
+
+<h2>권장 다음 단계</h2>
+<ol>
+<li>규칙 v2: <code>width &lt; 200 && kurtosis &gt; 1.5</code> → hydra_local_gap 추가 제안</li>
+<li>Wafer·TwoLeadECG 같은 "중간 길이 ECG류"는 kurtosis로 구분 가능성 확인</li>
+<li>holdout 5개 + 학습 8개 통합 데이터셋으로 규칙 재학습 후 LOFO 재검증</li>
+<li>사용자 승인 후 공식 파이프라인 반영</li>
+</ol>
+</body>
+</html>
