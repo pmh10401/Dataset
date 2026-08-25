@@ -10,13 +10,14 @@ import importlib
 import importlib.abc
 import importlib.util
 import json
+import marshal
 import os
 from pathlib import Path, PurePosixPath
 import secrets
 import stat
 import subprocess
 import sys
-from types import MappingProxyType, ModuleType
+from types import FunctionType, MappingProxyType, ModuleType
 from weakref import WeakKeyDictionary, WeakSet
 
 from .config_antigravity import (
@@ -416,6 +417,249 @@ class Exp471CapturedValuesApiAntigravity:
     raw_dataset_type_antigravity: type
 
 
+@dataclass(frozen=True, slots=True)
+class _CapturedFunctionExecutionSealAntigravity:
+    function: FunctionType
+    code: object
+    code_sha256: str
+    defaults: object
+    defaults_state: object
+    keyword_defaults: object
+    keyword_defaults_state: object
+    closure: tuple[tuple[object, object, object], ...]
+    globals: tuple[tuple[str, object, object], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _CapturedClassExecutionSealAntigravity:
+    value: type
+    attributes: tuple[tuple[str, object], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _CapturedValuesExecutionSealAntigravity:
+    functions: tuple[_CapturedFunctionExecutionSealAntigravity, ...]
+    classes: tuple[_CapturedClassExecutionSealAntigravity, ...]
+
+
+def _execution_value_state_antigravity(value: object) -> object:
+    if value is None or type(value) in {bool, int, str, bytes}:
+        return (type(value).__name__, value)
+    if type(value) is float:
+        return ("float", value.hex())
+    if type(value) is tuple:
+        return (
+            "tuple",
+            tuple(_execution_value_state_antigravity(item) for item in value),
+        )
+    if type(value) is list:
+        return (
+            "list",
+            tuple(_execution_value_state_antigravity(item) for item in value),
+        )
+    if type(value) in {set, frozenset}:
+        items = tuple(
+            sorted(
+                (
+                    _execution_value_state_antigravity(item)
+                    for item in value
+                ),
+                key=repr,
+            )
+        )
+        return (type(value).__name__, items)
+    if type(value) is dict:
+        items = tuple(
+            sorted(
+                (
+                    (
+                        _execution_value_state_antigravity(key),
+                        _execution_value_state_antigravity(item),
+                    )
+                    for key, item in value.items()
+                ),
+                key=repr,
+            )
+        )
+        return ("dict", items)
+    return ("identity", id(value))
+
+
+def _function_code_sha256_antigravity(function: FunctionType) -> str:
+    return sha256(marshal.dumps(function.__code__)).hexdigest()
+
+
+def _execution_global_state_antigravity(value: object) -> object:
+    if value is None or type(value) in {
+        bool,
+        int,
+        float,
+        str,
+        bytes,
+        tuple,
+        frozenset,
+    }:
+        return _execution_value_state_antigravity(value)
+    return ("identity", id(value))
+
+
+def _capture_values_execution_seal_antigravity(
+    api: Exp471CapturedValuesApiAntigravity,
+) -> _CapturedValuesExecutionSealAntigravity:
+    functions: list[_CapturedFunctionExecutionSealAntigravity] = []
+    classes: list[_CapturedClassExecutionSealAntigravity] = []
+    seen_functions: set[int] = set()
+    seen_classes: set[int] = set()
+
+    def visit_value(value: object) -> None:
+        if isinstance(value, FunctionType):
+            visit_function(value)
+        elif (
+            type(value) is type
+            and getattr(value, "__module__", "").startswith(
+                "paper.equipment_anomaly_detection"
+            )
+        ):
+            visit_class(value)
+
+    def visit_class(value: type) -> None:
+        if id(value) in seen_classes:
+            return
+        seen_classes.add(id(value))
+        attributes: list[tuple[str, object]] = []
+        for name, member in sorted(vars(value).items()):
+            callable_members: tuple[object, ...] = ()
+            if isinstance(member, FunctionType):
+                callable_members = (member,)
+            elif isinstance(member, (staticmethod, classmethod)):
+                callable_members = (member.__func__,)
+            elif isinstance(member, property):
+                callable_members = tuple(
+                    function
+                    for function in (member.fget, member.fset, member.fdel)
+                    if function is not None
+                )
+            if callable_members:
+                attributes.append((name, member))
+                for function in callable_members:
+                    visit_value(function)
+        classes.append(
+            _CapturedClassExecutionSealAntigravity(value, tuple(attributes))
+        )
+
+    def visit_function(function: FunctionType) -> None:
+        if id(function) in seen_functions:
+            return
+        seen_functions.add(id(function))
+        global_rows: list[tuple[str, object, object]] = []
+        for name in sorted(set(function.__code__.co_names)):
+            if name not in function.__globals__:
+                continue
+            referenced = function.__globals__[name]
+            global_rows.append(
+                (name, referenced, _execution_global_state_antigravity(referenced))
+            )
+            visit_value(referenced)
+        closure_rows: list[tuple[object, object, object]] = []
+        for cell in function.__closure__ or ():
+            try:
+                referenced = cell.cell_contents
+            except ValueError:
+                referenced = _EMPTY_CLOSURE_CELL_ANTIGRAVITY
+            closure_rows.append(
+                (cell, referenced, _execution_value_state_antigravity(referenced))
+            )
+            visit_value(referenced)
+        for referenced in function.__defaults__ or ():
+            visit_value(referenced)
+        for referenced in (function.__kwdefaults__ or {}).values():
+            visit_value(referenced)
+        functions.append(
+            _CapturedFunctionExecutionSealAntigravity(
+                function=function,
+                code=function.__code__,
+                code_sha256=_function_code_sha256_antigravity(function),
+                defaults=function.__defaults__,
+                defaults_state=_execution_value_state_antigravity(
+                    function.__defaults__
+                ),
+                keyword_defaults=function.__kwdefaults__,
+                keyword_defaults_state=_execution_value_state_antigravity(
+                    function.__kwdefaults__
+                ),
+                closure=tuple(closure_rows),
+                globals=tuple(global_rows),
+            )
+        )
+
+    for root in (
+        api.bind_preverified_database_read_only_antigravity,
+        api.load_dataset_values_antigravity,
+    ):
+        if not isinstance(root, FunctionType):
+            raise ValueError("Exp471 captured values execution root is invalid")
+        visit_function(root)
+    return _CapturedValuesExecutionSealAntigravity(
+        tuple(functions), tuple(classes)
+    )
+
+
+_EMPTY_CLOSURE_CELL_ANTIGRAVITY = object()
+
+
+def _validate_values_execution_seal_antigravity(
+    seal: _CapturedValuesExecutionSealAntigravity,
+) -> None:
+    for expected in seal.functions:
+        function = expected.function
+        if (
+            function.__code__ is not expected.code
+            or _function_code_sha256_antigravity(function) != expected.code_sha256
+            or function.__defaults__ is not expected.defaults
+            or _execution_value_state_antigravity(function.__defaults__)
+            != expected.defaults_state
+            or function.__kwdefaults__ is not expected.keyword_defaults
+            or _execution_value_state_antigravity(function.__kwdefaults__)
+            != expected.keyword_defaults_state
+        ):
+            raise ValueError("Exp471 captured values execution seal differs")
+        observed_closure = function.__closure__ or ()
+        if len(observed_closure) != len(expected.closure):
+            raise ValueError("Exp471 captured values execution seal differs")
+        for cell, (expected_cell, expected_value, expected_state) in zip(
+            observed_closure, expected.closure
+        ):
+            try:
+                observed_value = cell.cell_contents
+            except ValueError:
+                observed_value = _EMPTY_CLOSURE_CELL_ANTIGRAVITY
+            if (
+                cell is not expected_cell
+                or observed_value is not expected_value
+                or _execution_value_state_antigravity(observed_value)
+                != expected_state
+            ):
+                raise ValueError("Exp471 captured values execution seal differs")
+        for name, expected_value, expected_state in expected.globals:
+            if (
+                function.__globals__.get(name, _MISSING_GLOBAL_ANTIGRAVITY)
+                is not expected_value
+                or _execution_global_state_antigravity(expected_value)
+                != expected_state
+            ):
+                raise ValueError("Exp471 captured values execution seal differs")
+    for expected in seal.classes:
+        namespace = vars(expected.value)
+        if any(
+            namespace.get(name, _MISSING_GLOBAL_ANTIGRAVITY) is not member
+            for name, member in expected.attributes
+        ):
+            raise ValueError("Exp471 captured values execution seal differs")
+
+
+_MISSING_GLOBAL_ANTIGRAVITY = object()
+
+
 def _captured_values_api_antigravity(
     verifier: ModuleType, context: object
 ) -> Exp471CapturedValuesApiAntigravity:
@@ -549,6 +793,9 @@ def _make_source_session_api_antigravity():
     expected_values_members: WeakKeyDictionary[object, tuple[object, ...]] = (
         WeakKeyDictionary()
     )
+    execution_seals: WeakKeyDictionary[
+        object, _CapturedValuesExecutionSealAntigravity
+    ] = WeakKeyDictionary()
 
     def is_issued(value: object) -> bool:
         try:
@@ -590,7 +837,39 @@ def _make_source_session_api_antigravity():
             != value.authority.database_sha256
         ):
             raise ValueError("Exp471 captured values API members differ")
+        seal = execution_seals.get(api)
+        if seal is None:
+            raise ValueError("Exp471 captured values execution seal is missing")
+        _validate_values_execution_seal_antigravity(seal)
         return api
+
+    def bind_values(
+        value: object,
+        database_path: Path,
+        *,
+        config: object,
+        verified_catalog_database: Mapping[str, object],
+    ) -> object:
+        api = require_values(value)
+        return api.bind_preverified_database_read_only_antigravity(
+            database_path,
+            config=config,
+            verified_catalog_database=verified_catalog_database,
+        )
+
+    def load_values(
+        value: object,
+        database_path: Path,
+        dataset: str,
+        *,
+        preverified_database: object,
+    ) -> object:
+        api = require_values(value)
+        return api.load_dataset_values_antigravity(
+            database_path,
+            dataset,
+            preverified_database=preverified_database,
+        )
 
     def open_session(
         repository: Path,
@@ -615,6 +894,7 @@ def _make_source_session_api_antigravity():
             label_callback_antigravity=label_callback_antigravity,
             captured_values_api_antigravity=values_api,
         )
+        execution_seal = _capture_values_execution_seal_antigravity(values_api)
         issued.add(session)
         values_by_session[session] = values_api
         expected_values_members[values_api] = (
@@ -623,15 +903,18 @@ def _make_source_session_api_antigravity():
             values_api.load_dataset_values_antigravity,
             values_api.raw_dataset_type_antigravity,
         )
+        execution_seals[values_api] = execution_seal
         return session
 
-    return open_session, is_issued, require_values
+    return open_session, is_issued, require_values, bind_values, load_values
 
 
 (
     open_exp467_source_session_antigravity,
     _source_session_is_issued_antigravity,
     _require_captured_values_api_antigravity,
+    _bind_captured_values_database_antigravity,
+    _load_captured_dataset_values_antigravity,
 ) = _make_source_session_api_antigravity()
 del _make_source_session_api_antigravity
 

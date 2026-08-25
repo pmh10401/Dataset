@@ -2092,6 +2092,80 @@ class CliTestsAntigravity(unittest.TestCase):
             self.assertRegex(str(observed), "captured values API")
             self.assertEqual(foreign_calls, [])
 
+    def test_production_scores_reject_in_place_captured_execution_mutations(self) -> None:
+        """Same-object code, defaults, and helper mutations fail before execution."""
+
+        from experiments.exp471_exp467_evaluation_recovery_antigravity import (
+            source_authority_antigravity as source_authority,
+        )
+        from experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_source_authority_antigravity import (
+            SyntheticSourceAntigravity,
+            _foreign_dataset_helper_antigravity,
+            _foreign_dataset_helper_code_antigravity,
+            _foreign_loader_code_antigravity,
+            _foreign_sql_observer_antigravity,
+            _synthetic_constants_antigravity,
+        )
+
+        mutations = (
+            "loader_code",
+            "helper_code",
+            "loader_kwdefaults",
+            "helper_global",
+        )
+        for mutation in mutations:
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory(
+                prefix=f"exp471_execution_seal_{mutation}_antigravity_"
+            ) as temporary:
+                fixture = SyntheticSourceAntigravity(temporary)
+                with _synthetic_constants_antigravity(fixture):
+                    session = source_authority.open_exp467_source_session_antigravity(
+                        fixture.repository, fixture.source_root
+                    )
+                values = session.captured_values_api_antigravity
+                loader = values.load_dataset_values_antigravity
+                loader_globals = loader.__globals__
+                helper = loader_globals["_raw_dataset_antigravity"]
+                values_calls = loader_globals["VALUES_CALLS"]
+                restore = None
+                if mutation == "loader_code":
+                    original = loader.__code__
+                    loader.__code__ = _foreign_loader_code_antigravity.__code__
+                    restore = lambda: setattr(loader, "__code__", original)
+                elif mutation == "helper_code":
+                    original = helper.__code__
+                    helper.__code__ = _foreign_dataset_helper_code_antigravity.__code__
+                    restore = lambda: setattr(helper, "__code__", original)
+                elif mutation == "loader_kwdefaults":
+                    original = dict(loader.__kwdefaults__)
+                    loader.__kwdefaults__["sql_observer"] = (
+                        _foreign_sql_observer_antigravity
+                    )
+
+                    def restore_kwdefaults_antigravity():
+                        loader.__kwdefaults__.clear()
+                        loader.__kwdefaults__.update(original)
+
+                    restore = restore_kwdefaults_antigravity
+                else:
+                    original = loader_globals["_raw_dataset_antigravity"]
+                    loader_globals["_raw_dataset_antigravity"] = (
+                        _foreign_dataset_helper_antigravity
+                    )
+                    restore = lambda: loader_globals.__setitem__(
+                        "_raw_dataset_antigravity", original
+                    )
+                observed: Exception | None = None
+                try:
+                    cli._production_score_bundle_antigravity(session)
+                except Exception as error:
+                    observed = error
+                finally:
+                    restore()
+                self.assertIsInstance(observed, ValueError)
+                self.assertIn("execution seal", str(observed))
+                self.assertEqual(values_calls, [])
+
     def test_report_lifecycle_order_and_exact_second_call_skip_counts(self) -> None:
         """Resume must not repeat preparation, labels, metrics, or rendering."""
 

@@ -61,6 +61,30 @@ def _run_antigravity(repository: Path, *arguments: str) -> str:
     return result.stdout.strip()
 
 
+def _foreign_loader_code_antigravity(
+    db_path,
+    dataset,
+    *,
+    sql_observer=None,
+    preverified_database=None,
+):
+    VALUES_CALLS.append(("foreign_loader_code", str(db_path), dataset))
+    raise RuntimeError("foreign loader code executed")
+
+
+def _foreign_dataset_helper_code_antigravity(dataset):
+    VALUES_CALLS.append(("foreign_helper_code", dataset))
+    raise RuntimeError("foreign helper code executed")
+
+
+def _foreign_dataset_helper_antigravity(dataset):
+    raise RuntimeError("foreign global helper executed")
+
+
+def _foreign_sql_observer_antigravity(_query):
+    raise RuntimeError("foreign keyword default executed")
+
+
 class SyntheticSourceAntigravity:
     def __init__(self, temporary: str) -> None:
         self.root = Path(temporary).resolve()
@@ -160,9 +184,14 @@ def bind_preverified_database_read_only_paper(db_path, *, config=None, verified_
     VALUES_CALLS.append(("bind", str(db_path), authority, verified_catalog_database))
     return (str(db_path), authority.database_sha256)
 
-def load_dataset_values(db_path, dataset, *, preverified_database=None):
-    VALUES_CALLS.append(("load", str(db_path), dataset, preverified_database))
+def _raw_dataset_antigravity(dataset):
     return RawDataset(dataset)
+
+def load_dataset_values(db_path, dataset, *, sql_observer=None, preverified_database=None):
+    if sql_observer is not None:
+        sql_observer("synthetic values query")
+    VALUES_CALLS.append(("load", str(db_path), dataset, preverified_database))
+    return _raw_dataset_antigravity(dataset)
 ''',
             encoding="utf-8",
         )
