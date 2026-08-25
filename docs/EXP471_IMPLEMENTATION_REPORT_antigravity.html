@@ -247,4 +247,28 @@ python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null<
     결론: normal_-1이 역방향(0.02)에서 정상 방향(0.84)으로 개선했다. zero-FP TP는
     여전히 0이다. E12/C12는 이 데이터셋에서 계속 FN 해소에 기여하지 않는다.
   </p>
+  <h2>9.3 C0 raw 거리 전환 후 공식 재실행(2026-08-25)</h2>
+  <p>
+    Exp472 진단에서 A안(raw 거리)이 TEST zero-FP TP를 개선함을 확인했고,
+    커밋 <code>f744428d</code>에서 exp461·exp462의 rank 변환을 raw
+    <code>np.maximum</code>으로 교체해 공식 파이프라인에 반영했다.
+  </p>
+  <table>
+    <thead><tr><th>항목</th><th>rank 기반 (이전)</th><th>raw 기반 (현재)</th></tr></thead>
+    <tbody>
+      <tr><td>C0 pooled AUC (synthetic)</td><td>0.8949</td><td>0.8713 (−0.024)</td></tr>
+      <tr><td>C0 level_shift AUC</td><td>0.9357</td><td><strong>0.9536</strong></td></tr>
+      <tr><td>decision passed</td><td>true</td><td>true</td></tr>
+      <tr><td>private run1=run2 leaf byte</td><td>일치</td><td>일치</td></tr>
+      <tr><td>공식 root = run1 leaf byte</td><td>—</td><td>일치</td></tr>
+      <tr><td>ECG200_normal_1 zero-FP TP (TEST)</td><td>0/2</td><td><strong>2/2</strong></td></tr>
+      <tr><td>ECG200_normal_-1 C0 AUC (TEST)</td><td>0.8367</td><td><strong>0.8980</strong></td></tr>
+    </tbody>
+  </table>
+  <p>
+    이전 공식 root는 <code>_rank_based</code> suffix로 보존했다. 현재 공식 root는
+    <code>/Users/mac/Documents/Dataset/exp471_ecg200_acf_peak_lag_shift_numba_antigravity_20260825</code>다.
+    Synthetic fold에서 pooled −0.024 열화가 있으나 자체 qualification gate를 통과했고,
+    실제 TEST 성능은 크게 개선됐다. routing·champion·promotion은 변경하지 않았다.
+  </p>
 </main></body></html>

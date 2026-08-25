@@ -69,4 +69,7 @@ launcher.run_private_sequence_antigravity(
   <div class="note">
     <p><strong>2026-08-25(2차):</strong> 사용자 지시로 데이터셋 매핑을 수정했다. 각 데이터셋의 TRAIN label-0 행 전부를 자체 정상 참조로 사용하도록 커밋 <code>aa942cfb</code>에서 변경. 이전 결과는 <code>_superseded_shared_train</code>으로 보존. normal_-1 C0 AUC가 0.0204 → 0.8367로 개선했고, zero-FP TP는 여전히 0이다.</p>
   </div>
+  <div class="note">
+    <p><strong>2026-08-25(3차):</strong> Exp472 진단 결과를 반영해 C0을 rank에서 raw 거리로 전환했다. 커밋 <code>f744428d</code>. 이전 공식 root는 <code>_rank_based</code> suffix로 보존. 새 공식 lifecycle을 실행했고 decision passed=true, 공식 root = private run1 byte 일치. Synthetic pooled AUC −0.024 열화, TEST zero-FP TP 0→2 개선.</p>
+  </div>
 </main></body></html>
