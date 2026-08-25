@@ -18,6 +18,11 @@ def route_dataset_antigravity(features: Mapping[str, float]) -> str:
     if width >= 400 and 0.35 <= entropy <= 0.65:
         return "hydra_local_gap"
 
+    # Short sequences with heavy tails AND low-to-moderate spectral entropy
+    # are ECG-like; Hydra's multi-scale receptive fields help.
+    if width < 200 and features.get("kurtosis", 0.0) > 1.5 and entropy < 0.70:
+        return "hydra_local_gap"
+
     # Extremely long sequences regardless of periodicity → hydra_local_gap.
     if width >= 800:
         return "hydra_local_gap"
