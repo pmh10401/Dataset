@@ -79,6 +79,7 @@ def _entry_from_shard_antigravity(
         or type(n_test) is not int
         or n_test < 1
         or n_test != count
+        or n_test != len(expected_indices)
     ):
         raise _invalid_antigravity(f"source row counts for {method}/{dataset}")
     status = shard.get("status")
