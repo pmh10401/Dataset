@@ -294,6 +294,12 @@ class BaselinePreflightTestsAntigravity(unittest.TestCase):
             ),
         )
 
+    def _mutated_full_inventory(self, method: str, mutate) -> dict[str, object]:
+        coordinates = self._complete_coordinates()
+        record = coordinates[method]["public_literal_dataset"]
+        mutate(record)
+        return coordinates
+
     def test_complete_entry_is_scored_with_exact_vectors(self) -> None:
         datasets = ("public_literal_dataset",)
         coordinates = self._complete_coordinates()
@@ -332,6 +338,33 @@ class BaselinePreflightTestsAntigravity(unittest.TestCase):
         del record["train_oof_scores"]
         del record["test_scores"]
         self._assert_invalid({"deep_svdd_1d": {"public_literal_dataset": record}})
+
+    def test_abstain_vectors_must_be_lists(self) -> None:
+        for key in ("train_oof_scores", "test_scores"):
+            with self.subTest(vector=key):
+                def set_tuple(record) -> None:
+                    record[key] = ()
+
+                coordinates = self._mutated_full_inventory(
+                    "knn_distance",
+                    lambda record: (
+                        set_tuple(record),
+                        record.update(
+                            {
+                                "status": "abstain",
+                                "reason": "insufficient_train_rows",
+                                "n_train": 0,
+                                "train_oof_scores": (),
+                                "test_scores": (),
+                            }
+                        ),
+                        record.update({key: ()}),
+                    )[-1],
+                )
+                with self.assertRaisesRegex(
+                    ValueError, "abstention score arrays"
+                ):
+                    self._run_preflight(("public_literal_dataset",), coordinates)
 
     def test_nonempty_explicit_abstain_vectors_fail_closed(self) -> None:
         record = _preflight_record_antigravity(
@@ -392,6 +425,18 @@ class BaselinePreflightTestsAntigravity(unittest.TestCase):
         record = _preflight_record_antigravity()
         record["test_scores"] = [0.5]
         self._assert_invalid({"knn_distance": {"public_literal_dataset": record}})
+
+    def test_train_length_mismatch_fails_closed_on_full_inventory(self) -> None:
+        def truncate_train(record) -> None:
+            record["train_oof_scores"] = record["train_oof_scores"][:1]
+
+        coordinates = self._mutated_full_inventory(
+            "knn_distance", truncate_train
+        )
+        with self.assertRaisesRegex(
+            ValueError, "score vector lengths"
+        ):
+            self._run_preflight(("public_literal_dataset",), coordinates)
 
     def test_failure_status_fails_closed(self) -> None:
         record = _preflight_record_antigravity()

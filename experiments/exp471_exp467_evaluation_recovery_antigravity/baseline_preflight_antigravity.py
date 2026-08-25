@@ -43,6 +43,12 @@ def _invalid_antigravity(detail: str) -> ValueError:
     return ValueError(f"Exp471 baseline preflight {detail} differs")
 
 
+def _list_vector_antigravity(value: object) -> tuple[float, ...]:
+    if not isinstance(value, list):
+        raise _invalid_antigravity("baseline score vector")
+    return _float_vector_antigravity(value)
+
+
 def _float_vector_antigravity(value: object) -> tuple[float, ...]:
     if not isinstance(value, (Sequence, list, tuple)) or isinstance(value, (str, bytes)):
         raise _invalid_antigravity("baseline score vector")
@@ -83,8 +89,8 @@ def _entry_from_shard_antigravity(
         if reason is not None:
             raise _invalid_antigravity(f"scored reason for {method}/{dataset}")
 
-        train = _float_vector_antigravity(shard.get("train_oof_scores"))
-        test = _float_vector_antigravity(shard.get("test_scores"))
+        train = _list_vector_antigravity(shard.get("train_oof_scores"))
+        test = _list_vector_antigravity(shard.get("test_scores"))
         if len(train) != n_train or len(test) != n_test:
             raise _invalid_antigravity(
                 f"score vector lengths for {method}/{dataset}"
@@ -105,6 +111,10 @@ def _entry_from_shard_antigravity(
         if any(key not in shard for key in forbidden):
             raise _invalid_antigravity(
                 f"missing explicit abstention arrays for {method}/{dataset}"
+            )
+        if any(not isinstance(shard[key], list) for key in forbidden):
+            raise _invalid_antigravity(
+                f"abstention score arrays for {method}/{dataset}"
             )
         if any(
             shard[key] is None or len(tuple(shard[key])) > 0
@@ -190,16 +200,6 @@ def preflight_frozen_baselines_antigravity(
             if key in entries:
                 raise _invalid_antigravity("duplicate identity")
             entries[key] = entry
-            if (
-                entry.status == "scored"
-                and (
-                    len(entry.train_oof_scores) != shard["count"]
-                    or len(entry.test_scores) != shard["count"]
-                )
-            ):
-                raise _invalid_antigravity(
-                    f"score vector lengths for {method}/{dataset}"
-                )
             if entry.status == "scored":
                 scored_count += 1
             else:
