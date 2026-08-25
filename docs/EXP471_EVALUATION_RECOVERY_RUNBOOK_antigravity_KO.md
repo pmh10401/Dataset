@@ -110,6 +110,13 @@ ETA가 `null`일 수 있다. 실제 데이터의 동일성 검사에 통과하�
 1개 작업자보다 1.1배 이상 빠를 때만 병렬 전처리를 사용하며, 그렇지 않으면
 결과를 바꾸지 않기 위해 자동으로 1개 작업자를 사용한다.
 
+`acceleration_backend`가 `numba_serial_safe`이면 ASPE 내부 반복문에
+`parallel=False`, `fastmath=False`, `nogil=True` Numba 커널을 사용한다. 실제
+11개 데이터셋 사전 측정에서 CPU 37.64초, Numba 0.55초였고 최종 점수 구조,
+선택 후보, 수치 결과가 같았다. `parallel=True`와 `fastmath=True` 후보는 같은
+결과를 냈지만 더 빠르지 않아 선택하지 않았다. Numba 적용 후에도 데이터셋
+단위 11작업자 경로는 같은 결과와 1.1배 속도 기준을 다시 통과해야 채택된다.
+
 ## 3. 표준 출력과 오류 출력
 
 각 명령은 성공 시 stdout에 canonical finite JSON 한 줄만 출력한다. 명령

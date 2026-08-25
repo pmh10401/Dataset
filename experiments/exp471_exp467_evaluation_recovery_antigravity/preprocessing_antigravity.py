@@ -18,8 +18,7 @@ from .contracts_antigravity import canonical_json_bytes_exp471_antigravity
 
 
 _PROGRESS_NAME_ANTIGRAVITY = "preprocessing_progress_antigravity.jsonl"
-_PROGRESS_SCHEMA_ANTIGRAVITY = "exp471-preprocessing-progress-antigravity.v1"
-_EVENT_KEYS_ANTIGRAVITY = {
+_EVENT_KEYS_V1_ANTIGRAVITY = {
     "schema",
     "stage",
     "phase",
@@ -40,7 +39,9 @@ _EVENT_KEYS_ANTIGRAVITY = {
     "parallel_accepted",
     "status",
 }
-_RECORD_KEYS_ANTIGRAVITY = _EVENT_KEYS_ANTIGRAVITY | {"timestamp_utc"}
+_EVENT_KEYS_V2_ANTIGRAVITY = _EVENT_KEYS_V1_ANTIGRAVITY | {
+    "acceleration_backend"
+}
 
 
 def _finite_number_antigravity(value: object, *, nullable: bool = False) -> bool:
@@ -54,14 +55,28 @@ def _finite_number_antigravity(value: object, *, nullable: bool = False) -> bool
 
 
 def _validated_event_antigravity(value: object) -> dict[str, object]:
-    if not isinstance(value, Mapping) or set(value) != _EVENT_KEYS_ANTIGRAVITY:
+    if not isinstance(value, Mapping):
         raise ValueError("Exp471 preprocessing progress schema differs")
     event = dict(value)
+    schema = event.get("schema")
+    expected_keys = (
+        _EVENT_KEYS_V1_ANTIGRAVITY
+        if schema == "exp471-preprocessing-progress-antigravity.v1"
+        else _EVENT_KEYS_V2_ANTIGRAVITY
+        if schema == "exp471-preprocessing-progress-antigravity.v2"
+        else None
+    )
+    if expected_keys is None or set(event) != expected_keys:
+        raise ValueError("Exp471 preprocessing progress schema differs")
     completed = event["completed"]
     total = event["total"]
     remaining = event["remaining"]
     if (
-        event["schema"] != _PROGRESS_SCHEMA_ANTIGRAVITY
+        event["schema"]
+        not in {
+            "exp471-preprocessing-progress-antigravity.v1",
+            "exp471-preprocessing-progress-antigravity.v2",
+        }
         or event["stage"] != "score-input"
         or event["phase"] != "low-frequency"
         or type(event["condition"]) is not str
@@ -124,15 +139,22 @@ def _validated_event_antigravity(value: object) -> dict[str, object]:
         or (remaining == 0 and float(event["eta_seconds"] or 0.0) != 0.0)
     ):
         raise ValueError("Exp471 preprocessing progress relation differs")
+    if event["schema"].endswith(".v2") and event["acceleration_backend"] not in {
+        "cpu",
+        "numba_serial_safe",
+    }:
+        raise ValueError("Exp471 preprocessing acceleration backend differs")
     return event
 
 
 def _validated_record_antigravity(value: object) -> dict[str, object]:
-    if not isinstance(value, Mapping) or set(value) != _RECORD_KEYS_ANTIGRAVITY:
+    if not isinstance(value, Mapping) or "timestamp_utc" not in value:
         raise ValueError("Exp471 preprocessing progress record differs")
     event = _validated_event_antigravity(
-        {key: value[key] for key in _EVENT_KEYS_ANTIGRAVITY}
+        {key: item for key, item in value.items() if key != "timestamp_utc"}
     )
+    if set(value) != set(event) | {"timestamp_utc"}:
+        raise ValueError("Exp471 preprocessing progress record differs")
     timestamp = value["timestamp_utc"]
     if type(timestamp) is not str:
         raise ValueError("Exp471 preprocessing progress timestamp differs")
@@ -350,6 +372,7 @@ class Exp471PreprocessingObserverAntigravity:
         progress: Callable[[dict[str, object]], None],
         qualify_parallel: bool = True,
         logical_cpu_count: int | None = None,
+        acceleration_backend: str = "cpu",
     ) -> None:
         conditions = tuple(condition_order)
         if (
@@ -361,6 +384,7 @@ class Exp471PreprocessingObserverAntigravity:
             or workers < 1
             or not callable(progress)
             or type(qualify_parallel) is not bool
+            or acceleration_backend not in {"cpu", "numba_serial_safe"}
             or (
                 logical_cpu_count is not None
                 and (
@@ -389,6 +413,7 @@ class Exp471PreprocessingObserverAntigravity:
             }
         )
         self._progress_antigravity = progress
+        self._acceleration_backend_antigravity = acceleration_backend
         self._condition_index_antigravity = 0
         self._completed_antigravity = 0
         self._total_antigravity: int | None = None
@@ -415,7 +440,7 @@ class Exp471PreprocessingObserverAntigravity:
         )
         decision = self._worker_decision_antigravity
         return {
-            "schema": _PROGRESS_SCHEMA_ANTIGRAVITY,
+            "schema": "exp471-preprocessing-progress-antigravity.v2",
             "stage": "score-input",
             "phase": "low-frequency",
             "condition": condition,
@@ -445,6 +470,7 @@ class Exp471PreprocessingObserverAntigravity:
                 if decision is None
                 else bool(decision["parallel_accepted"])
             ),
+            "acceleration_backend": self._acceleration_backend_antigravity,
             "status": status,
         }
 

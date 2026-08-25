@@ -748,6 +748,10 @@ def _production_score_bundle_antigravity(session: object) -> Mapping[str, object
         append_preprocessing_progress_antigravity,
         instrument_captured_preprocessing_antigravity,
     )
+    from .numba_preprocessing_antigravity import (
+        create_aspe_variants_antigravity,
+        instrument_numba_aspe_antigravity,
+    )
     from .source_authority_antigravity import (
         _bind_captured_values_database_antigravity,
         _load_captured_dataset_values_antigravity,
@@ -806,9 +810,12 @@ def _production_score_bundle_antigravity(session: object) -> Mapping[str, object
             progress=lambda event: append_preprocessing_progress_antigravity(
                 EXP471_ROOT_ANTIGRAVITY, event
             ),
+            acceleration_backend="numba_serial_safe",
         )
-        with instrument_captured_preprocessing_antigravity(session, observer):
-            score_authority = build(session.context.run_root, **build_arguments)
+        selected_aspe = create_aspe_variants_antigravity()["serial_safe"]
+        with instrument_numba_aspe_antigravity(original_score, selected_aspe):
+            with instrument_captured_preprocessing_antigravity(session, observer):
+                score_authority = build(session.context.run_root, **build_arguments)
     else:
         # Synthetic authority fixtures intentionally expose only the values API.
         score_authority = build(session.context.run_root, **build_arguments)

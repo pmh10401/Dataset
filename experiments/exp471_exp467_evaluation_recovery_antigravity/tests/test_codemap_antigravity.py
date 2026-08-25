@@ -35,6 +35,7 @@ PRODUCTION_PATHS_ANTIGRAVITY = frozenset(
         "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/numba_preprocessing_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
@@ -47,6 +48,7 @@ TEST_PATHS_ANTIGRAVITY = frozenset(
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
@@ -78,6 +80,9 @@ EXPECTED_EFFECTS_ANTIGRAVITY = {
     f"{EXP471_NAMESPACE_ANTIGRAVITY}/evaluation_antigravity.py": (
         "Label-gated, create-only persistence for the frozen Exp471 evaluation."
     ),
+    f"{EXP471_NAMESPACE_ANTIGRAVITY}/numba_preprocessing_antigravity.py": (
+        "Candidate Numba ASPE kernels for the Exp471 preprocessing spike."
+    ),
     f"{EXP471_NAMESPACE_ANTIGRAVITY}/preprocessing_antigravity.py": (
         "Result-preserving Exp471 preprocessing parallelism and live ETA evidence."
     ),
@@ -101,6 +106,9 @@ EXPECTED_EFFECTS_ANTIGRAVITY = {
     ),
     f"{EXP471_NAMESPACE_ANTIGRAVITY}/tests/test_evaluation_antigravity.py": (
         "Public-literal tests for Exp471 durable continuous-score evaluation."
+    ),
+    f"{EXP471_NAMESPACE_ANTIGRAVITY}/tests/test_numba_preprocessing_antigravity.py": (
+        "Parity tests for candidate Exp471 Numba preprocessing kernels."
     ),
     f"{EXP471_NAMESPACE_ANTIGRAVITY}/tests/test_preprocessing_antigravity.py": (
         "Deterministic preprocessing parallelism and live ETA evidence for Exp471."
@@ -129,6 +137,7 @@ EXPECTED_EDGES_ANTIGRAVITY = frozenset(
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py"),
+        ("experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/numba_preprocessing_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py"),
@@ -163,6 +172,7 @@ EXPECTED_EDGES_ANTIGRAVITY = frozenset(
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py"),
+        ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/numba_preprocessing_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py"),
@@ -270,9 +280,9 @@ def _assert_payload_answers_antigravity(
     if not isinstance(scope, Mapping):
         raise AssertionError("code-map scope is not a mapping")
     expected_scope = {
-        "node_count": 19,
-        "production_node_count": 9,
-        "test_node_count": 8,
+        "node_count": 21,
+        "production_node_count": 10,
+        "test_node_count": 9,
         "external_closure_policy": "index_tracked_exp471_production_closure",
     }
     for key, expected in expected_scope.items():

@@ -73,6 +73,7 @@ class PreprocessingTestsAntigravity(unittest.TestCase):
             workers=2,
             progress=events.append,
             qualify_parallel=False,
+            acceleration_backend="numba_serial_safe",
         )
 
         first = observer.score_antigravity(values, hard)
@@ -97,6 +98,7 @@ class PreprocessingTestsAntigravity(unittest.TestCase):
         self.assertEqual(events[-1]["workers"], 2)
         self.assertTrue(events[-1]["byte_parity"])
         self.assertTrue(events[-1]["parallel_accepted"])
+        self.assertEqual(events[-1].get("acceleration_backend"), "numba_serial_safe")
         self.assertTrue(
             all(
                 event["eta_seconds"] is None
@@ -215,12 +217,14 @@ class PreprocessingTestsAntigravity(unittest.TestCase):
             }
             final = {
                 **first,
+                "schema": "exp471-preprocessing-progress-antigravity.v2",
                 "dataset": "B",
                 "completed": 2,
                 "remaining": 0,
                 "percent": 100.0,
                 "elapsed_seconds": 4.0,
                 "eta_seconds": 0.0,
+                "acceleration_backend": "numba_serial_safe",
                 "status": "complete",
             }
 

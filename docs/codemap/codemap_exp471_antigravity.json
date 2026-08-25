@@ -31,6 +31,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/numba_preprocessing_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
       "kind": "ast_import"
@@ -198,6 +203,11 @@
     {
       "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/numba_preprocessing_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -426,6 +436,18 @@
     {
       "callers": [
         "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py"
+      ],
+      "effects": "Candidate Numba ASPE kernels for the Exp471 preprocessing spike.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.numba_preprocessing_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/numba_preprocessing_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py"
       ],
       "effects": "Result-preserving Exp471 preprocessing parallelism and live ETA evidence.",
@@ -517,6 +539,13 @@
     },
     {
       "callers": [],
+      "effects": "Parity tests for candidate Exp471 Numba preprocessing kernels.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_numba_preprocessing_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [],
       "effects": "Deterministic preprocessing parallelism and live ETA evidence for Exp471.",
       "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_preprocessing_antigravity",
       "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py",
@@ -587,9 +616,9 @@
       "plan_sha256": "e913fec5c7d83201f0717f2aef16f2a5854dabf07b1e1d04b7ea5b86b26aefff"
     },
     "namespace": "experiments/exp471_exp467_evaluation_recovery_antigravity",
-    "node_count": 19,
-    "production_node_count": 9,
-    "test_node_count": 8
+    "node_count": 21,
+    "production_node_count": 10,
+    "test_node_count": 9
   },
   "unknowns": []
 }
