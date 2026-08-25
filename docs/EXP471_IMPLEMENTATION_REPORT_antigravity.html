@@ -200,4 +200,28 @@ python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null<
       <tr><td>미수행</td><td>TEST 파일 접근 0회, FN 산출 0회, routing 변경 없음</td></tr>
     </tbody>
   </table>
+  <h2>9.1 승인된 TEST/FN 진단(2026-08-25)</h2>
+  <p>
+    목적: 공식 실행에서 남은 TEST 위주 FN이 어떤 점수 체인에서 발생하는지 관측한다.
+    라우팅·champion·promotion은 변경하지 않는다.
+  </p>
+  <table>
+    <thead><tr><th>파일</th><th>FN 수</th><th>C0 AUC</th><th>E12 rank AUC</th><th>C12 AUC</th><th>zero-FP TP</th><th>confirmation</th></tr></thead>
+    <tbody>
+      <tr><td>ECG200_normal_1</td><td>2</td><td>0.9923</td><td>0.3367</td><td>0.9923</td><td>0 / 2</td><td>0회</td></tr>
+      <tr><td>ECG200_normal_-1</td><td>1</td><td>0.0204</td><td>0.2551</td><td>0.0204</td><td>0 / 1</td><td>0회</td></tr>
+    </tbody>
+  </table>
+  <p>
+    해석: normal_1의 2개 FN은 C0 점수가 거의 완벽히 분리(AUC 0.99)하지만 정상 최댓값보다
+    큰 이상치가 없어 zero-FP 기준에서 TP 0이다. normal_-1의 1개 FN은 C0 자체가 역방향
+    (AUC 0.02)으로, Hydra LocalGap이 이 인스턴스를 오히려 정상처럼 본다.
+    E12(ACF peak-lag)와 confirmation은 TEST에서 아무것도 확정하지 않았고 C12는 C0과
+    완전히 동일하므로 이 데이터셋에서 E12/C12의 FN 해소 기여는 0이다.
+    두 seed 결과가 소수 16자리까지 동일하여 seed 민감성은 없다.
+  </p>
+  <p>
+    산출물: <code>/Users/mac/Documents/Dataset/exp471_ecg200_test_fn_diagnostic_antigravity_20260825</code>,
+    진단 커밋 <code>651dd0cc</code>(combined-matrix 방식).
+  </p>
 </main></body></html>

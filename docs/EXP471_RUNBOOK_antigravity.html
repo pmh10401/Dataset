@@ -60,4 +60,10 @@ launcher.run_private_sequence_antigravity(
   <div class="note">
     <p><strong>2026-08-25:</strong> 사용자 승인으로 일회성 공식 lifecycle을 실행했다. launcher <code>scratch/run_exp471_official_lifecycle_antigravity.py</code>, reviewed commit <code>cdf5347d1bf0f456b472b347dbbb45e8a43b34a2</code>. 공식 root <code>/Users/mac/Documents/Dataset/exp471_ecg200_acf_peak_lag_shift_numba_antigravity_20260825</code>에 evaluate→inspect 각 1회(exit 0)로 종료했고 7개 leaf는 private run1과 동일하다.</p>
   </div>
+
+  <h2>6. TEST/FN 진단 기록(승인 후)</h2>
+  <div class="note">
+    <p><strong>2026-08-25:</strong> 사용자 승인으로 관측용 진단을 실행했다. launcher <code>scratch/run_exp471_test_fn_diagnostic_antigravity.py</code>, 승인 token <code>TASK6_TEST_FN_DIAGNOSTIC_APPROVED</code>. 커밋 <code>651dd0cc</code>(combined-matrix 수정)에서 두 seed 순차 실행, exit 0. 산출 root는 <code>/Users/mac/Documents/Dataset/exp471_ecg200_test_fn_diagnostic_antigravity_20260825</code>이며 routing·champion·promotion은 변경하지 않았다.</p>
+    <p>요약: normal_1 FN 2개는 C0 AUC 0.9923으로 분리되지만 zero-FP TP 0. normal_-1 FN 1개는 C0 AUC 0.0204(역방향). E12/C12는 이 데이터셋에서 FN 해소 기여 0.</p>
+  </div>
 </main></body></html>
