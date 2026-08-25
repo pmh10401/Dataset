@@ -184,16 +184,28 @@ def main_antigravity(argv: list[str] | None = None) -> int:
         "seeds": {},
     }
     authority = capture_exp465_authority_antigravity()
-    all_indices = np.arange(69, dtype=np.int64)
     for seed in _SEEDS_ANTIGRAVITY:
         oof = oof_by_seed[seed]
         per_seed: dict[str, object] = {"oof_auc_c0_vs_perturbations": {}}
         for name in names:
             values = test_data[name]["values"]
             mask = test_data[name]["anomaly_mask"]
-            c0 = score_c0_fold_antigravity(
-                train140, all_indices, values, seed=seed, fold_index=0, authority=authority
-            ).normal_scores
+            combined = np.vstack((train140, values))
+            fit_indices = np.arange(len(train140), dtype=np.int64)
+            query_indices = np.arange(
+                len(train140), len(train140) + len(values), dtype=np.int64
+            )
+            c0 = np.asarray(
+                score_c0_fold_antigravity(
+                    combined,
+                    fit_indices,
+                    query_indices,
+                    seed=seed,
+                    fold_index=0,
+                    authority=authority,
+                ).normal_scores,
+                dtype=np.float64,
+            )
             peaks = score_acf_peak_lag_numba_antigravity(train140, values)
             ranks = np.asarray(peaks.query_ranks, dtype=np.float64)
             confirmed = np.asarray(peaks.confirmation_mask, dtype=np.bool_)
@@ -279,4 +291,3 @@ def main_antigravity(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main_antigravity())
-
