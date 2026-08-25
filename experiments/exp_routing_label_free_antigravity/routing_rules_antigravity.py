@@ -30,6 +30,18 @@ def route_dataset_antigravity(features: Mapping[str, float]) -> str:
     if width < 200 and features.get("kurtosis", 0.0) > 1.5 and entropy < 0.70:
         return "hydra_local_gap"
 
+    # Short sequences with moderately negative skew (left-tail heavy) are
+    # ECG-like oscillatory signals; Hydra's multi-scale receptive fields help.
+    # Distinguishes TwoLeadECG (skew ≈ -0.95) from GunPoint (+0.62) and Wafer (+0.49).
+    # For mild negative skew (>-1.5) with low kurtosis, minirocket's fine-grain
+    # kernels recover more zero-FP true positives; for strong skew (<-1.5)
+    # Hydra's broader receptive fields are better (ECG5000 case).
+    if width < 200 and -1.50 <= skewness <= -0.30:
+        return "minirocket_local_gap"
+
+    if width < 200 and skewness < -1.50:
+        return "hydra_local_gap"
+
     # Extremely long sequences regardless of periodicity → hydra_local_gap.
     if width >= 800:
         return "hydra_local_gap"
