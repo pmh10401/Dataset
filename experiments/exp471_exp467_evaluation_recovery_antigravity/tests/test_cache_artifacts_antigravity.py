@@ -649,7 +649,14 @@ class Exp471ScoreShardArtifactTestsAntigravity(unittest.TestCase):
         cases.append(("wrong_count", _canonical_bytes_antigravity(wrong_count)))
 
         wrong_identity = _score_shard_antigravity(method="B")
-        cases.append(("wrong_identity", _canonical_bytes_antigravity(asdict(wrong_identity))))
+        cases.append(
+            (
+                "wrong_identity",
+                _canonical_bytes_antigravity(
+                    _shard_record_from_contract_antigravity(wrong_identity)
+                ),
+            )
+        )
 
         for name, raw in cases:
             with self.subTest(name=name), tempfile.TemporaryDirectory(
@@ -661,7 +668,12 @@ class Exp471ScoreShardArtifactTestsAntigravity(unittest.TestCase):
                 )
                 path.parent.mkdir(parents=True)
                 path.write_bytes(raw)
-                with self.assertRaises(ValueError):
+                expected_error = (
+                    "identity differs from its path"
+                    if name == "wrong_identity"
+                    else ".*"
+                )
+                with self.assertRaisesRegex(ValueError, expected_error):
                     cache_artifacts.read_score_shard_antigravity(
                         root, shard.method, shard.dataset
                     )

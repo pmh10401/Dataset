@@ -25,7 +25,7 @@
     "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py": "88d0da5b51b2742c0ffb672f0f1b435053eae3120d595ae340c94d252817ce6f",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py": "740fc9e60acd2442a5e2dda6c0b1dc8cc973fc0fe67e7359283bb869368d77cb",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py": "a3f2c3688dd36c41adc61f7cf098f21cadb328290c9b1a4b2248dbf4beb524bf",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py": "5c5818f8e938e7a0f8353917c4606873d703a50fb007aba42b3cfe97004d8226",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py": "966a747a47f5b5492d3985268b479930f99d94dfb00b64e290f7aadf2249b0bc",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py": "b7963eef480d830a48b3dfa48f45b8bb7550ca9b87d6ceaf88f34ba831f08efa",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py": "61ea030a58d34c239d84bf06515ec92aed8df2a18603927d5dbd9f0f10d115d0",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py": "462d1358223d64976913c5997bab6ec8ba329a6637feb476ff6611bd1ee0394b",
