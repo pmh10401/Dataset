@@ -139,6 +139,7 @@ EXPECTED_EDGES_ANTIGRAVITY = frozenset(
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py"),
+        ("experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/baseline_preflight_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/numba_preprocessing_antigravity.py"),

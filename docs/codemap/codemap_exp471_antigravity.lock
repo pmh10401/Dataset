@@ -1,7 +1,7 @@
 {
   "artifact_sha256": {
-    "docs/codemap/codemap_exp471_antigravity.html": "75556a6f705732e6d3f1ebe41fc2d27da971b4244d45ff0852abd66feada66d6",
-    "docs/codemap/codemap_exp471_antigravity.json": "bb605c67f148a70815c522fd65b569157058715484a753469f13c14f90e3256c"
+    "docs/codemap/codemap_exp471_antigravity.html": "79a7ed0673058649b532ca2976f4a8e5602a13e15f580bf7834b6b32dea92116",
+    "docs/codemap/codemap_exp471_antigravity.json": "4e6efd883dade8b0a7ed5f4d9a181e666250a6adc958c3d260ed39e7cb0a75fd"
   },
   "fingerprint_algorithm": "sha256",
   "governance_fingerprint_evidence": {
@@ -16,7 +16,7 @@
   "module_fingerprints": {
     "experiments/exp471_exp467_evaluation_recovery_antigravity/baseline_preflight_antigravity.py": "73206a233696eb54f0b893499751f3a68e57bdc0ea39b7df8ef170c7de01eca8",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py": "4d42e78d3fb297d0cc49fa48ad0877fa1fe3c9ef76b736c0857c3199f670b3dd",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py": "f7fe580a30ddf2da18df0115365bd68f18408712525112df03aa0b81d61156e8",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py": "db6cf735a43bf8587330edbf393147ce0ca2201c3f9f83fd830289c32d9a2ece",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py": "8805eccf8153cc6f43ac9de1d7b5e197bf4fa5dfbe17674431bfb188d92de01a",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py": "ac9441404920babcaf5aacbb781e1fef287e5d57caf1e54e8410c04f15abd2d8",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py": "c5258b72ee381969d66cdb7b9941d303bf59702329a0deb987253998fbf05376",
@@ -26,12 +26,12 @@
     "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py": "740fc9e60acd2442a5e2dda6c0b1dc8cc973fc0fe67e7359283bb869368d77cb",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py": "a3f2c3688dd36c41adc61f7cf098f21cadb328290c9b1a4b2248dbf4beb524bf",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py": "6859e9d7e88db8e546cbbf97c2c92b3aae5477dfb2eb43d55e35f18529faf25a",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py": "426d9340465fb984a49ea1e712b2ec0fe30e07a4e1ee6e8752ed89cca8632f6f",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py": "b7963eef480d830a48b3dfa48f45b8bb7550ca9b87d6ceaf88f34ba831f08efa",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py": "4d00c917a1480ebe5cad1c0cba3e4b083d4c21128f6de84a7043fb9aa8612b09",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py": "462d1358223d64976913c5997bab6ec8ba329a6637feb476ff6611bd1ee0394b",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py": "1812ad52e1fdaa7679faca90ce6a63b078191baa49c30bee8b40afb26d2353c5",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py": "1a33e37176492865c1e866b7f4e5a78be7eb68b2cfcdbd702dcfaea4446ababb",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py": "675847b3d39c9f80dcb77dc2e2537e0d3a39a6a57bc165785c4e5d99ff495c24",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py": "447518c74eec586b0f2a5db17c919b772980d9982004946e8ac3743f272cecd1",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py": "2092a76f113bd4a43c70bb1878ae81cf96a82e76baf97e479834f60c013d0d46",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py": "d60a2716588fc01752c883c743b5ca54a4cbd7d3e3698ed5fd0332b40cf51799",
     "scratch/generate_exp471_codemap_antigravity.py": "bb2c0c9f76b9ebd8ffc886bb424cfc6a447206e23f1943b9d9de36c18c67ba06",

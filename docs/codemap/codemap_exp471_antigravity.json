@@ -11,6 +11,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/baseline_preflight_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
       "kind": "ast_import"
@@ -341,6 +346,7 @@
   "nodes": [
     {
       "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
       ],
       "effects": "Strict typed-abstain classification for frozen public-baseline inputs.",

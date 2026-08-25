@@ -267,6 +267,20 @@ def _preflight_expected_coordinates_antigravity(
     return {dataset: tuple(range(count)) for dataset in datasets}
 
 
+def _issued_preflight_context_antigravity(session: object) -> object:
+    """Return the already-successful preflight boundary for loader-only tests."""
+
+    return type(
+        "IssuedPreflightContextAntigravity",
+        (),
+        {
+            "datasets": tuple(
+                entry["dataset"] for entry in session.catalog["datasets"]
+            )
+        },
+    )()
+
+
 class BaselinePreflightTestsAntigravity(unittest.TestCase):
     """Strict typed-abstain classifier contracts before proposal preprocessing."""
 
@@ -601,6 +615,530 @@ class BaselinePreflightTestsAntigravity(unittest.TestCase):
         }
         with self.assertRaisesRegex(ValueError, "method order"):
             self._run_preflight(datasets, coordinates, expected)
+
+
+class ProductionScoreBundleTestsAntigravity(unittest.TestCase):
+    """Production preflight ordering and verified score-input v3 contracts."""
+
+    DATASETS_ANTIGRAVITY = tuple(
+        f"production_dataset_{index:04d}_antigravity" for index in range(1_117)
+    )
+
+    @staticmethod
+    def _test_identity_antigravity(
+        dataset: str, dataset_id: int, *, count: int = 2
+    ) -> dict[str, object]:
+        indices = list(range(count))
+        bare = {
+            "dataset": dataset,
+            "dataset_id": dataset_id,
+            "series_length": 3,
+            "split": "TEST",
+            "indices": indices,
+            "values_blob_sha256": [
+                sha256(f"{dataset}:{index}".encode("utf-8")).hexdigest()
+                for index in indices
+            ],
+        }
+        return {
+            **bare,
+            "row_digest": sha256(
+                canonical_json_bytes_exp471_antigravity(bare)
+            ).hexdigest(),
+            "count": count,
+        }
+
+    def _condition_manifest_antigravity(
+        self, *, drift: bool = False
+    ) -> dict[str, object]:
+        identities = [
+            self._test_identity_antigravity(dataset, index)
+            for index, dataset in enumerate(self.DATASETS_ANTIGRAVITY)
+        ]
+        if drift:
+            identities[-1] = self._test_identity_antigravity(
+                self.DATASETS_ANTIGRAVITY[-1], len(identities) - 1, count=3
+            )
+        return {
+            "datasets": [
+                {"dataset": dataset, "test": identity}
+                for dataset, identity in zip(
+                    self.DATASETS_ANTIGRAVITY, identities, strict=True
+                )
+            ],
+            "test_identities": identities,
+            "score_rows": {
+                dataset: [0.125, 0.875]
+                for dataset in self.DATASETS_ANTIGRAVITY
+            },
+        }
+
+    def _session_antigravity(
+        self, calls: list[str], *, condition_drift: bool = False
+    ) -> object:
+        authority = type(
+            "AuthorityAntigravity",
+            (),
+            {
+                "database_sha256": "5" * 64,
+                "condition_manifest_sha256": {
+                    condition: condition.lower() * 64
+                    for condition in METHOD_ORDER_ANTIGRAVITY[:4]
+                },
+            },
+        )()
+        manifests = {
+            condition: self._condition_manifest_antigravity(
+                drift=condition_drift and condition == "D"
+            )
+            for condition in METHOD_ORDER_ANTIGRAVITY[:4]
+        }
+
+        def build_exp467_score_manifests_antigravity(*_args, **_kwargs):
+            calls.append("build")
+            return type(
+                "ScoreAuthorityAntigravity", (), {"manifests": manifests}
+            )()
+
+        verifier = type(
+            "VerifierAntigravity",
+            (),
+            {
+                "build_exp467_score_manifests_antigravity": staticmethod(
+                    build_exp467_score_manifests_antigravity
+                )
+            },
+        )()
+        session = type("SessionAntigravity", (), {})()
+        session.authority = authority
+        session.verification = object()
+        session.catalog = {
+            "database": {},
+            "datasets": [
+                {"dataset": dataset} for dataset in self.DATASETS_ANTIGRAVITY
+            ],
+        }
+        session.context = type(
+            "ContextAntigravity",
+            (),
+            {"run_root": Path("/tmp/exp471_synthetic_run_antigravity")},
+        )()
+        session.migration_manifest = object()
+        session.verifier = verifier
+        return session
+
+    def _baseline_patches_antigravity(
+        self,
+        temporary: str,
+        *,
+        calls: list[str],
+        root_error: str | None = None,
+        mutation: tuple[str, object] | None = None,
+    ):
+        from experiments.exp450_resampling_image_ablation_antigravity import (
+            evaluation_antigravity as frozen_evaluation,
+        )
+
+        root_methods = {
+            "classical": baseline_preflight.BASELINE_METHODS_ANTIGRAVITY[:4],
+            "deep_svdd": ("deep_svdd_1d",),
+            "drocc": ("drocc_1d",),
+        }
+        abstention_plan = {
+            "knn_distance": 5,
+            "deep_svdd_1d": 195,
+            "drocc_1d": 195,
+        }
+        manifests: dict[str, object] = {}
+        roots: dict[str, Path] = {}
+        root_authority: dict[str, dict[str, str]] = {}
+        identities = [
+            self._test_identity_antigravity(dataset, index)
+            for index, dataset in enumerate(self.DATASETS_ANTIGRAVITY)
+        ]
+
+        class SyntheticManifestAntigravity(dict):
+            pass
+
+        for root_index, (root_name, root_method_order) in enumerate(
+            root_methods.items()
+        ):
+            root = Path(temporary) / f"{root_name}_root_antigravity"
+            root.mkdir(parents=True)
+            manifest_path = root / "frozen_score_manifest.json"
+            manifest_path.write_text(
+                json.dumps({"root": root_name}, sort_keys=True), encoding="utf-8"
+            )
+            run_config_sha256 = str(root_index + 1) * 64
+            methods: dict[str, dict[str, dict[str, object]]] = {}
+            for method in root_method_order:
+                rows: dict[str, dict[str, object]] = {}
+                abstention_count = abstention_plan.get(method, 0)
+                for dataset_index, dataset in enumerate(self.DATASETS_ANTIGRAVITY):
+                    status = (
+                        "abstain"
+                        if dataset_index < abstention_count
+                        else "complete"
+                    )
+                    shard = _preflight_record_antigravity(status=status)
+                    shard["test_indices"] = shard.pop("indices")
+                    shard.pop("count")
+                    rows[dataset] = shard
+                methods[method] = rows
+            manifest = SyntheticManifestAntigravity(
+                database_sha256="5" * 64,
+                methods=methods,
+                datasets=[
+                    {"dataset": dataset, "test": identity}
+                    for dataset, identity in zip(
+                        self.DATASETS_ANTIGRAVITY, identities, strict=True
+                    )
+                ],
+                test_identities=identities,
+            )
+            manifest.run_root = root
+            manifest.run_config_sha256 = run_config_sha256
+            manifests[root_name] = manifest
+            roots[root_name] = root
+            root_authority[root_name] = {
+                "manifest_sha256": sha256(manifest_path.read_bytes()).hexdigest(),
+                "run_config_sha256": run_config_sha256,
+            }
+
+        if mutation is not None:
+            mutation_name, change = mutation
+            if mutation_name == "missing":
+                del manifests["classical"]["methods"]["knn_distance"][
+                    self.DATASETS_ANTIGRAVITY[5]
+                ]
+            elif mutation_name == "reordered_methods":
+                methods = manifests["classical"]["methods"]
+                manifests["classical"]["methods"] = {
+                    method: methods[method] for method in reversed(tuple(methods))
+                }
+            elif mutation_name == "reordered_rows":
+                rows = manifests["classical"]["methods"]["knn_distance"]
+                manifests["classical"]["methods"]["knn_distance"] = {
+                    dataset: rows[dataset] for dataset in reversed(tuple(rows))
+                }
+            else:
+                shard = manifests["classical"]["methods"]["knn_distance"][
+                    self.DATASETS_ANTIGRAVITY[5]
+                ]
+                change(shard)
+
+        def verify_roots(observed_roots, _verifier):
+            calls.append("verify_roots")
+            self.assertEqual(dict(observed_roots), roots)
+            if root_error is not None:
+                raise ValueError(root_error)
+            return manifests
+
+        original_identity = frozen_evaluation._baseline_identity_and_shards
+
+        def baseline_identity(manifest):
+            calls.append("baseline_identity")
+            return original_identity(manifest)
+
+        original_preflight = (
+            baseline_preflight.preflight_frozen_baselines_antigravity
+        )
+
+        def preflight(**kwargs):
+            result = original_preflight(**kwargs)
+            calls.append("preflight")
+            return result
+
+        coordinate_inventory = {
+            "schema": "exp471-test-coordinate-inventory-antigravity.v1",
+            "dataset_count": len(self.DATASETS_ANTIGRAVITY),
+            "datasets": [
+                {
+                    "dataset": dataset,
+                    "test_count": 2,
+                    "test_indices": [0, 1],
+                }
+                for dataset in self.DATASETS_ANTIGRAVITY
+            ],
+        }
+        coordinate_sha256 = sha256(
+            canonical_json_bytes_exp471_antigravity(coordinate_inventory)
+        ).hexdigest()
+        return (
+            mock.patch.object(
+                frozen_evaluation,
+                "BASELINE_ROOTS",
+                roots,
+            ),
+            mock.patch.object(
+                frozen_evaluation,
+                "_verify_baseline_roots",
+                side_effect=verify_roots,
+            ),
+            mock.patch.object(
+                frozen_evaluation,
+                "_baseline_identity_and_shards",
+                side_effect=baseline_identity,
+            ),
+            mock.patch.object(
+                cli,
+                "EXP471_BASELINE_ROOT_AUTHORITY_ANTIGRAVITY",
+                root_authority,
+            ),
+            mock.patch.object(
+                cli,
+                "EXP471_BASELINE_DATABASE_SHA256_ANTIGRAVITY",
+                "5" * 64,
+                create=True,
+            ),
+            mock.patch.object(
+                cli,
+                "EXP471_BASELINE_DATASET_COUNT_ANTIGRAVITY",
+                1_117,
+                create=True,
+            ),
+            mock.patch.object(
+                cli,
+                "EXP471_TEST_COORDINATE_INVENTORY_SHA256_ANTIGRAVITY",
+                coordinate_sha256,
+                create=True,
+            ),
+            mock.patch.object(
+                baseline_preflight,
+                "preflight_frozen_baselines_antigravity",
+                side_effect=preflight,
+            ),
+        )
+
+    def _source_patches_antigravity(self, calls: list[str]):
+        from experiments.exp471_exp467_evaluation_recovery_antigravity import (
+            source_authority_antigravity as source_authority,
+        )
+
+        values_api = type(
+            "ValuesApiAntigravity",
+            (),
+            {
+                "database_config_antigravity": type(
+                    "ConfigAntigravity",
+                    (),
+                    {
+                        "database_path": "/tmp/public_database_antigravity.sqlite",
+                        "database_sha256": "5" * 64,
+                    },
+                )()
+            },
+        )()
+
+        def require(_session):
+            calls.append("require")
+            return values_api
+
+        def bind(*_args, **_kwargs):
+            calls.append("bind")
+            return object()
+
+        def load(*_args, **_kwargs):
+            if not calls or calls[-1] != "load":
+                calls.append("load")
+            return {}
+
+        return (
+            mock.patch.object(
+                source_authority,
+                "_require_captured_values_api_antigravity",
+                side_effect=require,
+            ),
+            mock.patch.object(
+                source_authority,
+                "_bind_captured_values_database_antigravity",
+                side_effect=bind,
+            ),
+            mock.patch.object(
+                source_authority,
+                "_load_captured_dataset_values_antigravity",
+                side_effect=load,
+            ),
+        )
+
+    def _production_bundle_antigravity(
+        self,
+        *,
+        calls: list[str],
+        condition_drift: bool = False,
+        mutation: tuple[str, object] | None = None,
+    ):
+        session = self._session_antigravity(
+            calls, condition_drift=condition_drift
+        )
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_production_preflight_synthetic_antigravity_"
+        ) as temporary:
+            with ExitStack() as stack:
+                for patcher in self._baseline_patches_antigravity(
+                    temporary, calls=calls, mutation=mutation
+                ):
+                    stack.enter_context(patcher)
+                for patcher in self._source_patches_antigravity(calls):
+                    stack.enter_context(patcher)
+                return cli._production_score_bundle_antigravity(session)
+
+    def test_preflight_precedes_captured_loading_and_composition(self) -> None:
+        """Verified preflight completes before raw loading and A-D composition."""
+
+        calls: list[str] = []
+        self._production_bundle_antigravity(calls=calls)
+        self.assertEqual(calls[0], "verify_roots")
+        self.assertEqual(calls.count("baseline_identity"), 3)
+        self.assertLess(calls.index("preflight"), calls.index("require"))
+        self.assertLess(calls.index("require"), calls.index("load"))
+        self.assertLess(calls.index("load"), calls.index("build"))
+
+    def test_preflight_context_coordinates_are_deeply_immutable(self) -> None:
+        """Later proposal work cannot mutate the verified TEST authority."""
+
+        calls: list[str] = []
+        session = self._session_antigravity(calls)
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_immutable_preflight_context_antigravity_"
+        ) as temporary, ExitStack() as stack:
+            for patcher in self._baseline_patches_antigravity(
+                temporary, calls=calls
+            ):
+                stack.enter_context(patcher)
+            context = cli._preflight_production_baselines_antigravity(
+                session.authority, session.catalog
+            )
+        indices = context.test_coordinates[self.DATASETS_ANTIGRAVITY[0]][
+            "indices"
+        ]
+        with self.assertRaises(TypeError):
+            indices[0] = 1
+
+    def test_invalid_root_stops_before_captured_loading_and_composition(self) -> None:
+        """A rejected pinned root cannot resolve the captured-values capability."""
+
+        calls: list[str] = []
+        session = self._session_antigravity(calls)
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_production_preflight_order_antigravity_"
+        ) as temporary:
+            patches = self._baseline_patches_antigravity(
+                temporary, calls=calls,
+                root_error="pinned baseline root authority differs",
+            )
+            with ExitStack() as stack:
+                for patcher in patches:
+                    stack.enter_context(patcher)
+                with self.assertRaisesRegex(
+                    ValueError, "pinned baseline root authority differs"
+                ):
+                    cli._production_score_bundle_antigravity(session)
+        self.assertEqual(calls, ["verify_roots"])
+
+    def test_legal_source_abstention_becomes_v3_arm(self) -> None:
+        """One typed abstained arm preserves totals without score-vector keys."""
+
+        calls: list[str] = []
+        bundle = self._production_bundle_antigravity(calls=calls)
+        self.assertEqual(bundle["coverage"]["baseline_abstained_identities"], 395)
+        arm = bundle["baselines"]["deep_svdd_1d"]["scores"][
+            self.DATASETS_ANTIGRAVITY[0]
+        ]
+        self.assertEqual(arm["status"], "abstained")
+        self.assertEqual(arm["reason"], "insufficient_train_rows")
+        self.assertEqual(arm["test_indices"], [0, 1])
+        self.assertNotIn("train_oof_scores", arm)
+        self.assertNotIn("test_scores", arm)
+
+    def test_complete_and_abstained_v3_arms_exact_vectors_and_counts(self) -> None:
+        """Exact vectors, indices, coverage partition, and schema are emitted."""
+
+        bundle = self._production_bundle_antigravity(calls=[])
+        self.assertEqual(bundle["schema"], "exp471-verified-score-input-antigravity.v3")
+        self.assertEqual(bundle["coverage"], {
+            "total_identities": 11_170,
+            "scored_identities": 10_775,
+            "abstained_identities": 395,
+            "failed_identities": 0,
+            "condition_scored_identities": 4_468,
+            "baseline_scored_identities": 6_307,
+            "baseline_abstained_identities": 395,
+        })
+        scored = bundle["baselines"]["knn_distance"]["scores"][
+            self.DATASETS_ANTIGRAVITY[5]
+        ]
+        self.assertEqual(scored["status"], "scored")
+        self.assertEqual(scored["test_indices"], [0, 1])
+        self.assertEqual(scored["train_oof_scores"], [0.25, 1.25])
+        self.assertEqual(scored["test_scores"], [0.75, 1.75])
+        for method in ("deep_svdd_1d", "drocc_1d"):
+            arm = bundle["baselines"][method]["scores"][
+                self.DATASETS_ANTIGRAVITY[0]
+            ]
+            self.assertEqual(arm["status"], "abstained")
+            self.assertNotIn("train_oof_scores", arm)
+            self.assertNotIn("test_scores", arm)
+        self.assertIn(
+            "authority_sha256",
+            bundle["baselines"]["knn_distance"]["authority"],
+        )
+
+    def test_invalid_baseline_variants_stop_before_proposal_work(self) -> None:
+        """Missing, failure, unknown reason, coordinates, and count drift fail closed."""
+
+        cases = (
+            ("missing", None, "coverage for knn_distance"),
+            ("reordered_methods", None, "baseline shard order"),
+            ("reordered_rows", None, "baseline shard order"),
+            (
+                "failure",
+                lambda shard: shard.update({"status": "failure"}),
+                "source status",
+            ),
+            (
+                "unknown_reason",
+                lambda shard: shard.update({"status": "abstain", "reason": "worker_crashed"}),
+                "abstention reason",
+            ),
+            (
+                "bad_indices",
+                lambda shard: shard.update({"test_indices": [1, 0]}),
+                "source TEST coordinates",
+            ),
+            (
+                "count_drift",
+                lambda shard: shard.update({"n_test": 3}),
+                "source row counts",
+            ),
+            (
+                "nonfinite_scores",
+                lambda shard: shard.update({"test_scores": [0.75, float("inf")]}),
+                "baseline score vector",
+            ),
+        )
+        for mutation, change, expected_error in cases:
+            with self.subTest(mutation=mutation):
+                calls: list[str] = []
+                with self.assertRaisesRegex(ValueError, expected_error):
+                    self._production_bundle_antigravity(
+                        calls=calls, mutation=(mutation, change)
+                    )
+                self.assertNotIn("require", calls)
+                self.assertNotIn("load", calls)
+                self.assertNotIn("build", calls)
+
+    def test_condition_coordinate_drift_fails_after_build(self) -> None:
+        """A-D output is rechecked against baseline TEST authority."""
+
+        calls: list[str] = []
+        with self.assertRaisesRegex(
+            ValueError, "production condition TEST coordinates"
+        ):
+            self._production_bundle_antigravity(
+                calls=calls, condition_drift=True
+            )
+        self.assertIn("build", calls)
 
 
 class ReportingTestsAntigravity(unittest.TestCase):
@@ -2440,6 +2978,10 @@ class CliTestsAntigravity(unittest.TestCase):
                 foreign_live_values_antigravity,
             ), mock.patch.object(
                 data_paper, "load_dataset_values", foreign_live_values_antigravity
+            ), mock.patch.object(
+                cli,
+                "_preflight_production_baselines_antigravity",
+                return_value=_issued_preflight_context_antigravity(session),
             ):
                 try:
                     cli._production_score_bundle_antigravity(session)
@@ -2484,10 +3026,15 @@ class CliTestsAntigravity(unittest.TestCase):
                 values, "load_dataset_values_antigravity", foreign_loader
             )
             observed: Exception | None = None
-            try:
-                cli._production_score_bundle_antigravity(session)
-            except Exception as error:
-                observed = error
+            with mock.patch.object(
+                cli,
+                "_preflight_production_baselines_antigravity",
+                return_value=_issued_preflight_context_antigravity(session),
+            ):
+                try:
+                    cli._production_score_bundle_antigravity(session)
+                except Exception as error:
+                    observed = error
             self.assertIsInstance(observed, ValueError)
             self.assertRegex(str(observed), "captured values API")
             self.assertEqual(foreign_calls, [])
@@ -2556,12 +3103,17 @@ class CliTestsAntigravity(unittest.TestCase):
                         "_raw_dataset_antigravity", original
                     )
                 observed: Exception | None = None
-                try:
-                    cli._production_score_bundle_antigravity(session)
-                except Exception as error:
-                    observed = error
-                finally:
-                    restore()
+                with mock.patch.object(
+                    cli,
+                    "_preflight_production_baselines_antigravity",
+                    return_value=_issued_preflight_context_antigravity(session),
+                ):
+                    try:
+                        cli._production_score_bundle_antigravity(session)
+                    except Exception as error:
+                        observed = error
+                    finally:
+                        restore()
                 self.assertIsInstance(observed, ValueError)
                 self.assertIn("execution seal", str(observed))
                 self.assertEqual(values_calls, [])

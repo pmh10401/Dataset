@@ -14,18 +14,23 @@ from pathlib import Path
 import stat
 import sys
 from time import monotonic
+from types import MappingProxyType
 from typing import TextIO
 
+from . import baseline_preflight_antigravity as baseline_preflight
 from .config_antigravity import (
     CPU_WORKERS_ANTIGRAVITY,
     EXP467_TOTAL_SUCCESSES_ANTIGRAVITY,
     EXP467_SOURCE_ROOT_ANTIGRAVITY,
+    EXP471_BASELINE_DATABASE_SHA256_ANTIGRAVITY,
+    EXP471_BASELINE_DATASET_COUNT_ANTIGRAVITY,
     EXP471_BASELINE_ROOT_AUTHORITY_ANTIGRAVITY,
     EXP471_BASELINE_ROOT_BY_METHOD_ANTIGRAVITY,
     EXP471_EVALUATION_ROOT_ANTIGRAVITY,
     EXP471_REPORT_ROOT_ANTIGRAVITY,
     EXP471_ROOT_ANTIGRAVITY,
     EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY,
+    EXP471_TEST_COORDINATE_INVENTORY_SHA256_ANTIGRAVITY,
     LOGICAL_CPU_COUNT_ANTIGRAVITY,
     METHOD_ORDER_ANTIGRAVITY,
 )
@@ -740,6 +745,179 @@ def _coordinate_record_antigravity(dataset: str, identity: Mapping[str, object])
     }
 
 
+@dataclass(frozen=True, slots=True)
+class _ProductionBaselinePreflightContextAntigravity:
+    datasets: tuple[str, ...]
+    test_coordinates: Mapping[str, Mapping[str, object]]
+    test_coordinates_sha256: str
+    source_authority_by_method: Mapping[str, Mapping[str, str]]
+    preflight: baseline_preflight.Exp471BaselinePreflightAntigravity
+
+
+def _normalized_baseline_shard_antigravity(
+    shard: Mapping[str, object],
+) -> Mapping[str, object]:
+    normalized: dict[str, object] = {
+        "n_train": shard.get("n_train"),
+        "n_test": shard.get("n_test"),
+        "count": shard.get("n_test"),
+        "indices": shard.get("test_indices"),
+        "status": shard.get("status"),
+        "reason": shard.get("reason"),
+    }
+    for field in ("train_oof_scores", "test_scores"):
+        if field in shard:
+            normalized[field] = shard[field]
+    return MappingProxyType(normalized)
+
+
+def _preflight_production_baselines_antigravity(
+    authority: object, catalog: Mapping[str, object]
+) -> _ProductionBaselinePreflightContextAntigravity:
+    """Verify and classify all pinned baselines before proposal data access."""
+
+    from experiments.exp450_resampling_image_ablation_antigravity import (
+        evaluation_antigravity as frozen_evaluation,
+    )
+    from experiments.paper_public_baselines.runner import verify_score_root
+
+    datasets = tuple(entry["dataset"] for entry in catalog["datasets"])
+    if (
+        len(datasets) != EXP471_BASELINE_DATASET_COUNT_ANTIGRAVITY
+        or len(datasets) != len(set(datasets))
+        or getattr(authority, "database_sha256", None)
+        != EXP471_BASELINE_DATABASE_SHA256_ANTIGRAVITY
+        or tuple(EXP471_BASELINE_ROOT_BY_METHOD_ANTIGRAVITY)
+        != baseline_preflight.BASELINE_METHODS_ANTIGRAVITY
+    ):
+        raise ValueError("Exp471 production baseline identity differs")
+
+    verified_baselines = frozen_evaluation._verify_baseline_roots(
+        frozen_evaluation.BASELINE_ROOTS, verify_score_root
+    )
+    if tuple(verified_baselines) != ("classical", "deep_svdd", "drocc"):
+        raise ValueError("Exp471 production baseline root order differs")
+
+    manifest_identity_authority: Mapping[str, Mapping[str, object]] | None = None
+    shards_by_root: dict[
+        str, Mapping[tuple[str, str], Mapping[str, object]]
+    ] = {}
+    source_authority_by_method: dict[str, Mapping[str, str]] = {}
+    for root_name in ("classical", "deep_svdd", "drocc"):
+        manifest = verified_baselines[root_name]
+        baseline_identities, database_sha256, shards = (
+            frozen_evaluation._baseline_identity_and_shards(manifest)
+        )
+        if (
+            database_sha256 != EXP471_BASELINE_DATABASE_SHA256_ANTIGRAVITY
+            or tuple(baseline_identities) != datasets
+        ):
+            raise ValueError("Exp471 production baseline identity differs")
+        if manifest_identity_authority is None:
+            manifest_identity_authority = baseline_identities
+        elif baseline_identities != manifest_identity_authority:
+            raise ValueError("Exp471 production baseline TEST identity differs")
+
+        root_authority = EXP471_BASELINE_ROOT_AUTHORITY_ANTIGRAVITY[root_name]
+        manifest_path = Path(manifest.run_root) / "frozen_score_manifest.json"
+        if (
+            manifest.run_config_sha256 != root_authority["run_config_sha256"]
+            or manifest_path.is_symlink()
+            or not manifest_path.is_file()
+            or sha256(manifest_path.read_bytes()).hexdigest()
+            != root_authority["manifest_sha256"]
+        ):
+            raise ValueError("Exp471 pinned baseline root authority differs")
+        expected_shards = tuple(
+            (method, dataset)
+            for method in baseline_preflight.BASELINE_METHODS_ANTIGRAVITY
+            if EXP471_BASELINE_ROOT_BY_METHOD_ANTIGRAVITY[method] == root_name
+            for dataset in datasets
+        )
+        observed_shards = tuple(shards)
+        expected_present_shards = tuple(
+            key for key in expected_shards if key in shards
+        )
+        if observed_shards != expected_present_shards:
+            raise ValueError("Exp471 production baseline shard order differs")
+        shards_by_root[root_name] = shards
+        for method in baseline_preflight.BASELINE_METHODS_ANTIGRAVITY:
+            if EXP471_BASELINE_ROOT_BY_METHOD_ANTIGRAVITY[method] == root_name:
+                source_authority_by_method[method] = MappingProxyType(
+                    {
+                        "manifest_sha256": root_authority["manifest_sha256"],
+                        "run_config_sha256": root_authority[
+                            "run_config_sha256"
+                        ],
+                    }
+                )
+
+    assert manifest_identity_authority is not None
+    test_coordinates: dict[str, Mapping[str, object]] = {}
+    for dataset in datasets:
+        record = _coordinate_record_antigravity(
+            dataset, manifest_identity_authority[dataset]
+        )
+        test_coordinates[dataset] = MappingProxyType(
+            {**record, "indices": tuple(record["indices"])}
+        )
+    coordinate_inventory = {
+        "schema": "exp471-test-coordinate-inventory-antigravity.v1",
+        "dataset_count": len(datasets),
+        "datasets": [
+            {
+                "dataset": dataset,
+                "test_count": test_coordinates[dataset]["count"],
+                "test_indices": test_coordinates[dataset]["indices"],
+            }
+            for dataset in datasets
+        ],
+    }
+    coordinates_sha256 = sha256(
+        canonical_json_bytes_exp471_antigravity(coordinate_inventory)
+    ).hexdigest()
+
+    normalized: dict[str, Mapping[str, Mapping[str, object]]] = {}
+    for method in baseline_preflight.BASELINE_METHODS_ANTIGRAVITY:
+        source_shards = shards_by_root[
+            EXP471_BASELINE_ROOT_BY_METHOD_ANTIGRAVITY[method]
+        ]
+        rows = {
+            dataset: _normalized_baseline_shard_antigravity(
+                source_shards[(method, dataset)]
+            )
+            for dataset in datasets
+            if (method, dataset) in source_shards
+        }
+        normalized[method] = MappingProxyType(rows)
+    classified = baseline_preflight.preflight_frozen_baselines_antigravity(
+        datasets=datasets,
+        coordinates=MappingProxyType(normalized),
+        expected_coordinates=MappingProxyType(
+            {
+                dataset: tuple(test_coordinates[dataset]["indices"])
+                for dataset in datasets
+            }
+        ),
+    )
+    if (
+        len(classified.entries) != 6_702
+        or classified.scored_count != 6_307
+        or classified.abstained_count != 395
+        or classified.failed_count != 0
+    ):
+        raise ValueError("Exp471 production baseline preflight totals differ")
+    if coordinates_sha256 != EXP471_TEST_COORDINATE_INVENTORY_SHA256_ANTIGRAVITY:
+        raise ValueError("Exp471 production TEST coordinate inventory differs")
+    return _ProductionBaselinePreflightContextAntigravity(
+        datasets=datasets,
+        test_coordinates=MappingProxyType(test_coordinates),
+        test_coordinates_sha256=coordinates_sha256,
+        source_authority_by_method=MappingProxyType(source_authority_by_method),
+        preflight=classified,
+    )
+
+
 def _production_score_bundle_antigravity(session: object) -> Mapping[str, object]:
     """Build Task 5's verified, label-free input from issued Exp467 evidence."""
 
@@ -760,10 +938,12 @@ def _production_score_bundle_antigravity(session: object) -> Mapping[str, object
     from experiments.exp450_resampling_image_ablation_antigravity import (
         evaluation_antigravity as frozen_evaluation,
     )
-    from experiments.paper_public_baselines.runner import verify_score_root
-
     authority = session.authority
     catalog = session.catalog
+    baseline_context = _preflight_production_baselines_antigravity(
+        authority, catalog
+    )
+    datasets = baseline_context.datasets
     values_api = _require_captured_values_api_antigravity(session)
     paper = values_api.database_config_antigravity
     if Path(paper.database_path).is_symlink() or paper.database_sha256 != authority.database_sha256:
@@ -774,7 +954,6 @@ def _production_score_bundle_antigravity(session: object) -> Mapping[str, object
         config=paper,
         verified_catalog_database=catalog["database"],
     )
-    datasets = tuple(entry["dataset"] for entry in catalog["datasets"])
     raw = {
         dataset: _load_captured_dataset_values_antigravity(
             session,
@@ -822,19 +1001,36 @@ def _production_score_bundle_antigravity(session: object) -> Mapping[str, object
     manifests = score_authority.manifests
     if tuple(manifests) != METHOD_ORDER_ANTIGRAVITY[:4]:
         raise ValueError("Exp471 production condition score order differs")
-    first = manifests[METHOD_ORDER_ANTIGRAVITY[0]]
-    identities = frozen_evaluation._manifest_test_identities(first)
-    if tuple(identities) != datasets:
-        raise ValueError("Exp471 production TEST dataset order differs")
     coordinates = {
-        dataset: _coordinate_record_antigravity(dataset, identities[dataset])
+        dataset: {
+            **baseline_context.test_coordinates[dataset],
+            "indices": list(
+                baseline_context.test_coordinates[dataset]["indices"]
+            ),
+        }
         for dataset in datasets
     }
     conditions: dict[str, object] = {}
     for method in METHOD_ORDER_ANTIGRAVITY[:4]:
-        rows = manifests[method].get("score_rows")
-        if not isinstance(rows, Mapping) or tuple(rows) != datasets:
-            raise ValueError("Exp471 production condition scores differ")
+        manifest = manifests[method]
+        identities = frozen_evaluation._manifest_test_identities(manifest)
+        condition_coordinates: dict[str, Mapping[str, object]] = {}
+        for dataset in identities:
+            record = _coordinate_record_antigravity(
+                dataset, identities[dataset]
+            )
+            condition_coordinates[dataset] = {
+                **record,
+                "indices": tuple(record["indices"]),
+            }
+        rows = manifest.get("score_rows")
+        if (
+            tuple(identities) != datasets
+            or condition_coordinates != baseline_context.test_coordinates
+            or not isinstance(rows, Mapping)
+            or tuple(rows) != datasets
+        ):
+            raise ValueError("Exp471 production condition TEST coordinates differ")
         conditions[method] = {
             "source_manifest_sha256": authority.condition_manifest_sha256[method],
             "scores": {
@@ -846,82 +1042,55 @@ def _production_score_bundle_antigravity(session: object) -> Mapping[str, object
             },
         }
 
-    verified_baselines = frozen_evaluation._verify_baseline_roots(
-        frozen_evaluation.BASELINE_ROOTS, verify_score_root
-    )
-    coordinate_inventory = {
-        "schema": "exp471-test-coordinate-inventory-antigravity.v1",
-        "dataset_count": len(datasets),
-        "datasets": [
-            {
-                "dataset": dataset,
-                "test_count": coordinates[dataset]["count"],
-                "test_indices": coordinates[dataset]["indices"],
-            }
-            for dataset in datasets
-        ],
-    }
-    coordinates_sha256 = sha256(
-        canonical_json_bytes_exp471_antigravity(coordinate_inventory)
-    ).hexdigest()
     baselines: dict[str, object] = {}
     baseline_inventory: dict[str, str] = {}
-    for root_name in ("classical", "deep_svdd", "drocc"):
-        manifest = verified_baselines[root_name]
-        baseline_identities, database_sha256, shards = (
-            frozen_evaluation._baseline_identity_and_shards(manifest)
-        )
-        if (
-            database_sha256 != authority.database_sha256
-            or tuple(baseline_identities) != datasets
-        ):
-            raise ValueError("Exp471 production baseline identity differs")
-        root_authority = EXP471_BASELINE_ROOT_AUTHORITY_ANTIGRAVITY[root_name]
-        manifest_path = Path(manifest.run_root) / "frozen_score_manifest.json"
-        if (
-            manifest.run_config_sha256 != root_authority["run_config_sha256"]
-            or manifest_path.is_symlink()
-            or not manifest_path.is_file()
-            or sha256(manifest_path.read_bytes()).hexdigest()
-            != root_authority["manifest_sha256"]
-        ):
-            raise ValueError("Exp471 pinned baseline root authority differs")
-        for method in METHOD_ORDER_ANTIGRAVITY[4:]:
-            if EXP471_BASELINE_ROOT_BY_METHOD_ANTIGRAVITY[method] != root_name:
-                continue
-            bare = {
-                "schema": "exp471-verified-baseline-authority-antigravity.v1",
-                "method": method,
-                "database_sha256": authority.database_sha256,
-                "dataset_order": list(datasets),
-                "test_coordinates_sha256": coordinates_sha256,
-                "source_manifest_sha256": root_authority["manifest_sha256"],
-                "run_config_sha256": root_authority["run_config_sha256"],
+    for method in METHOD_ORDER_ANTIGRAVITY[4:]:
+        source_authority = baseline_context.source_authority_by_method[method]
+        bare = {
+            "schema": "exp471-verified-baseline-authority-antigravity.v1",
+            "method": method,
+            "database_sha256": authority.database_sha256,
+            "dataset_order": list(datasets),
+            "test_coordinates_sha256": baseline_context.test_coordinates_sha256,
+            "source_manifest_sha256": source_authority["manifest_sha256"],
+            "run_config_sha256": source_authority["run_config_sha256"],
+        }
+        authority_sha256 = sha256(
+            canonical_json_bytes_exp471_antigravity(bare)
+        ).hexdigest()
+        baseline_inventory[method] = authority_sha256
+        scores: dict[str, object] = {}
+        for dataset in datasets:
+            entry = baseline_context.preflight.entries[(method, dataset)]
+            arm: dict[str, object] = {
+                "status": entry.status,
+                "test_indices": list(entry.test_indices),
             }
-            authority_sha256 = sha256(
-                canonical_json_bytes_exp471_antigravity(bare)
-            ).hexdigest()
-            baseline_inventory[method] = authority_sha256
-            scores: dict[str, object] = {}
-            for dataset in datasets:
-                shard = shards.get((method, dataset))
-                if not isinstance(shard, Mapping) or shard.get("status") != "complete":
-                    raise ValueError("Exp471 production baseline coverage differs")
-                scores[dataset] = {
-                    "train_oof_scores": list(shard["train_oof_scores"]),
-                    "test_indices": list(shard["test_indices"]),
-                    "test_scores": list(shard["test_scores"]),
-                }
-            baselines[method] = {
-                "authority": {**bare, "authority_sha256": authority_sha256},
-                "scores": scores,
-            }
+            if entry.status == "scored":
+                arm["train_oof_scores"] = list(entry.train_oof_scores)
+                arm["test_scores"] = list(entry.test_scores)
+            else:
+                arm["reason"] = entry.abstention_reason
+            scores[dataset] = arm
+        baselines[method] = {
+            "authority": {**bare, "authority_sha256": authority_sha256},
+            "scores": scores,
+        }
     return {
-        "schema": "exp471-verified-score-input-antigravity.v2",
+        "schema": "exp471-verified-score-input-antigravity.v3",
         "database_sha256": authority.database_sha256,
         "dataset_order": list(datasets),
         "test_coordinates": coordinates,
         "baseline_authority_sha256": baseline_inventory,
+        "coverage": {
+            "total_identities": 11_170,
+            "scored_identities": 10_775,
+            "abstained_identities": 395,
+            "failed_identities": 0,
+            "condition_scored_identities": 4_468,
+            "baseline_scored_identities": 6_307,
+            "baseline_abstained_identities": 395,
+        },
         "conditions": conditions,
         "baselines": baselines,
     }
