@@ -1250,7 +1250,7 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                 cache_root, mutated_root
             )
             with issued, score_root, artifact_root, cache_gate, self.assertRaisesRegex(
-                ValueError, "null"
+                ValueError, "payload differs from verified scores and labels"
             ):
                 evaluation.read_evaluation_exp471_antigravity(
                     mutated_root,
@@ -1459,13 +1459,17 @@ class EvaluationTestsAntigravity(unittest.TestCase):
             evaluation_root = base / "evaluation_antigravity"
             authority = _authority_antigravity()
             session = _session_antigravity(authority)
-            cache = _publish_cache_antigravity(cache_root, authority)
+            datasets = tuple(f"matrix_{index}_antigravity" for index in range(3))
+            labels = {dataset: ((0, 0), (1, 1)) for dataset in datasets}
+            cache = _publish_durable_typed_cache_antigravity(
+                cache_root, authority, datasets, set()
+            )
             issued, score_root, artifact_root, cache_gate = _evaluation_patches_antigravity(
                 cache_root, evaluation_root
             )
             with issued, score_root, artifact_root, cache_gate:
                 artifact = evaluation.evaluate_exp471_antigravity(
-                    session, cache, label_loader=lambda _datasets: _LABELS_ANTIGRAVITY
+                    session, cache, label_loader=lambda _datasets: labels
                 )
                 valid_calls: list[tuple[str, ...]] = []
                 reopened = evaluation.read_evaluation_exp471_antigravity(
@@ -1473,11 +1477,11 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                     session,
                     cache,
                     label_loader=lambda datasets: (
-                        valid_calls.append(datasets), _LABELS_ANTIGRAVITY
+                        valid_calls.append(datasets), labels
                     )[1],
                 )
                 self.assertEqual(reopened, artifact)
-                self.assertEqual(valid_calls, [(_DATASET_ANTIGRAVITY,)])
+                self.assertEqual(valid_calls, [datasets])
 
                 def arbitrary_micro(payload):
                     payload["continuous_tables"]["scored_support"]["micro"]["A"][
@@ -1511,6 +1515,13 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                     rows = payload["continuous_tables"]["scored_support"]["per_dataset"]
                     rows.insert(1, dict(rows[0]))
 
+                def appended_metric_row(payload):
+                    rows = payload["continuous_tables"]["scored_support"]["per_dataset"]
+                    rows.append(dict(rows[0]))
+
+                def deleted_metric_row(payload):
+                    del payload["continuous_tables"]["scored_support"]["per_dataset"][0]
+
                 def pair_digest(payload):
                     payload["continuous_tables"]["scored_support"]["paired_statistics"][0][
                         "scored_intersection_sha256"
@@ -1520,6 +1531,22 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                     payload["continuous_tables"]["all_ten_common_support"]["paired_statistics"][0][
                         "scored_intersection_count"
                     ] = True
+
+                def reordered_pair_support(payload):
+                    datasets = payload["continuous_tables"]["scored_support"]["paired_statistics"][0][
+                        "scored_intersection_datasets"
+                    ]
+                    datasets.reverse()
+
+                def deleted_pair_support(payload):
+                    del payload["continuous_tables"]["scored_support"]["paired_statistics"][0][
+                        "scored_intersection_datasets"
+                    ][0]
+
+                def foreign_pair_support(payload):
+                    payload["continuous_tables"]["scored_support"]["paired_statistics"][0][
+                        "scored_intersection_datasets"
+                    ][-1] = "foreign_dataset_antigravity"
 
                 def deleted_common_roc(payload):
                     del payload["curve_tables"]["all_ten_common_support"]["curves"]["roc"]["rows"][1]
@@ -1537,8 +1564,13 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                     ("extra macro key", extra_macro_key),
                     ("missing micro key", missing_micro_key),
                     ("duplicate metric row", duplicate_metric_row),
+                    ("appended metric row", appended_metric_row),
+                    ("deleted metric row", deleted_metric_row),
                     ("pair digest", pair_digest),
                     ("pair bool count", pair_bool_count),
+                    ("reordered pair support", reordered_pair_support),
+                    ("deleted pair support", deleted_pair_support),
+                    ("foreign pair support", foreign_pair_support),
                     ("deleted common ROC", deleted_common_roc),
                     ("duplicated common PR", duplicated_common_pr),
                 ):
@@ -1549,16 +1581,18 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                         issued, score_root, artifact_root, cache_gate = _evaluation_patches_antigravity(
                             cache_root, mutated_root
                         )
-                        with issued, score_root, artifact_root, cache_gate, self.assertRaises(ValueError):
+                        with issued, score_root, artifact_root, cache_gate, self.assertRaisesRegex(
+                            ValueError, "payload differs from verified scores and labels"
+                        ):
                             evaluation.read_evaluation_exp471_antigravity(
                                 mutated_root,
                                 session,
                                 cache,
                                 label_loader=lambda datasets: (
-                                    calls.append(datasets), _LABELS_ANTIGRAVITY
+                                    calls.append(datasets), labels
                                 )[1],
                             )
-                        self.assertEqual(calls, [(_DATASET_ANTIGRAVITY,)])
+                        self.assertEqual(calls, [datasets])
 
     def test_public_read_rejects_a_coordinated_status_swap_against_shards(self) -> None:
         """A self-consistent alternate typed payload cannot replace durable shard state."""

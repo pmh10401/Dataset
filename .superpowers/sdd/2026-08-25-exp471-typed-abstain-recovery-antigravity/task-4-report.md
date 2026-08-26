@@ -116,6 +116,35 @@ Full Exp471 suite: 213 tests in 112.575s — OK
 compileall, codemap generator/check, and git diff --check — OK
 ```
 
+## Fix Round 3: Public-Read Row and Pair-List Shape Mutations
+
+The public-read rehashed payload matrix now uses a three-dataset, complete
+synthetic cache so ordered pairwise support can be mutated meaningfully. It
+adds an appended otherwise-valid per-dataset metric row, deletion of a required
+metric row, and scored-intersection dataset-list reorder, deletion, and foreign
+dataset substitutions. Each artifact is rehashed, reaches public `read`, opens
+the label loader exactly once, and is rejected with the independent expected
+payload mismatch rather than a mutation helper error or stored-artifact schema
+branch.
+
+This exposed one production ordering defect: public read performed its deep
+artifact self-validation before comparing the independently rebuilt expected
+payload. The authority boundary now verifies canonical artifact digest,
+implementation closure, and outer source/cache/method/dataset binding first;
+when an expected artifact is supplied it then compares canonical expected
+payload and full artifact bytes before any stored-science validation. The
+source-free reconstruction path retains deep artifact validation, and evaluate
+still deep-validates its newly built expected artifact before publishing.
+
+Verification after the fix:
+
+```text
+Expanded targeted public-read matrix — OK
+Task 4 evaluator suite: 28 tests in 5.481s — OK
+Full Exp471 suite: 215 tests in 95.798s — OK
+compileall, codemap generator/check, and git diff --check — OK
+```
+
 ## Fix Round 2: Authoritative Payload Recompute on Public Read
 
 The public reopen boundary now verifies full durable score shards, opens labels

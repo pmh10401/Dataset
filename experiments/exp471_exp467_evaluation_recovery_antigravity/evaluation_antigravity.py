@@ -1993,7 +1993,31 @@ def _validate_artifact_authority_antigravity(
     *,
     expected: Exp471EvaluationArtifactAntigravity | None = None,
 ) -> None:
-    _validate_artifact_integrity_antigravity(artifact)
+    _canonical_artifact_bytes_antigravity(artifact)
+    if (
+        artifact.code_closure_sha256 != _code_closure_sha256_antigravity()
+        or artifact.method_order != METHOD_ORDER_ANTIGRAVITY
+    ):
+        raise ValueError("Exp471 evaluation frozen implementation binding differs")
+    if expected is not None:
+        if (
+            artifact.source_authority_sha256 != session.authority.authority_sha256
+            or artifact.cache_manifest_sha256 != typed.cache.manifest_sha256
+            or artifact.method_order != typed.cache.method_order
+            or artifact.dataset_order != typed.cache.dataset_order
+        ):
+            raise ValueError("Exp471 evaluation durable authority differs")
+        if (
+            canonical_json_bytes_exp471_antigravity(artifact.payload)
+            != canonical_json_bytes_exp471_antigravity(expected.payload)
+            or _canonical_artifact_bytes_antigravity(artifact)
+            != _canonical_artifact_bytes_antigravity(expected)
+        ):
+            raise ValueError(
+                "Exp471 evaluation payload differs from verified scores and labels"
+            )
+        return
+    _validated_payload_antigravity(artifact)
     expected_coverage = {"rows": _coverage_rows_antigravity(typed)}
     expected_support = _support_authority_antigravity(
         _all_ten_common_support_antigravity(typed)
@@ -2013,13 +2037,6 @@ def _validate_artifact_authority_antigravity(
         != canonical_json_bytes_exp471_antigravity(expected_support)
     ):
         raise ValueError("Exp471 evaluation durable authority differs")
-    if expected is not None and (
-        canonical_json_bytes_exp471_antigravity(artifact.payload)
-        != canonical_json_bytes_exp471_antigravity(expected.payload)
-        or _canonical_artifact_bytes_antigravity(artifact)
-        != _canonical_artifact_bytes_antigravity(expected)
-    ):
-        raise ValueError("Exp471 evaluation payload differs from verified scores and labels")
 
 
 def _artifact_from_bytes_antigravity(
@@ -2097,6 +2114,7 @@ def evaluate_exp471_antigravity(
         label_loader,
     )
     artifact = _expected_artifact_antigravity(session.authority, typed, labels)
+    _validate_artifact_integrity_antigravity(artifact)
     _validate_artifact_authority_antigravity(
         artifact, session, typed, expected=artifact
     )
