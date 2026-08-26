@@ -85,6 +85,11 @@ Task 9에서는 아래의 재개 가능한 `report` 명령을 한 번만 시작�
 않는다. 특히 `report`와 동시에 별도 `evaluate` 프로세스를 시작해서는 안
 된다.
 
+정상 완료 때 cache의 정확한 typed partition은 총 11,170개 중 scored 10,775개,
+abstained 395개, failed 0개다. 열 방법 모두의 scored 교집합(common support)은
+922개 데이터셋이다. 이 수는 연속 점수 지표의 분모이며, 전체 1,117개 데이터셋
+결정 표의 분모와 다르므로 서로 바꾸어 쓰지 않는다.
+
 ### 별도 터미널의 실시간 read-only 모니터링
 
 터미널 1에서는 위의 `report` 명령 하나를 계속 실행한다. 터미널 2에서는
@@ -103,6 +108,18 @@ exclusive lock으로 append하고 `status`는 shared lock으로 완전한 최신
 읽는다. 따라서 실행 중 진행률, 실패 수, ETA는 이 명령의 stdout JSON으로만
 확인한다. 실행 중인 `progress_antigravity.jsonl`을 `cat`, `tail` 또는 다른
 도구로 직접 읽어 잠깐 보이는 미완성 tail을 권위로 해석해서는 안 된다.
+
+다음은 `status`만 반복해 별도의 임시 모니터 로그에 남기는 안전한 예다.
+`/tmp`의 로그는 공식 산출물이 아니며, `Ctrl-C`는 이 모니터만 멈춘다.
+실행 중인 `report`에는 영향을 주지 않는다.
+
+```sh
+while true; do
+  /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python \
+    scratch/run_exp471_exp467_evaluation_recovery_antigravity.py status
+  sleep 15
+done | tee /tmp/exp471_status_monitor_antigravity.log
+```
 
 전처리가 진행 중이면 `status.preprocessing_progress`에서 `completed`, `total`,
 `percent`, `elapsed_seconds`, `eta_seconds`, `workers`를 확인한다. 첫 측정 전에는
@@ -131,7 +148,7 @@ ETA가 `null`일 수 있다. 실제 데이터의 동일성 검사에 통과하�
 | `verify-source` | `schema`, `experiment`, `command`, `authority_sha256`, `inventory_sha256`, `total_successes`, `root` |
 | `benchmark-prepare` | `schema`, `experiment`, `command`, `decision` |
 | `prepare` | `schema`, `experiment`, `command`, `manifest_sha256`, `total_shards`, `root` |
-| `status` | `schema`, `experiment`, `command`, `durable_completed`, `total`, `failures`, `remaining`, `verified_stage`, `paths`, `worker_decision`, `latest_progress`, `preprocessing_progress`, `failure` |
+| `status` | `schema`, `experiment`, `command`, `durable_completed`, `total`, `scored_shards`, `abstained_shards`, `failed_shards`, `remaining`, `remaining_identities`, `cache_complete`, `evaluation_complete`, `report_complete`, `elapsed_seconds`, `rate_per_second`, `eta_seconds`, `failures`, `verified_stage`, `paths`, `worker_decision`, `latest_progress`, `preprocessing_progress`, `failure` |
 | `report` | `schema`, `experiment`, `command`, `source_authority_sha256`, `cache_manifest_sha256`, `evaluation_sha256`, `report_manifest_sha256`, `report_root` |
 
 `benchmark-prepare.decision`에는 다음 필드가 모두 있어야 한다.
@@ -167,6 +184,15 @@ ETA가 `null`일 수 있다. 실제 데이터의 동일성 검사에 통과하�
 전에는 둘 다 `null`일 수 있다. 기본 정책은 감지된 logical CPU 수에서
 하나를 뺀 worker 수(최소 1)이며, 병렬 경로는 shard 바이트가 같고 정확한
 stage에서 1.1배 이상 빠른 경우에만 선택된다.
+
+`scored_shards`, `abstained_shards`, `failed_shards`는 cache shard의 현재
+durable 분류다. abstained는 입력 부족 때문에 점수를 만들지 않는 정상 완료이며,
+실패도 오류도 아니다. 따라서 abstained는 `durable_completed`에는 포함되지만
+`failed_shards`나 누적 `failures`에는 포함되지 않는다. `evaluation_complete`와
+`report_complete`는 source-free 구조·digest 검증을 통과한 durable 파일 또는
+complete marker를 read-only로 관찰한 값이다. source 및 TEST label에 다시
+결속한 최종 과학적 승인까지 뜻하지는 않으며, 최종 권위 확인은 `report`의
+성공 JSON과 manifest digest로 한다.
 
 다음은 구조 설명용 합성 상태 레코드다. 실제 경로, dataset 이름, label,
 digest를 포함하지 않으며 공식 산출물로 사용할 수 없다.
@@ -237,7 +263,7 @@ stage별 고정 total과 의미는 다음과 같다.
 | `verify-source` | 4,468 | 고정 Exp467 source authority가 durable하게 출판됨 |
 | `score-cache` | 11,170 | 10개 method × 1,117개 dataset shard가 durable함 |
 | `evaluation` | 10 | 고정 method 순서의 평가 산출물이 durable함 |
-| `report` | 11 | 보고서 파일 집합과 complete marker가 durable함 |
+| `report` | 15 | 14개 typed 보고서 파일과 provenance leaf가 digest로 결속됨 |
 
 로그를 직접 편집, 잘라내기, 교체, 삭제하거나 실패 수를 0으로 고치지 않는다.
 직접 읽어야 한다면 공식 프로세스가 완전히 종료된 뒤 forensic 목적으로만

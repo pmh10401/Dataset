@@ -74,7 +74,10 @@ _PROGRESS_STAGE_TOTAL_ANTIGRAVITY = {
     "verify-source": EXP467_TOTAL_SUCCESSES_ANTIGRAVITY,
     "score-cache": _TOTAL_SHARDS_ANTIGRAVITY,
     "evaluation": 10,
-    "report": 11,
+    # Fourteen typed leaves plus the bound provenance leaf are published by
+    # the Task 5 report writer.  The marker and artifact map bind, but are not
+    # themselves members of report_file_sha256.
+    "report": 15,
 }
 _PROGRESS_TERMINAL_STAGES_ANTIGRAVITY = {
     "verify-source",
@@ -87,6 +90,24 @@ _PROGRESS_ALLOWED_TRANSITIONS_ANTIGRAVITY = {
     "evaluation": {"report", "verify-source"},
     "report": {"verify-source"},
 }
+_TYPED_REPORT_ROOT_ANTIGRAVITY = "exp471_typed_report_artifacts_antigravity"
+_TYPED_REPORT_LEAVES_ANTIGRAVITY = (
+    "exp471_coverage_antigravity.csv",
+    "exp471_coverage_antigravity.json",
+    "exp471_full_population_decisions_antigravity.csv",
+    "exp471_full_population_decisions_antigravity.json",
+    "exp471_scored_support_metrics_antigravity.csv",
+    "exp471_scored_support_metrics_antigravity.json",
+    "exp471_common_support_metrics_antigravity.csv",
+    "exp471_common_support_metrics_antigravity.json",
+    "exp471_scored_support_curves_antigravity.svg",
+    "exp471_scored_support_curves_antigravity.png",
+    "exp471_common_support_curves_antigravity.svg",
+    "exp471_common_support_curves_antigravity.png",
+    "exp471_paper_report_antigravity.html",
+    "exp471_typed_report_manifest_antigravity.json",
+)
+_REPORT_PROVENANCE_NAME_ANTIGRAVITY = "exp471_report_provenance_antigravity.json"
 
 
 def _repository_root_antigravity() -> Path:
@@ -367,7 +388,7 @@ def _validate_report_terminal_artifact_antigravity() -> None:
     if (
         not isinstance(marker, dict)
         or set(marker) != marker_keys
-        or marker.get("schema") != "exp471-report-publication-antigravity.v1"
+        or marker.get("schema") != "exp471-report-publication-antigravity.v2"
         or marker.get("artifact_map") != artifact_map_name
         or canonical_json_bytes_exp471_antigravity(marker) != marker_raw
     ):
@@ -383,11 +404,18 @@ def _validate_report_terminal_artifact_antigravity() -> None:
     except (TypeError, ValueError) as error:
         raise ValueError("Exp471 progress report marker fields differ") from error
     if (
-        len(authority.report_file_sha256) != 11
+        set(authority.report_file_sha256)
+        != {
+            *(
+                f"{_TYPED_REPORT_ROOT_ANTIGRAVITY}/{name}"
+                for name in _TYPED_REPORT_LEAVES_ANTIGRAVITY
+            ),
+            _REPORT_PROVENANCE_NAME_ANTIGRAVITY,
+        }
         or not isinstance(artifact_map, dict)
         or set(artifact_map) != {"schema", "self_excluded", "files"}
         or artifact_map.get("schema")
-        != "exp471-report-artifact-map-antigravity.v1"
+        != "exp471-report-artifact-map-antigravity.v2"
         or artifact_map.get("self_excluded") != artifact_map_name
         or artifact_map.get("files") != dict(authority.report_file_sha256)
         or canonical_json_bytes_exp471_antigravity(artifact_map)
@@ -396,6 +424,28 @@ def _validate_report_terminal_artifact_antigravity() -> None:
         != authority.report_manifest_sha256
     ):
         raise ValueError("Exp471 progress report marker binding differs")
+    typed_raw = _read_configured_leaves_antigravity(
+        EXP471_REPORT_ROOT_ANTIGRAVITY / _TYPED_REPORT_ROOT_ANTIGRAVITY,
+        _TYPED_REPORT_LEAVES_ANTIGRAVITY,
+    )
+    provenance_raw = _read_configured_leaf_antigravity(
+        EXP471_REPORT_ROOT_ANTIGRAVITY, _REPORT_PROVENANCE_NAME_ANTIGRAVITY
+    )
+    typed_digests = {
+        f"{_TYPED_REPORT_ROOT_ANTIGRAVITY}/{name}": sha256(raw).hexdigest()
+        for name, raw in zip(_TYPED_REPORT_LEAVES_ANTIGRAVITY, typed_raw, strict=True)
+        if raw is not None
+    }
+    if (
+        len(typed_digests) != len(_TYPED_REPORT_LEAVES_ANTIGRAVITY)
+        or provenance_raw is None
+        or authority.report_file_sha256
+        != {
+            **typed_digests,
+            _REPORT_PROVENANCE_NAME_ANTIGRAVITY: sha256(provenance_raw).hexdigest(),
+        }
+    ):
+        raise ValueError("Exp471 progress typed report leaf binding differs")
 
 
 def _validate_terminal_progress_artifact_antigravity(stage: str) -> None:
@@ -732,7 +782,9 @@ def _coordinate_record_antigravity(dataset: str, identity: Mapping[str, object])
         type(count) is not int
         or count < 1
         or not isinstance(indices, (tuple, list))
-        or tuple(indices) != tuple(range(count))
+        or len(indices) != count
+        or any(type(index) is not int or index < 0 for index in indices)
+        or len(set(indices)) != count
     ):
         raise ValueError("Exp471 production TEST coordinates differ")
     bare = {"dataset": dataset, "count": count, "indices": list(indices)}
@@ -1049,7 +1101,11 @@ def _preflight_production_baselines_antigravity(
     )
 
 
-def _production_score_bundle_antigravity(session: object) -> Mapping[str, object]:
+def _production_score_bundle_antigravity(
+    session: object,
+    *,
+    preflight: _ProductionBaselinePreflightContextAntigravity | None = None,
+) -> Mapping[str, object]:
     """Build Task 5's verified, label-free input from issued Exp467 evidence."""
 
     from .preprocessing_antigravity import (
@@ -1071,9 +1127,16 @@ def _production_score_bundle_antigravity(session: object) -> Mapping[str, object
     )
     authority = session.authority
     catalog = session.catalog
-    baseline_context = _preflight_production_baselines_antigravity(
-        authority, catalog
+    baseline_context = (
+        _preflight_production_baselines_antigravity(authority, catalog)
+        if preflight is None
+        else preflight
     )
+    if (
+        baseline_context.datasets
+        != tuple(entry["dataset"] for entry in catalog["datasets"])
+    ):
+        raise ValueError("Exp471 preflight dataset authority differs")
     datasets = baseline_context.datasets
     values_api = _require_captured_values_api_antigravity(session)
     paper = values_api.database_config_antigravity
@@ -1260,7 +1323,10 @@ def _reopened_score_bundle_antigravity(session: object) -> Mapping[str, object]:
             shards[(method, dataset)] = shard
             record = _coordinate_record_antigravity(
                 dataset,
-                {"count": shard.test_count, "indices": list(range(shard.test_count))},
+                {
+                    "count": shard.test_count,
+                    "indices": list(shard.test_indices),
+                },
             )
             prior = coordinates.setdefault(dataset, record)
             if prior != record:
@@ -1323,23 +1389,62 @@ def _reopened_score_bundle_antigravity(session: object) -> Mapping[str, object]:
             shard = shards[(method, dataset)]
             if shard.source_manifest_sha256 != root_authority["manifest_sha256"]:
                 raise ValueError("Exp471 reopened baseline source differs")
-            scores[dataset] = {
-                # Metadata validation requires a finite nonempty TRAIN vector,
-                # but reopening never calibrates or republishes from this value.
-                "train_oof_scores": [0.0],
-                "test_indices": coordinates[dataset]["indices"],
-                "test_scores": list(shard.raw_scores),
-            }
+            if shard.status == "scored":
+                scores[dataset] = {
+                    "status": "scored",
+                    # Reopening never calibrates or republishes from this
+                    # placeholder; only strict source metadata requires it.
+                    "train_oof_scores": [0.0],
+                    "test_indices": coordinates[dataset]["indices"],
+                    "test_scores": list(shard.raw_scores),
+                }
+            elif shard.status == "abstained":
+                if shard.abstention_reason != "insufficient_train_rows":
+                    raise ValueError("Exp471 reopened baseline abstention differs")
+                scores[dataset] = {
+                    "status": "abstained",
+                    "test_indices": coordinates[dataset]["indices"],
+                    "reason": shard.abstention_reason,
+                }
+            else:
+                raise ValueError("Exp471 reopened baseline status differs")
         baselines[method] = {
             "authority": {**bare, "authority_sha256": authority_sha256},
             "scores": scores,
         }
+    condition_total = len(METHOD_ORDER_ANTIGRAVITY[:4]) * len(datasets)
+    baseline_scored = sum(
+        shards[(method, dataset)].status == "scored"
+        for method in METHOD_ORDER_ANTIGRAVITY[4:]
+        for dataset in datasets
+    )
+    baseline_abstained = sum(
+        shards[(method, dataset)].status == "abstained"
+        for method in METHOD_ORDER_ANTIGRAVITY[4:]
+        for dataset in datasets
+    )
+    if (
+        manifest.total_shards != len(METHOD_ORDER_ANTIGRAVITY) * len(datasets)
+        or manifest.failed_shards != 0
+        or manifest.scored_shards != condition_total + baseline_scored
+        or manifest.abstained_shards != baseline_abstained
+    ):
+        raise ValueError("Exp471 reopened typed cache coverage differs")
     return {
-        "schema": "exp471-verified-score-input-antigravity.v2",
+        "schema": "exp471-verified-score-input-antigravity.v3",
         "database_sha256": authority.database_sha256,
         "dataset_order": list(datasets),
         "test_coordinates": coordinates,
         "baseline_authority_sha256": baseline_inventory,
+        "coverage": {
+            "total_identities": manifest.total_shards,
+            "scored_identities": manifest.scored_shards,
+            "abstained_identities": manifest.abstained_shards,
+            "failed_identities": manifest.failed_shards,
+            "condition_scored_identities": condition_total,
+            "baseline_scored_identities": baseline_scored,
+            "baseline_abstained_identities": baseline_abstained,
+        },
         "conditions": conditions,
         "baselines": baselines,
     }
@@ -1353,6 +1458,14 @@ def _score_input_antigravity(session: object) -> Mapping[str, object]:
 
 
 class _ProductionRuntimeAntigravity:
+    def __init__(self) -> None:
+        # The preflight result is an in-memory capability for this one command.
+        # It is never serialized and prevents a second baseline-root traversal
+        # between the explicit early preflight and cache preparation.
+        self._baseline_preflight_by_session: dict[
+            int, tuple[str, _ProductionBaselinePreflightContextAntigravity]
+        ] = {}
+
     def verify_source_antigravity(self):
         from .source_authority_antigravity import (
             open_exp467_source_session_antigravity,
@@ -1362,7 +1475,16 @@ class _ProductionRuntimeAntigravity:
         holder: dict[str, object] = {}
 
         def score_reader():
-            return _score_input_antigravity(holder["session"])
+            session = holder["session"]
+            prepared = self._baseline_preflight_by_session.get(id(session))
+            if prepared is not None:
+                authority_sha256, preflight = prepared
+                if authority_sha256 != session.authority.authority_sha256:
+                    raise ValueError("Exp471 preflight source authority differs")
+                return _production_score_bundle_antigravity(
+                    session, preflight=preflight
+                )
+            return _score_input_antigravity(session)
 
         def label_reader():
             from experiments.paper_public_baselines.label_access import (
@@ -1394,6 +1516,18 @@ class _ProductionRuntimeAntigravity:
             started,
         )
         return session
+
+    def preflight_baselines_antigravity(self, session):
+        """Check frozen baseline authority before proposal preprocessing begins."""
+
+        context = _preflight_production_baselines_antigravity(
+            session.authority, session.catalog
+        )
+        self._baseline_preflight_by_session[id(session)] = (
+            session.authority.authority_sha256,
+            context,
+        )
+        return context
 
     def open_cache_antigravity(self, session):
         from .score_cache_antigravity import open_complete_score_cache_antigravity
@@ -1496,21 +1630,25 @@ class _ProductionRuntimeAntigravity:
             if cache_anchor is not None:
                 cache_anchor.close_antigravity()
                 cache_anchor = None
-            evaluation_present = (
-                _read_configured_leaf_antigravity(
-                    EXP471_EVALUATION_ROOT_ANTIGRAVITY,
-                    "evaluation_antigravity.json",
-                )
-                is not None
+            evaluation_raw = _read_configured_leaf_antigravity(
+                EXP471_EVALUATION_ROOT_ANTIGRAVITY,
+                "evaluation_antigravity.json",
             )
+            evaluation_present = evaluation_raw is not None
+            if evaluation_raw is not None:
+                from .evaluation_antigravity import _artifact_from_bytes_antigravity
+
+                evaluation_artifact = _artifact_from_bytes_antigravity(evaluation_raw)
+                if tuple(evaluation_artifact.method_order) != METHOD_ORDER_ANTIGRAVITY:
+                    raise ValueError("Exp471 status evaluation artifact methods differ")
             _validate_status_root_generation_antigravity(root_anchor)
-            report_present = (
-                _read_configured_leaf_antigravity(
-                    EXP471_REPORT_ROOT_ANTIGRAVITY,
-                    ".exp471_report_complete_antigravity.json",
-                )
-                is not None
+            report_marker = _read_configured_leaf_antigravity(
+                EXP471_REPORT_ROOT_ANTIGRAVITY,
+                ".exp471_report_complete_antigravity.json",
             )
+            report_present = report_marker is not None
+            if report_present:
+                _validate_report_terminal_artifact_antigravity()
             _validate_status_root_generation_antigravity(root_anchor)
             latest = _latest_progress_antigravity()
             _validate_status_root_generation_antigravity(root_anchor)
@@ -1526,12 +1664,48 @@ class _ProductionRuntimeAntigravity:
             failure_count = (
                 0 if latest is None else int(latest.get("failures", 0))
             )
+            preprocessing_running = (
+                preprocessing is not None
+                and preprocessing.get("completed") != preprocessing.get("total")
+            )
+            timing = preprocessing if preprocessing_running else None
+            if (
+                latest is not None
+                and latest.get("stage") == "score-cache"
+                and latest.get("durable_completed") == completed
+            ):
+                timing = latest
+            if timing is None and cache["complete"]:
+                elapsed = None
+                eta = 0.0
+            else:
+                elapsed = None if timing is None else timing.get("elapsed_seconds")
+                eta = None if timing is None else timing.get("eta_seconds")
+            rate = None
+            if (
+                type(elapsed) in (int, float)
+                and float(elapsed) > 0.0
+                and timing is not None
+            ):
+                timing_completed = timing.get("completed", timing.get("durable_completed"))
+                if type(timing_completed) is int and timing_completed >= 0:
+                    rate = float(timing_completed) / float(elapsed)
             result = {
                 "schema": "exp471-status-antigravity.v1",
                 "durable_completed": completed,
                 "total": expected_total,
+                "scored_shards": int(cache["scored"]),
+                "abstained_shards": int(cache["abstained"]),
+                "failed_shards": int(cache["failed"]),
                 "failures": failure_count,
                 "remaining": max(0, expected_total - completed),
+                "remaining_identities": max(0, expected_total - completed),
+                "cache_complete": bool(cache["complete"]),
+                "evaluation_complete": evaluation_present,
+                "report_complete": report_present,
+                "elapsed_seconds": elapsed,
+                "rate_per_second": rate,
+                "eta_seconds": eta,
                 "verified_stage": (
                     "report-present-unverified"
                     if report_present
@@ -1583,6 +1757,7 @@ def _report_command_antigravity(runtime: object) -> Mapping[str, object]:
     try:
         cache = runtime.open_cache_antigravity(session)
     except FileNotFoundError:
+        runtime.preflight_baselines_antigravity(session)
         cache = runtime.prepare_antigravity(
             session,
             _runtime_progress_antigravity(runtime),

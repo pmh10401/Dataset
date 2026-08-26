@@ -3490,6 +3490,9 @@ class _LifecycleRuntimeAntigravity:
         self.calls.append("benchmark-prepare")
         return {"selected_workers": 1, "byte_parity": True}
 
+    def preflight_baselines_antigravity(self, session):
+        self.calls.append("baseline-preflight")
+
     def prepare_antigravity(self, session, progress):
         self.calls.append("prepare")
         self.cache_complete = True
@@ -3684,7 +3687,7 @@ class CliTestsAntigravity(unittest.TestCase):
                             cli._latest_progress_antigravity()
 
     def test_progress_rejects_exact_terminal_report_without_durable_marker(self) -> None:
-        """An exact path and 11/11 count cannot invent terminal authority."""
+        """An exact path and 15/15 count cannot invent terminal authority."""
 
         with tempfile.TemporaryDirectory(
             prefix="exp471_progress_terminal_marker_antigravity_"
@@ -3696,8 +3699,8 @@ class CliTestsAntigravity(unittest.TestCase):
             record = {
                 "schema": "exp471-progress-antigravity.v1",
                 "stage": "report",
-                "durable_completed": 11,
-                "total": 11,
+                "durable_completed": 15,
+                "total": 15,
                 "failures": 0,
                 "attempts": 1,
                 "remaining": 0,
@@ -3749,6 +3752,16 @@ class CliTestsAntigravity(unittest.TestCase):
             self.assertEqual(stderr.getvalue(), "")
             payload = json.loads(stdout.getvalue())
             self.assertEqual(payload["durable_completed"], 0)
+            self.assertEqual(payload["scored_shards"], 0)
+            self.assertEqual(payload["abstained_shards"], 0)
+            self.assertEqual(payload["failed_shards"], 0)
+            self.assertEqual(payload["remaining_identities"], 11_170)
+            self.assertFalse(payload["cache_complete"])
+            self.assertFalse(payload["evaluation_complete"])
+            self.assertFalse(payload["report_complete"])
+            self.assertIsNone(payload["elapsed_seconds"])
+            self.assertIsNone(payload["rate_per_second"])
+            self.assertIsNone(payload["eta_seconds"])
             self.assertEqual(payload["latest_progress"], None)
             self.assertIn("preprocessing_progress", payload)
             self.assertEqual(payload.get("preprocessing_progress"), None)
@@ -3757,6 +3770,72 @@ class CliTestsAntigravity(unittest.TestCase):
             self.assertFalse(os.path.lexists(score))
             self.assertFalse(os.path.lexists(evaluation_root))
             self.assertFalse(os.path.lexists(report_root))
+
+    def test_status_uses_active_cache_timing_after_preprocessing_finished(self) -> None:
+        """A completed preprocessing record cannot mask active cache ETA or rate."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_status_cache_timing_antigravity_"
+        ) as directory:
+            root = Path(directory).resolve()
+            score = root / "score_cache_antigravity"
+            score.mkdir()
+            evaluation_root = root / "evaluation_antigravity"
+            report_root = root / "report_antigravity"
+            cache = {
+                "complete": False,
+                "durable_completed": 5,
+                "total_shards": None,
+                "scored": 4,
+                "abstained": 1,
+                "failed": 0,
+                "benchmark_decision": None,
+                "execution_decision": None,
+            }
+            preprocessing = {
+                "completed": 4_468,
+                "total": 4_468,
+                "elapsed_seconds": 80.0,
+                "eta_seconds": 0.0,
+            }
+            latest = {
+                "stage": "score-cache",
+                "durable_completed": 5,
+                "elapsed_seconds": 2.0,
+                "eta_seconds": 4_466.0,
+                "failures": 0,
+            }
+            with ExitStack() as stack:
+                for name, value in (
+                    ("EXP471_ROOT_ANTIGRAVITY", root),
+                    ("EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", score),
+                    ("EXP471_EVALUATION_ROOT_ANTIGRAVITY", evaluation_root),
+                    ("EXP471_REPORT_ROOT_ANTIGRAVITY", report_root),
+                ):
+                    stack.enter_context(mock.patch.object(cli, name, value))
+                stack.enter_context(
+                    mock.patch(
+                        "experiments.exp471_exp467_evaluation_recovery_antigravity.score_cache_antigravity.status_score_cache_antigravity",
+                        return_value=cache,
+                    )
+                )
+                stack.enter_context(
+                    mock.patch(
+                        "experiments.exp471_exp467_evaluation_recovery_antigravity.preprocessing_antigravity.latest_preprocessing_progress_antigravity",
+                        return_value=preprocessing,
+                    )
+                )
+                stack.enter_context(
+                    mock.patch.object(cli, "_latest_progress_antigravity", return_value=latest)
+                )
+                payload = cli._ProductionRuntimeAntigravity().status_antigravity()
+            self.assertEqual(payload["scored_shards"], 4)
+            self.assertEqual(payload["abstained_shards"], 1)
+            self.assertEqual(payload["failed_shards"], 0)
+            self.assertEqual(payload["elapsed_seconds"], 2.0)
+            self.assertEqual(payload["rate_per_second"], 2.5)
+            self.assertEqual(payload["eta_seconds"], 4_466.0)
+            self.assertEqual(payload["preprocessing_progress"], preprocessing)
 
     def test_missing_directory_revalidates_opened_prefix_generation(self) -> None:
         """ENOENT must not hide replacement of an already opened root prefix."""
@@ -4236,6 +4315,85 @@ class CliTestsAntigravity(unittest.TestCase):
         self.assertEqual(reopen.call_count, 1)
         self.assertEqual(prepare.call_count, 0)
 
+    def test_reopened_typed_cache_preserves_v3_abstentions_without_preprocessing(self) -> None:
+        """A durable mixed cache rebuilds the strict v3 input without raw scoring."""
+
+        dataset = "public_literal_dataset"
+        authority = SimpleNamespace(
+            authority_sha256="a" * 64,
+            database_sha256="b" * 64,
+            condition_manifest_sha256={method: "c" * 64 for method in METHOD_ORDER_ANTIGRAVITY[:4]},
+        )
+        session = SimpleNamespace(authority=authority)
+        manifest = SimpleNamespace(
+            source_authority_sha256=authority.authority_sha256,
+            method_order=METHOD_ORDER_ANTIGRAVITY,
+            dataset_order=(dataset,),
+            cache_context_sha256="d" * 64,
+            scored_shards=9,
+            abstained_shards=1,
+            failed_shards=0,
+            total_shards=10,
+            shard_sha256={
+                f"{method}:{dataset}": f"{index:x}" * 64
+                for index, method in enumerate(METHOD_ORDER_ANTIGRAVITY)
+            },
+        )
+
+        def shard(_root, method, observed_dataset):
+            self.assertEqual(observed_dataset, dataset)
+            abstained = method == METHOD_ORDER_ANTIGRAVITY[-1]
+            return SimpleNamespace(
+                envelope_sha256=manifest.shard_sha256[f"{method}:{dataset}"],
+                cache_context_sha256=manifest.cache_context_sha256,
+                source_authority_sha256=authority.authority_sha256,
+                source_manifest_sha256=(
+                    authority.condition_manifest_sha256[method]
+                    if method in authority.condition_manifest_sha256
+                    else cli.EXP471_BASELINE_ROOT_AUTHORITY_ANTIGRAVITY[
+                        cli.EXP471_BASELINE_ROOT_BY_METHOD_ANTIGRAVITY[method]
+                    ]["manifest_sha256"]
+                ),
+                test_count=2,
+                test_indices=(4, 7),
+                status="abstained" if abstained else "scored",
+                raw_scores=() if abstained else (0.1, 0.9),
+                abstention_reason=("insufficient_train_rows" if abstained else None),
+            )
+
+        with mock.patch(
+            "experiments.exp471_exp467_evaluation_recovery_antigravity.cache_artifacts_antigravity.read_cache_manifest_antigravity",
+            return_value=manifest,
+        ), mock.patch(
+            "experiments.exp471_exp467_evaluation_recovery_antigravity.cache_artifacts_antigravity.read_score_shard_antigravity",
+            side_effect=shard,
+        ), mock.patch.object(
+            cli, "_production_score_bundle_antigravity", side_effect=AssertionError("preprocessing repeated")
+        ):
+            reopened = cli._reopened_score_bundle_antigravity(session)
+        self.assertEqual(reopened["schema"], "exp471-verified-score-input-antigravity.v3")
+        self.assertEqual(
+            reopened["coverage"],
+            {
+                "total_identities": 10,
+                "scored_identities": 9,
+                "abstained_identities": 1,
+                "failed_identities": 0,
+                "condition_scored_identities": 4,
+                "baseline_scored_identities": 5,
+                "baseline_abstained_identities": 1,
+            },
+        )
+        abstained = reopened["baselines"][METHOD_ORDER_ANTIGRAVITY[-1]]["scores"][dataset]
+        self.assertEqual(
+            abstained,
+            {
+                "status": "abstained",
+                "test_indices": [4, 7],
+                "reason": "insufficient_train_rows",
+            },
+        )
+
     def test_production_scores_use_only_issued_captured_values_api(self) -> None:
         """A live-worktree loader must never enter captured score composition."""
 
@@ -4437,6 +4595,7 @@ class CliTestsAntigravity(unittest.TestCase):
             [
                 "verify-source",
                 "open-cache",
+                "baseline-preflight",
                 "prepare",
                 "open-evaluation",
                 "evaluate",
@@ -4449,8 +4608,36 @@ class CliTestsAntigravity(unittest.TestCase):
             ],
         )
         self.assertEqual(runtime.calls.count("prepare"), 1)
+        self.assertEqual(runtime.calls.count("baseline-preflight"), 1)
         self.assertEqual(runtime.calls.count("evaluate"), 1)
         self.assertEqual(runtime.calls.count("render"), 1)
+
+    def test_invalid_baseline_stops_before_proposal_cache_labels_and_report(self) -> None:
+        """The report command checks baselines before every cache-building action."""
+
+        runtime = _LifecycleRuntimeAntigravity()
+        runtime.preflight_baselines_antigravity = mock.Mock(
+            side_effect=ValueError("public invalid baseline")
+        )
+        stdout, stderr = io.StringIO(), io.StringIO()
+        self.assertEqual(
+            main_antigravity(
+                ["report"], runtime=runtime, stdout=stdout, stderr=stderr
+            ),
+            2,
+        )
+        self.assertEqual(stdout.getvalue(), "")
+        self.assertEqual(
+            runtime.calls,
+            ["verify-source", "open-cache"],
+        )
+        runtime.preflight_baselines_antigravity.assert_called_once_with(
+            runtime.session
+        )
+        self.assertNotIn("prepare", runtime.calls)
+        self.assertNotIn("evaluate", runtime.calls)
+        self.assertNotIn("report", runtime.calls)
+        self.assertEqual(json.loads(stderr.getvalue())["command"], "report")
 
     def test_fixed_commands_route_literal_json_and_status_starts_no_work(self) -> None:
         """Status is observational and every accepted command is a fixed literal."""

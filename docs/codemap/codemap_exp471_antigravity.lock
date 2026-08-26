@@ -16,7 +16,7 @@
   "module_fingerprints": {
     "experiments/exp471_exp467_evaluation_recovery_antigravity/baseline_preflight_antigravity.py": "73206a233696eb54f0b893499751f3a68e57bdc0ea39b7df8ef170c7de01eca8",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py": "e66bac1d1ae956d97e3bc161a55098e1ad134c4219bea87f279572541ca531d9",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py": "0482036809f717be7bdaba8a13b70b189a93893ead2f3309c258ea82d7ee8309",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py": "6c0a96803e557b1488c440f8b022c526c654bc11cad24eaf04ac8cb3af3feb2f",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py": "8805eccf8153cc6f43ac9de1d7b5e197bf4fa5dfbe17674431bfb188d92de01a",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py": "b7f78427bfcec0d224593f7359e2d6b7d184bb4f969f51bdb432a579bb024870",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py": "f9b5ab5626d659176c164ac176de0ce22092e5d66a322c2c6011bfc67f74decc",
@@ -31,7 +31,7 @@
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py": "2e1130bdb320324fd5e6a71b124b761ffc3e3b002ae7266f4d0516dabbe31e07",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py": "1812ad52e1fdaa7679faca90ce6a63b078191baa49c30bee8b40afb26d2353c5",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py": "1a33e37176492865c1e866b7f4e5a78be7eb68b2cfcdbd702dcfaea4446ababb",
-    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py": "623763c2c173513a8af7974bd32f20e3c81bafef507aec4cd39452f3c0c15130",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py": "a97880313bf9c0c6ba3fc2a754ecce101f277c88e19e8c43ea29c08069ef4f42",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py": "b33dc6577ea766235a068b6d2f90768e89fa370cc60d93f80c533104dec97d69",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py": "d60a2716588fc01752c883c743b5ca54a4cbd7d3e3698ed5fd0332b40cf51799",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py": "8204264e0e5290cd3e32e8be77c3ef95a5c12eb51b159f191ed6dfbefd974daa",
