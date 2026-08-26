@@ -38,6 +38,7 @@ from experiments.exp471_exp467_evaluation_recovery_antigravity.contracts_antigra
 from experiments.exp471_exp467_evaluation_recovery_antigravity.source_authority_antigravity import (
     Exp471SourceSessionAntigravity,
 )
+from experiments.paper_public_baselines.config import ALPHAS
 
 
 _DATASET_ANTIGRAVITY = "public_literal_dataset"
@@ -208,6 +209,83 @@ def _score_shard_antigravity(
             canonical_json_bytes_exp471_antigravity(envelope)
         ).hexdigest(),
     )
+
+
+def _durable_typed_shard_antigravity(
+    authority: Exp471SourceAuthorityAntigravity,
+    cache_context: str,
+    method: str,
+    dataset: str,
+    *,
+    abstained: bool,
+) -> Exp471ScoreShardAntigravity:
+    """Construct a minimal public v2 shard, including a real empty abstention."""
+
+    offset = METHOD_ORDER_ANTIGRAVITY.index(method) / 100.0
+    payload = {
+        "source_authority_sha256": authority.authority_sha256,
+        "cache_context_sha256": cache_context,
+        "method": method,
+        "dataset": dataset,
+        "status": "abstained" if abstained else "scored",
+        "test_count": 2,
+        "test_indices": [0, 1],
+        "raw_scores": [] if abstained else [0.05 + offset, 0.75 + offset],
+        "micro_scores": [] if abstained else [0.10 + offset, 0.90 + offset],
+        "abstention_reason": "insufficient_train_rows" if abstained else None,
+        "source_manifest_sha256": sha256(
+            f"public durable source {method}/{dataset}".encode("ascii")
+        ).hexdigest(),
+    }
+    digest_payload = {"schema": "exp471-score-cache-shard-antigravity.v2", **payload}
+    payload_sha256 = sha256(canonical_json_bytes_exp471_antigravity(digest_payload)).hexdigest()
+    envelope = {**digest_payload, "payload_sha256": payload_sha256}
+    return Exp471ScoreShardAntigravity(
+        **payload,
+        payload_sha256=payload_sha256,
+        envelope_sha256=sha256(canonical_json_bytes_exp471_antigravity(envelope)).hexdigest(),
+    )
+
+
+def _publish_durable_typed_cache_antigravity(
+    root: Path,
+    authority: Exp471SourceAuthorityAntigravity,
+    datasets: tuple[str, ...],
+    abstained: set[tuple[str, str]],
+) -> Exp471ScoreCacheManifestAntigravity:
+    """Publish a synthetic complete cache whose abstentions are durable v2 shards."""
+
+    cache_context = sha256(b"public durable typed cache context").hexdigest()
+    shard_digests: dict[str, str] = {}
+    for method in METHOD_ORDER_ANTIGRAVITY:
+        for dataset in datasets:
+            shard = _durable_typed_shard_antigravity(
+                authority, cache_context, method, dataset,
+                abstained=(method, dataset) in abstained,
+            )
+            cache_artifacts.publish_score_shard_antigravity(root, shard)
+            shard_digests[f"{method}:{dataset}"] = shard.envelope_sha256
+    total = len(METHOD_ORDER_ANTIGRAVITY) * len(datasets)
+    abstained_count = len(abstained)
+    bare = {
+        "source_authority_sha256": authority.authority_sha256,
+        "cache_context_sha256": cache_context,
+        "method_order": list(METHOD_ORDER_ANTIGRAVITY),
+        "dataset_order": list(datasets),
+        "shard_sha256": shard_digests,
+        "total_shards": total,
+        "scored_shards": total - abstained_count,
+        "abstained_shards": abstained_count,
+        "failed_shards": 0,
+    }
+    manifest = Exp471ScoreCacheManifestAntigravity(
+        **bare,
+        manifest_sha256=sha256(canonical_json_bytes_exp471_antigravity({
+            "schema": "exp471-score-cache-manifest-antigravity.v2", **bare,
+        })).hexdigest(),
+    )
+    cache_artifacts.publish_cache_manifest_antigravity(root, manifest)
+    return manifest
 
 
 def _evaluation_patches_antigravity(cache_root: Path, evaluation_root: Path):
@@ -1211,6 +1289,263 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                         )[1],
                     )
                 self.assertEqual(calls, [(_DATASET_ANTIGRAVITY,)])
+
+    def test_label_coordinates_require_exact_builtin_integer_identity(self) -> None:
+        """Complete typed caches reject non-exact TEST coordinates after one load."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_evaluation_label_coordinates_antigravity_"
+        ) as temporary:
+            base = Path(temporary).resolve()
+            cache_root = base / "score_cache_antigravity"
+            authority = _authority_antigravity()
+            session = _session_antigravity(authority)
+            cache = _publish_cache_antigravity(cache_root, authority)
+            invalid_rows = (
+                ((False, 0), (1, 1)),
+                ((0.0, 0), (1, 1)),
+                ((-1, 0), (1, 1)),
+                ((0, 0), (0, 1)),
+                ((1, 0), (0, 1)),
+            )
+            for index, rows in enumerate(invalid_rows):
+                calls: list[tuple[str, ...]] = []
+                issued, score_root, artifact_root, cache_gate = _evaluation_patches_antigravity(
+                    cache_root, base / f"invalid_label_{index}_antigravity"
+                )
+                with issued, score_root, artifact_root, cache_gate, self.assertRaisesRegex(
+                    ValueError, "TEST label identity"
+                ):
+                    evaluation.evaluate_exp471_antigravity(
+                        session,
+                        cache,
+                        label_loader=lambda datasets, rows=rows: (
+                            calls.append(datasets), {_DATASET_ANTIGRAVITY: rows}
+                        )[1],
+                    )
+                self.assertEqual(calls, [(_DATASET_ANTIGRAVITY,)])
+                self.assertFalse(
+                    (base / f"invalid_label_{index}_antigravity" / "evaluation_antigravity.json").exists()
+                )
+
+    def test_rehashed_v2_scientific_and_decision_tampering_fails_closed(self) -> None:
+        """A rehashed v2 artifact cannot alter semantic, pairwise, or decision evidence."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_evaluation_v2_tamper_antigravity_"
+        ) as temporary:
+            base = Path(temporary).resolve()
+            cache_root = base / "score_cache_antigravity"
+            authority = _authority_antigravity()
+            session = _session_antigravity(authority)
+            datasets = ("tamper_0_antigravity", "tamper_1_antigravity")
+            cache = _publish_durable_typed_cache_antigravity(
+                cache_root, authority, datasets, {("B", datasets[0])}
+            )
+            issued, score_root, artifact_root, cache_gate = _evaluation_patches_antigravity(
+                cache_root, base / "evaluation_antigravity"
+            )
+            with issued, score_root, artifact_root, cache_gate:
+                artifact = evaluation.evaluate_exp471_antigravity(
+                    session,
+                    cache,
+                    label_loader=lambda _datasets: {
+                        dataset: ((0, 0), (1, 1)) for dataset in datasets
+                    },
+                )
+
+        def macro_denominator(payload):
+            payload["continuous_tables"]["scored_support"]["macro"]["A"][
+                "average_precision_denominator"
+            ] = 0
+
+        def pairwise_support(payload):
+            payload["continuous_tables"]["scored_support"]["paired_statistics"][0][
+                "dataset_order"
+            ] = []
+
+        def pairwise_intersection(payload):
+            payload["continuous_tables"]["all_ten_common_support"]["paired_statistics"][0][
+                "scored_intersection_count"
+            ] = 0
+
+        def micro_denominator(payload):
+            payload["continuous_tables"]["all_ten_common_support"]["micro"]["A"][
+                "row_denominator"
+            ] = 0
+
+        def null_exclusion(payload):
+            payload["continuous_tables"]["scored_support"]["per_dataset"][2][
+                "average_precision_exclusion"
+            ] = "no_positive_test_labels"
+
+        def continuous_nulls(payload):
+            payload["continuous_tables"]["scored_support"]["semantic_nulls"][0][
+                "reason"
+            ] = "wrong_reason"
+
+        def curve_nulls(payload):
+            payload["curve_tables"]["scored_support"]["semantic_nulls"][0]["metric"] = "precision_recall"
+
+        def common_curve_nulls(payload):
+            payload["curve_tables"]["all_ten_common_support"]["semantic_nulls"].append(
+                {"method": "A", "dataset": datasets[1], "metric": "roc", "reason": "insufficient_train_rows"}
+            )
+
+        def decision_protocol(payload):
+            payload["decision_tables"]["full_population"]["dataset_rows"][0]["protocol"] = "conformal"
+
+        def decision_status_reason(payload):
+            row = payload["decision_tables"]["full_population"]["dataset_rows"][2]
+            row["status"] = "scored"
+            row["abstention_reason"] = None
+
+        def decision_alert(payload):
+            payload["decision_tables"]["full_population"]["dataset_rows"][0]["alert_count"] = 99
+
+        def decision_confusion(payload):
+            payload["decision_tables"]["full_population"]["dataset_rows"][0]["tp"] += 1
+
+        def decision_derived(payload):
+            payload["decision_tables"]["full_population"]["dataset_rows"][0]["f1"] = 0.25
+
+        def decision_summary(payload):
+            payload["decision_tables"]["full_population"]["summary_rows"][0]["coverage"] = 0.5
+
+        def decision_summary_support(payload):
+            payload["decision_tables"]["full_population"]["summary_rows"][0]["support_count"] = 0
+
+        def decision_summary_alerts(payload):
+            payload["decision_tables"]["full_population"]["summary_rows"][0]["alert_count"] = 99
+
+        def decision_summary_counts(payload):
+            payload["decision_tables"]["full_population"]["summary_rows"][0]["tn"] = 0
+
+        for name, mutate in (
+            ("macro denominator", macro_denominator),
+            ("pairwise support", pairwise_support),
+            ("pairwise intersection", pairwise_intersection),
+            ("micro denominator", micro_denominator),
+            ("null exclusion", null_exclusion),
+            ("continuous semantic null", continuous_nulls),
+            ("curve semantic null", curve_nulls),
+            ("common curve semantic null", common_curve_nulls),
+            ("decision protocol", decision_protocol),
+            ("decision status/reason", decision_status_reason),
+            ("decision alert", decision_alert),
+            ("decision confusion", decision_confusion),
+            ("decision derived", decision_derived),
+            ("decision summary", decision_summary),
+            ("decision summary support", decision_summary_support),
+            ("decision summary alerts", decision_summary_alerts),
+            ("decision summary counts", decision_summary_counts),
+        ):
+            with self.subTest(name=name):
+                tampered = _digest_recomputed_artifact_antigravity(artifact, mutate)
+                with self.assertRaises(ValueError):
+                    evaluation.reconstruct_frozen_evaluation_exp471_antigravity(tampered)
+
+    def test_public_durable_abstentions_preserve_typed_supports(self) -> None:
+        """Public evaluate/read retain real empty shards and their distinct supports."""
+
+        datasets = tuple(f"durable_{index}_antigravity" for index in range(4))
+        abstained = {
+            ("B", datasets[0]),
+            ("C", datasets[1]),
+            ("D", datasets[2]),
+        }
+        labels = {dataset: ((0, 0), (1, 1)) for dataset in datasets}
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_evaluation_durable_abstention_antigravity_"
+        ) as temporary:
+            base = Path(temporary).resolve()
+            cache_root = base / "score_cache_antigravity"
+            evaluation_root = base / "evaluation_antigravity"
+            authority = _authority_antigravity()
+            session = _session_antigravity(authority)
+            cache = _publish_durable_typed_cache_antigravity(
+                cache_root, authority, datasets, abstained
+            )
+            issued, score_root, artifact_root, cache_gate = _evaluation_patches_antigravity(
+                cache_root, evaluation_root
+            )
+            with issued, score_root, artifact_root, cache_gate:
+                artifact = evaluation.evaluate_exp471_antigravity(
+                    session, cache, label_loader=lambda _datasets: labels
+                )
+                reopened = evaluation.read_evaluation_exp471_antigravity(
+                    evaluation_root, session, cache
+                )
+        self.assertEqual(reopened, artifact)
+        payload = artifact.payload
+        self.assertEqual(
+            payload["support_authority"]["all_ten_common_support_datasets"], (datasets[3],)
+        )
+        self.assertEqual(
+            payload["support_authority"]["all_ten_common_support_sha256"],
+            sha256(canonical_json_bytes_exp471_antigravity([datasets[3]])).hexdigest(),
+        )
+        metrics = payload["continuous_tables"]["scored_support"]
+        row = next(
+            row for row in metrics["per_dataset"]
+            if (row["method"], row["dataset"]) == ("B", datasets[0])
+        )
+        self.assertEqual(
+            (row["average_precision"], row["auroc"], row["average_precision_exclusion"], row["auroc_exclusion"]),
+            (None, None, "insufficient_train_rows", "insufficient_train_rows"),
+        )
+        self.assertEqual(metrics["micro"]["B"]["row_denominator"], 6)
+        self.assertEqual(
+            [entry["metric"] for entry in metrics["semantic_nulls"]
+            if (entry["method"], entry["dataset"]) == ("B", datasets[0])
+            ],
+            ["average_precision", "auroc", "roc", "precision_recall"],
+        )
+        decision_rows = [
+            row for row in payload["decision_tables"]["full_population"]["dataset_rows"]
+            if (row["method"], row["dataset"]) == ("B", datasets[0])
+        ]
+        self.assertEqual(len(decision_rows), 1)
+        for row in decision_rows:
+            self.assertEqual(row["status"], "abstained")
+            self.assertEqual(row["alerts"], ())
+            self.assertEqual((row["tp"], row["fp"], row["fn"], row["tn"]), (0, 0, 1, 1))
+        curves = payload["curve_tables"]["scored_support"]
+        self.assertEqual(
+            curves["semantic_nulls"],
+            tuple(
+                {"method": method, "dataset": dataset, "metric": metric, "reason": "insufficient_train_rows"}
+                for method in METHOD_ORDER_ANTIGRAVITY
+                for dataset in datasets
+                if (method, dataset) in abstained
+                for metric in ("roc", "precision_recall")
+            ),
+        )
+        self.assertEqual(
+            payload["curve_tables"]["all_ten_common_support"]["semantic_nulls"], ()
+        )
+        pair = next(
+            row for row in metrics["paired_statistics"]
+            if (row["comparison"], row["metric"]) == ("B-A", "average_precision")
+        )
+        self.assertEqual(pair["scored_intersection_datasets"], datasets[1:])
+        self.assertEqual(pair["scored_intersection_count"], 3)
+
+    def test_matched_budget_ties_are_deterministic(self) -> None:
+        """Matched-budget selection keeps the frozen test-index tie ordering."""
+
+        first = evaluation._decision_alerts_antigravity(
+            method="knn_distance", protocol="matched_budget", alpha=None,
+            raw_scores=(0.5, 0.5, 0.1), micro_scores=(0.0, 0.0, 0.0),
+            test_indices=(9, 3, 7), candidate_c_alert_count=1,
+        )
+        second = evaluation._decision_alerts_antigravity(
+            method="knn_distance", protocol="matched_budget", alpha=None,
+            raw_scores=(0.5, 0.5, 0.1), micro_scores=(0.0, 0.0, 0.0),
+            test_indices=(9, 3, 7), candidate_c_alert_count=1,
+        )
+        self.assertEqual(first, second)
+        self.assertEqual(first, (3,))
 
     def test_typed_abstention_has_no_alerts_confusion_and_semantic_nulls(self) -> None:
         """Typed abstention is a full-population no-alert, never a fake score."""

@@ -79,3 +79,39 @@ No TEST labels, official cache/results, original data, secrets, external
 services, or official processes were read or modified. The evaluator is pure
 orchestration/metric routing; it does not alter CPU provenance or introduce a
 PyTorch, MLX, or MPS workload.
+
+## Fix Round 1: Durable Reopen Scientific Validation
+
+The v2 reopen boundary now reconstructs and validates the complete scientific
+payload rather than only its outer schema. Continuous supports verify exact
+method/dataset order, finite-or-semantic-null pairing, macro and micro
+denominators, paired metric relations, and ordered pairwise scored-intersection
+lists/counts/digests. Curve supports verify the frozen FPR/TPR and
+recall/precision axes plus exact ROC/PR semantic-null placement. Full-population
+decisions verify deterministic method/protocol/alpha/dataset order, typed
+status/reason, no-alert abstentions, confusion support, derived metrics, and
+all summary support/alert/coverage/count relations. The v2 artifact retains
+pairwise support authority while public reconstruction returns the unchanged
+Exp450 metric-table schema.
+
+Adversarial RED first confirmed that both test-label coordinates and rehashed
+payload mutations were previously accepted. The added tests now reject builtin
+`bool`/`float`, negative, duplicate, and reordered label coordinates after
+exactly one loader call and before publication. A 17-case rehashed tamper
+matrix covers both continuous supports where applicable, semantic-null lists,
+pairwise order/count, decision fields, and summaries.
+
+A public synthetic durable v2 fixture has real empty abstained B/C/D shards on
+different datasets. Public `evaluate` and `read` prove no-alert full-population
+confusion, exact four-metric semantic nulls, scored-row denominators, ordered
+all-ten intersection/digest, and direct B--A pairwise support. A matched-budget
+tie test confirms deterministic frozen selection.
+
+Verification after the fix:
+
+```text
+Targeted adversarial tests: 4 tests — OK
+Task 4 evaluator suite: 26 tests in 2.504s — OK
+Full Exp471 suite: 213 tests in 112.575s — OK
+compileall, codemap generator/check, and git diff --check — OK
+```

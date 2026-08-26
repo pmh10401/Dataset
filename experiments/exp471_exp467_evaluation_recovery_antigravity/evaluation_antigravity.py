@@ -366,7 +366,12 @@ def _normalize_labels_antigravity(
                 if test_indices is None
                 else test_indices[dataset]
             )
-            if indices != expected:
+            if (
+                len(indices) != len(expected)
+                or any(type(index) is not int or index < 0 for index in indices)
+                or len(set(indices)) != len(indices)
+                or indices != expected
+            ):
                 raise ValueError("Exp471 evaluation TEST label identity differs")
         else:
             labels = rows
@@ -693,6 +698,32 @@ def _continuous_table_record_antigravity(
             )
         rows.append(row)
     record["per_dataset"] = rows
+    paired: list[dict[str, object]] = []
+    for original in record["paired_statistics"]:
+        row = dict(original)
+        comparison = row["comparison"]
+        assert isinstance(comparison, str)
+        variant, reference = comparison.split("-", maxsplit=1)
+        if reference != "A" or variant not in {"B", "C", "D"}:
+            raise ValueError("Exp471 evaluation frozen pair identity differs")
+        table_datasets = tuple(
+            str(candidate["dataset"])
+            for candidate in rows
+            if candidate["method"] == "A"
+        )
+        pair_support = tuple(
+            dataset
+            for dataset in table_datasets
+            if typed.status[reference][dataset] == "scored"
+            and typed.status[variant][dataset] == "scored"
+        )
+        row["scored_intersection_datasets"] = list(pair_support)
+        row["scored_intersection_count"] = len(pair_support)
+        row["scored_intersection_sha256"] = sha256(
+            canonical_json_bytes_exp471_antigravity(list(pair_support))
+        ).hexdigest()
+        paired.append(row)
+    record["paired_statistics"] = paired
     record["semantic_nulls"] = semantic_nulls
     return record
 
@@ -1398,6 +1429,339 @@ def _metric_tables_antigravity(
     )
 
 
+def _typed_metric_pair_antigravity(
+    row: Mapping[str, object], metric: str, missing_reason: str, scope: str
+) -> float | None:
+    value = row[metric]
+    exclusion = row[f"{metric}_exclusion"]
+    if value is None:
+        if exclusion != missing_reason:
+            raise ValueError(f"Exp471 evaluation {scope} exclusion pairing differs")
+        return None
+    if exclusion is not None:
+        raise ValueError(f"Exp471 evaluation {scope} exclusion pairing differs")
+    return _unit_number_antigravity(value, scope)
+
+
+def _typed_continuous_table_antigravity(
+    value: object,
+    datasets: tuple[str, ...],
+    test_counts: Mapping[str, int],
+) -> tuple[MetricTablesExp450Antigravity, Mapping[str, Mapping[str, str | None]]]:
+    """Validate a v2 metric support table from its scientific relations alone."""
+
+    if not isinstance(value, Mapping) or set(value) != {
+        "method_order", "per_dataset", "macro", "micro", "paired_statistics", "semantic_nulls"
+    } or tuple(value["method_order"]) != METHOD_ORDER_ANTIGRAVITY:
+        raise ValueError("Exp471 evaluation typed continuous table schema differs")
+    raw_rows = value["per_dataset"]
+    if not isinstance(raw_rows, (tuple, list)):
+        raise ValueError("Exp471 evaluation typed per-dataset rows differ")
+    expected_identities = tuple(
+        (method, dataset) for method in METHOD_ORDER_ANTIGRAVITY for dataset in datasets
+    )
+    if len(raw_rows) != len(expected_identities):
+        raise ValueError("Exp471 evaluation typed per-dataset coverage differs")
+    required_row = {
+        "method", "dataset", "average_precision", "average_precision_exclusion",
+        "auroc", "auroc_exclusion",
+    }
+    rows: list[Mapping[str, object]] = []
+    values: dict[tuple[str, str, str], float | None] = {}
+    statuses: dict[str, dict[str, str | None]] = {
+        method: {} for method in METHOD_ORDER_ANTIGRAVITY
+    }
+    for raw_row, (method, dataset) in zip(raw_rows, expected_identities, strict=True):
+        if (
+            not isinstance(raw_row, Mapping)
+            or set(raw_row) != required_row
+            or (raw_row.get("method"), raw_row.get("dataset")) != (method, dataset)
+        ):
+            raise ValueError("Exp471 evaluation typed per-dataset order differs")
+        ap_exclusion = raw_row["average_precision_exclusion"]
+        auroc_exclusion = raw_row["auroc_exclusion"]
+        abstained = (
+            raw_row["average_precision"] is None
+            and raw_row["auroc"] is None
+            and ap_exclusion == "insufficient_train_rows"
+            and auroc_exclusion == "insufficient_train_rows"
+        )
+        if abstained:
+            statuses[method][dataset] = "insufficient_train_rows"
+            values[(method, dataset, "average_precision")] = None
+            values[(method, dataset, "auroc")] = None
+        else:
+            if ap_exclusion == "insufficient_train_rows" or auroc_exclusion == "insufficient_train_rows":
+                raise ValueError("Exp471 evaluation typed abstention placement differs")
+            statuses[method][dataset] = None
+            values[(method, dataset, "average_precision")] = _typed_metric_pair_antigravity(
+                raw_row, "average_precision", "no_positive_test_labels",
+                f"{method}/{dataset} average precision",
+            )
+            values[(method, dataset, "auroc")] = _typed_metric_pair_antigravity(
+                raw_row, "auroc", "single_class_test_labels", f"{method}/{dataset} AUROC"
+            )
+        rows.append(MappingProxyType(dict(raw_row)))
+
+    raw_macro = value["macro"]
+    raw_micro = value["micro"]
+    if not isinstance(raw_macro, Mapping) or not isinstance(raw_micro, Mapping):
+        raise ValueError("Exp471 evaluation typed aggregate schema differs")
+    required_macro = {
+        "average_precision", "auroc", "average_precision_denominator",
+        "average_precision_excluded", "auroc_denominator", "auroc_excluded",
+    }
+    required_micro = {
+        "average_precision", "auroc", "row_denominator",
+        "average_precision_exclusion", "auroc_exclusion",
+    }
+    macro: dict[str, Mapping[str, object]] = {}
+    micro: dict[str, Mapping[str, object]] = {}
+    for method in METHOD_ORDER_ANTIGRAVITY:
+        macro_row = raw_macro.get(method)
+        micro_row = raw_micro.get(method)
+        if (
+            not isinstance(macro_row, Mapping) or set(macro_row) != required_macro
+            or not isinstance(micro_row, Mapping) or set(micro_row) != required_micro
+        ):
+            raise ValueError("Exp471 evaluation typed aggregate method coverage differs")
+        for metric in ("average_precision", "auroc"):
+            available = tuple(
+                values[(method, dataset, metric)] for dataset in datasets
+                if values[(method, dataset, metric)] is not None
+            )
+            denominator = _nonnegative_integer_antigravity(
+                macro_row[f"{metric}_denominator"], f"typed macro {metric} denominator"
+            )
+            excluded = _nonnegative_integer_antigravity(
+                macro_row[f"{metric}_excluded"], f"typed macro {metric} excluded"
+            )
+            if denominator != len(available) or denominator + excluded != len(datasets):
+                raise ValueError("Exp471 evaluation typed macro denominator relation differs")
+            if not available:
+                if macro_row[metric] is not None:
+                    raise ValueError("Exp471 evaluation typed empty macro differs")
+            elif _unit_number_antigravity(macro_row[metric], f"typed macro {metric}") != float(
+                np.mean(np.asarray(available, dtype=np.float64))
+            ):
+                raise ValueError("Exp471 evaluation typed macro metric relation differs")
+        scored_datasets = tuple(
+            dataset for dataset in datasets if statuses[method][dataset] is None
+        )
+        if _nonnegative_integer_antigravity(
+            micro_row["row_denominator"], "typed micro row denominator"
+        ) != sum(test_counts[dataset] for dataset in scored_datasets):
+            raise ValueError("Exp471 evaluation typed micro support differs")
+        _typed_metric_pair_antigravity(
+            micro_row, "average_precision", "no_positive_test_rows",
+            f"{method} typed micro average precision",
+        )
+        _typed_metric_pair_antigravity(
+            micro_row, "auroc", "single_class_pooled_test_rows", f"{method} typed micro AUROC"
+        )
+        macro[method] = MappingProxyType(dict(macro_row))
+        micro[method] = MappingProxyType(dict(micro_row))
+
+    raw_pairs = value["paired_statistics"]
+    if not isinstance(raw_pairs, (tuple, list)):
+        raise ValueError("Exp471 evaluation typed paired rows differ")
+    expected_pairs = tuple(
+        (f"{variant}-A", metric)
+        for metric in ("average_precision", "auroc")
+        for variant in ("B", "C", "D")
+    )
+    pair_fields = {
+        "comparison", "metric", "dataset_order", "point_estimate", "lower", "upper",
+        "wins", "ties", "losses", "seed", "draw_count", "draw_sha256",
+        "scored_intersection_datasets", "scored_intersection_count",
+        "scored_intersection_sha256",
+    }
+    if len(raw_pairs) != len(expected_pairs):
+        raise ValueError("Exp471 evaluation typed pair coverage differs")
+    pairs: list[Mapping[str, object]] = []
+    for raw_pair, (comparison, metric) in zip(raw_pairs, expected_pairs, strict=True):
+        if (
+            not isinstance(raw_pair, Mapping) or set(raw_pair) != pair_fields
+            or (raw_pair.get("comparison"), raw_pair.get("metric")) != (comparison, metric)
+        ):
+            raise ValueError("Exp471 evaluation typed pair order differs")
+        variant = comparison[0]
+        metric_support = tuple(
+            dataset for dataset in datasets
+            if all(values[(method, dataset, metric)] is not None for method in ("A", "B", "C", "D"))
+        )
+        pair_support = tuple(
+            dataset for dataset in datasets
+            if statuses["A"][dataset] is None and statuses[variant][dataset] is None
+        )
+        if (
+            not isinstance(raw_pair["dataset_order"], (tuple, list))
+            or tuple(raw_pair["dataset_order"]) != metric_support
+            or not isinstance(raw_pair["scored_intersection_datasets"], (tuple, list))
+            or tuple(raw_pair["scored_intersection_datasets"]) != pair_support
+            or raw_pair["scored_intersection_count"] != len(pair_support)
+            or raw_pair["scored_intersection_sha256"] != sha256(
+                canonical_json_bytes_exp471_antigravity(list(pair_support))
+            ).hexdigest()
+            or raw_pair["seed"] != frozen_evaluation_antigravity._BOOTSTRAP_SEED
+        ):
+            raise ValueError("Exp471 evaluation typed pair support differs")
+        difference = np.asarray(
+            [values[(variant, dataset, metric)] - values[("A", dataset, metric)] for dataset in metric_support],
+            dtype=np.float64,
+        )
+        wins = _nonnegative_integer_antigravity(raw_pair["wins"], "typed paired wins")
+        ties = _nonnegative_integer_antigravity(raw_pair["ties"], "typed paired ties")
+        losses = _nonnegative_integer_antigravity(raw_pair["losses"], "typed paired losses")
+        expected_counts = (
+            int(np.count_nonzero(difference > frozen_evaluation_antigravity._TIE_TOLERANCE)),
+            int(np.count_nonzero(np.abs(difference) <= frozen_evaluation_antigravity._TIE_TOLERANCE)),
+            int(np.count_nonzero(difference < -frozen_evaluation_antigravity._TIE_TOLERANCE)),
+        )
+        if (wins, ties, losses) != expected_counts or sum(expected_counts) != len(metric_support):
+            raise ValueError("Exp471 evaluation typed pair count relation differs")
+        draws = _nonnegative_integer_antigravity(raw_pair["draw_count"], "typed paired draws")
+        if not metric_support:
+            if any(raw_pair[name] is not None for name in ("point_estimate", "lower", "upper", "draw_sha256")) or draws != 0:
+                raise ValueError("Exp471 evaluation typed empty pair differs")
+        elif (
+            _bounded_number_antigravity(raw_pair["point_estimate"], -1.0, 1.0, "typed pair point") != float(difference.mean())
+            or _bounded_number_antigravity(raw_pair["lower"], -1.0, 1.0, "typed pair lower") > _bounded_number_antigravity(raw_pair["upper"], -1.0, 1.0, "typed pair upper")
+            or draws != frozen_evaluation_antigravity._BOOTSTRAP_SAMPLES
+            or type(raw_pair["draw_sha256"]) is not str
+            or _SHA256_ANTIGRAVITY.fullmatch(raw_pair["draw_sha256"]) is None
+        ):
+            raise ValueError("Exp471 evaluation typed pair metric relation differs")
+        pairs.append(MappingProxyType(dict(raw_pair)))
+
+    raw_nulls = value["semantic_nulls"]
+    if not isinstance(raw_nulls, (tuple, list)):
+        raise ValueError("Exp471 evaluation typed semantic-null rows differ")
+    expected_nulls = [
+        {"method": method, "dataset": dataset, "metric": metric, "reason": "insufficient_train_rows"}
+        for method in METHOD_ORDER_ANTIGRAVITY
+        for dataset in datasets
+        if statuses[method][dataset] == "insufficient_train_rows"
+        for metric in ("average_precision", "auroc", "roc", "precision_recall")
+    ]
+    if list(raw_nulls) != expected_nulls:
+        raise ValueError("Exp471 evaluation typed semantic-null placement differs")
+    return (
+        MetricTablesExp450Antigravity(
+            METHOD_ORDER_ANTIGRAVITY, tuple(rows), MappingProxyType(macro),
+            MappingProxyType(micro), tuple(
+                MappingProxyType({
+                    name: pair[name]
+                    for name in (
+                        "comparison", "metric", "dataset_order", "point_estimate",
+                        "lower", "upper", "wins", "ties", "losses", "seed",
+                        "draw_count", "draw_sha256",
+                    )
+                })
+                for pair in pairs
+            ),
+        ),
+        MappingProxyType({method: MappingProxyType(statuses[method]) for method in METHOD_ORDER_ANTIGRAVITY}),
+    )
+
+
+def _typed_curve_record_antigravity(
+    value: object,
+    datasets: tuple[str, ...],
+    statuses: Mapping[str, Mapping[str, str | None]],
+) -> Mapping[str, Mapping[str, object]]:
+    if not isinstance(value, Mapping) or set(value) != {"curves", "semantic_nulls"}:
+        raise ValueError("Exp471 evaluation typed curve schema differs")
+    expected_nulls = [
+        {"method": method, "dataset": dataset, "metric": metric, "reason": "insufficient_train_rows"}
+        for method in METHOD_ORDER_ANTIGRAVITY
+        for dataset in datasets
+        if statuses[method][dataset] == "insufficient_train_rows"
+        for metric in ("roc", "precision_recall")
+    ]
+    if not isinstance(value["semantic_nulls"], (tuple, list)) or list(value["semantic_nulls"]) != expected_nulls:
+        raise ValueError("Exp471 evaluation curve semantic-null placement differs")
+    curves = _curve_tables_antigravity(value["curves"])
+    curve_methods = _method_blocks_antigravity(curves["roc"]["rows"], "ROC")
+    if any(not any(statuses[method][dataset] is None for dataset in datasets) for method in curve_methods):
+        raise ValueError("Exp471 evaluation curve includes abstained method")
+    return curves
+
+
+def _typed_decision_tables_antigravity(
+    value: object,
+    datasets: tuple[str, ...],
+    test_counts: Mapping[str, int],
+    statuses: Mapping[str, Mapping[str, str | None]],
+    coverage: Mapping[str, Mapping[str, object]],
+) -> None:
+    if not isinstance(value, Mapping) or set(value) != {"full_population"}:
+        raise ValueError("Exp471 evaluation decision-table schema differs")
+    full = value["full_population"]
+    if not isinstance(full, Mapping) or set(full) != {"dataset_rows", "summary_rows"}:
+        raise ValueError("Exp471 evaluation full-population schema differs")
+    rows, summaries = full["dataset_rows"], full["summary_rows"]
+    if not isinstance(rows, (tuple, list)) or not isinstance(summaries, (tuple, list)):
+        raise ValueError("Exp471 evaluation decision rows differ")
+    protocols = lambda method: (("proposal_threshold", None),) if method in METHOD_ORDER_ANTIGRAVITY[:4] else tuple(("conformal", alpha) for alpha in ALPHAS) + (("matched_budget", None),)
+    expected = tuple(
+        (method, dataset, protocol, alpha)
+        for method in METHOD_ORDER_ANTIGRAVITY
+        for protocol, alpha in protocols(method)
+        for dataset in datasets
+    )
+    required = {
+        "method", "dataset", "protocol", "alpha", "status", "abstention_reason", "alerts", "alert_count",
+        "tp", "fp", "fn", "tn", "precision", "recall", "f1", "false_positive_rate",
+    }
+    if len(rows) != len(expected):
+        raise ValueError("Exp471 evaluation decision population coverage differs")
+    grouped: dict[tuple[str, str, float | None], list[Mapping[str, object]]] = {}
+    for row, identity in zip(rows, expected, strict=True):
+        method, dataset, protocol, alpha = identity
+        if not isinstance(row, Mapping) or set(row) != required or tuple(row.get(name) for name in ("method", "dataset", "protocol", "alpha")) != identity:
+            raise ValueError("Exp471 evaluation decision order differs")
+        abstention_reason = statuses[method][dataset]
+        expected_status = "abstained" if abstention_reason is not None else "scored"
+        if row["status"] != expected_status or row["abstention_reason"] != abstention_reason:
+            raise ValueError("Exp471 evaluation decision status differs")
+        if not isinstance(row["alerts"], (tuple, list)) or any(type(index) is not int or index < 0 for index in row["alerts"]) or list(row["alerts"]) != sorted(set(row["alerts"])):
+            raise ValueError("Exp471 evaluation decision alerts differ")
+        if _nonnegative_integer_antigravity(row["alert_count"], "decision alert count") != len(row["alerts"]):
+            raise ValueError("Exp471 evaluation decision alert count differs")
+        if expected_status == "abstained" and row["alerts"]:
+            raise ValueError("Exp471 evaluation abstention must not alert")
+        counts = {name: _nonnegative_integer_antigravity(row[name], f"decision {name}") for name in ("tp", "fp", "fn", "tn")}
+        if sum(counts.values()) != test_counts[dataset]:
+            raise ValueError("Exp471 evaluation decision confusion support differs")
+        for name, expected_value in _derived_decision_metrics_antigravity(counts).items():
+            if _unit_number_antigravity(row[name], f"decision {name}") != expected_value:
+                raise ValueError("Exp471 evaluation decision derived metric differs")
+        grouped.setdefault((method, protocol, alpha), []).append(row)
+    expected_summary = tuple((method, protocol, alpha) for method in METHOD_ORDER_ANTIGRAVITY for protocol, alpha in protocols(method))
+    summary_fields = {"method", "protocol", "alpha", "support_count", "alert_count", "coverage", "tp", "fp", "fn", "tn", "precision", "recall", "f1", "false_positive_rate"}
+    if len(summaries) != len(expected_summary):
+        raise ValueError("Exp471 evaluation decision summary coverage differs")
+    for summary, identity in zip(summaries, expected_summary, strict=True):
+        if not isinstance(summary, Mapping) or set(summary) != summary_fields or tuple(summary.get(name) for name in ("method", "protocol", "alpha")) != identity:
+            raise ValueError("Exp471 evaluation decision summary order differs")
+        group = grouped[identity]
+        if _nonnegative_integer_antigravity(summary["support_count"], "decision summary support") != len(group) or _nonnegative_integer_antigravity(summary["alert_count"], "decision summary alerts") != sum(int(row["alert_count"]) for row in group):
+            raise ValueError("Exp471 evaluation decision summary support differs")
+        expected_coverage = sum(row["status"] == "scored" for row in group) / len(group)
+        if _unit_number_antigravity(summary["coverage"], "decision summary coverage") != expected_coverage:
+            raise ValueError("Exp471 evaluation decision summary coverage differs")
+        counts = {name: sum(int(row[name]) for row in group) for name in ("tp", "fp", "fn", "tn")}
+        if any(_nonnegative_integer_antigravity(summary[name], f"decision summary {name}") != value for name, value in counts.items()):
+            raise ValueError("Exp471 evaluation decision summary confusion differs")
+        for name, expected_value in _derived_decision_metrics_antigravity(counts).items():
+            if _unit_number_antigravity(summary[name], f"decision summary {name}") != expected_value:
+                raise ValueError("Exp471 evaluation decision summary derived metric differs")
+        method = identity[0]
+        if summary["coverage"] != coverage[method]["coverage"]:
+            raise ValueError("Exp471 evaluation decision/coverage relation differs")
+
+
 def _validated_payload_antigravity(
     artifact: Exp471EvaluationArtifactAntigravity,
 ) -> tuple[MetricTablesExp450Antigravity, Mapping[str, Mapping[str, object]]]:
@@ -1486,6 +1850,7 @@ def _validated_payload_antigravity(
     rows = coverage["rows"]
     if not isinstance(rows, (tuple, list)) or len(rows) != len(METHOD_ORDER_ANTIGRAVITY):
         raise ValueError("Exp471 evaluation coverage rows differ")
+    coverage_by_method: dict[str, Mapping[str, object]] = {}
     for method, row in zip(METHOD_ORDER_ANTIGRAVITY, rows, strict=True):
         if not isinstance(row, Mapping) or set(row) != {
             "method", "population", "scored", "abstained", "failed", "coverage", "abstention_reasons"
@@ -1500,12 +1865,15 @@ def _validated_payload_antigravity(
             or _finite_number_antigravity(row["coverage"], "coverage") != row["scored"] / row["population"]
         ):
             raise ValueError("Exp471 evaluation coverage relation differs")
+        coverage_by_method[method] = row
 
     support = payload["support_authority"]
     if not isinstance(support, Mapping) or set(support) != {
         "all_ten_common_support_count", "all_ten_common_support_datasets", "all_ten_common_support_sha256"
     }:
         raise ValueError("Exp471 evaluation support authority schema differs")
+    if not isinstance(support["all_ten_common_support_datasets"], (tuple, list)):
+        raise ValueError("Exp471 evaluation support dataset list differs")
     common = tuple(support["all_ten_common_support_datasets"])
     if (
         type(support["all_ten_common_support_count"]) is not int
@@ -1528,51 +1896,46 @@ def _validated_payload_antigravity(
         raise ValueError("Exp471 evaluation support table schema differs")
     decoded_metrics: dict[str, MetricTablesExp450Antigravity] = {}
     decoded_curves: dict[str, Mapping[str, Mapping[str, object]]] = {}
-    for name, datasets in (
-        ("scored_support", artifact.dataset_order),
-        ("all_ten_common_support", common),
-    ):
-        table = continuous[name]
-        curve_record = curves_payload[name]
+    scored_metrics, scored_statuses = _typed_continuous_table_antigravity(
+        continuous["scored_support"], artifact.dataset_order, test_counts
+    )
+    derived_common = tuple(
+        dataset for dataset in artifact.dataset_order
+        if all(scored_statuses[method][dataset] is None for method in METHOD_ORDER_ANTIGRAVITY)
+    )
+    if common != derived_common:
+        raise ValueError("Exp471 evaluation all-ten support relation differs")
+    for method in METHOD_ORDER_ANTIGRAVITY:
+        inferred_reasons: dict[str, int] = {}
+        for dataset in artifact.dataset_order:
+            reason = scored_statuses[method][dataset]
+            if reason is not None:
+                inferred_reasons[reason] = inferred_reasons.get(reason, 0) + 1
+        row = coverage_by_method[method]
         if (
-            not isinstance(table, Mapping)
-            or set(table) != {"method_order", "per_dataset", "macro", "micro", "paired_statistics", "semantic_nulls"}
-            or tuple(table["method_order"]) != METHOD_ORDER_ANTIGRAVITY
-            or not isinstance(table["per_dataset"], (tuple, list))
-            or len(table["per_dataset"]) != len(METHOD_ORDER_ANTIGRAVITY) * len(datasets)
-            or not isinstance(table["macro"], Mapping)
-            or not isinstance(table["micro"], Mapping)
-            or not isinstance(table["paired_statistics"], (tuple, list))
-            or not isinstance(table["semantic_nulls"], (tuple, list))
-            or not isinstance(curve_record, Mapping)
-            or set(curve_record) != {"curves", "semantic_nulls"}
-            or not isinstance(curve_record["semantic_nulls"], (tuple, list))
+            row["scored"] != sum(scored_statuses[method][dataset] is None for dataset in artifact.dataset_order)
+            or row["abstained"] != sum(scored_statuses[method][dataset] is not None for dataset in artifact.dataset_order)
+            or row["abstention_reasons"] != inferred_reasons
         ):
-            raise ValueError("Exp471 evaluation continuous support schema differs")
-        for row, identity in zip(
-            table["per_dataset"],
-            ((method, dataset) for method in METHOD_ORDER_ANTIGRAVITY for dataset in datasets),
-            strict=True,
-        ):
-            if not isinstance(row, Mapping) or (row.get("method"), row.get("dataset")) != identity:
-                raise ValueError("Exp471 evaluation continuous support order differs")
-        decoded_metrics[name] = MetricTablesExp450Antigravity(
-            METHOD_ORDER_ANTIGRAVITY,
-            tuple(MappingProxyType(dict(row)) for row in table["per_dataset"]),
-            MappingProxyType({method: MappingProxyType(dict(table["macro"][method])) for method in METHOD_ORDER_ANTIGRAVITY}),
-            MappingProxyType({method: MappingProxyType(dict(table["micro"][method])) for method in METHOD_ORDER_ANTIGRAVITY}),
-            tuple(MappingProxyType(dict(row)) for row in table["paired_statistics"]),
-        )
-        decoded_curves[name] = _curve_tables_antigravity(curve_record["curves"])
-
-    decisions = payload["decision_tables"]
-    if not isinstance(decisions, Mapping) or set(decisions) != {"full_population"}:
-        raise ValueError("Exp471 evaluation decision-table schema differs")
-    full = decisions["full_population"]
-    if not isinstance(full, Mapping) or set(full) != {"dataset_rows", "summary_rows"}:
-        raise ValueError("Exp471 evaluation full-population decision schema differs")
-    if not isinstance(full["dataset_rows"], (tuple, list)) or not isinstance(full["summary_rows"], (tuple, list)):
-        raise ValueError("Exp471 evaluation decision rows differ")
+            raise ValueError("Exp471 evaluation coverage/status relation differs")
+    decoded_metrics["scored_support"] = scored_metrics
+    decoded_curves["scored_support"] = _typed_curve_record_antigravity(
+        curves_payload["scored_support"], artifact.dataset_order, scored_statuses
+    )
+    common_metrics, common_statuses = _typed_continuous_table_antigravity(
+        continuous["all_ten_common_support"], common,
+        {dataset: test_counts[dataset] for dataset in common},
+    )
+    if any(common_statuses[method][dataset] is not None for method in METHOD_ORDER_ANTIGRAVITY for dataset in common):
+        raise ValueError("Exp471 evaluation common support contains abstention")
+    decoded_metrics["all_ten_common_support"] = common_metrics
+    decoded_curves["all_ten_common_support"] = _typed_curve_record_antigravity(
+        curves_payload["all_ten_common_support"], common, common_statuses
+    )
+    _typed_decision_tables_antigravity(
+        payload["decision_tables"], artifact.dataset_order, test_counts,
+        scored_statuses, coverage_by_method,
+    )
     metrics = decoded_metrics["scored_support"]
     curves = decoded_curves["scored_support"]
     return metrics, curves
