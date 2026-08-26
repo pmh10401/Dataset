@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import csv
 from collections.abc import Mapping
 from contextlib import ExitStack
 from concurrent.futures import ThreadPoolExecutor
@@ -15,9 +16,13 @@ import runpy
 import subprocess
 import tempfile
 import threading
+from types import SimpleNamespace
 import unittest
 import warnings
 from unittest import mock
+import struct
+import zlib
+import xml.etree.ElementTree as ElementTree
 
 from scratch import (
     run_exp471_exp467_evaluation_recovery_antigravity as exp471_launcher,
@@ -228,18 +233,277 @@ def _artifact_antigravity(base: Path):
     return artifact
 
 
+def _production_typed_artifact_antigravity():
+    """Build a valid 1,117-dataset artifact without opening production roots.
+
+    The values intentionally model the frozen production abstention partition:
+    five KNN, 195 Deep-SVDD, and 195 DROCC rows abstain.  Every other typed
+    arm has a two-row TEST score vector, so the all-ten scored intersection is
+    independently known to be datasets 195..1116 (922 datasets).
+    """
+
+    datasets = tuple(
+        f"renderer_production_dataset_{index:04d}_antigravity"
+        for index in range(1_117)
+    )
+    abstention_limit = {
+        "knn_distance": 5,
+        "deep_svdd_1d": 195,
+        "drocc_1d": 195,
+    }
+    raw_scores: dict[str, dict[str, tuple[float, ...]]] = {}
+    micro_scores: dict[str, dict[str, tuple[float, ...]]] = {}
+    statuses: dict[str, dict[str, str]] = {}
+    reasons: dict[str, dict[str, str | None]] = {}
+    shard_sha256: dict[str, str] = {}
+    for method_index, method in enumerate(METHOD_ORDER_ANTIGRAVITY):
+        raw_scores[method] = {}
+        micro_scores[method] = {}
+        statuses[method] = {}
+        reasons[method] = {}
+        limit = abstention_limit.get(method, 0)
+        for dataset_index, dataset in enumerate(datasets):
+            key = f"{method}:{dataset}"
+            shard_sha256[key] = sha256(key.encode("utf-8")).hexdigest()
+            abstained = dataset_index < limit
+            statuses[method][dataset] = "abstained" if abstained else "scored"
+            reasons[method][dataset] = (
+                "insufficient_train_rows" if abstained else None
+            )
+            if not abstained:
+                # Both labels occur in every TEST vector; value variation keeps
+                # all ten curve method blocks non-degenerate and deterministic.
+                offset = (method_index + dataset_index % 7) / 100.0
+                raw_scores[method][dataset] = (0.10 + offset, 0.90 + offset)
+                micro_scores[method][dataset] = (0.20 + offset, 0.80 + offset)
+    cache = SimpleNamespace(
+        manifest_sha256=sha256(b"renderer production cache").hexdigest(),
+        cache_context_sha256=sha256(b"renderer production context").hexdigest(),
+        method_order=METHOD_ORDER_ANTIGRAVITY,
+        dataset_order=datasets,
+        shard_sha256=shard_sha256,
+        total_shards=11_170,
+        scored_shards=10_775,
+        abstained_shards=395,
+        failed_shards=0,
+    )
+    typed = evaluation._TypedCacheAntigravity(
+        cache=cache,
+        raw_scores=raw_scores,
+        micro_scores=micro_scores,
+        test_counts={dataset: 2 for dataset in datasets},
+        test_indices={dataset: (0, 1) for dataset in datasets},
+        status=statuses,
+        reasons=reasons,
+    )
+
+    def metric_table(scope: tuple[str, ...]):
+        per_dataset = []
+        macro = {}
+        micro = {}
+        for method in METHOD_ORDER_ANTIGRAVITY:
+            scored = sum(statuses[method][dataset] == "scored" for dataset in scope)
+            for dataset in scope:
+                per_dataset.append(
+                    {
+                        "method": method,
+                        "dataset": dataset,
+                        "average_precision": 1.0,
+                        "average_precision_exclusion": None,
+                        "auroc": 1.0,
+                        "auroc_exclusion": None,
+                    }
+                )
+            macro[method] = {
+                "average_precision": 1.0,
+                "auroc": 1.0,
+                "average_precision_denominator": scored,
+                "average_precision_excluded": len(scope) - scored,
+                "auroc_denominator": scored,
+                "auroc_excluded": len(scope) - scored,
+            }
+            micro[method] = {
+                "average_precision": 1.0,
+                "auroc": 1.0,
+                "row_denominator": scored * 2,
+                "average_precision_exclusion": None,
+                "auroc_exclusion": None,
+            }
+        pairs = []
+        pair_digest = sha256(b"hand-built production pair bootstrap").hexdigest()
+        for metric in ("average_precision", "auroc"):
+            for variant in ("B", "C", "D"):
+                pairs.append(
+                    {
+                        "comparison": f"{variant}-A",
+                        "metric": metric,
+                        "dataset_order": list(scope),
+                        "point_estimate": 0.0,
+                        "lower": 0.0,
+                        "upper": 0.0,
+                        "wins": 0,
+                        "ties": len(scope),
+                        "losses": 0,
+                        "seed": evaluation.frozen_evaluation_antigravity._BOOTSTRAP_SEED,
+                        "draw_count": evaluation.frozen_evaluation_antigravity._BOOTSTRAP_SAMPLES,
+                        "draw_sha256": pair_digest,
+                    }
+                )
+        return evaluation.MetricTablesExp450Antigravity(
+            METHOD_ORDER_ANTIGRAVITY, tuple(per_dataset), macro, micro, tuple(pairs)
+        )
+
+    def curves():
+        roc_rows = []
+        pr_rows = []
+        for method in METHOD_ORDER_ANTIGRAVITY:
+            roc_rows.extend(
+                (
+                    {
+                        "method": method,
+                        "false_positive_rate": 0.0,
+                        "true_positive_rate": 0.0,
+                        "threshold": None,
+                    },
+                    {
+                        "method": method,
+                        "false_positive_rate": 0.0,
+                        "true_positive_rate": 1.0,
+                        "threshold": 1.0,
+                    },
+                    {
+                        "method": method,
+                        "false_positive_rate": 1.0,
+                        "true_positive_rate": 1.0,
+                        "threshold": 0.0,
+                    },
+                )
+            )
+            pr_rows.extend(
+                (
+                    {"method": method, "recall": 1.0, "precision": 1.0},
+                    {"method": method, "recall": 0.0, "precision": 1.0},
+                )
+            )
+        return {
+            "roc": {
+                "x_name": "false_positive_rate",
+                "y_name": "true_positive_rate",
+                "rows": roc_rows,
+            },
+            "precision_recall": {
+                "x_name": "recall",
+                "y_name": "precision",
+                "rows": pr_rows,
+            },
+        }
+
+    authority = _authority_antigravity()
+    payload = evaluation._payload_antigravity(
+        authority,
+        typed,
+        {dataset: (0, 1) for dataset in datasets},
+        metric_table(datasets),
+        curves(),
+        metric_table(datasets[195:]),
+        curves(),
+    )
+    bare = evaluation.artifact_view_exp471_antigravity(
+        {
+            "source_authority_sha256": authority.authority_sha256,
+            "cache_manifest_sha256": cache.manifest_sha256,
+            "code_closure_sha256": evaluation._code_closure_sha256_antigravity(),
+            "method_order": list(METHOD_ORDER_ANTIGRAVITY),
+            "dataset_order": list(datasets),
+            "payload": payload,
+        }
+    )
+    assert isinstance(bare, Mapping)
+    return evaluation.Exp471EvaluationArtifactAntigravity(
+        **bare,
+        evaluation_sha256=sha256(
+            canonical_json_bytes_exp471_antigravity(bare)
+        ).hexdigest(),
+    )
+
+
+def _parse_png_chunks_independently_antigravity(payload: bytes) -> tuple[
+    tuple[int, int, int, int], dict[str, bytes], str, bytes
+]:
+    """Validate PNG framing independently of the renderer's PNG helper."""
+
+    if payload[:8] != b"\x89PNG\r\n\x1a\n":
+        raise AssertionError("missing PNG signature")
+    offset = 8
+    chunks: list[tuple[bytes, bytes]] = []
+    while offset < len(payload):
+        if offset + 12 > len(payload):
+            raise AssertionError("truncated PNG chunk")
+        length = struct.unpack(">I", payload[offset : offset + 4])[0]
+        end = offset + 12 + length
+        if end > len(payload):
+            raise AssertionError("PNG chunk length differs")
+        kind = payload[offset + 4 : offset + 8]
+        body = payload[offset + 8 : offset + 8 + length]
+        crc = struct.unpack(">I", payload[offset + 8 + length : end])[0]
+        if zlib.crc32(kind + body) & 0xFFFFFFFF != crc:
+            raise AssertionError("PNG chunk CRC differs")
+        chunks.append((kind, body))
+        offset = end
+    if offset != len(payload) or not chunks or chunks[-1] != (b"IEND", b""):
+        raise AssertionError("PNG IEND differs")
+    if chunks[0][0] != b"IHDR" or len(chunks[0][1]) != 13:
+        raise AssertionError("PNG IHDR differs")
+    width, height, depth, color, compression, filtering, interlace = struct.unpack(
+        ">IIBBBBB", chunks[0][1]
+    )
+    if (compression, filtering, interlace) != (0, 0, 0):
+        raise AssertionError("PNG encoding differs")
+    raw_pixels = zlib.decompress(
+        b"".join(body for kind, body in chunks if kind == b"IDAT")
+    )
+    row_width = width * 3
+    if len(raw_pixels) != height * (row_width + 1) or any(
+        raw_pixels[offset] != 0
+        for offset in range(0, len(raw_pixels), row_width + 1)
+    ):
+        raise AssertionError("PNG raster rows differ")
+    text = {
+        body.split(b"\x00", 1)[0].decode("latin-1"): body.split(b"\x00", 1)[1]
+        for kind, body in chunks
+        if kind == b"tEXt" and b"\x00" in body
+    }
+    return (
+        (width, height, depth, color),
+        text,
+        sha256(raw_pixels).hexdigest(),
+        raw_pixels,
+    )
+
+
+def _make_report_tamperable_antigravity(*paths: Path) -> None:
+    """Make only test-owned report copies writable before deliberate tampering."""
+
+    for path in paths:
+        os.chmod(path, 0o644)
+
+
 def _rehash_report_leaf_antigravity(
     root: Path, relative: str, payload: bytes
 ) -> None:
     """Rehash one public leaf through both outer authority layers."""
 
-    (root / relative).write_bytes(payload)
+    leaf_path = root / relative
     artifact_map_path = root / reporting._ARTIFACT_MAP_NAME_ANTIGRAVITY
+    marker_path = root / reporting._COMPLETE_MARKER_NAME_ANTIGRAVITY
+    _make_report_tamperable_antigravity(
+        leaf_path, artifact_map_path, marker_path
+    )
+    leaf_path.write_bytes(payload)
     artifact_map = json.loads(artifact_map_path.read_text(encoding="utf-8"))
     artifact_map["files"][relative] = sha256(payload).hexdigest()
     artifact_map_raw = canonical_json_bytes_exp471_antigravity(artifact_map)
     artifact_map_path.write_bytes(artifact_map_raw)
-    marker_path = root / reporting._COMPLETE_MARKER_NAME_ANTIGRAVITY
     marker = json.loads(marker_path.read_text(encoding="utf-8"))
     marker["report_file_sha256"] = artifact_map["files"]
     marker["report_manifest_sha256"] = sha256(artifact_map_raw).hexdigest()
@@ -1735,6 +1999,303 @@ class ReportingTestsAntigravity(unittest.TestCase):
         ):
             self.assertIn(prohibition, paper)
 
+    def test_typed_renderer_production_partition_and_png_oracle(self) -> None:
+        """A 1,117-row typed artifact keeps every null and figure semantic exact."""
+
+        artifact = _production_typed_artifact_antigravity()
+        datasets = tuple(artifact.dataset_order)
+        common = datasets[195:]
+        expected_counts = {
+            "A": (1_117, 1_117, 0),
+            "B": (1_117, 1_117, 0),
+            "C": (1_117, 1_117, 0),
+            "D": (1_117, 1_117, 0),
+            "knn_distance": (1_117, 1_112, 5),
+            "lof_novelty": (1_117, 1_117, 0),
+            "ocsvm_rbf": (1_117, 1_117, 0),
+            "isolation_forest": (1_117, 1_117, 0),
+            "deep_svdd_1d": (1_117, 922, 195),
+            "drocc_1d": (1_117, 922, 195),
+        }
+        self.assertEqual(
+            sha256(canonical_json_bytes_exp471_antigravity(list(common))).hexdigest(),
+            artifact.payload["support_authority"]["all_ten_common_support_sha256"],
+        )
+        self.assertEqual(
+            artifact.payload["support_authority"]["all_ten_common_support_count"],
+            922,
+        )
+
+        stage = self.base / "typed_production_stage_antigravity"
+        rendered = typed_reporting.write_typed_exp471_report_antigravity(
+            artifact, stage
+        )
+        coverage_json = json.loads(
+            (rendered.root / "exp471_coverage_antigravity.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        with (rendered.root / "exp471_coverage_antigravity.csv").open(
+            newline="", encoding="utf-8"
+        ) as handle:
+            coverage_csv = list(csv.DictReader(handle))
+        self.assertEqual([row["method"] for row in coverage_json["rows"]], list(METHOD_ORDER_ANTIGRAVITY))
+        self.assertEqual([row["method"] for row in coverage_csv], list(METHOD_ORDER_ANTIGRAVITY))
+        for json_row, csv_row in zip(coverage_json["rows"], coverage_csv, strict=True):
+            population, scored, abstained = expected_counts[json_row["method"]]
+            self.assertEqual(
+                (json_row["population"], json_row["scored"], json_row["abstained"], json_row["failed"]),
+                (population, scored, abstained, 0),
+            )
+            self.assertEqual(float(json_row["coverage"]), scored / population)
+            self.assertEqual(
+                json_row["abstention_reasons"],
+                ({"insufficient_train_rows": abstained} if abstained else {}),
+            )
+            self.assertEqual(
+                (int(csv_row["population"]), int(csv_row["scored"]), int(csv_row["abstained"]), int(csv_row["failed"])),
+                (population, scored, abstained, 0),
+            )
+        paper = (rendered.root / "exp471_paper_report_antigravity.html").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("all-ten-method common support has count 922", paper)
+        for method, (population, scored, abstained) in expected_counts.items():
+            self.assertIn(
+                f"{method}</td><td>{population}</td><td>{scored}</td><td>{abstained}</td><td>0</td>",
+                paper,
+            )
+            if abstained:
+                self.assertIn(
+                    f"&#x27;insufficient_train_rows&#x27;: {abstained}", paper
+                )
+
+        decisions = json.loads(
+            (rendered.root / "exp471_full_population_decisions_antigravity.json").read_text(
+                encoding="utf-8"
+            )
+        )["full_population"]
+        decision_rows = decisions["dataset_rows"]
+        summaries = {
+            (row["method"], row["protocol"], json.dumps(row["alpha"])): row
+            for row in decisions["summary_rows"]
+        }
+        grouped: dict[tuple[str, str, str], list[dict[str, object]]] = {}
+        for row in decision_rows:
+            key = (row["method"], row["protocol"], json.dumps(row["alpha"]))
+            grouped.setdefault(key, []).append(row)
+            if row["status"] == "abstained":
+                self.assertEqual(row["abstention_reason"], "insufficient_train_rows")
+                self.assertEqual((row["alerts"], row["alert_count"]), ([], 0))
+                self.assertEqual(
+                    (row["tp"], row["fp"], row["fn"], row["tn"]), (0, 0, 1, 1)
+                )
+        self.assertEqual(set(grouped), set(summaries))
+        for key, rows in grouped.items():
+            summary = summaries[key]
+            counts = {name: sum(int(row[name]) for row in rows) for name in ("tp", "fp", "fn", "tn")}
+            self.assertEqual(summary["support_count"], 1_117)
+            self.assertEqual(summary["alert_count"], sum(int(row["alert_count"]) for row in rows))
+            self.assertEqual({name: summary[name] for name in counts}, counts)
+            method = key[0]
+            self.assertEqual(summary["coverage"], expected_counts[method][1] / 1_117)
+
+        for support, expected_dataset_count in (
+            ("scored_support", None),
+            ("common_support", 922),
+        ):
+            metrics = json.loads(
+                (rendered.root / f"exp471_{support}_metrics_antigravity.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertEqual(
+                len(metrics["semantic_nulls"]),
+                1_580 if support == "scored_support" else 0,
+            )
+            for method, (_population, scored, abstained) in expected_counts.items():
+                expected = expected_dataset_count if expected_dataset_count is not None else scored
+                macro = metrics["macro"][method]
+                micro = metrics["micro"][method]
+                self.assertEqual(
+                    (macro["average_precision_denominator"], macro["auroc_denominator"]),
+                    (expected, expected),
+                )
+                self.assertEqual(micro["row_denominator"], expected * 2)
+                method_rows = [row for row in metrics["per_dataset"] if row["method"] == method]
+                self.assertEqual(
+                    len(method_rows), 1_117 if support == "scored_support" else 922
+                )
+                if support == "scored_support":
+                    null_rows = [row for row in method_rows if row["average_precision"] is None]
+                    self.assertEqual(len(null_rows), abstained)
+                    self.assertTrue(
+                        all(
+                            row["average_precision_exclusion"] == "insufficient_train_rows"
+                            and row["auroc"] is None
+                            and row["auroc_exclusion"] == "insufficient_train_rows"
+                            for row in null_rows
+                        )
+                    )
+
+        expected_curve_payloads = {
+            "scored_support": artifact.payload["curve_tables"]["scored_support"],
+            "common_support": artifact.payload["curve_tables"]["all_ten_common_support"],
+        }
+        second = typed_reporting.write_typed_exp471_report_antigravity(
+            artifact, self.base / "typed_production_repeat_antigravity"
+        )
+        for support, expected_curve_table in expected_curve_payloads.items():
+            stem = "scored_support" if support == "scored_support" else "common_support"
+            svg = (rendered.root / f"exp471_{stem}_curves_antigravity.svg").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn('data-roc-x="false_positive_rate"', svg)
+            self.assertIn('data-roc-y="true_positive_rate"', svg)
+            self.assertIn('data-pr-x="recall"', svg)
+            self.assertIn('data-pr-y="precision"', svg)
+            figure = ElementTree.fromstring(svg)
+            namespace = "{http://www.w3.org/2000/svg}"
+            metadata_element = figure.find(f"{namespace}metadata")
+            self.assertIsNotNone(metadata_element)
+            figure_metadata = json.loads(metadata_element.text)
+            self.assertEqual(
+                figure_metadata["roc"],
+                {"x": "false_positive_rate", "y": "true_positive_rate"},
+            )
+            self.assertEqual(
+                figure_metadata["precision_recall"],
+                {"x": "recall", "y": "precision"},
+            )
+            text_labels = {
+                element.text for element in figure.findall(f"{namespace}text")
+            }
+            self.assertTrue(
+                {"false_positive_rate", "true_positive_rate", "recall", "precision"}
+                <= text_labels
+            )
+            for method in METHOD_ORDER_ANTIGRAVITY:
+                self.assertIn(f'data-legend-method="{method}"', svg)
+                self.assertIn(f'data-method="{method}"', svg)
+                self.assertEqual(
+                    sum(
+                        element.get("data-method") == method
+                        for element in figure.findall(f"{namespace}polyline")
+                    ),
+                    2,
+                )
+                self.assertEqual(
+                    sum(
+                        element.get("data-legend-method") == method
+                        for element in figure.findall(f"{namespace}line")
+                    ),
+                    2,
+                )
+            curves = expected_curve_table["curves"]
+            for panel in ("roc", "precision_recall"):
+                self.assertEqual(
+                    tuple(dict.fromkeys(row["method"] for row in curves[panel]["rows"])),
+                    METHOD_ORDER_ANTIGRAVITY,
+                )
+            expected_nulls = 790 if support == "scored_support" else 0
+            self.assertEqual(len(expected_curve_table["semantic_nulls"]), expected_nulls)
+            png = (rendered.root / f"exp471_{stem}_curves_antigravity.png").read_bytes()
+            dimensions, text, raster_digest, raster = _parse_png_chunks_independently_antigravity(png)
+            self.assertEqual(dimensions, (1200, 580, 8, 2))
+            metadata = json.loads(text["exp471_typed_curve"].decode("utf-8"))
+            self.assertEqual(metadata["support"], "scored_support" if support == "scored_support" else "all_ten_common_support")
+            self.assertEqual(metadata["method_order"], list(METHOD_ORDER_ANTIGRAVITY))
+            self.assertEqual(metadata["roc"], {"x": "false_positive_rate", "y": "true_positive_rate"})
+            self.assertEqual(metadata["precision_recall"], {"x": "recall", "y": "precision"})
+            self.assertEqual(metadata["curves"], json.loads(canonical_json_bytes_exp471_antigravity(curves)))
+            self.assertNotEqual(raster_digest, sha256(b"").hexdigest())
+            row_width = dimensions[0] * 3 + 1
+
+            def pixel(x: int, y: int) -> tuple[int, int, int]:
+                offset = y * row_width + 1 + x * 3
+                return tuple(raster[offset : offset + 3])
+
+            # The public raster has an independent white background, black
+            # horizontal axes, and the last (DROCC) method overwrites both
+            # deliberate top horizontal curve segments with its fixed color.
+            self.assertEqual(pixel(0, 0), (255, 255, 255))
+            self.assertEqual(pixel(300, 470), (0, 0, 0))
+            self.assertEqual(pixel(300, 70), (78, 72, 24))
+            self.assertEqual(pixel(900, 70), (78, 72, 24))
+            self.assertEqual(
+                png,
+                (second.root / f"exp471_{stem}_curves_antigravity.png").read_bytes(),
+            )
+
+    def test_typed_renderer_closure_binds_png_and_metric_dependencies(self) -> None:
+        """Every source module that computes typed bytes is closure-bound."""
+
+        closure = reporting._report_closure_antigravity()
+        files = closure["file_sha256"]
+        required = {
+            "experiments/exp450_resampling_image_ablation_antigravity/reporting_antigravity.py",
+            "experiments/exp450_resampling_image_ablation_antigravity/evaluation_antigravity.py",
+            "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
+        }
+        self.assertTrue(required <= set(files))
+        repository = reporting._repository_root_antigravity()
+        for relative in required:
+            self.assertEqual(files[relative], sha256((repository / relative).read_bytes()).hexdigest())
+        changed = reporting._report_closure_antigravity(
+            read_bytes=lambda path: (
+                path.read_bytes() + b"changed-png-helper-antigravity\n"
+                if path.as_posix().endswith("exp450_resampling_image_ablation_antigravity/reporting_antigravity.py")
+                else path.read_bytes()
+            )
+        )
+        self.assertNotEqual(closure["closure_sha256"], changed["closure_sha256"])
+
+    def test_typed_renderer_rejects_symlinked_root_destination_and_extra_leaf(self) -> None:
+        """Direct renderer roots are descriptor-safe and inventory-exact."""
+
+        foreign = self.base / "foreign_target_antigravity"
+        foreign.mkdir()
+        sentinel = foreign / "sentinel_antigravity.txt"
+        sentinel.write_bytes(b"foreign bytes\n")
+        linked_root = self.base / "linked_typed_root_antigravity"
+        linked_root.symlink_to(foreign, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, "root|unsafe|symlink"):
+            typed_reporting.write_typed_exp471_report_antigravity(
+                self.artifact, linked_root
+            )
+        self.assertEqual(sentinel.read_bytes(), b"foreign bytes\n")
+        self.assertFalse((foreign / "exp471_typed_report_artifacts_antigravity").exists())
+
+        destination_root = self.base / "destination_root_antigravity"
+        destination_root.mkdir()
+        destination = destination_root / "exp471_typed_report_artifacts_antigravity"
+        destination.symlink_to(foreign, target_is_directory=True)
+        with self.assertRaisesRegex(ValueError, "root|unsafe|directory"):
+            typed_reporting.write_typed_exp471_report_antigravity(
+                self.artifact, destination_root
+            )
+        self.assertEqual(sentinel.read_bytes(), b"foreign bytes\n")
+
+        clean_root = self.base / "extra_leaf_root_antigravity"
+        rendered = typed_reporting.write_typed_exp471_report_antigravity(
+            self.artifact, clean_root
+        )
+        (rendered.root / "extra_antigravity.txt").write_bytes(b"foreign\n")
+        with self.assertRaisesRegex(ValueError, "inventory|extra|leaf"):
+            typed_reporting.write_typed_exp471_report_antigravity(
+                self.artifact, clean_root
+            )
+
+        missing_root = self.base / "missing_leaf_root_antigravity"
+        missing = typed_reporting.write_typed_exp471_report_antigravity(
+            self.artifact, missing_root
+        )
+        (missing.root / "exp471_coverage_antigravity.csv").unlink()
+        with self.assertRaisesRegex(ValueError, "inventory|missing|leaf"):
+            typed_reporting.write_typed_exp471_report_antigravity(
+                self.artifact, missing_root
+            )
+
     def test_two_argument_public_interface_reads_durable_worker_provenance(self) -> None:
         """The specified two-argument API must bind the reopened worker decision."""
 
@@ -1820,6 +2381,7 @@ class ReportingTestsAntigravity(unittest.TestCase):
             / "exp471_coverage_antigravity.csv"
         )
         original_leaf = leaf.read_bytes()
+        _make_report_tamperable_antigravity(leaf)
         leaf.write_bytes(original_leaf + b"changed-public-literal\n")
         with self.assertRaisesRegex(ValueError, "leaf digest"):
             reporting.read_exp471_report_antigravity(
@@ -1828,6 +2390,7 @@ class ReportingTestsAntigravity(unittest.TestCase):
         leaf.write_bytes(original_leaf)
 
         artifact_map = self.report_root / reporting._ARTIFACT_MAP_NAME_ANTIGRAVITY
+        _make_report_tamperable_antigravity(artifact_map)
         value = json.loads(artifact_map.read_text(encoding="utf-8"))
         value["files"][next(iter(value["files"]))] = "f" * 64
         artifact_map.write_bytes(canonical_json_bytes_exp471_antigravity(value))

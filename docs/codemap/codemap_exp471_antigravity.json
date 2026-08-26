@@ -311,6 +311,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
       "kind": "ast_import"
@@ -382,7 +387,8 @@
         "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
-        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py"
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py"
       ],
       "effects": "Descriptor-bound create-only persistence for Exp471 score-cache artifacts.",
       "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.cache_artifacts_antigravity",

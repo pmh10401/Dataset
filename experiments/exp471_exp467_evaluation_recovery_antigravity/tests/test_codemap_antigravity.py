@@ -203,6 +203,7 @@ EXPECTED_EDGES_ANTIGRAVITY = frozenset(
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py"),
+        ("experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py"),
         ("scratch/run_exp471_exp467_evaluation_recovery_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py"),

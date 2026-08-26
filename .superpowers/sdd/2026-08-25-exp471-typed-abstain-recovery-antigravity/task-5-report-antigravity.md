@@ -49,3 +49,26 @@ new production renderer. Under the approved minimal scope extension, the
 codemap test now adds only the renderer path and its direct effect/import
 expectations so the lock fingerprint scope can include that file. No existing
 expectation was otherwise changed.
+
+## Fix Round 1
+
+RED tests found the report closure did not bind the Exp450 PNG helper source and
+the direct renderer could follow a caller-root symlink. The closure now binds
+the Exp450 reporting/evaluation modules actually used to derive raster and
+metric/curve values, and test-injected PNG-source bytes change its digest. The
+renderer now opens the caller root and destination through descriptor-relative,
+no-follow cache-artifact helpers, validates both before and after publication,
+and rejects missing, extra, or linked destination inventory. PNG output now
+contains a deterministic `tEXt` metadata chunk binding support, axes, methods,
+and canonical curve values without changing visible raster semantics.
+
+Focused RED then GREEN evidence: closure dependency and symlink/inventory tests
+failed before the hardening change; after it, the focused renderer set passed
+3 tests in 1.787s and the synchronized codemap suite passed 5 tests in 19.894s.
+
+Final verification on the repaired tree: the production-shaped 1,117-dataset /
+922-common-support oracle, dependency-closure check, and descriptor-safety
+check passed 3/3 in 6.177s.  The full reporting/CLI suite passed 89/89 in
+52.564s; the Task 4 evaluator regression passed 28/28 in 4.122s; and the
+complete Exp471 suite passed 219/219 in 87.820s. `py_compile`, codemap
+generation plus `--check`, and `git diff --check` completed successfully.

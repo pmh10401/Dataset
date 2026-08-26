@@ -12,13 +12,16 @@ import json
 import math
 import os
 from pathlib import Path
+import struct
 from typing import Any
+import zlib
 
 from experiments.exp450_resampling_image_ablation_antigravity import (
     reporting_antigravity as _curve_raster_antigravity,
 )
 
 from .config_antigravity import METHOD_ORDER_ANTIGRAVITY
+from . import cache_artifacts_antigravity
 from .contracts_antigravity import (
     Exp471EvaluationArtifactAntigravity,
     canonical_json_bytes_exp471_antigravity,
@@ -169,6 +172,35 @@ def _curve_svg_antigravity(curves: Mapping[str, object], support: str) -> str:
     return "".join(parts)
 
 
+def _png_chunk_antigravity(kind: bytes, payload: bytes) -> bytes:
+    return (
+        struct.pack(">I", len(payload)) + kind + payload
+        + struct.pack(">I", zlib.crc32(kind + payload) & 0xFFFFFFFF)
+    )
+
+
+def _curve_png_antigravity(curves: Mapping[str, object], support: str) -> bytes:
+    """Attach deterministic semantic metadata to the dependency-free raster."""
+
+    raster = _curve_raster_antigravity._curve_png(curves)
+    iend = _png_chunk_antigravity(b"IEND", b"")
+    if not raster.endswith(iend):
+        raise ValueError("Exp471 typed curve PNG structure differs")
+    metadata = canonical_json_bytes_exp471_antigravity(
+        {
+            "schema": "exp471-typed-curve-png-antigravity.v1",
+            "support": support,
+            "roc": {"x": "false_positive_rate", "y": "true_positive_rate"},
+            "precision_recall": {"x": "recall", "y": "precision"},
+            "method_order": list(METHOD_ORDER_ANTIGRAVITY),
+            "curves": curves,
+        }
+    )
+    return raster[: -len(iend)] + _png_chunk_antigravity(
+        b"tEXt", b"exp471_typed_curve\x00" + metadata
+    ) + iend
+
+
 def _report_html_antigravity(payload: Mapping[str, object], figures: Mapping[str, str]) -> str:
     coverage = _plain_antigravity(payload["coverage"])
     support = _plain_antigravity(payload["support_authority"])
@@ -199,24 +231,25 @@ def _report_html_antigravity(payload: Mapping[str, object], figures: Mapping[str
 </body></html>'''
 
 
-def _write_create_only_antigravity(path: Path, payload: bytes) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
+def _validate_typed_destination_antigravity(
+    anchor: object, parent: int, expected: os.stat_result
+) -> None:
+    """Rebind the caller root and typed destination after each durable operation."""
+
+    anchor.validate()
+    cache_artifacts_antigravity._validate_child_directory_antigravity(
+        parent, _ROOT_NAME_ANTIGRAVITY, expected
+    )
+
+
+def _typed_leaf_names_antigravity(directory: int) -> tuple[str, ...]:
     try:
-        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-    except FileExistsError:
-        if path.is_symlink() or not path.is_file() or path.read_bytes() != payload:
-            raise ValueError("Exp471 typed report artifact already exists with different bytes") from None
-        return
-    try:
-        view = memoryview(payload)
-        while view:
-            written = os.write(descriptor, view)
-            if written <= 0:
-                raise OSError("Exp471 typed report write made no progress")
-            view = view[written:]
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
+        names = tuple(sorted(os.listdir(directory)))
+    except OSError as error:
+        raise ValueError("Exp471 typed report leaf inventory is unavailable") from error
+    if any(name.startswith(".") for name in names):
+        raise ValueError("Exp471 typed report leaf inventory contains a temporary leaf")
+    return names
 
 
 def expected_typed_exp471_report_leaves_antigravity(
@@ -257,7 +290,9 @@ def expected_typed_exp471_report_leaves_antigravity(
         svg = _curve_svg_antigravity(curve_supports[support], support)
         figures[support] = svg
         leaves[f"{stem}_curves_antigravity.svg"] = svg.encode("utf-8")
-        leaves[f"{stem}_curves_antigravity.png"] = _curve_raster_antigravity._curve_png(curve_supports[support])
+        leaves[f"{stem}_curves_antigravity.png"] = _curve_png_antigravity(
+            curve_supports[support], support
+        )
     leaves["exp471_paper_report_antigravity.html"] = _report_html_antigravity(payload, figures).encode("utf-8")
     manifest = {name: sha256(content).hexdigest() for name, content in sorted(leaves.items())}
     leaves[_MANIFEST_NAME_ANTIGRAVITY] = canonical_json_bytes_exp471_antigravity(
@@ -273,13 +308,48 @@ def write_typed_exp471_report_antigravity(
 ) -> Exp471TypedReportArtifactAntigravity:
     """Create or exact-byte reuse every typed report leaf below ``root``."""
 
-    destination = Path(root) / _ROOT_NAME_ANTIGRAVITY
-    if destination.exists() and (destination.is_symlink() or not destination.is_dir()):
-        raise ValueError("Exp471 typed report root is unsafe")
     leaves = expected_typed_exp471_report_leaves_antigravity(artifact)
-    for relative, content in leaves.items():
-        name = relative.removeprefix(f"{_ROOT_NAME_ANTIGRAVITY}/")
-        _write_create_only_antigravity(destination / name, content)
+    expected_names = tuple(
+        sorted(relative.removeprefix(f"{_ROOT_NAME_ANTIGRAVITY}/") for relative in leaves)
+    )
+    anchor = cache_artifacts_antigravity._open_absolute_directory_antigravity(
+        Path(root), create=True
+    )
+    destination_descriptor: int | None = None
+    destination = Path(root) / _ROOT_NAME_ANTIGRAVITY
+    try:
+        destination_descriptor, destination_identity = (
+            cache_artifacts_antigravity._open_child_directory_antigravity(
+                anchor.descriptor, _ROOT_NAME_ANTIGRAVITY, create=True
+            )
+        )
+        _validate_typed_destination_antigravity(
+            anchor, anchor.descriptor, destination_identity
+        )
+        if _typed_leaf_names_antigravity(destination_descriptor):
+            existing = _typed_leaf_names_antigravity(destination_descriptor)
+            if existing != expected_names:
+                raise ValueError("Exp471 typed report leaf inventory differs")
+        for relative, content in leaves.items():
+            name = relative.removeprefix(f"{_ROOT_NAME_ANTIGRAVITY}/")
+            cache_artifacts_antigravity._publish_bytes_at_antigravity(
+                destination_descriptor,
+                name,
+                content,
+                temporary_scope="typed_report_leaf",
+                post_link_validate_antigravity=lambda: _validate_typed_destination_antigravity(
+                    anchor, anchor.descriptor, destination_identity
+                ),
+            )
+        if _typed_leaf_names_antigravity(destination_descriptor) != expected_names:
+            raise ValueError("Exp471 typed report leaf inventory differs")
+        _validate_typed_destination_antigravity(
+            anchor, anchor.descriptor, destination_identity
+        )
+    finally:
+        if destination_descriptor is not None:
+            os.close(destination_descriptor)
+        anchor.close()
     digests = {relative: sha256(content).hexdigest() for relative, content in leaves.items()}
     return Exp471TypedReportArtifactAntigravity(destination, digests)
 

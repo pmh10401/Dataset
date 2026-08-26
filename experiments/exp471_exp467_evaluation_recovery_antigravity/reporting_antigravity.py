@@ -51,6 +51,10 @@ _RENAME_NOREPLACE_ANTIGRAVITY = 1
 _RENAME_EXCL_ANTIGRAVITY = 0x00000004
 
 _REPORT_CLOSURE_PATHS_ANTIGRAVITY = (
+    "experiments/exp450_resampling_image_ablation_antigravity/"
+    "evaluation_antigravity.py",
+    "experiments/exp450_resampling_image_ablation_antigravity/"
+    "reporting_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/"
     "config_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/"
@@ -1034,14 +1038,22 @@ def _dependency_version_antigravity(distribution: str) -> str:
         return "unavailable"
 
 
-def _report_closure_antigravity() -> dict[str, object]:
+def _report_closure_antigravity(
+    *, read_bytes: Callable[[Path], bytes] | None = None
+) -> dict[str, object]:
+    """Bind only source modules that execute while deriving typed report bytes."""
+
     repository = _repository_root_antigravity()
+    reader = Path.read_bytes if read_bytes is None else read_bytes
     files: dict[str, str] = {}
     for relative in _REPORT_CLOSURE_PATHS_ANTIGRAVITY:
         path = repository / relative
         if path.is_symlink() or not path.is_file():
             raise ValueError("Exp471 report code closure is incomplete")
-        files[relative] = sha256(path.read_bytes()).hexdigest()
+        payload = reader(path)
+        if not isinstance(payload, bytes):
+            raise ValueError("Exp471 report code closure member bytes differ")
+        files[relative] = sha256(payload).hexdigest()
     bare = {
         "schema": "exp471-report-code-closure-antigravity.v1",
         "file_sha256": files,
