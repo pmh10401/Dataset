@@ -109,12 +109,12 @@
       "kind": "ast_import"
     },
     {
-      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
       "kind": "ast_import"
     },
     {
-      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
       "kind": "ast_import"
     },
@@ -274,6 +274,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
       "kind": "ast_import"
@@ -306,6 +311,21 @@
     {
       "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
       "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -401,7 +421,8 @@
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
-        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py"
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py"
       ],
       "effects": "Frozen Exp471 source identity, roots, ordering, and backend policy.",
       "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.config_antigravity",
@@ -429,7 +450,8 @@
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
-        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py"
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py"
       ],
       "effects": "Strict, deeply immutable generic artifact contracts for Exp471.",
       "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.contracts_antigravity",
@@ -446,9 +468,9 @@
     {
       "callers": [
         "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
-        "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
-        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py"
       ],
       "effects": "Label-gated, create-only persistence for the frozen Exp471 evaluation.",
       "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.evaluation_antigravity",
@@ -603,6 +625,18 @@
     },
     {
       "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ],
+      "effects": "Deterministic paper leaves for the validated Exp471 typed-abstain artifact.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.typed_abstain_reporting_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py"
       ],
@@ -632,17 +666,17 @@
     "experiment": "Exp471",
     "external_closure_policy": "index_tracked_exp471_production_closure",
     "governance_fingerprint_evidence": {
-      "design_path": "docs/superpowers/specs/2026-08-24-exp471-exp467-evaluation-recovery-antigravity-design.md",
-      "design_sha256": "3d7f22953fd8010fd512124e7c1448db6ba0ca390533cd2d2b7476d69cb513fd",
+      "design_path": "docs/superpowers/specs/2026-08-25-exp471-typed-abstain-recovery-antigravity-design.md",
+      "design_sha256": "e8c5414b9fa1434d23d84ce9ec6638183e21718c7444479fc9abb9eead7b05e0",
       "exp471_production_modules_exist": true,
       "frozen_exp467_source_commit": "1e616731a88da9bc0268823e1d2cef2a53c1054f",
       "frozen_exp467_source_context_sha256": "31341d8e14cf58a486cf7418276c432ac2dbda1af139699ff2afbd85969442af",
-      "plan_path": "docs/superpowers/plans/2026-08-24-exp471-exp467-evaluation-recovery-antigravity.md",
-      "plan_sha256": "e913fec5c7d83201f0717f2aef16f2a5854dabf07b1e1d04b7ea5b86b26aefff"
+      "plan_path": "docs/superpowers/plans/2026-08-25-exp471-typed-abstain-recovery-antigravity.md",
+      "plan_sha256": "480d789ee64a7ddcf9741d93a106812094b9bb4539667520b4c1969039dcb3ac"
     },
     "namespace": "experiments/exp471_exp467_evaluation_recovery_antigravity",
-    "node_count": 22,
-    "production_node_count": 11,
+    "node_count": 23,
+    "production_node_count": 12,
     "test_node_count": 9
   },
   "unknowns": []

@@ -21,14 +21,6 @@ import threading
 from time import monotonic
 from typing import Any
 
-from experiments.exp450_resampling_image_ablation_antigravity import (
-    reporting_antigravity as _frozen_reporting_antigravity,
-)
-from experiments.exp450_resampling_image_ablation_antigravity.reporting_antigravity import (
-    Exp450ReportArtifactAntigravity,
-    write_exp450_report_antigravity,
-)
-
 from .config_antigravity import (
     EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY,
     METHOD_ORDER_ANTIGRAVITY,
@@ -38,8 +30,10 @@ from .contracts_antigravity import (
     Exp471ReportAuthorityAntigravity,
     canonical_json_bytes_exp471_antigravity,
 )
-from .evaluation_antigravity import (
-    reconstruct_frozen_evaluation_exp471_antigravity,
+from .typed_abstain_reporting_antigravity import (
+    Exp471TypedReportArtifactAntigravity,
+    expected_typed_exp471_report_leaves_antigravity,
+    write_typed_exp471_report_antigravity,
 )
 
 
@@ -49,20 +43,14 @@ _COMPLETE_MARKER_NAME_ANTIGRAVITY = (
 )
 _ARTIFACT_MAP_NAME_ANTIGRAVITY = "artifact_sha256_antigravity.json"
 _PROVENANCE_NAME_ANTIGRAVITY = "exp471_report_provenance_antigravity.json"
-_REPORT_SCHEMA_ANTIGRAVITY = "exp471-report-publication-antigravity.v1"
-_ARTIFACT_MAP_SCHEMA_ANTIGRAVITY = "exp471-report-artifact-map-antigravity.v1"
-_PROVENANCE_SCHEMA_ANTIGRAVITY = "exp471-report-provenance-antigravity.v1"
+_REPORT_SCHEMA_ANTIGRAVITY = "exp471-report-publication-antigravity.v2"
+_ARTIFACT_MAP_SCHEMA_ANTIGRAVITY = "exp471-report-artifact-map-antigravity.v2"
+_PROVENANCE_SCHEMA_ANTIGRAVITY = "exp471-report-provenance-antigravity.v2"
 _LOCK_SCHEMA_ANTIGRAVITY = "exp471-report-lock-antigravity.v1"
 _RENAME_NOREPLACE_ANTIGRAVITY = 1
 _RENAME_EXCL_ANTIGRAVITY = 0x00000004
 
 _REPORT_CLOSURE_PATHS_ANTIGRAVITY = (
-    "experiments/exp450_resampling_image_ablation_antigravity/"
-    "contracts_antigravity.py",
-    "experiments/exp450_resampling_image_ablation_antigravity/"
-    "evaluation_antigravity.py",
-    "experiments/exp450_resampling_image_ablation_antigravity/"
-    "reporting_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/"
     "config_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/"
@@ -73,6 +61,8 @@ _REPORT_CLOSURE_PATHS_ANTIGRAVITY = (
     "score_cache_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/"
     "reporting_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+    "typed_abstain_reporting_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/"
     "cli_antigravity.py",
     "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py",
@@ -1023,14 +1013,13 @@ def _read_report_for_worker_antigravity(
     provenance, _ = _read_json_leaf_antigravity(
         root, _PROVENANCE_NAME_ANTIGRAVITY
     )
-    frozen = reconstruct_frozen_evaluation_exp471_antigravity(artifact)
-    frozen_leaves = _expected_frozen_report_leaves_antigravity(frozen)
+    typed_leaves = expected_typed_exp471_report_leaves_antigravity(artifact)
     expected = _provenance_antigravity(
         artifact,
         worker,
         {
             relative: sha256(payload).hexdigest()
-            for relative, payload in frozen_leaves.items()
+            for relative, payload in typed_leaves.items()
         },
     )
     if provenance != expected:
@@ -1152,9 +1141,9 @@ def _provenance_antigravity(
     return {
         "schema": _PROVENANCE_SCHEMA_ANTIGRAVITY,
         "experiment": "Exp471",
-        "frozen_reporter": (
-            "experiments.exp450_resampling_image_ablation_antigravity."
-            "reporting_antigravity"
+        "typed_reporter": (
+            "experiments.exp471_exp467_evaluation_recovery_antigravity."
+            "typed_abstain_reporting_antigravity"
         ),
         "method_order": list(METHOD_ORDER_ANTIGRAVITY),
         "curve_axes": {
@@ -1170,6 +1159,9 @@ def _provenance_antigravity(
             "cache_context_sha256": cache["cache_context_sha256"],
             "manifest_sha256": cache["manifest_sha256"],
             "total_shards": cache["total_shards"],
+            "scored_shards": cache["scored_shards"],
+            "abstained_shards": cache["abstained_shards"],
+            "failed_shards": cache["failed_shards"],
         },
         "evaluation": {
             "evaluation_sha256": artifact.evaluation_sha256,
@@ -1186,6 +1178,11 @@ def _provenance_antigravity(
             "scipy": _dependency_version_antigravity("scipy"),
         },
         "evaluation_implementation": implementation,
+        "support_authority": json.loads(
+            canonical_json_bytes_exp471_antigravity(
+                artifact.payload["support_authority"]
+            ).decode("utf-8")
+        ),
         "worker_provenance": worker_provenance,
         "rendered_leaf_sha256": dict(sorted(rendered_leaf_sha256.items())),
     }
@@ -1345,81 +1342,6 @@ def _durable_worker_provenance_antigravity(
     return _validate_worker_provenance_antigravity(worker, artifact)
 
 
-def _expected_frozen_report_leaves_antigravity(frozen: object) -> dict[str, bytes]:
-    """Derive exact deterministic Exp450 bytes without rendering or publication."""
-
-    metrics = frozen.metric_tables
-    curves = _frozen_reporting_antigravity.canonicalize_exp450_json_antigravity(
-        frozen.curve_tables
-    )
-    metric_payload = {
-        "method_order": list(metrics.method_order),
-        "per_dataset": _frozen_reporting_antigravity.canonicalize_exp450_json_antigravity(
-            metrics.per_dataset
-        ),
-        "macro": _frozen_reporting_antigravity.canonicalize_exp450_json_antigravity(
-            metrics.macro
-        ),
-        "micro": _frozen_reporting_antigravity.canonicalize_exp450_json_antigravity(
-            metrics.micro
-        ),
-    }
-    paired_payload = {
-        "paired_statistics": _frozen_reporting_antigravity.canonicalize_exp450_json_antigravity(
-            metrics.paired_statistics
-        )
-    }
-    leaves = {
-        "exp450_metric_tables_antigravity.csv": _frozen_reporting_antigravity._csv_bytes(
-            metrics.per_dataset,
-            (
-                "method",
-                "dataset",
-                "average_precision",
-                "auroc",
-                "average_precision_exclusion",
-                "auroc_exclusion",
-            ),
-        ),
-        "exp450_metric_tables_antigravity.json": _frozen_reporting_antigravity.canonical_json_bytes(
-            metric_payload
-        ),
-        "exp450_curve_tables_antigravity.csv": _frozen_reporting_antigravity._curve_csv_bytes(
-            curves
-        ),
-        "exp450_curve_tables_antigravity.json": _frozen_reporting_antigravity.canonical_json_bytes(
-            curves
-        ),
-        "exp450_paired_differences_antigravity.csv": _frozen_reporting_antigravity._paired_csv_bytes(
-            metrics.paired_statistics
-        ),
-        "exp450_paired_differences_antigravity.json": _frozen_reporting_antigravity.canonical_json_bytes(
-            paired_payload
-        ),
-    }
-    svg = _frozen_reporting_antigravity._curve_svg(curves)
-    leaves.update(
-        {
-            "exp450_curves_antigravity.svg": svg.encode("utf-8"),
-            "exp450_curves_antigravity.png": _frozen_reporting_antigravity._curve_png(
-                curves
-            ),
-            "exp450_paper_report_antigravity.html": _frozen_reporting_antigravity._html_document(
-                metric_payload, paired_payload, curves, svg
-            ).encode("utf-8"),
-        }
-    )
-    manifest = {
-        name: sha256(payload).hexdigest()
-        for name, payload in sorted(leaves.items())
-    }
-    leaves["exp450_report_manifest_antigravity.json"] = (
-        _frozen_reporting_antigravity.canonical_json_bytes(manifest)
-    )
-    prefix = "exp450_report_artifacts_antigravity"
-    return {f"{prefix}/{name}": payload for name, payload in leaves.items()}
-
-
 def _read_json_leaf_antigravity(root: Path, relative: str) -> tuple[dict[str, Any], bytes]:
     raw = _regular_leaf_bytes_antigravity(root, relative)
     try:
@@ -1437,8 +1359,7 @@ def read_exp471_report_antigravity(
 ) -> Exp471ReportAuthorityAntigravity:
     """Reopen every final leaf and verify its complete authority map."""
 
-    frozen = reconstruct_frozen_evaluation_exp471_antigravity(artifact)
-    expected_frozen_leaves = _expected_frozen_report_leaves_antigravity(frozen)
+    expected_typed_leaves = expected_typed_exp471_report_leaves_antigravity(artifact)
     root = Path(root)
     _require_safe_parent_antigravity(root)
     if root.is_symlink():
@@ -1502,7 +1423,7 @@ def read_exp471_report_antigravity(
     if actual_names != expected_names:
         raise ValueError("Exp471 report leaf inventory differs")
     if set(authority.report_file_sha256) != {
-        *expected_frozen_leaves,
+        *expected_typed_leaves,
         _PROVENANCE_NAME_ANTIGRAVITY,
     }:
         raise ValueError("Exp471 report fixed leaf inventory differs")
@@ -1512,10 +1433,10 @@ def read_exp471_report_antigravity(
         observed = sha256(_regular_leaf_bytes_antigravity(root, relative)).hexdigest()
         if observed != expected:
             raise ValueError(f"Exp471 report leaf digest differs: {relative}")
-    for relative, expected_bytes in expected_frozen_leaves.items():
+    for relative, expected_bytes in expected_typed_leaves.items():
         if _regular_leaf_bytes_antigravity(root, relative) != expected_bytes:
             raise ValueError(
-                f"Exp471 frozen report leaf semantic bytes differ: {relative}"
+                f"Exp471 typed report leaf semantic bytes differ: {relative}"
             )
     provenance, _ = _read_json_leaf_antigravity(root, _PROVENANCE_NAME_ANTIGRAVITY)
     stored_worker = _validate_worker_provenance_antigravity(
@@ -1529,7 +1450,7 @@ def read_exp471_report_antigravity(
         worker,
         {
             relative: sha256(payload).hexdigest()
-            for relative, payload in expected_frozen_leaves.items()
+            for relative, payload in expected_typed_leaves.items()
         },
     )
     if provenance != expected_provenance:
@@ -1567,12 +1488,11 @@ def write_exp471_report_antigravity(
     root: Path,
     *,
     worker_provenance: Mapping[str, object] | None = None,
-    renderer: Callable[[object, Path], Exp450ReportArtifactAntigravity] | None = None,
+    renderer: Callable[[Exp471EvaluationArtifactAntigravity, Path], Exp471TypedReportArtifactAntigravity] | None = None,
     fault: Callable[[str], None] | None = None,
 ) -> Exp471ReportAuthorityAntigravity:
     """Render once, verify all leaves, and atomically publish a complete report."""
 
-    frozen = reconstruct_frozen_evaluation_exp471_antigravity(artifact)
     durable_worker = _durable_worker_provenance_antigravity(artifact)
     if worker_provenance is None:
         worker = durable_worker
@@ -1615,24 +1535,33 @@ def write_exp471_report_antigravity(
             return _read_report_for_worker_antigravity(artifact, root, worker)
         stage = _create_stage_token_antigravity(root, token)
         active_renderer = (
-            write_exp450_report_antigravity if renderer is None else renderer
+            write_typed_exp471_report_antigravity if renderer is None else renderer
         )
-        rendered = active_renderer(frozen, stage.path)
+        rendered = active_renderer(artifact, stage.path)
         if (
-            not isinstance(rendered, Exp450ReportArtifactAntigravity)
+            not isinstance(rendered, Exp471TypedReportArtifactAntigravity)
             or rendered.root.parent != stage.path
-            or rendered.root.name != "exp450_report_artifacts_antigravity"
+            or rendered.root.name != "exp471_typed_report_artifacts_antigravity"
         ):
-            raise ValueError("Exp471 frozen reporter returned an unsafe root")
+            raise ValueError("Exp471 typed reporter returned an unsafe root")
         rendered_names = _leaf_names_antigravity(stage.path)
         if not rendered_names:
-            raise ValueError("Exp471 frozen reporter produced no leaves")
+            raise ValueError("Exp471 typed reporter produced no leaves")
         rendered_digests = {
             relative: sha256(
                 _regular_leaf_bytes_antigravity(stage.path, relative)
             ).hexdigest()
             for relative in rendered_names
         }
+        expected_typed_leaves = expected_typed_exp471_report_leaves_antigravity(
+            artifact
+        )
+        expected_digests = {
+            relative: sha256(payload).hexdigest()
+            for relative, payload in expected_typed_leaves.items()
+        }
+        if rendered_digests != expected_digests or dict(rendered.leaves) != expected_digests:
+            raise ValueError("Exp471 typed reporter leaf digest differs")
         provenance = _provenance_antigravity(
             artifact, worker, rendered_digests
         )

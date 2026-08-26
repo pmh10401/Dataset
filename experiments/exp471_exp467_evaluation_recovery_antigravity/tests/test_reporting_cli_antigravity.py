@@ -35,6 +35,9 @@ from experiments.exp471_exp467_evaluation_recovery_antigravity import (
 from experiments.exp471_exp467_evaluation_recovery_antigravity import (
     reporting_antigravity as reporting,
 )
+from experiments.exp471_exp467_evaluation_recovery_antigravity import (
+    typed_abstain_reporting_antigravity as typed_reporting,
+)
 from experiments.exp471_exp467_evaluation_recovery_antigravity.cli_antigravity import (
     main_antigravity,
 )
@@ -257,11 +260,11 @@ def _independent_report_contender_antigravity(
 
     reporting._TASK5_SCORE_CACHE_ROOT_ANTIGRAVITY = Path(task5_root)
 
-    def renderer(frozen, root):
+    def renderer(artifact, root):
         ready.set()
         if not release.wait(timeout=10):
             raise RuntimeError("public process release timeout antigravity")
-        return reporting.write_exp450_report_antigravity(frozen, root)
+        return typed_reporting.write_typed_exp471_report_antigravity(artifact, root)
 
     try:
         authority = reporting.write_exp471_report_antigravity(
@@ -1647,6 +1650,91 @@ class ReportingTestsAntigravity(unittest.TestCase):
         self.task5_root_patch.stop()
         self.temporary.cleanup()
 
+    def test_typed_renderer_emits_complete_typed_leaf_set_and_semantics(self) -> None:
+        """The v2 artifact renders typed coverage, metrics, figures, and wording."""
+
+        rendered = typed_reporting.write_typed_exp471_report_antigravity(
+            self.artifact, self.base / "typed_stage_antigravity"
+        )
+        prefix = "exp471_typed_report_artifacts_antigravity"
+        expected_names = {
+            "exp471_coverage_antigravity.csv",
+            "exp471_coverage_antigravity.json",
+            "exp471_full_population_decisions_antigravity.csv",
+            "exp471_full_population_decisions_antigravity.json",
+            "exp471_scored_support_metrics_antigravity.csv",
+            "exp471_scored_support_metrics_antigravity.json",
+            "exp471_common_support_metrics_antigravity.csv",
+            "exp471_common_support_metrics_antigravity.json",
+            "exp471_scored_support_curves_antigravity.svg",
+            "exp471_scored_support_curves_antigravity.png",
+            "exp471_common_support_curves_antigravity.svg",
+            "exp471_common_support_curves_antigravity.png",
+            "exp471_paper_report_antigravity.html",
+            "exp471_typed_report_manifest_antigravity.json",
+        }
+        self.assertEqual(
+            set(rendered.leaves), {f"{prefix}/{name}" for name in expected_names}
+        )
+        coverage = json.loads(
+            (rendered.root / "exp471_coverage_antigravity.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            [row["method"] for row in coverage["rows"]],
+            list(METHOD_ORDER_ANTIGRAVITY),
+        )
+        self.assertTrue(
+            all(
+                set(row) == {
+                    "method", "population", "scored", "abstained", "failed",
+                    "coverage", "abstention_reasons",
+                }
+                for row in coverage["rows"]
+            )
+        )
+        metrics = json.loads(
+            (rendered.root / "exp471_scored_support_metrics_antigravity.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            metrics["method_order"], list(METHOD_ORDER_ANTIGRAVITY)
+        )
+        self.assertEqual(
+            set(metrics["macro"]), set(METHOD_ORDER_ANTIGRAVITY)
+        )
+        self.assertTrue(
+            all(
+                "average_precision_denominator" in row
+                and "auroc_denominator" in row
+                for row in metrics["macro"].values()
+            )
+        )
+        for support in ("scored_support", "common_support"):
+            svg = (rendered.root / f"exp471_{support}_curves_antigravity.svg").read_text(
+                encoding="utf-8"
+            )
+            self.assertIn('data-roc-x="false_positive_rate"', svg)
+            self.assertIn('data-roc-y="true_positive_rate"', svg)
+            self.assertIn('data-pr-x="recall"', svg)
+            self.assertIn('data-pr-y="precision"', svg)
+            for method in METHOD_ORDER_ANTIGRAVITY:
+                self.assertIn(f'data-legend-method="{method}"', svg)
+        paper = (rendered.root / "exp471_paper_report_antigravity.html").read_text(
+            encoding="utf-8"
+        ).lower()
+        self.assertIn("preregistered no-alert outcome", paper)
+        self.assertIn("not a runtime failure", paper)
+        self.assertIn("not a continuous score", paper)
+        for prohibition in (
+            "prohibits score completion",
+            "automatic promotion",
+            "historical-parity claims",
+        ):
+            self.assertIn(prohibition, paper)
+
     def test_two_argument_public_interface_reads_durable_worker_provenance(self) -> None:
         """The specified two-argument API must bind the reopened worker decision."""
 
@@ -1699,28 +1787,24 @@ class ReportingTestsAntigravity(unittest.TestCase):
         metrics = json.loads(
             (
                 self.report_root
-                / "exp450_report_artifacts_antigravity"
-                / "exp450_metric_tables_antigravity.json"
+                / "exp471_typed_report_artifacts_antigravity"
+                / "exp471_scored_support_metrics_antigravity.json"
             ).read_text(encoding="utf-8")
         )
-        curves = json.loads(
-            (
-                self.report_root
-                / "exp450_report_artifacts_antigravity"
-                / "exp450_curve_tables_antigravity.json"
-            ).read_text(encoding="utf-8")
-        )
+        curves = (
+            self.report_root
+            / "exp471_typed_report_artifacts_antigravity"
+            / "exp471_scored_support_curves_antigravity.svg"
+        ).read_text(encoding="utf-8")
         self.assertEqual(tuple(metrics["method_order"]), METHOD_ORDER_ANTIGRAVITY)
         self.assertEqual(set(metrics["macro"]), set(METHOD_ORDER_ANTIGRAVITY))
         self.assertEqual(set(metrics["micro"]), set(METHOD_ORDER_ANTIGRAVITY))
-        self.assertEqual(curves["roc"]["x_name"], "false_positive_rate")
-        self.assertEqual(curves["roc"]["y_name"], "true_positive_rate")
-        self.assertEqual(curves["precision_recall"]["x_name"], "recall")
-        self.assertEqual(curves["precision_recall"]["y_name"], "precision")
-        self.assertEqual(
-            {row["method"] for row in curves["roc"]["rows"]},
-            set(METHOD_ORDER_ANTIGRAVITY),
-        )
+        self.assertIn('data-roc-x="false_positive_rate"', curves)
+        self.assertIn('data-roc-y="true_positive_rate"', curves)
+        self.assertIn('data-pr-x="recall"', curves)
+        self.assertIn('data-pr-y="precision"', curves)
+        for method in METHOD_ORDER_ANTIGRAVITY:
+            self.assertIn(f'data-legend-method="{method}"', curves)
 
     def test_changed_leaf_and_artifact_map_digest_are_rejected(self) -> None:
         """Changed report bytes or a rehashed foreign map cannot retain authority."""
@@ -1732,8 +1816,8 @@ class ReportingTestsAntigravity(unittest.TestCase):
         )
         leaf = (
             self.report_root
-            / "exp450_report_artifacts_antigravity"
-            / "exp450_metric_tables_antigravity.csv"
+            / "exp471_typed_report_artifacts_antigravity"
+            / "exp471_coverage_antigravity.csv"
         )
         original_leaf = leaf.read_bytes()
         leaf.write_bytes(original_leaf + b"changed-public-literal\n")
@@ -1757,9 +1841,9 @@ class ReportingTestsAntigravity(unittest.TestCase):
 
         render_calls: list[str] = []
 
-        def render(frozen, root):
+        def render(artifact, root):
             render_calls.append("render")
-            return reporting.write_exp450_report_antigravity(frozen, root)
+            return typed_reporting.write_typed_exp471_report_antigravity(artifact, root)
 
         first = reporting.write_exp471_report_antigravity(
             self.artifact,
@@ -2306,11 +2390,11 @@ class ReportingTestsAntigravity(unittest.TestCase):
         release = threading.Event()
         render_calls: list[str] = []
 
-        def render(frozen, root):
+        def render(artifact, root):
             render_calls.append("render")
             rendering.set()
             self.assertTrue(release.wait(timeout=5))
-            return reporting.write_exp450_report_antigravity(frozen, root)
+            return typed_reporting.write_typed_exp471_report_antigravity(artifact, root)
 
         with ThreadPoolExecutor(max_workers=2) as pool:
             first = pool.submit(
@@ -2341,11 +2425,11 @@ class ReportingTestsAntigravity(unittest.TestCase):
         release = threading.Event()
         render_calls: list[str] = []
 
-        def render(frozen, root):
+        def render(artifact, root):
             render_calls.append("render")
             rendering.set()
             self.assertTrue(release.wait(timeout=5))
-            return reporting.write_exp450_report_antigravity(frozen, root)
+            return typed_reporting.write_typed_exp471_report_antigravity(artifact, root)
 
         different = _worker_provenance_antigravity(single_worker_seconds=0.125)
         self.assertNotEqual(different, _worker_provenance_antigravity())
@@ -2425,68 +2509,13 @@ class ReportingTestsAntigravity(unittest.TestCase):
         )
 
     def test_rehashed_scientific_leaf_tampering_is_rejected(self) -> None:
-        """Every frozen format must remain the exact Task 6 representation."""
+        """Every typed CSV, JSON, SVG, PNG, HTML, and manifest leaf is bound."""
 
-        nested = "exp450_report_artifacts_antigravity"
-
-        def json_mutation(relative: str, mutate) -> bytes:
-            value = json.loads((root / relative).read_text(encoding="utf-8"))
-            mutate(value)
-            return canonical_json_bytes_exp471_antigravity(value)
-
-        mutations = {
-            f"{nested}/exp450_metric_tables_antigravity.json": lambda root: json_mutation(
-                f"{nested}/exp450_metric_tables_antigravity.json",
-                lambda value: value["method_order"].pop(),
-            ),
-            f"{nested}/exp450_curve_tables_antigravity.json": lambda root: json_mutation(
-                f"{nested}/exp450_curve_tables_antigravity.json",
-                lambda value: value["roc"].update(
-                    {"x_name": "true_positive_rate", "y_name": "false_positive_rate"}
-                ),
-            ),
-            f"{nested}/exp450_paired_differences_antigravity.json": lambda root: json_mutation(
-                f"{nested}/exp450_paired_differences_antigravity.json",
-                lambda value: value["paired_statistics"][0].update(
-                    {"point_estimate": 0.125}
-                ),
-            ),
-            f"{nested}/exp450_report_manifest_antigravity.json": lambda root: canonical_json_bytes_exp471_antigravity(
-                {
-                    **json.loads(
-                        (
-                            root
-                            / nested
-                            / "exp450_report_manifest_antigravity.json"
-                        ).read_text(encoding="utf-8")
-                    ),
-                    "exp450_metric_tables_antigravity.json": "f" * 64,
-                }
-            ),
-            f"{nested}/exp450_metric_tables_antigravity.csv": lambda root: (
-                root / nested / "exp450_metric_tables_antigravity.csv"
-            ).read_bytes()
-            + b"foreign,metric,csv,public,literal\n",
-            f"{nested}/exp450_curve_tables_antigravity.csv": lambda root: (
-                root / nested / "exp450_curve_tables_antigravity.csv"
-            ).read_bytes()
-            + b"foreign,curve,csv,public,literal\n",
-            f"{nested}/exp450_paired_differences_antigravity.csv": lambda root: (
-                root / nested / "exp450_paired_differences_antigravity.csv"
-            ).read_bytes()
-            + b"foreign,paired,csv,public,literal\n",
-            f"{nested}/exp450_curves_antigravity.svg": lambda root: (
-                root / nested / "exp450_curves_antigravity.svg"
-            ).read_bytes().replace(b"roc", b"bad", 1),
-            f"{nested}/exp450_curves_antigravity.png": lambda root: (
-                root / nested / "exp450_curves_antigravity.png"
-            ).read_bytes()[:-1]
-            + b"X",
-            f"{nested}/exp450_paper_report_antigravity.html": lambda root: (
-                root / nested / "exp450_paper_report_antigravity.html"
-            ).read_bytes().replace(b"continuous", b"fabricated", 1),
-        }
-        for index, (relative, mutate) in enumerate(mutations.items()):
+        nested = "exp471_typed_report_artifacts_antigravity"
+        leaves = typed_reporting.expected_typed_exp471_report_leaves_antigravity(
+            self.artifact
+        )
+        for index, relative in enumerate(leaves):
             with self.subTest(relative=relative):
                 root = self.base / f"semantic_{index}_report_antigravity"
                 reporting.write_exp471_report_antigravity(
@@ -2494,8 +2523,11 @@ class ReportingTestsAntigravity(unittest.TestCase):
                     root,
                     worker_provenance=_worker_provenance_antigravity(),
                 )
-                _rehash_report_leaf_antigravity(root, relative, mutate(root))
-                with self.assertRaisesRegex(ValueError, "frozen|semantic|leaf"):
+                path = root / relative
+                _rehash_report_leaf_antigravity(
+                    root, relative, path.read_bytes() + b"typed-tamper-antigravity\n"
+                )
+                with self.assertRaisesRegex(ValueError, "typed|semantic|leaf"):
                     reporting.read_exp471_report_antigravity(self.artifact, root)
 
     def test_rehashed_complete_provenance_tampering_is_rejected(self) -> None:
@@ -2571,53 +2603,25 @@ class ReportingTestsAntigravity(unittest.TestCase):
             )
 
     def test_rehashed_method_metric_and_coordinate_mutations_are_rejected(self) -> None:
-        """Order, numeric metrics, and paired curve coordinates share one authority."""
+        """A rehashed typed metric or curve semantic mutation cannot be accepted."""
 
-        nested = "exp450_report_artifacts_antigravity"
+        nested = "exp471_typed_report_artifacts_antigravity"
         cases = (
-            (
-                "reordered-methods",
-                f"{nested}/exp450_metric_tables_antigravity.json",
-                lambda value: value["method_order"].reverse(),
-            ),
-            (
-                "changed-metric",
-                f"{nested}/exp450_metric_tables_antigravity.json",
-                lambda value: value["macro"][METHOD_ORDER_ANTIGRAVITY[0]].update(
-                    {"average_precision": 0.125}
-                ),
-            ),
-            (
-                "swapped-roc-coordinate",
-                f"{nested}/exp450_curve_tables_antigravity.json",
-                lambda value: value["roc"]["rows"][1].update(
-                    {
-                        "false_positive_rate": value["roc"]["rows"][1][
-                            "true_positive_rate"
-                        ],
-                        "true_positive_rate": value["roc"]["rows"][1][
-                            "false_positive_rate"
-                        ],
-                    }
-                ),
-            ),
+            f"{nested}/exp471_scored_support_metrics_antigravity.json",
+            f"{nested}/exp471_common_support_metrics_antigravity.json",
+            f"{nested}/exp471_scored_support_curves_antigravity.svg",
+            f"{nested}/exp471_common_support_curves_antigravity.svg",
         )
-        for index, (name, relative, mutate) in enumerate(cases):
-            with self.subTest(name=name):
+        for index, relative in enumerate(cases):
+            with self.subTest(relative=relative):
                 root = self.base / f"scientific_{index}_report_antigravity"
                 reporting.write_exp471_report_antigravity(
-                    self.artifact,
-                    root,
-                    worker_provenance=_worker_provenance_antigravity(),
+                    self.artifact, root, worker_provenance=_worker_provenance_antigravity()
                 )
-                value = json.loads((root / relative).read_text(encoding="utf-8"))
-                mutate(value)
                 _rehash_report_leaf_antigravity(
-                    root,
-                    relative,
-                    canonical_json_bytes_exp471_antigravity(value),
+                    root, relative, (root / relative).read_bytes() + b"changed\n"
                 )
-                with self.assertRaisesRegex(ValueError, "frozen|semantic|leaf"):
+                with self.assertRaisesRegex(ValueError, "typed|semantic|leaf"):
                     reporting.read_exp471_report_antigravity(self.artifact, root)
 
     def test_partial_worker_provenance_is_rejected_before_rendering(self) -> None:

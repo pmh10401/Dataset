@@ -41,6 +41,7 @@ PRODUCTION_PATHS_ANTIGRAVITY = frozenset(
         "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
     }
 )
 TEST_PATHS_ANTIGRAVITY = frozenset(
@@ -98,6 +99,9 @@ EXPECTED_EFFECTS_ANTIGRAVITY = {
     ),
     f"{EXP471_NAMESPACE_ANTIGRAVITY}/source_authority_antigravity.py": (
         "Descriptor-bound reconstruction and publication of frozen Exp467 authority."
+    ),
+    f"{EXP471_NAMESPACE_ANTIGRAVITY}/typed_abstain_reporting_antigravity.py": (
+        "Deterministic paper leaves for the validated Exp471 typed-abstain artifact."
     ),
     f"{EXP471_NAMESPACE_ANTIGRAVITY}/tests/test_cache_artifacts_antigravity.py": (
         "Lifecycle tests for durable create-only Exp471 score-cache artifacts."
@@ -157,8 +161,8 @@ EXPECTED_EDGES_ANTIGRAVITY = frozenset(
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py"),
-        ("experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py"),
+        ("experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py"),
@@ -188,6 +192,7 @@ EXPECTED_EDGES_ANTIGRAVITY = frozenset(
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py"),
+        ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py", "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py"),
@@ -197,6 +202,9 @@ EXPECTED_EDGES_ANTIGRAVITY = frozenset(
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py"),
         ("experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py"),
+        ("experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py"),
+        ("experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py"),
+        ("experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py"),
         ("scratch/run_exp471_exp467_evaluation_recovery_antigravity.py", "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py"),
     }
 )
@@ -286,8 +294,8 @@ def _assert_payload_answers_antigravity(
     if not isinstance(scope, Mapping):
         raise AssertionError("code-map scope is not a mapping")
     expected_scope = {
-        "node_count": 22,
-        "production_node_count": 11,
+        "node_count": 23,
+        "production_node_count": 12,
         "test_node_count": 9,
             "external_closure_policy": (
                 "index_tracked_exp471_production_closure"

@@ -27,10 +27,10 @@ TRIPLET_ANTIGRAVITY = (
 )
 
 DESIGN_PATH_ANTIGRAVITY = (
-    "docs/superpowers/specs/2026-08-24-exp471-exp467-evaluation-recovery-antigravity-design.md"
+    "docs/superpowers/specs/2026-08-25-exp471-typed-abstain-recovery-antigravity-design.md"
 )
 PLAN_PATH_ANTIGRAVITY = (
-    "docs/superpowers/plans/2026-08-24-exp471-exp467-evaluation-recovery-antigravity.md"
+    "docs/superpowers/plans/2026-08-25-exp471-typed-abstain-recovery-antigravity.md"
 )
 
 CODEMAP_DIRECTORY = REPOSITORY_ROOT / "docs" / "codemap"
