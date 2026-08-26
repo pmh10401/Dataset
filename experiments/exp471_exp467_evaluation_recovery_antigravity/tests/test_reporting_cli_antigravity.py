@@ -3579,6 +3579,41 @@ class _LifecycleRuntimeAntigravity:
 
 
 class CliTestsAntigravity(unittest.TestCase):
+    def test_production_coordinate_pin_matches_pinned_baseline_roots(self) -> None:
+        """Accept only the coordinate inventory bound to the pinned roots."""
+
+        from experiments.exp471_exp467_evaluation_recovery_antigravity import (
+            source_authority_antigravity as source_authority,
+        )
+
+        session = source_authority.open_exp467_source_session_antigravity(
+            cli._repository_root_antigravity(),
+            cli.EXP467_SOURCE_ROOT_ANTIGRAVITY,
+        )
+        self.assertIsNone(session.label_callback_antigravity)
+
+        context = cli._preflight_production_baselines_antigravity(
+            session.authority, session.catalog
+        )
+
+        self.assertEqual(
+            context.test_coordinates_sha256,
+            "3a4f87762db0df819cb1152fd115293d9e2646393f212ee770ce81d39951644a",
+        )
+        self.assertEqual(len(context.datasets), 1_117)
+        self.assertEqual(context.preflight.scored_count, 6_307)
+        self.assertEqual(context.preflight.abstained_count, 395)
+        self.assertEqual(context.preflight.failed_count, 0)
+        common_support = tuple(
+            dataset
+            for dataset in context.datasets
+            if all(
+                context.preflight.entries[(method, dataset)].status == "scored"
+                for method in baseline_preflight.BASELINE_METHODS_ANTIGRAVITY
+            )
+        )
+        self.assertEqual(len(common_support), 922)
+
     def test_progress_read_rejects_root_swap_after_descriptor_read(self) -> None:
         """A read from a detached root descriptor must never return authority."""
 

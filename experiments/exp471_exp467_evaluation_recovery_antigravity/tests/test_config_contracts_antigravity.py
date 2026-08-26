@@ -161,7 +161,7 @@ class Exp471ConfigTestsAntigravity(unittest.TestCase):
                 "EXP471_TEST_COORDINATE_INVENTORY_SHA256_ANTIGRAVITY",
                 None,
             ),
-            "f7999eb329668cfa2bcee6db69e65a0d542d1960dced27f28bc39751756acee6",
+            "3a4f87762db0df819cb1152fd115293d9e2646393f212ee770ce81d39951644a",
         )
         self.assertEqual(
             getattr(config, "EXP471_BASELINE_DATASET_COUNT_ANTIGRAVITY", None),
