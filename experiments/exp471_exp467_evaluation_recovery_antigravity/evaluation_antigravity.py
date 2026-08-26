@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from hashlib import sha256
 import importlib.metadata
 import json
@@ -40,10 +41,12 @@ from .contracts_antigravity import (
     canonical_json_bytes_exp471_antigravity,
 )
 from .source_authority_antigravity import Exp471SourceSessionAntigravity
+from experiments.paper_public_baselines.calibration import matched_top_k
+from experiments.paper_public_baselines.config import ALPHAS
 
 
 _EVALUATION_NAME_ANTIGRAVITY = "evaluation_antigravity.json"
-_EVALUATION_SCHEMA_ANTIGRAVITY = "exp471-evaluation-antigravity.v1"
+_EVALUATION_SCHEMA_ANTIGRAVITY = "exp471-evaluation-antigravity.v2"
 _SEMANTIC_NONE_SCHEMA_ANTIGRAVITY = "exp471-semantic-none-antigravity.v1"
 _SHA256_ANTIGRAVITY = re.compile(r"^[0-9a-f]{64}$")
 _CODE_CLOSURE_SCHEMA_ANTIGRAVITY = (
@@ -208,17 +211,25 @@ def _require_source_session_antigravity(
     return session
 
 
+@dataclass(frozen=True, slots=True)
+class _TypedCacheAntigravity:
+    """Fully rebound typed cache evidence, before the label capability opens."""
+
+    cache: Exp471ScoreCacheManifestAntigravity
+    raw_scores: Mapping[str, Mapping[str, tuple[float, ...]]]
+    micro_scores: Mapping[str, Mapping[str, tuple[float, ...]]]
+    test_counts: Mapping[str, int]
+    test_indices: Mapping[str, tuple[int, ...]]
+    status: Mapping[str, Mapping[str, str]]
+    reasons: Mapping[str, Mapping[str, str | None]]
+
+
 def _verified_cache_shards_antigravity(
     session: Exp471SourceSessionAntigravity,
     cache: object,
     *,
     prepare_scores: bool,
-) -> tuple[
-    Exp471ScoreCacheManifestAntigravity,
-    dict[str, dict[str, tuple[float, ...]]] | None,
-    dict[str, dict[str, tuple[float, ...]]] | None,
-    dict[str, int],
-]:
+) -> _TypedCacheAntigravity:
     session = _require_source_session_antigravity(session)
     if not isinstance(cache, Exp471ScoreCacheManifestAntigravity):
         raise ValueError("Exp471 evaluation cache authority has the wrong type")
@@ -237,19 +248,35 @@ def _verified_cache_shards_antigravity(
         raise ValueError("Exp471 evaluation cache source authority differs")
     if reopened.method_order != METHOD_ORDER_ANTIGRAVITY:
         raise ValueError("Exp471 evaluation cache method order differs")
+    if (
+        reopened.total_shards
+        != len(METHOD_ORDER_ANTIGRAVITY) * len(reopened.dataset_order)
+    ):
+        raise ValueError("Exp471 evaluation cache identity count differs")
+    if reopened.failed_shards != 0:
+        raise ValueError("Exp471 evaluation cache contains failed shards")
 
-    raw_scores: dict[str, dict[str, tuple[float, ...]]] | None = (
-        {} if prepare_scores else None
-    )
-    micro_scores: dict[str, dict[str, tuple[float, ...]]] | None = (
-        {} if prepare_scores else None
-    )
+    is_production_population = len(reopened.dataset_order) == 1_117
+    if is_production_population and (
+        reopened.total_shards != 11_170
+        or reopened.scored_shards != 10_775
+        or reopened.abstained_shards != 395
+    ):
+        raise ValueError("Exp471 evaluation production cache partition differs")
+
+    raw_scores: dict[str, dict[str, tuple[float, ...]]] = {}
+    micro_scores: dict[str, dict[str, tuple[float, ...]]] = {}
     test_counts: dict[str, int] = {}
+    test_indices: dict[str, tuple[int, ...]] = {}
+    statuses: dict[str, dict[str, str]] = {}
+    reasons: dict[str, dict[str, str | None]] = {}
+    scored = 0
+    abstained = 0
     for method in METHOD_ORDER_ANTIGRAVITY:
-        if prepare_scores:
-            assert raw_scores is not None and micro_scores is not None
-            raw_scores[method] = {}
-            micro_scores[method] = {}
+        raw_scores[method] = {}
+        micro_scores[method] = {}
+        statuses[method] = {}
+        reasons[method] = {}
         for dataset in reopened.dataset_order:
             shard = cache_artifacts_antigravity.read_score_shard_antigravity(
                 root, method, dataset
@@ -259,6 +286,7 @@ def _verified_cache_shards_antigravity(
                 shard.source_authority_sha256
                 != session.authority.authority_sha256
                 or shard.cache_context_sha256 != reopened.cache_context_sha256
+                or key not in reopened.shard_sha256
                 or shard.envelope_sha256 != reopened.shard_sha256[key]
                 or shard.method != method
                 or shard.dataset != dataset
@@ -267,48 +295,64 @@ def _verified_cache_shards_antigravity(
             prior_count = test_counts.setdefault(dataset, shard.test_count)
             if prior_count != shard.test_count:
                 raise ValueError("Exp471 evaluation dataset row counts differ")
-            if prepare_scores:
-                assert raw_scores is not None and micro_scores is not None
-                raw_scores[method][dataset] = shard.raw_scores
-                micro_scores[method][dataset] = shard.micro_scores
-    return reopened, raw_scores, micro_scores, test_counts
+            prior_indices = test_indices.setdefault(dataset, shard.test_indices)
+            if prior_indices != shard.test_indices:
+                raise ValueError("Exp471 evaluation TEST indices differ by method")
+            if shard.status == "scored":
+                if shard.abstention_reason is not None:
+                    raise ValueError("Exp471 evaluation scored shard reason differs")
+                scored += 1
+                if prepare_scores:
+                    raw_scores[method][dataset] = shard.raw_scores
+                    micro_scores[method][dataset] = shard.micro_scores
+            elif shard.status == "abstained":
+                if (
+                    shard.abstention_reason != "insufficient_train_rows"
+                    or shard.raw_scores
+                    or shard.micro_scores
+                ):
+                    raise ValueError("Exp471 evaluation abstention shard differs")
+                abstained += 1
+            else:
+                raise ValueError("Exp471 evaluation score shard status differs")
+            statuses[method][dataset] = shard.status
+            reasons[method][dataset] = shard.abstention_reason
+    if (
+        scored != reopened.scored_shards
+        or abstained != reopened.abstained_shards
+        or scored + abstained != reopened.total_shards
+    ):
+        raise ValueError("Exp471 evaluation cache status partition differs")
+    return _TypedCacheAntigravity(
+        reopened,
+        raw_scores if prepare_scores else {},
+        micro_scores if prepare_scores else {},
+        MappingProxyType(test_counts),
+        MappingProxyType(test_indices),
+        MappingProxyType({method: MappingProxyType(statuses[method]) for method in METHOD_ORDER_ANTIGRAVITY}),
+        MappingProxyType({method: MappingProxyType(reasons[method]) for method in METHOD_ORDER_ANTIGRAVITY}),
+    )
 
 
 def _verified_cache_scores_antigravity(
     session: Exp471SourceSessionAntigravity,
     cache: object,
-) -> tuple[
-    Exp471ScoreCacheManifestAntigravity,
-    dict[str, dict[str, tuple[float, ...]]],
-    dict[str, dict[str, tuple[float, ...]]],
-    dict[str, int],
-]:
-    reopened, raw_scores, micro_scores, test_counts = (
-        _verified_cache_shards_antigravity(
-            session, cache, prepare_scores=True
-        )
-    )
-    assert raw_scores is not None and micro_scores is not None
-    return reopened, raw_scores, micro_scores, test_counts
+) -> _TypedCacheAntigravity:
+    return _verified_cache_shards_antigravity(session, cache, prepare_scores=True)
 
 
 def _verified_cache_counts_antigravity(
     session: Exp471SourceSessionAntigravity,
     cache: object,
-) -> tuple[Exp471ScoreCacheManifestAntigravity, dict[str, int]]:
-    reopened, raw_scores, micro_scores, test_counts = (
-        _verified_cache_shards_antigravity(
-            session, cache, prepare_scores=False
-        )
-    )
-    assert raw_scores is None and micro_scores is None
-    return reopened, test_counts
+) -> _TypedCacheAntigravity:
+    return _verified_cache_shards_antigravity(session, cache, prepare_scores=False)
 
 
 def _normalize_labels_antigravity(
     value: object,
     datasets: tuple[str, ...],
     test_counts: Mapping[str, int],
+    test_indices: Mapping[str, tuple[int, ...]] | None = None,
 ) -> dict[str, tuple[int, ...]]:
     if not isinstance(value, Mapping) or tuple(value) != datasets:
         raise ValueError("Exp471 evaluation label dataset order differs")
@@ -317,7 +361,12 @@ def _normalize_labels_antigravity(
         rows = tuple(value[dataset])
         if rows and all(isinstance(row, tuple) and len(row) == 2 for row in rows):
             indices, labels = zip(*rows, strict=True)
-            if indices != tuple(range(test_counts[dataset])):
+            expected = (
+                tuple(range(test_counts[dataset]))
+                if test_indices is None
+                else test_indices[dataset]
+            )
+            if indices != expected:
                 raise ValueError("Exp471 evaluation TEST label identity differs")
         else:
             labels = rows
@@ -334,6 +383,7 @@ def _load_labels_once_antigravity(
     session: Exp471SourceSessionAntigravity,
     datasets: tuple[str, ...],
     test_counts: Mapping[str, int],
+    test_indices: Mapping[str, tuple[int, ...]],
     label_loader: Callable | None,
 ) -> dict[str, tuple[int, ...]]:
     if label_loader is not None:
@@ -346,7 +396,7 @@ def _load_labels_once_antigravity(
         from experiments.paper_public_baselines.label_access import load_test_labels
 
         raw = load_test_labels(datasets)
-    return _normalize_labels_antigravity(raw, datasets, test_counts)
+    return _normalize_labels_antigravity(raw, datasets, test_counts, test_indices)
 
 
 def _encode_semantic_none_antigravity(value: object) -> object:
@@ -413,26 +463,290 @@ def _cache_record_antigravity(
         "cache_context_sha256": cache.cache_context_sha256,
         "manifest_sha256": cache.manifest_sha256,
         "total_shards": cache.total_shards,
+        "scored_shards": cache.scored_shards,
+        "abstained_shards": cache.abstained_shards,
+        "failed_shards": cache.failed_shards,
         "dataset_test_count": dict(test_counts),
     }
 
 
+def _coverage_rows_antigravity(
+    typed: _TypedCacheAntigravity,
+) -> list[dict[str, object]]:
+    population = len(typed.cache.dataset_order)
+    rows: list[dict[str, object]] = []
+    for method in METHOD_ORDER_ANTIGRAVITY:
+        statuses = typed.status[method]
+        scored = sum(status == "scored" for status in statuses.values())
+        abstained = sum(status == "abstained" for status in statuses.values())
+        reasons: dict[str, int] = {}
+        for dataset in typed.cache.dataset_order:
+            reason = typed.reasons[method][dataset]
+            if reason is not None:
+                reasons[reason] = reasons.get(reason, 0) + 1
+        rows.append(
+            {
+                "method": method,
+                "population": population,
+                "scored": scored,
+                "abstained": abstained,
+                "failed": 0,
+                "coverage": scored / population,
+                "abstention_reasons": reasons,
+            }
+        )
+    return rows
+
+
+def _all_ten_common_support_antigravity(
+    typed: _TypedCacheAntigravity,
+) -> tuple[str, ...]:
+    datasets = tuple(
+        dataset
+        for dataset in typed.cache.dataset_order
+        if all(
+            typed.status[method][dataset] == "scored"
+            for method in METHOD_ORDER_ANTIGRAVITY
+        )
+    )
+    if len(typed.cache.dataset_order) == 1_117 and len(datasets) != 922:
+        raise ValueError("Exp471 evaluation all-ten production support differs")
+    return datasets
+
+
+def _support_authority_antigravity(
+    datasets: tuple[str, ...],
+) -> dict[str, object]:
+    return {
+        "all_ten_common_support_count": len(datasets),
+        "all_ten_common_support_datasets": list(datasets),
+        "all_ten_common_support_sha256": sha256(
+            canonical_json_bytes_exp471_antigravity(list(datasets))
+        ).hexdigest(),
+    }
+
+
+def _decision_alerts_antigravity(
+    *,
+    method: str,
+    protocol: str,
+    alpha: float | None,
+    raw_scores: Sequence[float] | None,
+    micro_scores: Sequence[float] | None,
+    test_indices: tuple[int, ...],
+    candidate_c_alert_count: int,
+) -> tuple[int, ...]:
+    """Return an immutable frozen-policy alert set; abstention is no-alert."""
+
+    if raw_scores is None or micro_scores is None:
+        return ()
+    raw = tuple(float(value) for value in raw_scores)
+    micro = tuple(float(value) for value in micro_scores)
+    if len(raw) != len(micro) or len(raw) != len(test_indices):
+        raise ValueError("Exp471 evaluation decision score identity differs")
+    if protocol == "proposal_threshold":
+        if method not in METHOD_ORDER_ANTIGRAVITY[:4] or alpha is not None:
+            raise ValueError("Exp471 evaluation proposal decision protocol differs")
+        selected = [index for index, score in zip(test_indices, raw, strict=True) if score >= 0.5]
+    elif protocol == "conformal":
+        if method in METHOD_ORDER_ANTIGRAVITY[:4] or alpha not in ALPHAS:
+            raise ValueError("Exp471 evaluation conformal decision protocol differs")
+        selected = [
+            index
+            for index, score in zip(test_indices, micro, strict=True)
+            if score >= 1.0 - float(alpha)
+        ]
+    elif protocol == "matched_budget":
+        if method in METHOD_ORDER_ANTIGRAVITY[:4] or alpha is not None:
+            raise ValueError("Exp471 evaluation matched-budget protocol differs")
+        selected = matched_top_k(
+            np.asarray(raw, dtype=np.float64), test_indices, candidate_c_alert_count
+        )
+    else:
+        raise ValueError("Exp471 evaluation decision protocol differs")
+    return tuple(sorted(int(index) for index in selected))
+
+
+def _confusion_row_antigravity(
+    labels: tuple[int, ...], test_indices: tuple[int, ...], alerts: tuple[int, ...]
+) -> dict[str, int]:
+    by_index = dict(zip(test_indices, labels, strict=True))
+    if len(by_index) != len(test_indices) or any(index not in by_index for index in alerts):
+        raise ValueError("Exp471 evaluation decision TEST identity differs")
+    alert_set = frozenset(alerts)
+    tp = sum(label == 1 and index in alert_set for index, label in by_index.items())
+    fp = sum(label == 0 and index in alert_set for index, label in by_index.items())
+    fn = sum(label == 1 and index not in alert_set for index, label in by_index.items())
+    tn = sum(label == 0 and index not in alert_set for index, label in by_index.items())
+    return {"tp": tp, "fp": fp, "fn": fn, "tn": tn}
+
+
+def _derived_decision_metrics_antigravity(counts: Mapping[str, int]) -> dict[str, float]:
+    tp, fp, fn, tn = (int(counts[name]) for name in ("tp", "fp", "fn", "tn"))
+    return {
+        "precision": tp / (tp + fp) if tp + fp else 0.0,
+        "recall": tp / (tp + fn) if tp + fn else 0.0,
+        "f1": 2 * tp / (2 * tp + fp + fn) if 2 * tp + fp + fn else 0.0,
+        "false_positive_rate": fp / (fp + tn) if fp + tn else 0.0,
+    }
+
+
+def _decision_tables_antigravity(
+    typed: _TypedCacheAntigravity,
+    labels: Mapping[str, tuple[int, ...]],
+) -> dict[str, object]:
+    rows: list[dict[str, object]] = []
+    summaries: list[dict[str, object]] = []
+    for method in METHOD_ORDER_ANTIGRAVITY:
+        protocols = (
+            (("proposal_threshold", None),)
+            if method in METHOD_ORDER_ANTIGRAVITY[:4]
+            else tuple(("conformal", alpha) for alpha in ALPHAS)
+            + (("matched_budget", None),)
+        )
+        for protocol, alpha in protocols:
+            method_rows: list[dict[str, object]] = []
+            for dataset in typed.cache.dataset_order:
+                status = typed.status[method][dataset]
+                raw = typed.raw_scores[method].get(dataset)
+                micro = typed.micro_scores[method].get(dataset)
+                candidate_scores = typed.raw_scores["C"].get(dataset)
+                candidate_alert_count = (
+                    sum(score >= 0.5 for score in candidate_scores)
+                    if candidate_scores is not None
+                    else 0
+                )
+                alerts = _decision_alerts_antigravity(
+                    method=method,
+                    protocol=protocol,
+                    alpha=alpha,
+                    raw_scores=raw,
+                    micro_scores=micro,
+                    test_indices=typed.test_indices[dataset],
+                    candidate_c_alert_count=candidate_alert_count,
+                )
+                counts = _confusion_row_antigravity(
+                    labels[dataset], typed.test_indices[dataset], alerts
+                )
+                row = {
+                    "method": method,
+                    "dataset": dataset,
+                    "protocol": protocol,
+                    "alpha": alpha,
+                    "status": status,
+                    "abstention_reason": typed.reasons[method][dataset],
+                    "alerts": list(alerts),
+                    "alert_count": len(alerts),
+                    **counts,
+                    **_derived_decision_metrics_antigravity(counts),
+                }
+                rows.append(row)
+                method_rows.append(row)
+            counts = {
+                name: sum(int(row[name]) for row in method_rows)
+                for name in ("tp", "fp", "fn", "tn")
+            }
+            summaries.append(
+                {
+                    "method": method,
+                    "protocol": protocol,
+                    "alpha": alpha,
+                    "support_count": len(method_rows),
+                    "alert_count": sum(int(row["alert_count"]) for row in method_rows),
+                    "coverage": sum(row["status"] == "scored" for row in method_rows)
+                    / len(method_rows),
+                    **counts,
+                    **_derived_decision_metrics_antigravity(counts),
+                }
+            )
+    return {"full_population": {"dataset_rows": rows, "summary_rows": summaries}}
+
+
+def _continuous_table_record_antigravity(
+    metrics: MetricTablesExp450Antigravity,
+    typed: _TypedCacheAntigravity,
+) -> dict[str, object]:
+    """Keep Exp450 values byte-for-byte while naming typed score absence."""
+
+    record = _metric_record_antigravity(metrics)
+    rows: list[dict[str, object]] = []
+    semantic_nulls: list[dict[str, str]] = []
+    for original in record["per_dataset"]:
+        row = dict(original)
+        method = row["method"]
+        dataset = row["dataset"]
+        assert isinstance(method, str) and isinstance(dataset, str)
+        reason = typed.reasons[method][dataset]
+        if reason is not None:
+            row["average_precision"] = None
+            row["average_precision_exclusion"] = reason
+            row["auroc"] = None
+            row["auroc_exclusion"] = reason
+            semantic_nulls.extend(
+                {
+                    "method": method,
+                    "dataset": dataset,
+                    "metric": metric,
+                    "reason": reason,
+                }
+                for metric in ("average_precision", "auroc", "roc", "precision_recall")
+            )
+        rows.append(row)
+    record["per_dataset"] = rows
+    record["semantic_nulls"] = semantic_nulls
+    return record
+
+
+def _curve_support_record_antigravity(
+    curves: Mapping[str, Mapping[str, object]],
+    typed: _TypedCacheAntigravity,
+    datasets: tuple[str, ...],
+) -> dict[str, object]:
+    semantic_nulls = [
+        {
+            "method": method,
+            "dataset": dataset,
+            "metric": metric,
+            "reason": typed.reasons[method][dataset],
+        }
+        for method in METHOD_ORDER_ANTIGRAVITY
+        for dataset in datasets
+        if typed.status[method][dataset] == "abstained"
+        for metric in ("roc", "precision_recall")
+    ]
+    return {"curves": curves, "semantic_nulls": semantic_nulls}
+
+
 def _payload_antigravity(
     authority: Exp471SourceAuthorityAntigravity,
-    cache: Exp471ScoreCacheManifestAntigravity,
-    test_counts: Mapping[str, int],
-    metrics: MetricTablesExp450Antigravity,
-    curves: Mapping[str, Mapping[str, object]],
+    typed: _TypedCacheAntigravity,
+    labels: Mapping[str, tuple[int, ...]],
+    scored_metrics: MetricTablesExp450Antigravity,
+    scored_curves: Mapping[str, Mapping[str, object]],
+    common_metrics: MetricTablesExp450Antigravity,
+    common_curves: Mapping[str, Mapping[str, object]],
 ) -> Mapping[str, object]:
+    common = _all_ten_common_support_antigravity(typed)
     return {
         "schema": _EVALUATION_SCHEMA_ANTIGRAVITY,
         "source_authority": _source_record_antigravity(authority),
-        "score_cache": _cache_record_antigravity(cache, test_counts),
+        "score_cache": _cache_record_antigravity(typed.cache, typed.test_counts),
         "implementation": _implementation_record_antigravity(),
-        "metric_tables": _encode_semantic_none_antigravity(
-            _metric_record_antigravity(metrics)
-        ),
-        "curve_tables": curves,
+        "coverage": {"rows": _coverage_rows_antigravity(typed)},
+        "decision_tables": _decision_tables_antigravity(typed, labels),
+        "continuous_tables": {
+            "scored_support": _continuous_table_record_antigravity(scored_metrics, typed),
+            "all_ten_common_support": _continuous_table_record_antigravity(common_metrics, typed),
+        },
+        "curve_tables": {
+            "scored_support": _curve_support_record_antigravity(
+                scored_curves, typed, typed.cache.dataset_order
+            ),
+            "all_ten_common_support": _curve_support_record_antigravity(
+                common_curves, typed, common
+            ),
+        },
+        "support_authority": _support_authority_antigravity(common),
     }
 
 
@@ -455,19 +769,27 @@ def _artifact_record_antigravity(
 
 def _new_artifact_antigravity(
     authority: Exp471SourceAuthorityAntigravity,
-    cache: Exp471ScoreCacheManifestAntigravity,
-    test_counts: Mapping[str, int],
-    metrics: MetricTablesExp450Antigravity,
-    curves: Mapping[str, Mapping[str, object]],
+    typed: _TypedCacheAntigravity,
+    labels: Mapping[str, tuple[int, ...]],
+    scored_metrics: MetricTablesExp450Antigravity,
+    scored_curves: Mapping[str, Mapping[str, object]],
+    common_metrics: MetricTablesExp450Antigravity,
+    common_curves: Mapping[str, Mapping[str, object]],
 ) -> Exp471EvaluationArtifactAntigravity:
     raw_bare = {
         "source_authority_sha256": authority.authority_sha256,
-        "cache_manifest_sha256": cache.manifest_sha256,
+        "cache_manifest_sha256": typed.cache.manifest_sha256,
         "code_closure_sha256": _code_closure_sha256_antigravity(),
-        "method_order": list(cache.method_order),
-        "dataset_order": list(cache.dataset_order),
+        "method_order": list(typed.cache.method_order),
+        "dataset_order": list(typed.cache.dataset_order),
         "payload": _payload_antigravity(
-            authority, cache, test_counts, metrics, curves
+            authority,
+            typed,
+            labels,
+            scored_metrics,
+            scored_curves,
+            common_metrics,
+            common_curves,
         ),
     }
     bare = artifact_view_exp471_antigravity(raw_bare)
@@ -1085,8 +1407,11 @@ def _validated_payload_antigravity(
         "source_authority",
         "score_cache",
         "implementation",
-        "metric_tables",
+        "coverage",
+        "decision_tables",
+        "continuous_tables",
         "curve_tables",
+        "support_authority",
     } or payload["schema"] != _EVALUATION_SCHEMA_ANTIGRAVITY:
         raise ValueError("Exp471 evaluation payload schema differs")
     for scope in ("source_authority", "score_cache", "implementation"):
@@ -1119,6 +1444,9 @@ def _validated_payload_antigravity(
             "cache_context_sha256",
             "manifest_sha256",
             "total_shards",
+            "scored_shards",
+            "abstained_shards",
+            "failed_shards",
             "dataset_test_count",
         }
         or not isinstance(cache.get("dataset_test_count"), Mapping)
@@ -1127,6 +1455,18 @@ def _validated_payload_antigravity(
         or type(cache.get("total_shards")) is not int
         or cache["total_shards"]
         != len(METHOD_ORDER_ANTIGRAVITY) * len(artifact.dataset_order)
+        or any(
+            type(cache.get(name)) is not int or cache[name] < 0
+            for name in ("scored_shards", "abstained_shards", "failed_shards")
+        )
+        or cache["scored_shards"] + cache["abstained_shards"] + cache["failed_shards"]
+        != cache["total_shards"]
+        or cache["failed_shards"] != 0
+        or (
+            len(artifact.dataset_order) == 1_117
+            and (cache["total_shards"], cache["scored_shards"], cache["abstained_shards"])
+            != (11_170, 10_775, 395)
+        )
     ):
         raise ValueError("Exp471 evaluation payload authority binding differs")
     raw_counts = cache["dataset_test_count"]
@@ -1139,18 +1479,102 @@ def _validated_payload_antigravity(
         if type(count) is not int or count < 1:
             raise ValueError("Exp471 evaluation dataset row count differs")
         test_counts[dataset] = count
-    metrics = _metric_tables_antigravity(
-        payload["metric_tables"], artifact.dataset_order, test_counts
-    )
-    curves = _curve_tables_antigravity(payload["curve_tables"])
-    if canonical_json_bytes_exp471_antigravity(
-        _encode_semantic_none_antigravity(_metric_record_antigravity(metrics))
-    ) != canonical_json_bytes_exp471_antigravity(payload["metric_tables"]):
-        raise ValueError("Exp471 evaluation metric round trip differs")
-    if canonical_json_bytes_exp471_antigravity(
-        artifact_view_exp471_antigravity(curves)
-    ) != canonical_json_bytes_exp471_antigravity(payload["curve_tables"]):
-        raise ValueError("Exp471 evaluation curve coordinate round trip differs")
+
+    coverage = payload["coverage"]
+    if not isinstance(coverage, Mapping) or set(coverage) != {"rows"}:
+        raise ValueError("Exp471 evaluation coverage schema differs")
+    rows = coverage["rows"]
+    if not isinstance(rows, (tuple, list)) or len(rows) != len(METHOD_ORDER_ANTIGRAVITY):
+        raise ValueError("Exp471 evaluation coverage rows differ")
+    for method, row in zip(METHOD_ORDER_ANTIGRAVITY, rows, strict=True):
+        if not isinstance(row, Mapping) or set(row) != {
+            "method", "population", "scored", "abstained", "failed", "coverage", "abstention_reasons"
+        } or row["method"] != method:
+            raise ValueError("Exp471 evaluation coverage order differs")
+        if any(type(row[name]) is not int or row[name] < 0 for name in ("population", "scored", "abstained", "failed")) or (
+            row["population"] != len(artifact.dataset_order)
+            or row["scored"] + row["abstained"] + row["failed"] != row["population"]
+            or row["failed"] != 0
+            or not isinstance(row["abstention_reasons"], Mapping)
+            or any(type(reason) is not str or type(count) is not int or count < 1 for reason, count in row["abstention_reasons"].items())
+            or _finite_number_antigravity(row["coverage"], "coverage") != row["scored"] / row["population"]
+        ):
+            raise ValueError("Exp471 evaluation coverage relation differs")
+
+    support = payload["support_authority"]
+    if not isinstance(support, Mapping) or set(support) != {
+        "all_ten_common_support_count", "all_ten_common_support_datasets", "all_ten_common_support_sha256"
+    }:
+        raise ValueError("Exp471 evaluation support authority schema differs")
+    common = tuple(support["all_ten_common_support_datasets"])
+    if (
+        type(support["all_ten_common_support_count"]) is not int
+        or support["all_ten_common_support_count"] != len(common)
+        or any(type(dataset) is not str for dataset in common)
+        or common != tuple(dataset for dataset in artifact.dataset_order if dataset in set(common))
+        or support["all_ten_common_support_sha256"] != sha256(canonical_json_bytes_exp471_antigravity(list(common))).hexdigest()
+        or (len(artifact.dataset_order) == 1_117 and len(common) != 922)
+    ):
+        raise ValueError("Exp471 evaluation support authority differs")
+
+    continuous = payload["continuous_tables"]
+    curves_payload = payload["curve_tables"]
+    if (
+        not isinstance(continuous, Mapping)
+        or set(continuous) != {"scored_support", "all_ten_common_support"}
+        or not isinstance(curves_payload, Mapping)
+        or set(curves_payload) != {"scored_support", "all_ten_common_support"}
+    ):
+        raise ValueError("Exp471 evaluation support table schema differs")
+    decoded_metrics: dict[str, MetricTablesExp450Antigravity] = {}
+    decoded_curves: dict[str, Mapping[str, Mapping[str, object]]] = {}
+    for name, datasets in (
+        ("scored_support", artifact.dataset_order),
+        ("all_ten_common_support", common),
+    ):
+        table = continuous[name]
+        curve_record = curves_payload[name]
+        if (
+            not isinstance(table, Mapping)
+            or set(table) != {"method_order", "per_dataset", "macro", "micro", "paired_statistics", "semantic_nulls"}
+            or tuple(table["method_order"]) != METHOD_ORDER_ANTIGRAVITY
+            or not isinstance(table["per_dataset"], (tuple, list))
+            or len(table["per_dataset"]) != len(METHOD_ORDER_ANTIGRAVITY) * len(datasets)
+            or not isinstance(table["macro"], Mapping)
+            or not isinstance(table["micro"], Mapping)
+            or not isinstance(table["paired_statistics"], (tuple, list))
+            or not isinstance(table["semantic_nulls"], (tuple, list))
+            or not isinstance(curve_record, Mapping)
+            or set(curve_record) != {"curves", "semantic_nulls"}
+            or not isinstance(curve_record["semantic_nulls"], (tuple, list))
+        ):
+            raise ValueError("Exp471 evaluation continuous support schema differs")
+        for row, identity in zip(
+            table["per_dataset"],
+            ((method, dataset) for method in METHOD_ORDER_ANTIGRAVITY for dataset in datasets),
+            strict=True,
+        ):
+            if not isinstance(row, Mapping) or (row.get("method"), row.get("dataset")) != identity:
+                raise ValueError("Exp471 evaluation continuous support order differs")
+        decoded_metrics[name] = MetricTablesExp450Antigravity(
+            METHOD_ORDER_ANTIGRAVITY,
+            tuple(MappingProxyType(dict(row)) for row in table["per_dataset"]),
+            MappingProxyType({method: MappingProxyType(dict(table["macro"][method])) for method in METHOD_ORDER_ANTIGRAVITY}),
+            MappingProxyType({method: MappingProxyType(dict(table["micro"][method])) for method in METHOD_ORDER_ANTIGRAVITY}),
+            tuple(MappingProxyType(dict(row)) for row in table["paired_statistics"]),
+        )
+        decoded_curves[name] = _curve_tables_antigravity(curve_record["curves"])
+
+    decisions = payload["decision_tables"]
+    if not isinstance(decisions, Mapping) or set(decisions) != {"full_population"}:
+        raise ValueError("Exp471 evaluation decision-table schema differs")
+    full = decisions["full_population"]
+    if not isinstance(full, Mapping) or set(full) != {"dataset_rows", "summary_rows"}:
+        raise ValueError("Exp471 evaluation full-population decision schema differs")
+    if not isinstance(full["dataset_rows"], (tuple, list)) or not isinstance(full["summary_rows"], (tuple, list)):
+        raise ValueError("Exp471 evaluation decision rows differ")
+    metrics = decoded_metrics["scored_support"]
+    curves = decoded_curves["scored_support"]
     return metrics, curves
 
 
@@ -1169,19 +1593,26 @@ def _validate_artifact_integrity_antigravity(
 def _validate_artifact_authority_antigravity(
     artifact: Exp471EvaluationArtifactAntigravity,
     session: Exp471SourceSessionAntigravity,
-    cache: Exp471ScoreCacheManifestAntigravity,
-    test_counts: Mapping[str, int],
+    typed: _TypedCacheAntigravity,
 ) -> None:
     _validate_artifact_integrity_antigravity(artifact)
+    expected_coverage = {"rows": _coverage_rows_antigravity(typed)}
+    expected_support = _support_authority_antigravity(
+        _all_ten_common_support_antigravity(typed)
+    )
     if (
         artifact.source_authority_sha256 != session.authority.authority_sha256
-        or artifact.cache_manifest_sha256 != cache.manifest_sha256
-        or artifact.method_order != cache.method_order
-        or artifact.dataset_order != cache.dataset_order
+        or artifact.cache_manifest_sha256 != typed.cache.manifest_sha256
+        or artifact.method_order != typed.cache.method_order
+        or artifact.dataset_order != typed.cache.dataset_order
         or artifact.payload["source_authority"]
         != _source_record_antigravity(session.authority)
         or artifact.payload["score_cache"]
-        != _cache_record_antigravity(cache, test_counts)
+        != _cache_record_antigravity(typed.cache, typed.test_counts)
+        or canonical_json_bytes_exp471_antigravity(artifact.payload["coverage"])
+        != canonical_json_bytes_exp471_antigravity(expected_coverage)
+        or canonical_json_bytes_exp471_antigravity(artifact.payload["support_authority"])
+        != canonical_json_bytes_exp471_antigravity(expected_support)
     ):
         raise ValueError("Exp471 evaluation durable authority differs")
 
@@ -1249,28 +1680,45 @@ def evaluate_exp471_antigravity(
     if os.path.lexists(root / _EVALUATION_NAME_ANTIGRAVITY):
         return read_evaluation_exp471_antigravity(root, session, cache)
 
-    reopened, raw_scores, micro_scores, test_counts = (
-        _verified_cache_scores_antigravity(session, cache)
-    )
+    typed = _verified_cache_scores_antigravity(session, cache)
 
     labels = _load_labels_once_antigravity(
         session,
-        reopened.dataset_order,
-        test_counts,
+        typed.cache.dataset_order,
+        typed.test_counts,
+        typed.test_indices,
         label_loader,
     )
-    metrics = metric_tables_exp450_antigravity(
-        labels, raw_scores, micro_scores=micro_scores
+    scored_metrics = metric_tables_exp450_antigravity(
+        labels, typed.raw_scores, micro_scores=typed.micro_scores
     )
-    curves = curve_tables_exp450_antigravity(labels, micro_scores)
+    scored_curves = curve_tables_exp450_antigravity(labels, typed.micro_scores)
+    common = _all_ten_common_support_antigravity(typed)
+    common_labels = {dataset: labels[dataset] for dataset in common}
+    common_raw = {
+        method: {dataset: typed.raw_scores[method][dataset] for dataset in common}
+        for method in METHOD_ORDER_ANTIGRAVITY
+    }
+    common_micro = {
+        method: {dataset: typed.micro_scores[method][dataset] for dataset in common}
+        for method in METHOD_ORDER_ANTIGRAVITY
+    }
+    common_metrics = metric_tables_exp450_antigravity(
+        common_labels, common_raw, micro_scores=common_micro
+    )
+    common_curves = curve_tables_exp450_antigravity(common_labels, common_micro)
     artifact = _new_artifact_antigravity(
-        session.authority, reopened, test_counts, metrics, curves
+        session.authority,
+        typed,
+        labels,
+        scored_metrics,
+        scored_curves,
+        common_metrics,
+        common_curves,
     )
-    _validate_artifact_authority_antigravity(
-        artifact, session, reopened, test_counts
-    )
+    _validate_artifact_authority_antigravity(artifact, session, typed)
     _publish_artifact_antigravity(root, artifact)
-    return read_evaluation_exp471_antigravity(root, session, reopened)
+    return read_evaluation_exp471_antigravity(root, session, typed.cache)
 
 
 def read_evaluation_exp471_antigravity(
@@ -1280,7 +1728,7 @@ def read_evaluation_exp471_antigravity(
 ) -> Exp471EvaluationArtifactAntigravity:
     """Reopen and fully validate one durable evaluation without recomputation."""
 
-    reopened, counts = _verified_cache_counts_antigravity(session, cache)
+    typed = _verified_cache_counts_antigravity(session, cache)
     anchor = cache_artifacts_antigravity._open_absolute_directory_antigravity(
         Path(root), create=False
     )
@@ -1294,9 +1742,7 @@ def read_evaluation_exp471_antigravity(
         anchor.validate()
     finally:
         anchor.close()
-    _validate_artifact_authority_antigravity(
-        artifact, session, reopened, counts
-    )
+    _validate_artifact_authority_antigravity(artifact, session, typed)
     return artifact
 
 
