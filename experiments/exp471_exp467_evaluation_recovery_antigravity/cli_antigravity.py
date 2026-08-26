@@ -1636,11 +1636,13 @@ class _ProductionRuntimeAntigravity:
             )
             evaluation_present = evaluation_raw is not None
             if evaluation_raw is not None:
-                from .evaluation_antigravity import _artifact_from_bytes_antigravity
+                from .evaluation_antigravity import (
+                    _artifact_from_bytes_antigravity,
+                    _validate_artifact_integrity_antigravity,
+                )
 
                 evaluation_artifact = _artifact_from_bytes_antigravity(evaluation_raw)
-                if tuple(evaluation_artifact.method_order) != METHOD_ORDER_ANTIGRAVITY:
-                    raise ValueError("Exp471 status evaluation artifact methods differ")
+                _validate_artifact_integrity_antigravity(evaluation_artifact)
             _validate_status_root_generation_antigravity(root_anchor)
             report_marker = _read_configured_leaf_antigravity(
                 EXP471_REPORT_ROOT_ANTIGRAVITY,
@@ -1648,7 +1650,13 @@ class _ProductionRuntimeAntigravity:
             )
             report_present = report_marker is not None
             if report_present:
-                _validate_report_terminal_artifact_antigravity()
+                if not evaluation_present:
+                    raise ValueError("Exp471 report exists without evaluation authority")
+                from .reporting_antigravity import read_exp471_report_antigravity
+
+                read_exp471_report_antigravity(
+                    evaluation_artifact, EXP471_REPORT_ROOT_ANTIGRAVITY
+                )
             _validate_status_root_generation_antigravity(root_anchor)
             latest = _latest_progress_antigravity()
             _validate_status_root_generation_antigravity(root_anchor)
@@ -1670,7 +1678,8 @@ class _ProductionRuntimeAntigravity:
             )
             timing = preprocessing if preprocessing_running else None
             if (
-                latest is not None
+                not preprocessing_running
+                and latest is not None
                 and latest.get("stage") == "score-cache"
                 and latest.get("durable_completed") == completed
             ):

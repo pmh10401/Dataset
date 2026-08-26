@@ -25,7 +25,7 @@ create-only이며, 이미 있는 바이트가 정확히 같을 때만 재사용�
 삭제하거나 덮어쓰거나 이름을 바꾸지 않는다. symlink, 예상과 다른 파일
 종류, 예상 밖의 기존 destination도 임의로 고치지 말고 보존한 채 조사한다.
 
-한 시점에 상태를 바꾸는 공식 Exp471 명령은 하나만 실행한다. Task 9에서는
+한 시점에 상태를 바꾸는 공식 Exp471 명령은 하나만 실행한다. Task 7에서는
 그 명령이 `report` 하나다. 단, `report` 실행을 관찰하기 위한 read-only
 `status`는 별도 터미널에서 동시에 실행할 수 있다. `status`는 공식 작업을
 시작·중단·변경하지 않는다. `report` 실행 중에는 `verify-source`,
@@ -70,9 +70,9 @@ Exp467 권위를 검증하며 TEST label을 열지 않는다. `benchmark-prepare
   scratch/run_exp471_exp467_evaluation_recovery_antigravity.py prepare
 ```
 
-### Task 9의 유일한 실행 명령
+### Task 7의 유일한 실행 명령
 
-Task 9에서는 아래의 재개 가능한 `report` 명령을 한 번만 시작한다.
+Task 7에서는 아래의 재개 가능한 `report` 명령을 한 번만 시작한다.
 
 ```sh
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python \
@@ -86,7 +86,7 @@ Task 9에서는 아래의 재개 가능한 `report` 명령을 한 번만 시작�
 된다.
 
 정상 완료 때 cache의 정확한 typed partition은 총 11,170개 중 scored 10,775개,
-abstained 395개, failed 0개다. 열 방법 모두의 scored 교집합(common support)은
+abstained 395개, failed 0개다. 열 개 방법 모두의 scored 교집합(common support)은
 922개 데이터셋이다. 이 수는 연속 점수 지표의 분모이며, 전체 1,117개 데이터셋
 결정 표의 분모와 다르므로 서로 바꾸어 쓰지 않는다.
 
@@ -296,7 +296,7 @@ JSON도 별도 운영 증거로 보존한다.
 3. 공식 `status` 명령을 단독으로 실행해 durable count, latest progress,
    오류 여부를 기록한다.
 4. symlink, 외부 산출물, markerless destination, malformed JSONL이 없고
-   중단 원인이 해소되었으면 Task 9의 동일한 `report` 명령을 다시 실행한다.
+   중단 원인이 해소되었으면 Task 7의 동일한 `report` 명령을 다시 실행한다.
 
 중단 시점에 완성된 cache shard는 재검증 후 재사용한다. 완전한 평가
 산출물이 있으면 metric 계산을 반복하지 않고 다시 연다. 보고서가 원자적

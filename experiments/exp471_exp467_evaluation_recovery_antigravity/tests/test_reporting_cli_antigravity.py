@@ -3339,6 +3339,44 @@ class ReportingTestsAntigravity(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "typed|semantic|leaf"):
                     reporting.read_exp471_report_antigravity(self.artifact, root)
 
+    def test_status_rejects_all_rehashed_report_leaves(self) -> None:
+        """Status cannot call arbitrary rehashed 15-leaf bytes a complete report."""
+
+        reporting.write_exp471_report_antigravity(
+            self.artifact,
+            self.report_root,
+            worker_provenance=_worker_provenance_antigravity(),
+        )
+        authority = reporting.read_exp471_report_antigravity(
+            self.artifact, self.report_root
+        )
+        for index, relative in enumerate(authority.report_file_sha256):
+            _rehash_report_leaf_antigravity(
+                self.report_root,
+                relative,
+                f"forged-leaf-{index}-antigravity\n".encode("ascii"),
+            )
+        evaluation_root = self.base / "status_evaluation_antigravity"
+        evaluation_root.mkdir()
+        (
+            evaluation_root / "evaluation_antigravity.json"
+        ).write_bytes(evaluation._canonical_artifact_bytes_antigravity(self.artifact))
+        status_root = self.base / "status_root_antigravity"
+        status_root.mkdir()
+        with ExitStack() as stack:
+            for name, value in (
+                ("EXP471_ROOT_ANTIGRAVITY", status_root),
+                ("EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", self.task5_root),
+                ("EXP471_EVALUATION_ROOT_ANTIGRAVITY", evaluation_root),
+                ("EXP471_REPORT_ROOT_ANTIGRAVITY", self.report_root),
+            ):
+                stack.enter_context(mock.patch.object(cli, name, value))
+            stack.enter_context(mock.patch.object(
+                cli, "_latest_progress_antigravity", return_value=None
+            ))
+            with self.assertRaisesRegex(ValueError, "typed|semantic|leaf"):
+                cli._ProductionRuntimeAntigravity().status_antigravity()
+
     def test_rehashed_complete_provenance_tampering_is_rejected(self) -> None:
         """Every environment, worker, closure, axis, and digest field is authoritative."""
 
@@ -3513,6 +3551,7 @@ class _LifecycleRuntimeAntigravity:
         return self.artifact
 
     def evaluate_antigravity(self, session, cache):
+        self.calls.append("label-read")
         self.calls.append("evaluate")
         self.evaluation_complete = True
         return self.artifact
@@ -3836,6 +3875,161 @@ class CliTestsAntigravity(unittest.TestCase):
             self.assertEqual(payload["rate_per_second"], 2.5)
             self.assertEqual(payload["eta_seconds"], 4_466.0)
             self.assertEqual(payload["preprocessing_progress"], preprocessing)
+
+    def test_status_prefers_live_preprocessing_over_historical_cache_timing(self) -> None:
+        """An active preprocessing ETA takes priority over an old cache event."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_status_live_preprocessing_timing_antigravity_"
+        ) as directory:
+            root = Path(directory).resolve()
+            score = root / "score_cache_antigravity"
+            score.mkdir()
+            cache = {
+                "complete": False,
+                "durable_completed": 5,
+                "total_shards": None,
+                "scored": 4,
+                "abstained": 1,
+                "failed": 0,
+                "benchmark_decision": None,
+                "execution_decision": None,
+            }
+            preprocessing = {
+                "completed": 2_000,
+                "total": 4_468,
+                "elapsed_seconds": 100.0,
+                "eta_seconds": 12.34,
+            }
+            latest = {
+                "stage": "score-cache",
+                "durable_completed": 5,
+                "elapsed_seconds": 2.0,
+                "eta_seconds": 4_466.0,
+                "failures": 0,
+            }
+            with ExitStack() as stack:
+                for name, value in (
+                    ("EXP471_ROOT_ANTIGRAVITY", root),
+                    ("EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", score),
+                    ("EXP471_EVALUATION_ROOT_ANTIGRAVITY", root / "evaluation_antigravity"),
+                    ("EXP471_REPORT_ROOT_ANTIGRAVITY", root / "report_antigravity"),
+                ):
+                    stack.enter_context(mock.patch.object(cli, name, value))
+                stack.enter_context(mock.patch(
+                    "experiments.exp471_exp467_evaluation_recovery_antigravity.score_cache_antigravity.status_score_cache_antigravity",
+                    return_value=cache,
+                ))
+                stack.enter_context(mock.patch(
+                    "experiments.exp471_exp467_evaluation_recovery_antigravity.preprocessing_antigravity.latest_preprocessing_progress_antigravity",
+                    return_value=preprocessing,
+                ))
+                stack.enter_context(mock.patch.object(
+                    cli, "_latest_progress_antigravity", return_value=latest
+                ))
+                payload = cli._ProductionRuntimeAntigravity().status_antigravity()
+            self.assertEqual(payload["elapsed_seconds"], 100.0)
+            self.assertEqual(payload["rate_per_second"], 20.0)
+            self.assertEqual(payload["eta_seconds"], 12.34)
+
+    def test_status_requires_source_free_evaluation_integrity(self) -> None:
+        """A self-digested but semantically invalid evaluation cannot be complete."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_status_evaluation_integrity_antigravity_"
+        ) as directory:
+            root = Path(directory).resolve()
+            score = root / "score_cache_antigravity"
+            evaluation_root = root / "evaluation_antigravity"
+            score.mkdir()
+            evaluation_root.mkdir()
+            (evaluation_root / "evaluation_antigravity.json").write_bytes(b"{}\n")
+            cache = {
+                "complete": False, "durable_completed": 0, "total_shards": None,
+                "scored": 0, "abstained": 0, "failed": 0,
+                "benchmark_decision": None, "execution_decision": None,
+            }
+            artifact = SimpleNamespace(method_order=METHOD_ORDER_ANTIGRAVITY)
+            with ExitStack() as stack:
+                for name, value in (
+                    ("EXP471_ROOT_ANTIGRAVITY", root),
+                    ("EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", score),
+                    ("EXP471_EVALUATION_ROOT_ANTIGRAVITY", evaluation_root),
+                    ("EXP471_REPORT_ROOT_ANTIGRAVITY", root / "report_antigravity"),
+                ):
+                    stack.enter_context(mock.patch.object(cli, name, value))
+                stack.enter_context(mock.patch(
+                    "experiments.exp471_exp467_evaluation_recovery_antigravity.score_cache_antigravity.status_score_cache_antigravity",
+                    return_value=cache,
+                ))
+                stack.enter_context(mock.patch(
+                    "experiments.exp471_exp467_evaluation_recovery_antigravity.preprocessing_antigravity.latest_preprocessing_progress_antigravity",
+                    return_value=None,
+                ))
+                stack.enter_context(mock.patch.object(cli, "_latest_progress_antigravity", return_value=None))
+                stack.enter_context(mock.patch(
+                    "experiments.exp471_exp467_evaluation_recovery_antigravity.evaluation_antigravity._artifact_from_bytes_antigravity",
+                    return_value=artifact,
+                ))
+                stack.enter_context(mock.patch(
+                    "experiments.exp471_exp467_evaluation_recovery_antigravity.evaluation_antigravity._validate_artifact_integrity_antigravity",
+                    side_effect=ValueError("rehashed semantic invalid"),
+                ))
+                with self.assertRaisesRegex(ValueError, "semantic invalid"):
+                    cli._ProductionRuntimeAntigravity().status_antigravity()
+
+    def test_status_reopens_report_against_the_validated_evaluation(self) -> None:
+        """A report marker alone cannot make status declare report completion."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_status_report_semantics_antigravity_"
+        ) as directory:
+            root = Path(directory).resolve()
+            score = root / "score_cache_antigravity"
+            evaluation_root = root / "evaluation_antigravity"
+            report_root = root / "report_antigravity"
+            score.mkdir()
+            evaluation_root.mkdir()
+            report_root.mkdir()
+            (evaluation_root / "evaluation_antigravity.json").write_bytes(b"{}\n")
+            (report_root / ".exp471_report_complete_antigravity.json").write_bytes(b"{}\n")
+            cache = {
+                "complete": False, "durable_completed": 0, "total_shards": None,
+                "scored": 0, "abstained": 0, "failed": 0,
+                "benchmark_decision": None, "execution_decision": None,
+            }
+            artifact = SimpleNamespace(method_order=METHOD_ORDER_ANTIGRAVITY)
+            with ExitStack() as stack:
+                for name, value in (
+                    ("EXP471_ROOT_ANTIGRAVITY", root),
+                    ("EXP471_SCORE_CACHE_ROOT_ANTIGRAVITY", score),
+                    ("EXP471_EVALUATION_ROOT_ANTIGRAVITY", evaluation_root),
+                    ("EXP471_REPORT_ROOT_ANTIGRAVITY", report_root),
+                ):
+                    stack.enter_context(mock.patch.object(cli, name, value))
+                stack.enter_context(mock.patch(
+                    "experiments.exp471_exp467_evaluation_recovery_antigravity.score_cache_antigravity.status_score_cache_antigravity",
+                    return_value=cache,
+                ))
+                stack.enter_context(mock.patch(
+                    "experiments.exp471_exp467_evaluation_recovery_antigravity.preprocessing_antigravity.latest_preprocessing_progress_antigravity",
+                    return_value=None,
+                ))
+                stack.enter_context(mock.patch.object(cli, "_latest_progress_antigravity", return_value=None))
+                stack.enter_context(mock.patch(
+                    "experiments.exp471_exp467_evaluation_recovery_antigravity.evaluation_antigravity._artifact_from_bytes_antigravity",
+                    return_value=artifact,
+                ))
+                stack.enter_context(mock.patch(
+                    "experiments.exp471_exp467_evaluation_recovery_antigravity.evaluation_antigravity._validate_artifact_integrity_antigravity",
+                ))
+                reopen = stack.enter_context(mock.patch(
+                    "experiments.exp471_exp467_evaluation_recovery_antigravity.reporting_antigravity.read_exp471_report_antigravity",
+                    return_value=SimpleNamespace(),
+                ))
+                payload = cli._ProductionRuntimeAntigravity().status_antigravity()
+            self.assertTrue(payload["report_complete"])
+            reopen.assert_called_once_with(artifact, report_root)
 
     def test_missing_directory_revalidates_opened_prefix_generation(self) -> None:
         """ENOENT must not hide replacement of an already opened root prefix."""
@@ -4598,6 +4792,7 @@ class CliTestsAntigravity(unittest.TestCase):
                 "baseline-preflight",
                 "prepare",
                 "open-evaluation",
+                "label-read",
                 "evaluate",
                 "report",
                 "render",
@@ -4609,6 +4804,13 @@ class CliTestsAntigravity(unittest.TestCase):
         )
         self.assertEqual(runtime.calls.count("prepare"), 1)
         self.assertEqual(runtime.calls.count("baseline-preflight"), 1)
+        self.assertEqual(runtime.calls.count("label-read"), 1)
+        self.assertLess(
+            runtime.calls.index("prepare"), runtime.calls.index("label-read")
+        )
+        self.assertLess(
+            runtime.calls.index("label-read"), runtime.calls.index("evaluate")
+        )
         self.assertEqual(runtime.calls.count("evaluate"), 1)
         self.assertEqual(runtime.calls.count("render"), 1)
 
