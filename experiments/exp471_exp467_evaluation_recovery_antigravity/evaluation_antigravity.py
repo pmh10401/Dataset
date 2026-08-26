@@ -781,6 +781,48 @@ def _payload_antigravity(
     }
 
 
+def _expected_evaluation_payload_antigravity(
+    authority: Exp471SourceAuthorityAntigravity,
+    typed: _TypedCacheAntigravity,
+    labels: Mapping[str, tuple[int, ...]],
+) -> Mapping[str, object]:
+    """Build the one canonical v2 payload from verified scores and labels only."""
+
+    scored_metrics = metric_tables_exp450_antigravity(
+        labels, typed.raw_scores, micro_scores=typed.micro_scores
+    )
+    scored_curves = curve_tables_exp450_antigravity(labels, typed.micro_scores)
+    common = _all_ten_common_support_antigravity(typed)
+    common_labels = {dataset: labels[dataset] for dataset in common}
+    common_raw = {
+        method: {
+            dataset: typed.raw_scores[method][dataset]
+            for dataset in common
+        }
+        for method in METHOD_ORDER_ANTIGRAVITY
+    }
+    common_micro = {
+        method: {
+            dataset: typed.micro_scores[method][dataset]
+            for dataset in common
+        }
+        for method in METHOD_ORDER_ANTIGRAVITY
+    }
+    common_metrics = metric_tables_exp450_antigravity(
+        common_labels, common_raw, micro_scores=common_micro
+    )
+    common_curves = curve_tables_exp450_antigravity(common_labels, common_micro)
+    return _payload_antigravity(
+        authority,
+        typed,
+        labels,
+        scored_metrics,
+        scored_curves,
+        common_metrics,
+        common_curves,
+    )
+
+
 def _artifact_record_antigravity(
     artifact: Exp471EvaluationArtifactAntigravity,
     *, include_digest: bool,
@@ -798,34 +840,25 @@ def _artifact_record_antigravity(
     return record
 
 
-def _new_artifact_antigravity(
+def _expected_artifact_antigravity(
     authority: Exp471SourceAuthorityAntigravity,
     typed: _TypedCacheAntigravity,
     labels: Mapping[str, tuple[int, ...]],
-    scored_metrics: MetricTablesExp450Antigravity,
-    scored_curves: Mapping[str, Mapping[str, object]],
-    common_metrics: MetricTablesExp450Antigravity,
-    common_curves: Mapping[str, Mapping[str, object]],
 ) -> Exp471EvaluationArtifactAntigravity:
+    """Materialize, but never publish, the deterministic cache-and-label artifact."""
+
+    payload = _expected_evaluation_payload_antigravity(authority, typed, labels)
     raw_bare = {
         "source_authority_sha256": authority.authority_sha256,
         "cache_manifest_sha256": typed.cache.manifest_sha256,
         "code_closure_sha256": _code_closure_sha256_antigravity(),
         "method_order": list(typed.cache.method_order),
         "dataset_order": list(typed.cache.dataset_order),
-        "payload": _payload_antigravity(
-            authority,
-            typed,
-            labels,
-            scored_metrics,
-            scored_curves,
-            common_metrics,
-            common_curves,
-        ),
+        "payload": payload,
     }
     bare = artifact_view_exp471_antigravity(raw_bare)
     if not isinstance(bare, Mapping):
-        raise ValueError("Exp471 complete evaluation artifact view is invalid")
+        raise ValueError("Exp471 complete expected artifact view is invalid")
     return Exp471EvaluationArtifactAntigravity(
         **bare,
         evaluation_sha256=sha256(
@@ -1957,6 +1990,8 @@ def _validate_artifact_authority_antigravity(
     artifact: Exp471EvaluationArtifactAntigravity,
     session: Exp471SourceSessionAntigravity,
     typed: _TypedCacheAntigravity,
+    *,
+    expected: Exp471EvaluationArtifactAntigravity | None = None,
 ) -> None:
     _validate_artifact_integrity_antigravity(artifact)
     expected_coverage = {"rows": _coverage_rows_antigravity(typed)}
@@ -1978,6 +2013,13 @@ def _validate_artifact_authority_antigravity(
         != canonical_json_bytes_exp471_antigravity(expected_support)
     ):
         raise ValueError("Exp471 evaluation durable authority differs")
+    if expected is not None and (
+        canonical_json_bytes_exp471_antigravity(artifact.payload)
+        != canonical_json_bytes_exp471_antigravity(expected.payload)
+        or _canonical_artifact_bytes_antigravity(artifact)
+        != _canonical_artifact_bytes_antigravity(expected)
+    ):
+        raise ValueError("Exp471 evaluation payload differs from verified scores and labels")
 
 
 def _artifact_from_bytes_antigravity(
@@ -2041,7 +2083,9 @@ def evaluate_exp471_antigravity(
 
     root = Path(EXP471_EVALUATION_ROOT_ANTIGRAVITY)
     if os.path.lexists(root / _EVALUATION_NAME_ANTIGRAVITY):
-        return read_evaluation_exp471_antigravity(root, session, cache)
+        return read_evaluation_exp471_antigravity(
+            root, session, cache, label_loader=label_loader
+        )
 
     typed = _verified_cache_scores_antigravity(session, cache)
 
@@ -2052,46 +2096,46 @@ def evaluate_exp471_antigravity(
         typed.test_indices,
         label_loader,
     )
-    scored_metrics = metric_tables_exp450_antigravity(
-        labels, typed.raw_scores, micro_scores=typed.micro_scores
+    artifact = _expected_artifact_antigravity(session.authority, typed, labels)
+    _validate_artifact_authority_antigravity(
+        artifact, session, typed, expected=artifact
     )
-    scored_curves = curve_tables_exp450_antigravity(labels, typed.micro_scores)
-    common = _all_ten_common_support_antigravity(typed)
-    common_labels = {dataset: labels[dataset] for dataset in common}
-    common_raw = {
-        method: {dataset: typed.raw_scores[method][dataset] for dataset in common}
-        for method in METHOD_ORDER_ANTIGRAVITY
-    }
-    common_micro = {
-        method: {dataset: typed.micro_scores[method][dataset] for dataset in common}
-        for method in METHOD_ORDER_ANTIGRAVITY
-    }
-    common_metrics = metric_tables_exp450_antigravity(
-        common_labels, common_raw, micro_scores=common_micro
-    )
-    common_curves = curve_tables_exp450_antigravity(common_labels, common_micro)
-    artifact = _new_artifact_antigravity(
-        session.authority,
-        typed,
-        labels,
-        scored_metrics,
-        scored_curves,
-        common_metrics,
-        common_curves,
-    )
-    _validate_artifact_authority_antigravity(artifact, session, typed)
     _publish_artifact_antigravity(root, artifact)
-    return read_evaluation_exp471_antigravity(root, session, typed.cache)
+    anchor = cache_artifacts_antigravity._open_absolute_directory_antigravity(
+        root, create=False
+    )
+    try:
+        raw = cache_artifacts_antigravity._read_leaf_at_antigravity(
+            anchor.descriptor, _EVALUATION_NAME_ANTIGRAVITY
+        )
+        if raw is None or raw != _canonical_artifact_bytes_antigravity(artifact):
+            raise ValueError("Exp471 evaluation published bytes differ")
+        reopened = _artifact_from_bytes_antigravity(raw)
+        anchor.validate()
+    finally:
+        anchor.close()
+    _validate_artifact_integrity_antigravity(reopened)
+    return reopened
 
 
 def read_evaluation_exp471_antigravity(
     root: Path,
     session: Exp471SourceSessionAntigravity,
     cache: Exp471ScoreCacheManifestAntigravity,
+    *,
+    label_loader: Callable | None = None,
 ) -> Exp471EvaluationArtifactAntigravity:
-    """Reopen and fully validate one durable evaluation without recomputation."""
+    """Reopen by recomputing the expected artifact from cache scores and labels."""
 
-    typed = _verified_cache_counts_antigravity(session, cache)
+    typed = _verified_cache_scores_antigravity(session, cache)
+    labels = _load_labels_once_antigravity(
+        session,
+        typed.cache.dataset_order,
+        typed.test_counts,
+        typed.test_indices,
+        label_loader,
+    )
+    expected = _expected_artifact_antigravity(session.authority, typed, labels)
     anchor = cache_artifacts_antigravity._open_absolute_directory_antigravity(
         Path(root), create=False
     )
@@ -2105,7 +2149,9 @@ def read_evaluation_exp471_antigravity(
         anchor.validate()
     finally:
         anchor.close()
-    _validate_artifact_authority_antigravity(artifact, session, typed)
+    _validate_artifact_authority_antigravity(
+        artifact, session, typed, expected=expected
+    )
     return artifact
 
 

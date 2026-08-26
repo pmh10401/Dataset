@@ -358,6 +358,30 @@ def _digest_recomputed_artifact_antigravity(
     )
 
 
+def _write_rehashed_evaluation_antigravity(
+    root: Path,
+    artifact: Exp471EvaluationArtifactAntigravity,
+    mutate,
+) -> None:
+    """Write a deliberately rehashed public artifact for reopen-boundary tests."""
+
+    mutated = _digest_recomputed_artifact_antigravity(artifact, mutate)
+    root.mkdir()
+    (root / "evaluation_antigravity.json").write_bytes(
+        canonical_json_bytes_exp471_antigravity(
+            {
+                "source_authority_sha256": mutated.source_authority_sha256,
+                "cache_manifest_sha256": mutated.cache_manifest_sha256,
+                "code_closure_sha256": mutated.code_closure_sha256,
+                "method_order": list(mutated.method_order),
+                "dataset_order": list(mutated.dataset_order),
+                "payload": mutated.payload,
+                "evaluation_sha256": mutated.evaluation_sha256,
+            }
+        )
+    )
+
+
 def _typed_evidence_antigravity(
     datasets: tuple[str, ...],
     *,
@@ -550,27 +574,27 @@ class EvaluationTestsAntigravity(unittest.TestCase):
             rows[0], rows[1] = rows[1], rows[0]
 
         def wrong_metric_string(payload):
-            payload["metric_tables"]["per_dataset"][0][
+            payload["continuous_tables"]["scored_support"]["per_dataset"][0][
                 "average_precision"
             ] = "forged"
 
         def wrong_metric_bool(payload):
-            payload["metric_tables"]["per_dataset"][0]["auroc"] = True
+            payload["continuous_tables"]["scored_support"]["per_dataset"][0]["auroc"] = True
 
         def wrong_metric_range(payload):
-            payload["metric_tables"]["per_dataset"][0]["auroc"] = 1.01
+            payload["continuous_tables"]["scored_support"]["per_dataset"][0]["auroc"] = 1.01
 
         def wrong_macro_relation(payload):
-            row = payload["metric_tables"]["macro"]["A"]
+            row = payload["continuous_tables"]["scored_support"]["macro"]["A"]
             row["average_precision_denominator"] = 0
             row["average_precision_excluded"] = 0
 
         def reordered_paired_rows(payload):
-            rows = payload["metric_tables"]["paired_statistics"]
+            rows = payload["continuous_tables"]["scored_support"]["paired_statistics"]
             rows[0], rows[1] = rows[1], rows[0]
 
         def malformed_paired_row(payload):
-            payload["metric_tables"]["paired_statistics"][0]["wins"] = True
+            payload["continuous_tables"]["scored_support"]["paired_statistics"][0]["wins"] = True
 
         def roc_out_of_range(payload):
             payload["curve_tables"]["scored_support"]["curves"]["roc"]["rows"][0][
@@ -604,6 +628,12 @@ class EvaluationTestsAntigravity(unittest.TestCase):
 
         mutations = (
             ("per-dataset row swap", swap_dataset_rows),
+            ("metric string", wrong_metric_string),
+            ("metric bool", wrong_metric_bool),
+            ("metric range", wrong_metric_range),
+            ("macro relation", wrong_macro_relation),
+            ("reordered paired rows", reordered_paired_rows),
+            ("malformed paired row", malformed_paired_row),
             ("ROC range", roc_out_of_range),
             ("ROC monotonicity", roc_nonmonotonic),
             ("ROC threshold order", roc_threshold_order),
@@ -817,8 +847,8 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                         _LABELS_ANTIGRAVITY,
                     )[1],
                 )
-            self.assertEqual(cache_gate.call_args_list, [mock.call(session), mock.call(session)])
-            self.assertEqual(events, ["cache", "labels", "cache"])
+            self.assertEqual(cache_gate.call_args_list, [mock.call(session)])
+            self.assertEqual(events, ["cache", "labels"])
 
     def test_typed_failed_cache_never_unlocks_labels(self) -> None:
         """A failed typed-cache partition is terminal before TEST-label access."""
@@ -949,10 +979,10 @@ class EvaluationTestsAntigravity(unittest.TestCase):
         )
         self.assertEqual(artifact.payload["schema"], "exp471-evaluation-antigravity.v2")
 
-    def test_durable_reuse_is_byte_exact_and_skips_labels_and_metric_recomputation(
+    def test_durable_reuse_is_byte_exact_and_recomputes_from_one_label_load(
         self,
     ) -> None:
-        """An exact terminal artifact must reopen without scientific recompute."""
+        """An exact terminal artifact must be independently recomputed on reopen."""
 
         durable_bytes: list[bytes] = []
         durable_digests: list[str] = []
@@ -981,28 +1011,24 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                     )
                     path = evaluation_root / "evaluation_antigravity.json"
                     first_stat = path.stat()
-                    with mock.patch.object(
-                        evaluation,
-                        "metric_tables_exp450_antigravity",
-                        side_effect=AssertionError("metrics must not be recomputed"),
-                    ), mock.patch.object(
-                        evaluation,
-                        "curve_tables_exp450_antigravity",
-                        side_effect=AssertionError("curves must not be recomputed"),
-                    ):
-                        second = evaluation.evaluate_exp471_antigravity(
-                            session,
-                            cache,
-                            label_loader=lambda _datasets: (_ for _ in ()).throw(
-                                AssertionError("labels must not reopen")
-                            ),
-                        )
+                    second = evaluation.evaluate_exp471_antigravity(
+                        session,
+                        cache,
+                        label_loader=lambda datasets: (
+                            label_calls.append(datasets), _LABELS_ANTIGRAVITY
+                        )[1],
+                    )
                     second_stat = path.stat()
                     reopened = evaluation.read_evaluation_exp471_antigravity(
-                        evaluation_root, session, cache
+                        evaluation_root,
+                        session,
+                        cache,
+                        label_loader=lambda datasets: (
+                            label_calls.append(datasets), _LABELS_ANTIGRAVITY
+                        )[1],
                     )
                 self.assertEqual((first, second, reopened), (first, first, first))
-                self.assertEqual(label_calls, [(_DATASET_ANTIGRAVITY,)])
+                self.assertEqual(label_calls, [(_DATASET_ANTIGRAVITY,)] * 3)
                 self.assertEqual(
                     (first_stat.st_dev, first_stat.st_ino),
                     (second_stat.st_dev, second_stat.st_ino),
@@ -1013,8 +1039,8 @@ class EvaluationTestsAntigravity(unittest.TestCase):
         self.assertEqual(durable_bytes[0], durable_bytes[1])
         self.assertEqual(durable_digests[0], durable_digests[1])
 
-    def test_reuse_read_and_reconstruction_skip_scientific_bootstrap(self) -> None:
-        """Every durable path must treat persisted bootstrap rows as evidence."""
+    def test_frozen_reconstruction_skips_scientific_bootstrap(self) -> None:
+        """Source-free reconstruction retains persisted bootstrap evidence."""
 
         with tempfile.TemporaryDirectory(
             prefix="exp471_evaluation_no_bootstrap_antigravity_"
@@ -1034,30 +1060,12 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                     cache,
                     label_loader=lambda _datasets: _LABELS_ANTIGRAVITY,
                 )
-                operations = (
-                    (
-                        "exact durable reuse",
-                        lambda: evaluation.evaluate_exp471_antigravity(
-                            session,
-                            cache,
-                            label_loader=lambda _datasets: (_ for _ in ()).throw(
-                                AssertionError("labels must not reopen")
-                            ),
-                        ),
+                operations = ((
+                    "frozen reconstruction",
+                    lambda: evaluation.reconstruct_frozen_evaluation_exp471_antigravity(
+                        artifact
                     ),
-                    (
-                        "direct read",
-                        lambda: evaluation.read_evaluation_exp471_antigravity(
-                            evaluation_root, session, cache
-                        ),
-                    ),
-                    (
-                        "frozen reconstruction",
-                        lambda: evaluation.reconstruct_frozen_evaluation_exp471_antigravity(
-                            artifact
-                        ),
-                    ),
-                )
+                ),)
                 for name, operation in operations:
                     with self.subTest(name=name), mock.patch.object(
                         evaluation,
@@ -1088,8 +1096,8 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                         operation()
                         bootstrap.assert_not_called()
 
-    def test_reuse_and_direct_read_skip_score_preparation(self) -> None:
-        """Durable authority checks must not rebuild score mappings."""
+    def test_direct_read_rebuilds_authoritative_score_maps(self) -> None:
+        """Read must use full verified score maps, not cache counts alone."""
 
         with tempfile.TemporaryDirectory(
             prefix="exp471_evaluation_no_score_prepare_antigravity_"
@@ -1109,28 +1117,18 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                     cache,
                     label_loader=lambda _datasets: _LABELS_ANTIGRAVITY,
                 )
-                operations = (
-                    lambda: evaluation.evaluate_exp471_antigravity(
+                with mock.patch.object(
+                    evaluation,
+                    "_verified_cache_scores_antigravity",
+                    wraps=evaluation._verified_cache_scores_antigravity,
+                ) as score_preparation:
+                    evaluation.read_evaluation_exp471_antigravity(
+                        evaluation_root,
                         session,
                         cache,
-                        label_loader=lambda _datasets: (_ for _ in ()).throw(
-                            AssertionError("labels must not reopen")
-                        ),
-                    ),
-                    lambda: evaluation.read_evaluation_exp471_antigravity(
-                        evaluation_root, session, cache
-                    ),
-                )
-                for operation in operations:
-                    with mock.patch.object(
-                        evaluation,
-                        "_verified_cache_scores_antigravity",
-                        side_effect=AssertionError(
-                            "durable evaluation must not prepare score mappings"
-                        ),
-                    ) as score_preparation:
-                        operation()
-                        score_preparation.assert_not_called()
+                        label_loader=lambda _datasets: _LABELS_ANTIGRAVITY,
+                    )
+                score_preparation.assert_called_once_with(session, cache)
 
     def test_initial_evaluation_calls_frozen_metric_and_paired_builders_once(
         self,
@@ -1255,7 +1253,10 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                 ValueError, "null"
             ):
                 evaluation.read_evaluation_exp471_antigravity(
-                    mutated_root, session, cache
+                    mutated_root,
+                    session,
+                    cache,
+                    label_loader=lambda _datasets: _LABELS_ANTIGRAVITY,
                 )
 
     def test_label_loader_is_called_once_then_exact_order_and_count_are_enforced(
@@ -1445,6 +1446,173 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     evaluation.reconstruct_frozen_evaluation_exp471_antigravity(tampered)
 
+    def test_public_read_recomputes_expected_payload_once_and_rejects_rehashes(
+        self,
+    ) -> None:
+        """Read must bind every persisted v2 value to cache scores and one label load."""
+
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_evaluation_public_read_recompute_antigravity_"
+        ) as temporary:
+            base = Path(temporary).resolve()
+            cache_root = base / "score_cache_antigravity"
+            evaluation_root = base / "evaluation_antigravity"
+            authority = _authority_antigravity()
+            session = _session_antigravity(authority)
+            cache = _publish_cache_antigravity(cache_root, authority)
+            issued, score_root, artifact_root, cache_gate = _evaluation_patches_antigravity(
+                cache_root, evaluation_root
+            )
+            with issued, score_root, artifact_root, cache_gate:
+                artifact = evaluation.evaluate_exp471_antigravity(
+                    session, cache, label_loader=lambda _datasets: _LABELS_ANTIGRAVITY
+                )
+                valid_calls: list[tuple[str, ...]] = []
+                reopened = evaluation.read_evaluation_exp471_antigravity(
+                    evaluation_root,
+                    session,
+                    cache,
+                    label_loader=lambda datasets: (
+                        valid_calls.append(datasets), _LABELS_ANTIGRAVITY
+                    )[1],
+                )
+                self.assertEqual(reopened, artifact)
+                self.assertEqual(valid_calls, [(_DATASET_ANTIGRAVITY,)])
+
+                def arbitrary_micro(payload):
+                    payload["continuous_tables"]["scored_support"]["micro"]["A"][
+                        "average_precision"
+                    ] = 0.123
+
+                def foreign_alert(payload):
+                    row = payload["decision_tables"]["full_population"]["dataset_rows"][0]
+                    row["alerts"] = [999]
+                    row["alert_count"] = 1
+
+                def deleted_roc_interior(payload):
+                    del payload["curve_tables"]["scored_support"]["curves"]["roc"]["rows"][1]
+
+                def duplicate_pr_interior(payload):
+                    rows = payload["curve_tables"]["scored_support"]["curves"]["precision_recall"]["rows"]
+                    rows.insert(1, dict(rows[1]))
+
+                def common_micro(payload):
+                    payload["continuous_tables"]["all_ten_common_support"]["micro"]["A"][
+                        "auroc"
+                    ] = 0.321
+
+                def extra_macro_key(payload):
+                    payload["continuous_tables"]["scored_support"]["macro"]["EXTRA"] = {}
+
+                def missing_micro_key(payload):
+                    del payload["continuous_tables"]["all_ten_common_support"]["micro"]["A"]
+
+                def duplicate_metric_row(payload):
+                    rows = payload["continuous_tables"]["scored_support"]["per_dataset"]
+                    rows.insert(1, dict(rows[0]))
+
+                def pair_digest(payload):
+                    payload["continuous_tables"]["scored_support"]["paired_statistics"][0][
+                        "scored_intersection_sha256"
+                    ] = "0" * 64
+
+                def pair_bool_count(payload):
+                    payload["continuous_tables"]["all_ten_common_support"]["paired_statistics"][0][
+                        "scored_intersection_count"
+                    ] = True
+
+                def deleted_common_roc(payload):
+                    del payload["curve_tables"]["all_ten_common_support"]["curves"]["roc"]["rows"][1]
+
+                def duplicated_common_pr(payload):
+                    rows = payload["curve_tables"]["all_ten_common_support"]["curves"]["precision_recall"]["rows"]
+                    rows.insert(1, dict(rows[1]))
+
+                for name, mutate in (
+                    ("arbitrary micro", arbitrary_micro),
+                    ("foreign alert", foreign_alert),
+                    ("deleted ROC interior", deleted_roc_interior),
+                    ("duplicated PR interior", duplicate_pr_interior),
+                    ("common arbitrary micro", common_micro),
+                    ("extra macro key", extra_macro_key),
+                    ("missing micro key", missing_micro_key),
+                    ("duplicate metric row", duplicate_metric_row),
+                    ("pair digest", pair_digest),
+                    ("pair bool count", pair_bool_count),
+                    ("deleted common ROC", deleted_common_roc),
+                    ("duplicated common PR", duplicated_common_pr),
+                ):
+                    with self.subTest(name=name):
+                        mutated_root = base / f"{name.replace(' ', '_')}_antigravity"
+                        _write_rehashed_evaluation_antigravity(mutated_root, artifact, mutate)
+                        calls: list[tuple[str, ...]] = []
+                        issued, score_root, artifact_root, cache_gate = _evaluation_patches_antigravity(
+                            cache_root, mutated_root
+                        )
+                        with issued, score_root, artifact_root, cache_gate, self.assertRaises(ValueError):
+                            evaluation.read_evaluation_exp471_antigravity(
+                                mutated_root,
+                                session,
+                                cache,
+                                label_loader=lambda datasets: (
+                                    calls.append(datasets), _LABELS_ANTIGRAVITY
+                                )[1],
+                            )
+                        self.assertEqual(calls, [(_DATASET_ANTIGRAVITY,)])
+
+    def test_public_read_rejects_a_coordinated_status_swap_against_shards(self) -> None:
+        """A self-consistent alternate typed payload cannot replace durable shard state."""
+
+        datasets = ("swap_0_antigravity", "swap_1_antigravity")
+        labels = {dataset: ((0, 0), (1, 1)) for dataset in datasets}
+        with tempfile.TemporaryDirectory(
+            prefix="exp471_evaluation_status_swap_antigravity_"
+        ) as temporary:
+            base = Path(temporary).resolve()
+            cache_root = base / "score_cache_antigravity"
+            mutated_root = base / "mutated_evaluation_antigravity"
+            authority = _authority_antigravity()
+            session = _session_antigravity(authority)
+            cache = _publish_durable_typed_cache_antigravity(
+                cache_root, authority, datasets, {("B", datasets[0])}
+            )
+            issued, score_root, artifact_root, cache_gate = _evaluation_patches_antigravity(
+                cache_root, base / "unused_evaluation_antigravity"
+            )
+            with issued, score_root, artifact_root, cache_gate:
+                typed = evaluation._verified_cache_scores_antigravity(session, cache)
+                raw = {method: dict(values) for method, values in typed.raw_scores.items()}
+                micro = {method: dict(values) for method, values in typed.micro_scores.items()}
+                status = {method: dict(values) for method, values in typed.status.items()}
+                reasons = {method: dict(values) for method, values in typed.reasons.items()}
+                raw["B"][datasets[0]] = raw["B"][datasets[1]]
+                micro["B"][datasets[0]] = micro["B"][datasets[1]]
+                del raw["B"][datasets[1]]
+                del micro["B"][datasets[1]]
+                status["B"][datasets[0]], status["B"][datasets[1]] = "scored", "abstained"
+                reasons["B"][datasets[0]], reasons["B"][datasets[1]] = None, "insufficient_train_rows"
+                forged_typed = evaluation._TypedCacheAntigravity(
+                    cache, raw, micro, typed.test_counts, typed.test_indices, status, reasons
+                )
+                forged = evaluation._expected_artifact_antigravity(
+                    authority,
+                    forged_typed,
+                    {dataset: (0, 1) for dataset in datasets},
+                )
+                _write_rehashed_evaluation_antigravity(mutated_root, forged, lambda _payload: None)
+                calls: list[tuple[str, ...]] = []
+                issued, score_root, artifact_root, cache_gate = _evaluation_patches_antigravity(
+                    cache_root, mutated_root
+                )
+                with issued, score_root, artifact_root, cache_gate, self.assertRaises(ValueError):
+                    evaluation.read_evaluation_exp471_antigravity(
+                        mutated_root,
+                        session,
+                        cache,
+                        label_loader=lambda observed: (calls.append(observed), labels)[1],
+                    )
+        self.assertEqual(calls, [datasets])
+
     def test_public_durable_abstentions_preserve_typed_supports(self) -> None:
         """Public evaluate/read retain real empty shards and their distinct supports."""
 
@@ -1474,7 +1642,10 @@ class EvaluationTestsAntigravity(unittest.TestCase):
                     session, cache, label_loader=lambda _datasets: labels
                 )
                 reopened = evaluation.read_evaluation_exp471_antigravity(
-                    evaluation_root, session, cache
+                    evaluation_root,
+                    session,
+                    cache,
+                    label_loader=lambda _datasets: labels,
                 )
         self.assertEqual(reopened, artifact)
         payload = artifact.payload

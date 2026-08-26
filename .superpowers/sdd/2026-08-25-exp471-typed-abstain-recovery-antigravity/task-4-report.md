@@ -115,3 +115,38 @@ Task 4 evaluator suite: 26 tests in 2.504s — OK
 Full Exp471 suite: 213 tests in 112.575s — OK
 compileall, codemap generator/check, and git diff --check — OK
 ```
+
+## Fix Round 2: Authoritative Payload Recompute on Public Read
+
+The public reopen boundary now verifies full durable score shards, opens labels
+exactly once, and calls one pure deterministic builder that derives the entire
+expected v2 payload from those inputs alone. It recomputes coverage, decisions,
+scored/common Exp450 metrics and curves, semantic nulls, pair authorities, and
+support authority without reading scientific content from the stored artifact.
+After outer canonical/integrity validation, read requires the canonical stored
+payload and complete artifact bytes to equal this independently built result.
+
+`evaluate_exp471_antigravity` uses the same builder after its single label
+load, validates before publication, then compares the published bytes directly
+without a second label load. Existing artifact reuse now deliberately invokes
+the public read recomputation path. Source-free frozen reconstruction remains
+available for its existing artifact-integrity role.
+
+The new public-read RED first failed because `read` did not accept a label
+loader. GREEN tests prove exactly one read label call on a valid artifact and
+one call before rejection for each rehashed artifact. The executed adversarial
+matrix covers arbitrary micro values on both supports, foreign alert indices,
+extra/missing macro/micro keys, duplicate metric rows, pair digest and boolean
+count, ROC/PR interior deletion/duplication on both supports, and a fully
+self-consistent forged B abstention-status swap against the actual durable
+shards. Obsolete v1-style `metric_tables` mutations were retargeted to v2
+continuous tables and executed.
+
+Verification after the fix:
+
+```text
+Task 4 evaluator suite: 28 tests in 4.409s — OK
+Task 2/3 focused regressions: 66 tests in 40.112s — OK
+Full Exp471 suite: 215 tests in 96.009s — OK
+compileall, codemap generator/check, and git diff --check — OK
+```
