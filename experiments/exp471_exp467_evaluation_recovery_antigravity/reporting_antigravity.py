@@ -60,6 +60,8 @@ _REPORT_CLOSURE_PATHS_ANTIGRAVITY = (
     "experiments/exp471_exp467_evaluation_recovery_antigravity/"
     "contracts_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/"
+    "cache_artifacts_antigravity.py",
+    "experiments/exp471_exp467_evaluation_recovery_antigravity/"
     "evaluation_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/"
     "score_cache_antigravity.py",

@@ -13,6 +13,7 @@ import multiprocessing
 import os
 from pathlib import Path
 import runpy
+import stat
 import subprocess
 import tempfile
 import threading
@@ -233,6 +234,12 @@ def _artifact_antigravity(base: Path):
     return artifact
 
 
+def _production_curve_levels_antigravity(method_index: int) -> tuple[float, float]:
+    """Return unique in-panel horizontal ROC/PR levels for one method."""
+
+    return (0.12 + method_index * 0.07, 0.15 + method_index * 0.06)
+
+
 def _production_typed_artifact_antigravity():
     """Build a valid 1,117-dataset artifact without opening production roots.
 
@@ -356,7 +363,8 @@ def _production_typed_artifact_antigravity():
     def curves():
         roc_rows = []
         pr_rows = []
-        for method in METHOD_ORDER_ANTIGRAVITY:
+        for method_index, method in enumerate(METHOD_ORDER_ANTIGRAVITY):
+            roc_level, pr_level = _production_curve_levels_antigravity(method_index)
             roc_rows.extend(
                 (
                     {
@@ -367,8 +375,14 @@ def _production_typed_artifact_antigravity():
                     },
                     {
                         "method": method,
-                        "false_positive_rate": 0.0,
-                        "true_positive_rate": 1.0,
+                        "false_positive_rate": 0.55,
+                        "true_positive_rate": roc_level,
+                        "threshold": 2.0,
+                    },
+                    {
+                        "method": method,
+                        "false_positive_rate": 0.75,
+                        "true_positive_rate": roc_level,
                         "threshold": 1.0,
                     },
                     {
@@ -382,6 +396,8 @@ def _production_typed_artifact_antigravity():
             pr_rows.extend(
                 (
                     {"method": method, "recall": 1.0, "precision": 1.0},
+                    {"method": method, "recall": 0.75, "precision": pr_level},
+                    {"method": method, "recall": 0.55, "precision": pr_level},
                     {"method": method, "recall": 0.0, "precision": 1.0},
                 )
             )
@@ -419,6 +435,29 @@ def _production_typed_artifact_antigravity():
         }
     )
     assert isinstance(bare, Mapping)
+    return evaluation.Exp471EvaluationArtifactAntigravity(
+        **bare,
+        evaluation_sha256=sha256(
+            canonical_json_bytes_exp471_antigravity(bare)
+        ).hexdigest(),
+    )
+
+
+def _rehashed_typed_report_artifact_antigravity(artifact, mutate):
+    """Build one adversarial, self-digested v2 artifact for renderer tests."""
+
+    payload = json.loads(
+        canonical_json_bytes_exp471_antigravity(artifact.payload).decode("utf-8")
+    )
+    mutate(payload)
+    bare = {
+        "source_authority_sha256": artifact.source_authority_sha256,
+        "cache_manifest_sha256": artifact.cache_manifest_sha256,
+        "code_closure_sha256": artifact.code_closure_sha256,
+        "method_order": list(artifact.method_order),
+        "dataset_order": list(artifact.dataset_order),
+        "payload": payload,
+    }
     return evaluation.Exp471EvaluationArtifactAntigravity(
         **bare,
         evaluation_sha256=sha256(
@@ -479,6 +518,47 @@ def _parse_png_chunks_independently_antigravity(payload: bytes) -> tuple[
         sha256(raw_pixels).hexdigest(),
         raw_pixels,
     )
+
+
+def _exp450_raster_color_antigravity(method_index: int) -> tuple[int, int, int]:
+    """Independently state the frozen public-raster color for one method."""
+
+    return (
+        (41 + method_index * 53) % 220,
+        (79 + method_index * 97) % 220,
+        (131 + method_index * 37) % 220,
+    )
+
+
+def _assert_production_raster_segments_antigravity(
+    dimensions: tuple[int, int, int, int], raw_pixels: bytes | bytearray
+) -> None:
+    """Check unique plot-interior segments without SVG/PNG metadata or renderer calls."""
+
+    width, height, depth, color = dimensions
+    if (width, height, depth, color) != (1200, 580, 8, 2):
+        raise AssertionError("unexpected public raster dimensions")
+    row_width = width * 3 + 1
+
+    def pixel(x: int, y: int) -> tuple[int, int, int]:
+        offset = y * row_width + 1 + x * 3
+        return tuple(raw_pixels[offset : offset + 3])
+
+    for method_index, method in enumerate(METHOD_ORDER_ANTIGRAVITY):
+        roc_level, pr_level = _production_curve_levels_antigravity(method_index)
+        expected = _exp450_raster_color_antigravity(method_index)
+        for panel, left, level in (
+            ("ROC", 70, roc_level),
+            ("PR", 660, pr_level),
+        ):
+            coordinate = (
+                round(left + 0.65 * 480),
+                round(70 + 400 - level * 400),
+            )
+            if pixel(*coordinate) != expected:
+                raise AssertionError(
+                    f"{panel} plot segment for {method} is absent or differs"
+                )
 
 
 def _make_report_tamperable_antigravity(*paths: Path) -> None:
@@ -2025,6 +2105,24 @@ class ReportingTestsAntigravity(unittest.TestCase):
             artifact.payload["support_authority"]["all_ten_common_support_count"],
             922,
         )
+        for method in METHOD_ORDER_ANTIGRAVITY:
+            def remove_method(payload, removed=method):
+                for support in ("scored_support", "all_ten_common_support"):
+                    curves = payload["curve_tables"][support]["curves"]
+                    for panel in ("roc", "precision_recall"):
+                        curves[panel]["rows"] = [
+                            row for row in curves[panel]["rows"]
+                            if row["method"] != removed
+                        ]
+
+            with self.subTest(removed_method=method):
+                removed = _rehashed_typed_report_artifact_antigravity(
+                    artifact, remove_method
+                )
+                with self.assertRaisesRegex(ValueError, "method|curve"):
+                    typed_reporting.expected_typed_exp471_report_leaves_antigravity(
+                        removed
+                    )
 
         stage = self.base / "typed_production_stage_antigravity"
         rendered = typed_reporting.write_typed_exp471_report_antigravity(
@@ -2216,12 +2314,24 @@ class ReportingTestsAntigravity(unittest.TestCase):
                 return tuple(raster[offset : offset + 3])
 
             # The public raster has an independent white background, black
-            # horizontal axes, and the last (DROCC) method overwrites both
-            # deliberate top horizontal curve segments with its fixed color.
+            # horizontal axes, and ten distinct plot-interior curve segments.
             self.assertEqual(pixel(0, 0), (255, 255, 255))
             self.assertEqual(pixel(300, 470), (0, 0, 0))
-            self.assertEqual(pixel(300, 70), (78, 72, 24))
-            self.assertEqual(pixel(900, 70), (78, 72, 24))
+            _assert_production_raster_segments_antigravity(dimensions, raster)
+            for method_index, method in enumerate(METHOD_ORDER_ANTIGRAVITY):
+                altered = bytearray(raster)
+                roc_level, _pr_level = _production_curve_levels_antigravity(
+                    method_index
+                )
+                x = round(70 + 0.65 * 480)
+                y = round(70 + 400 - roc_level * 400)
+                offset = y * row_width + 1 + x * 3
+                altered[offset : offset + 3] = b"\xff\xff\xff"
+                with self.subTest(support=support, erased_method=method):
+                    with self.assertRaisesRegex(AssertionError, method):
+                        _assert_production_raster_segments_antigravity(
+                            dimensions, altered
+                        )
             self.assertEqual(
                 png,
                 (second.root / f"exp471_{stem}_curves_antigravity.png").read_bytes(),
@@ -2235,20 +2345,28 @@ class ReportingTestsAntigravity(unittest.TestCase):
         required = {
             "experiments/exp450_resampling_image_ablation_antigravity/reporting_antigravity.py",
             "experiments/exp450_resampling_image_ablation_antigravity/evaluation_antigravity.py",
+            "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
             "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
         }
         self.assertTrue(required <= set(files))
         repository = reporting._repository_root_antigravity()
         for relative in required:
             self.assertEqual(files[relative], sha256((repository / relative).read_bytes()).hexdigest())
-        changed = reporting._report_closure_antigravity(
-            read_bytes=lambda path: (
-                path.read_bytes() + b"changed-png-helper-antigravity\n"
-                if path.as_posix().endswith("exp450_resampling_image_ablation_antigravity/reporting_antigravity.py")
-                else path.read_bytes()
-            )
-        )
-        self.assertNotEqual(closure["closure_sha256"], changed["closure_sha256"])
+        for altered in (
+            "experiments/exp450_resampling_image_ablation_antigravity/reporting_antigravity.py",
+            "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+        ):
+            with self.subTest(altered=altered):
+                changed = reporting._report_closure_antigravity(
+                    read_bytes=lambda path, altered=altered: (
+                        path.read_bytes() + b"changed-rendering-dependency-antigravity\n"
+                        if path.relative_to(repository).as_posix() == altered
+                        else path.read_bytes()
+                    )
+                )
+                self.assertNotEqual(
+                    closure["closure_sha256"], changed["closure_sha256"]
+                )
 
     def test_typed_renderer_rejects_symlinked_root_destination_and_extra_leaf(self) -> None:
         """Direct renderer roots are descriptor-safe and inventory-exact."""
@@ -2295,6 +2413,64 @@ class ReportingTestsAntigravity(unittest.TestCase):
             typed_reporting.write_typed_exp471_report_antigravity(
                 self.artifact, missing_root
             )
+
+    def test_typed_renderer_reuse_requires_immutable_single_link_leaves(self) -> None:
+        """Exact report bytes never authorize mode repair or borrowed inodes."""
+
+        mode_root = self.base / "typed_mode_reuse_antigravity"
+        rendered = typed_reporting.write_typed_exp471_report_antigravity(
+            self.artifact, mode_root
+        )
+        for leaf in rendered.root.iterdir():
+            details = leaf.lstat()
+            self.assertTrue(stat.S_ISREG(details.st_mode))
+            self.assertEqual(stat.S_IMODE(details.st_mode), 0o444)
+            self.assertEqual(details.st_nlink, 1)
+
+        mode_leaf = rendered.root / "exp471_coverage_antigravity.csv"
+        mode_before = mode_leaf.lstat()
+        mode_bytes = mode_leaf.read_bytes()
+        os.chmod(mode_leaf, 0o644)
+        with self.assertRaisesRegex(ValueError, "immutable"):
+            typed_reporting.write_typed_exp471_report_antigravity(
+                self.artifact, mode_root
+            )
+        mode_after = mode_leaf.lstat()
+        self.assertEqual(mode_leaf.read_bytes(), mode_bytes)
+        self.assertEqual(
+            (mode_after.st_dev, mode_after.st_ino),
+            (mode_before.st_dev, mode_before.st_ino),
+        )
+        self.assertEqual(stat.S_IMODE(mode_after.st_mode), 0o644)
+        self.assertEqual(mode_after.st_nlink, 1)
+
+        link_root = self.base / "typed_hardlink_reuse_antigravity"
+        linked = typed_reporting.write_typed_exp471_report_antigravity(
+            self.artifact, link_root
+        )
+        linked_leaf = linked.root / "exp471_coverage_antigravity.json"
+        external_link = self.base / "preserved_external_leaf_antigravity.json"
+        linked_before = linked_leaf.lstat()
+        linked_bytes = linked_leaf.read_bytes()
+        os.link(linked_leaf, external_link)
+        with self.assertRaisesRegex(ValueError, "immutable"):
+            typed_reporting.write_typed_exp471_report_antigravity(
+                self.artifact, link_root
+            )
+        linked_after = linked_leaf.lstat()
+        external_after = external_link.lstat()
+        self.assertEqual(linked_leaf.read_bytes(), linked_bytes)
+        self.assertEqual(external_link.read_bytes(), linked_bytes)
+        self.assertEqual(
+            (linked_after.st_dev, linked_after.st_ino),
+            (linked_before.st_dev, linked_before.st_ino),
+        )
+        self.assertEqual(
+            (external_after.st_dev, external_after.st_ino),
+            (linked_after.st_dev, linked_after.st_ino),
+        )
+        self.assertEqual(linked_after.st_nlink, 2)
+        self.assertEqual(external_after.st_nlink, 2)
 
     def test_two_argument_public_interface_reads_durable_worker_provenance(self) -> None:
         """The specified two-argument API must bind the reopened worker decision."""

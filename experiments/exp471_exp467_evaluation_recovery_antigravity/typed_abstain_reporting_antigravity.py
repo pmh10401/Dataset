@@ -12,6 +12,7 @@ import json
 import math
 import os
 from pathlib import Path
+import stat
 import struct
 from typing import Any
 import zlib
@@ -252,6 +253,32 @@ def _typed_leaf_names_antigravity(directory: int) -> tuple[str, ...]:
     return names
 
 
+def _validate_typed_leaf_antigravity(directory: int, name: str) -> None:
+    """Require every published or reused leaf to retain immutable ownership."""
+
+    descriptor: int | None = None
+    try:
+        descriptor = os.open(
+            name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory
+        )
+        opened = os.fstat(descriptor)
+        observed = os.stat(name, dir_fd=directory, follow_symlinks=False)
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or not stat.S_ISREG(observed.st_mode)
+            or (opened.st_dev, opened.st_ino)
+            != (observed.st_dev, observed.st_ino)
+            or opened.st_nlink != 1
+            or stat.S_IMODE(opened.st_mode) != 0o444
+        ):
+            raise ValueError("Exp471 typed report leaf is not immutable")
+    except OSError as error:
+        raise ValueError("Exp471 typed report leaf is unavailable or unsafe") from error
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
 def expected_typed_exp471_report_leaves_antigravity(
     artifact: Exp471EvaluationArtifactAntigravity,
 ) -> dict[str, bytes]:
@@ -330,6 +357,8 @@ def write_typed_exp471_report_antigravity(
             existing = _typed_leaf_names_antigravity(destination_descriptor)
             if existing != expected_names:
                 raise ValueError("Exp471 typed report leaf inventory differs")
+            for name in expected_names:
+                _validate_typed_leaf_antigravity(destination_descriptor, name)
         for relative, content in leaves.items():
             name = relative.removeprefix(f"{_ROOT_NAME_ANTIGRAVITY}/")
             cache_artifacts_antigravity._publish_bytes_at_antigravity(
@@ -341,6 +370,7 @@ def write_typed_exp471_report_antigravity(
                     anchor, anchor.descriptor, destination_identity
                 ),
             )
+            _validate_typed_leaf_antigravity(destination_descriptor, name)
         if _typed_leaf_names_antigravity(destination_descriptor) != expected_names:
             raise ValueError("Exp471 typed report leaf inventory differs")
         _validate_typed_destination_antigravity(

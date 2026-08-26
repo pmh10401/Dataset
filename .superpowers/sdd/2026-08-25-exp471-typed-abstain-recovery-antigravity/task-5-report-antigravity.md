@@ -72,3 +72,28 @@ check passed 3/3 in 6.177s.  The full reporting/CLI suite passed 89/89 in
 52.564s; the Task 4 evaluator regression passed 28/28 in 4.122s; and the
 complete Exp471 suite passed 219/219 in 87.820s. `py_compile`, codemap
 generation plus `--check`, and `git diff --check` completed successfully.
+
+## Fix Round 2
+
+The report provenance closure now also binds
+`cache_artifacts_antigravity.py`, the descriptor-relative publisher that the
+typed renderer executes. The closure test injects changed bytes into that file
+and proves the closure digest changes. Direct typed-renderer reuse now opens
+each leaf with no-follow semantics and requires a regular, single-link file
+with exact `0444` mode. Same-byte writable and hard-linked leaves are rejected
+without changing the external bytes, inode, link count, or mode; newly created
+leaves are checked for that immutable shape.
+
+The production-shaped fixture now has ten distinct, schema-valid ROC and PR
+geometries. Its PNG oracle independently validates PNG framing and samples
+unique plot-interior horizontal segments for every method on both support
+figures, without reading renderer metadata or invoking a renderer helper. A
+subtest erases each method's sampled segment and proves the oracle fails; a
+separate subtest removes each method's curve rows from a self-digested v2
+artifact and proves report derivation rejects it.
+
+The old identical-curve expectation first failed (1 test, 6.022s) after the
+fixture geometry was made distinct. The completed focused set passed 3/3 in
+20.824s; reporting/CLI passed 90/90 in 66.132s; Task 4 passed 28/28 in
+4.245s; and full Exp471 passed 220/220 in 102.098s. `py_compile`, codemap
+regeneration plus `--check`, codemap tests 5/5, and `git diff --check` passed.
