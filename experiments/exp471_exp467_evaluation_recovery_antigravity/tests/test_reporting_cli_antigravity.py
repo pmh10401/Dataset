@@ -2472,6 +2472,76 @@ class ReportingTestsAntigravity(unittest.TestCase):
         self.assertEqual(linked_after.st_nlink, 2)
         self.assertEqual(external_after.st_nlink, 2)
 
+    def test_typed_renderer_rejects_leaf_mutation_during_reuse_validation(self) -> None:
+        """The no-follow descriptor observation has no unchecked stat window."""
+
+        mode_root = self.base / "typed_race_mode_reuse_antigravity"
+        rendered = typed_reporting.write_typed_exp471_report_antigravity(
+            self.artifact, mode_root
+        )
+        mode_leaf = rendered.root / "exp471_coverage_antigravity.csv"
+        mode_before = mode_leaf.lstat()
+        mode_bytes = mode_leaf.read_bytes()
+
+        def chmod_between_snapshots(name: str) -> None:
+            if name == mode_leaf.name:
+                os.chmod(mode_leaf, 0o644)
+
+        with mock.patch.object(
+            typed_reporting,
+            "_typed_leaf_validation_hook_antigravity",
+            side_effect=chmod_between_snapshots,
+        ):
+            with self.assertRaisesRegex(ValueError, "immutable"):
+                typed_reporting.write_typed_exp471_report_antigravity(
+                    self.artifact, mode_root
+                )
+        mode_after = mode_leaf.lstat()
+        self.assertEqual(mode_leaf.read_bytes(), mode_bytes)
+        self.assertEqual(
+            (mode_after.st_dev, mode_after.st_ino),
+            (mode_before.st_dev, mode_before.st_ino),
+        )
+        self.assertEqual(stat.S_IMODE(mode_after.st_mode), 0o644)
+        self.assertEqual(mode_after.st_nlink, 1)
+
+        link_root = self.base / "typed_race_hardlink_reuse_antigravity"
+        linked = typed_reporting.write_typed_exp471_report_antigravity(
+            self.artifact, link_root
+        )
+        linked_leaf = linked.root / "exp471_coverage_antigravity.json"
+        link_before = linked_leaf.lstat()
+        link_bytes = linked_leaf.read_bytes()
+        external_link = self.base / "race_external_leaf_antigravity.json"
+
+        def link_between_snapshots(name: str) -> None:
+            if name == linked_leaf.name:
+                os.link(linked_leaf, external_link)
+
+        with mock.patch.object(
+            typed_reporting,
+            "_typed_leaf_validation_hook_antigravity",
+            side_effect=link_between_snapshots,
+        ):
+            with self.assertRaisesRegex(ValueError, "immutable"):
+                typed_reporting.write_typed_exp471_report_antigravity(
+                    self.artifact, link_root
+                )
+        link_after = linked_leaf.lstat()
+        external_after = external_link.lstat()
+        self.assertEqual(linked_leaf.read_bytes(), link_bytes)
+        self.assertEqual(external_link.read_bytes(), link_bytes)
+        self.assertEqual(
+            (link_after.st_dev, link_after.st_ino),
+            (link_before.st_dev, link_before.st_ino),
+        )
+        self.assertEqual(
+            (external_after.st_dev, external_after.st_ino),
+            (link_after.st_dev, link_after.st_ino),
+        )
+        self.assertEqual(link_after.st_nlink, 2)
+        self.assertEqual(external_after.st_nlink, 2)
+
     def test_two_argument_public_interface_reads_durable_worker_provenance(self) -> None:
         """The specified two-argument API must bind the reopened worker decision."""
 

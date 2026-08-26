@@ -97,3 +97,19 @@ fixture geometry was made distinct. The completed focused set passed 3/3 in
 20.824s; reporting/CLI passed 90/90 in 66.132s; Task 4 passed 28/28 in
 4.245s; and full Exp471 passed 220/220 in 102.098s. `py_compile`, codemap
 regeneration plus `--check`, codemap tests 5/5, and `git diff --check` passed.
+
+## Fix Round 3
+
+Typed-leaf validation now checks immutable regular-file shape on the first
+descriptor snapshot, the no-follow pathname snapshot, and a second descriptor
+snapshot after pathname observation. All three must be the same device/inode,
+single-link, exact-`0444` file. A deterministic test hook mutates a same-byte
+leaf between the first descriptor snapshot and pathname lookup: one subcase
+changes its mode to `0644`, the other creates an external hardlink. The direct
+renderer rejects both and leaves the externally modified bytes, inode, mode,
+and link count intact.
+
+Focused race/reuse/closure/PNG tests passed 4/4 in 48.359s. Reporting/CLI
+passed 91/91 in 161.742s; Task 4 passed 28/28 in 12.648s; codemap tests passed
+5/5 in 19.963s; and full Exp471 passed 221/221 in 297.295s. `py_compile`,
+codemap regeneration plus `--check`, and `git diff --check` passed.

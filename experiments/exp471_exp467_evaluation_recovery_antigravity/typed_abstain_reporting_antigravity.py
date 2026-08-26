@@ -253,6 +253,10 @@ def _typed_leaf_names_antigravity(directory: int) -> tuple[str, ...]:
     return names
 
 
+def _typed_leaf_validation_hook_antigravity(name: str) -> None:
+    """No-op seam for deterministic typed-leaf observation-race tests."""
+
+
 def _validate_typed_leaf_antigravity(directory: int, name: str) -> None:
     """Require every published or reused leaf to retain immutable ownership."""
 
@@ -261,15 +265,26 @@ def _validate_typed_leaf_antigravity(directory: int, name: str) -> None:
         descriptor = os.open(
             name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory
         )
-        opened = os.fstat(descriptor)
+        opened_before = os.fstat(descriptor)
+        _typed_leaf_validation_hook_antigravity(name)
         observed = os.stat(name, dir_fd=directory, follow_symlinks=False)
+        opened_after = os.fstat(descriptor)
+
+        def immutable(snapshot: os.stat_result) -> bool:
+            return (
+                stat.S_ISREG(snapshot.st_mode)
+                and snapshot.st_nlink == 1
+                and stat.S_IMODE(snapshot.st_mode) == 0o444
+            )
+
         if (
-            not stat.S_ISREG(opened.st_mode)
-            or not stat.S_ISREG(observed.st_mode)
-            or (opened.st_dev, opened.st_ino)
+            not immutable(opened_before)
+            or not immutable(observed)
+            or not immutable(opened_after)
+            or (opened_before.st_dev, opened_before.st_ino)
             != (observed.st_dev, observed.st_ino)
-            or opened.st_nlink != 1
-            or stat.S_IMODE(opened.st_mode) != 0o444
+            or (opened_before.st_dev, opened_before.st_ino)
+            != (opened_after.st_dev, opened_after.st_ino)
         ):
             raise ValueError("Exp471 typed report leaf is not immutable")
     except OSError as error:
