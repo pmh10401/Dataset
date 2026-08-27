@@ -1,0 +1,1202 @@
+{
+ "PigAirwayPressure_normal_38": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigAirwayPressure_normal_39": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigAirwayPressure_normal_4": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "PigAirwayPressure_normal_40": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigAirwayPressure_normal_41": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigAirwayPressure_normal_42": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigAirwayPressure_normal_43": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigAirwayPressure_normal_44": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigAirwayPressure_normal_45": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigAirwayPressure_normal_46": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "PigAirwayPressure_normal_47": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigAirwayPressure_normal_48": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigAirwayPressure_normal_49": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigAirwayPressure_normal_5": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "PigAirwayPressure_normal_50": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "PigAirwayPressure_normal_51": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigAirwayPressure_normal_52": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "PigAirwayPressure_normal_6": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "PigAirwayPressure_normal_7": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "PigAirwayPressure_normal_8": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigAirwayPressure_normal_9": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_1": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_10": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_11": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_12": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_13": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_14": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_15": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_16": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_17": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_18": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_19": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_2": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_20": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_21": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_22": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_23": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_24": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_25": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_26": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_27": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_28": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_29": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_3": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_30": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_31": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_32": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_33": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_34": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "PigArtPressure_normal_35": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ }
+}

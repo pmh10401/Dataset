@@ -1,0 +1,467 @@
+{
+ "Fungi_normal_17": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Fungi_normal_18": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Fungi_normal_2": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Fungi_normal_3": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Fungi_normal_4": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Fungi_normal_5": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Fungi_normal_6": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Fungi_normal_7": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Fungi_normal_8": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Fungi_normal_9": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "GestureMidAirD1_normal_1": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "GestureMidAirD1_normal_10": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_11": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_12": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_13": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_14": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_15": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_16": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_17": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_18": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_19": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_2": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_20": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_21": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_22": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_23": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_24": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_25": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_26": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_3": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_4": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "GestureMidAirD1_normal_5": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "GestureMidAirD1_normal_6": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_7": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_8": {
+  "status": "single_class"
+ },
+ "GestureMidAirD1_normal_9": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_1": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9523809523809523,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9523809523809523,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "GestureMidAirD2_normal_10": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_11": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_12": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_13": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_14": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_15": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_16": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_17": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_18": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_19": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_2": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9615384615384616,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "GestureMidAirD2_normal_20": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_21": {
+  "status": "single_class"
+ }
+}
