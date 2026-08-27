@@ -422,6 +422,17 @@ def _typed_evidence_antigravity(
 
 
 class EvaluationTestsAntigravity(unittest.TestCase):
+    def test_unit_metric_accepts_one_ulp_sklearn_upper_boundary_overshoot(
+        self,
+    ) -> None:
+        """A one-ULP sklearn AUROC overshoot remains the frozen metric value."""
+
+        value = math.nextafter(1.0, math.inf)
+
+        self.assertEqual(
+            evaluation._unit_number_antigravity(value, "public AUROC"), value
+        )
+
     def test_explicit_code_closure_is_complete_versioned_and_content_bound(self) -> None:
         """Omitting or changing an Exp471 authority member must change closure."""
 

@@ -901,6 +901,8 @@ def _finite_number_antigravity(value: object, scope: str) -> float:
 
 def _unit_number_antigravity(value: object, scope: str) -> float:
     number = _finite_number_antigravity(value, scope)
+    if number == math.nextafter(1.0, math.inf):
+        return number
     if number < 0.0 or number > 1.0:
         raise ValueError(f"Exp471 evaluation {scope} is outside [0, 1]")
     return number
