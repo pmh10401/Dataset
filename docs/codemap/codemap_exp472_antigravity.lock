@@ -1,7 +1,7 @@
 {
   "artifact_sha256": {
-    "docs/codemap/codemap_exp472_antigravity.html": "4285c11b8aa1f26244ebd6ee7b2af91ea6427c8f5062b59f79e54f9e2dbdf68d",
-    "docs/codemap/codemap_exp472_antigravity.json": "1d3a0e5437945cbc78687942f99f39a5fbd5f0ab5428ba8708baf340d884b64e"
+    "docs/codemap/codemap_exp472_antigravity.html": "ed606527f109b62254585c905bb510d2e705c4a82330cf6f93b02df22058befe",
+    "docs/codemap/codemap_exp472_antigravity.json": "804aa5929fcb097a08f694aff40e495d7cbbc21b842388d5631203307174bc64"
   },
   "fingerprint_algorithm": "sha256",
   "governance_fingerprint_evidence": {
@@ -11,6 +11,7 @@
     "plan_sha256": "b113f8eb8f1d5187dd5bc84fa98ce082c8cb5847e5d4f988ad282d1863205970"
   },
   "module_fingerprints": {
+    ".superpowers/sdd/2026-08-28-exp472-makima-upsampling-ablation-antigravity/progress.md": "12d14dd6b4078d4afebf6ded8b6675cc30a08a0e3be6fcd04fdccea2c92919b5",
     "docs/runbooks/exp472_makima_upsampling_ablation_antigravity.md": "a2b408a50fcfa727be95d7aab40fc6036ad60c5852120475b66660683e6b3463",
     "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md": "b113f8eb8f1d5187dd5bc84fa98ce082c8cb5847e5d4f988ad282d1863205970",
     "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md": "8991590fafddfaa3bcf68304f309615531688d2c105cf51626ff231d685f9d1a",
@@ -61,6 +62,7 @@
     "scratch/run_exp472_makima_upsampling_ablation_antigravity.py": "9d4605d314fb46ea53c18811275b273d4fb31c1cebe5bb1f2ebc762e7916972d"
   },
   "scanned_scope": [
+    ".superpowers/sdd/2026-08-28-exp472-makima-upsampling-ablation-antigravity/progress.md",
     "docs/runbooks/exp472_makima_upsampling_ablation_antigravity.md",
     "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md",
     "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md",
