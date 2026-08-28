@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import replace
 from hashlib import sha256
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 from unittest.mock import patch
 import unittest
@@ -16,7 +17,7 @@ from experiments.exp472_makima_upsampling_ablation_antigravity import authority_
 from experiments.exp472_makima_upsampling_ablation_antigravity import evaluation_antigravity as evaluation_module
 from experiments.exp472_makima_upsampling_ablation_antigravity.artifacts_antigravity import Exp472CatalogEntryAntigravity, catalog_sha256_exp472_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.authority_antigravity import Exp472ReuseAuthorityAntigravity, Exp472VerifiedExp471BundleAntigravity, verify_exp471_reuse_exp472_antigravity
-from experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravity import EXP472_OFFICIAL_ROOT_ANTIGRAVITY
+from experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravity import BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY, BOOTSTRAP_DRAWS_ANTIGRAVITY, BOOTSTRAP_SEED_ANTIGRAVITY, EXP472_OFFICIAL_ROOT_ANTIGRAVITY
 from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigravity import Exp472BackendDecisionAntigravity, Exp472RunContextAntigravity, canonical_json_bytes_exp472_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.evaluation_antigravity import Exp472VerifiedEBundleAntigravity, evaluate_exp472_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import test_identity_exp472_antigravity
@@ -25,6 +26,11 @@ _ROOT = Path("/private/tmp/exp472-task5-fixture-antigravity")
 _METHODS = ("A", "B", "C", "D", "knn_distance", "lof_novelty", "ocsvm_rbf", "isolation_forest", "deep_svdd_1d", "drocc_1d")
 
 def _digest(value: str) -> str: return sha256(value.encode()).hexdigest()
+
+def _canonical_leaf_document(bare: dict[str, object], digest_field: str) -> bytes:
+    """Build a hand-checked canonical Exp471 leaf with its own digest."""
+    value = {**bare, digest_field: sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
+    return canonical_json_bytes_exp472_antigravity(value)
 
 def _identity(dataset: str, index: int) -> dict[str, object]:
     bare = {"dataset": dataset, "series_length": 2, "split": "TEST", "indices": [2 * index, 2 * index + 1], "values_blob_sha256": [_digest(f"{dataset}:blob:0"), _digest(f"{dataset}:blob:1")]}
@@ -69,7 +75,7 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
         with self.assertRaises(ValueError): Exp472VerifiedExp471BundleAntigravity(_ROOT, _bundle().authority, ("small",), {}, {}, {}, _digest("path"))
 
     def test_exp471_path_adapter_reads_public_source_catalog(self) -> None:
-        """Replacing Exp471's public source/cache readers must not bypass their path adapter."""
+        """A real canonical Exp471 leaf chain must bind the public source/cache reads."""
         bundle = _bundle(); source_authority = SimpleNamespace(authority_sha256=bundle.authority.exp471_source_authority_sha256, database_sha256=bundle.authority.database_sha256)
         catalog_rows = [{"dataset": dataset, "test": {**dict(bundle.coordinates[dataset]), "dataset_id": index}} for index, dataset in enumerate(bundle.dataset_order)]
         session = SimpleNamespace(authority=source_authority, catalog={"datasets": catalog_rows})
@@ -77,10 +83,40 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
         def shard(_root: Path, method: str, dataset: str):
             coordinate = bundle.coordinates[dataset]; status = bundle.statuses[method][dataset]
             return SimpleNamespace(test_count=coordinate["count"], test_indices=coordinate["indices"], status=status, raw_scores=() if status == "abstained" else bundle.scores[method][dataset])
-        evaluation = {"source_authority_sha256": source_authority.authority_sha256, "cache_manifest_sha256": manifest.manifest_sha256, "evaluation_sha256": bundle.authority.exp471_evaluation_sha256}; report = {"evaluation_sha256": evaluation["evaluation_sha256"], "report_manifest_sha256": bundle.authority.exp471_report_manifest_sha256}
-        with patch.object(exp471_source, "open_exp467_source_session_antigravity", return_value=session) as open_session, patch.object(exp471_source, "read_source_authority_antigravity", return_value=source_authority) as read_source, patch.object(exp471_cache, "read_cache_manifest_antigravity", return_value=manifest), patch.object(exp471_cache, "read_score_shard_antigravity", side_effect=shard), patch.object(authority_module, "_canonical_leaf", side_effect=(evaluation, report)):
-            verified = verify_exp471_reuse_exp472_antigravity(_ROOT)
-        self.assertEqual(verified.coordinates, bundle.coordinates); self.assertEqual(open_session.call_args.args[0], Path(authority_module.__file__).resolve().parents[2]); self.assertEqual(read_source.call_args.args[0], _ROOT)
+        with TemporaryDirectory(prefix="exp472-task5-exp471-antigravity-") as temporary:
+            root = Path(temporary)
+            evaluation = {"source_authority_sha256": source_authority.authority_sha256, "cache_manifest_sha256": manifest.manifest_sha256}
+            evaluation_bytes = _canonical_leaf_document(evaluation, "evaluation_sha256")
+            (root / "evaluation_antigravity").mkdir()
+            (root / "evaluation_antigravity" / "evaluation_antigravity.json").write_bytes(evaluation_bytes)
+            report = {"evaluation_sha256": sha256(canonical_json_bytes_exp472_antigravity(evaluation)).hexdigest()}
+            (root / "report_antigravity").mkdir()
+            (root / "report_antigravity" / "exp471_typed_report_manifest_antigravity.json").write_bytes(_canonical_leaf_document(report, "report_manifest_sha256"))
+            with patch.object(exp471_source, "open_exp467_source_session_antigravity", return_value=session) as open_session, patch.object(exp471_source, "read_source_authority_antigravity", return_value=source_authority) as read_source, patch.object(exp471_cache, "read_cache_manifest_antigravity", return_value=manifest), patch.object(exp471_cache, "read_score_shard_antigravity", side_effect=shard):
+                verified = verify_exp471_reuse_exp472_antigravity(root)
+        self.assertEqual(verified.coordinates, bundle.coordinates); self.assertEqual(verified.authority.exp471_evaluation_sha256, sha256(canonical_json_bytes_exp472_antigravity(evaluation)).hexdigest()); self.assertEqual(verified.authority.exp471_report_manifest_sha256, sha256(canonical_json_bytes_exp472_antigravity(report)).hexdigest()); self.assertEqual(open_session.call_args.args[0], Path(authority_module.__file__).resolve().parents[2]); self.assertEqual(read_source.call_args.args[0], root)
+
+    def test_exp471_path_adapter_rejects_symlinked_evaluation_leaf(self) -> None:
+        """A symlinked Exp471 evaluation leaf must fail before any shard or label work."""
+        bundle = _bundle(); source_authority = SimpleNamespace(authority_sha256=bundle.authority.exp471_source_authority_sha256, database_sha256=bundle.authority.database_sha256)
+        session = SimpleNamespace(authority=source_authority, catalog={"datasets": []})
+        manifest = SimpleNamespace(manifest_sha256=bundle.authority.exp471_cache_manifest_sha256)
+        with TemporaryDirectory(prefix="exp472-task5-exp471-antigravity-") as temporary:
+            root = Path(temporary); evaluation_directory = root / "evaluation_antigravity"; evaluation_directory.mkdir()
+            target = root / "evaluation-target-antigravity.json"; target.write_bytes(b"{}")
+            (evaluation_directory / "evaluation_antigravity.json").symlink_to(target)
+            with patch.object(exp471_source, "open_exp467_source_session_antigravity", return_value=session), patch.object(exp471_source, "read_source_authority_antigravity", return_value=source_authority), patch.object(exp471_cache, "read_cache_manifest_antigravity", return_value=manifest):
+                with self.assertRaisesRegex(ValueError, "unsafe"):
+                    verify_exp471_reuse_exp472_antigravity(root)
+
+    def test_exp471_public_reader_failure_blocks_e_and_labels(self) -> None:
+        """A failed real Exp471 authority read must not invoke E verification or labels."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle); calls: list[object] = []
+        with patch.object(exp471_source, "open_exp467_source_session_antigravity", return_value=SimpleNamespace()), patch.object(exp471_source, "read_source_authority_antigravity", side_effect=ValueError("bad public Exp471 source")), patch.object(evaluation_module, "verify_manifest_exp472_antigravity", side_effect=AssertionError("E verifier must not run")) as verify_manifest:
+            with self.assertRaisesRegex(ValueError, "bad public Exp471 source"):
+                evaluate_exp472_antigravity(_ROOT, _ROOT, lambda order: calls.append(order) or {}, context=context, catalog=catalog)
+        verify_manifest.assert_not_called()
+        self.assertEqual(calls, [])
 
     def test_blob_coordinate_drift_fails_before_labels(self) -> None:
         """Same count/indices with changed TEST blob evidence must not reach labels."""
@@ -118,8 +154,10 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
         self.assertEqual(len(result.subset_per_dataset), 1116 * len(result.method_order))
         self.assertEqual(result.subset_micro["E"]["dataset_denominator"], 1116)
         self.assertEqual(result.denominators["upsampled_rows_gt_zero"]["observation_count"], 2232)
+        first_e = next(row for row in result.per_dataset if row["method"] == "E" and row["dataset"] == bundle.dataset_order[0])
+        self.assertEqual((first_e["average_precision"], first_e["auroc"]), (1.0, 1.0))
         self.assertEqual({item["population"] for item in result.paired_statistics}, {"full", "upsampled_rows_gt_zero"})
-        for paired in result.paired_statistics: self.assertEqual((paired["seed"], paired["draw_count"], paired["percentile"], paired["tie_tolerance"]), (47220260828, 20_000, 95.0, 1e-12))
+        for paired in result.paired_statistics: self.assertEqual((paired["seed"], paired["draw_count"], paired["percentile"], paired["tie_tolerance"]), (BOOTSTRAP_SEED_ANTIGRAVITY, BOOTSTRAP_DRAWS_ANTIGRAVITY, BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY * 100, 1e-12))
         record = result.artifact_record(); self.assertEqual(record["schema"], "exp472-evaluation-antigravity.v1"); self.assertEqual(record["evaluation_sha256"], sha256(canonical_json_bytes_exp472_antigravity({key: value for key, value in record.items() if key != "evaluation_sha256"})).hexdigest()); self.assertNotEqual(record["evaluation_sha256"], replace(result, method_order=("changed",)).artifact_record()["evaluation_sha256"])
 
     def test_evaluation_digest_covers_every_scientific_section(self) -> None:
