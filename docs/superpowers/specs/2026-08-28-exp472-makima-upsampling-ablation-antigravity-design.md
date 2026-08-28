@@ -205,6 +205,22 @@ Before reporting:
 
 ## Interpretation Rule
 
+## Superseding evaluation/report durability ruling
+
+The single evaluation authority is the canonical regular file
+`evaluation_antigravity/exp472_evaluation_antigravity.json`, outside the
+15-leaf report root. It binds the verified Exp471 reuse authority, E terminal
+manifest digest, frozen context digest, all scientific tables/curves, and one
+`diagnostic_summary` entry per dataset. `evaluate` reopens this file first; a
+valid matching artifact is reused without label access, while a missing file is
+computed once, published create-or-identical, and reopened. `report` never
+evaluates or imports labels: it reopens E/Exp471 plus this persisted authority,
+then requires exact per-dataset matching of trace digest, unique slots, and
+Makima invocation exposures before any report leaf is published. Symlinks,
+nonregular files, noncanonical JSON, schema/key/digest drift, and missing or
+extra diagnostic datasets fail closed. A zero-invocation sealed trace remains a
+dataset-level summary but has zero call-level CSV rows.
+
 ## Superseding actual-trace v3 ruling
 
 The retired v2/raw-replay aggregate is not admissible evidence.  Before any

@@ -44,7 +44,6 @@ REPORT_LEAVES_ANTIGRAVITY = (
 )
 REPORT_MANIFEST_NAME_ANTIGRAVITY = "exp472_report_manifest_antigravity.json"
 REPORT_COMPLETE_NAME_ANTIGRAVITY = ".exp472_report_complete_antigravity.json"
-_REPORT_SCHEMA_ANTIGRAVITY = "exp472-report-publication-antigravity.v2"
 _MANIFEST_SCHEMA_ANTIGRAVITY = "exp472-report-manifest-antigravity.v2"
 _COMPLETE_SCHEMA_ANTIGRAVITY = "exp472-report-complete-antigravity.v2"
 _SHAPE_SCHEMA_ANTIGRAVITY = "exp472-shape-diagnostic-antigravity.v3"
@@ -205,6 +204,32 @@ def _methods_antigravity(evaluation: object) -> tuple[str, ...]:
     return methods
 
 
+def _trace_by_dataset_antigravity(
+    value: Sequence[Mapping[str, object]], expected_datasets: tuple[str, ...],
+) -> Mapping[str, Mapping[str, object]]:
+    """Authenticate exactly one sealed v3 trace for every E dataset."""
+    if not expected_datasets or len(set(expected_datasets)) != len(expected_datasets):
+        raise ValueError("Exp472 shape diagnostics differ")
+    traces: dict[str, Mapping[str, object]] = {}
+    for supplied in value:
+        if not isinstance(supplied, Mapping) or type(supplied.get("dataset")) is not str:
+            raise ValueError("Exp472 shape diagnostics differ")
+        dataset = supplied["dataset"]
+        if dataset not in expected_datasets or dataset in traces:
+            raise ValueError("Exp472 shape diagnostics differ")
+        row = dict(supplied)
+        try:
+            validate_diagnostic_exp472_antigravity(row, dataset=dataset)
+        except (TypeError, ValueError) as error:
+            raise ValueError("Exp472 shape diagnostics differ") from error
+        if row.get("schema") != _SHAPE_SCHEMA_ANTIGRAVITY or row.get("dataset") != dataset:
+            raise ValueError("Exp472 shape diagnostics differ")
+        traces[dataset] = row
+    if set(traces) != set(expected_datasets):
+        raise ValueError("Exp472 shape diagnostics differ")
+    return traces
+
+
 def _shape_csv_rows_antigravity(
     value: Sequence[Mapping[str, object]], expected_datasets: tuple[str, ...],
 ) -> tuple[Mapping[str, object], ...]:
@@ -215,19 +240,10 @@ def _shape_csv_rows_antigravity(
     repeated Makima row exposure.  The trace aggregate is repeated per record
     so a CSV row remains independently attributable to its sealed diagnostic.
     """
-    rows = tuple(dict(row) for row in value)
-    if not expected_datasets or tuple(row.get("dataset") for row in rows) != expected_datasets:
-        raise ValueError("Exp472 shape diagnostics differ")
-    if len(set(expected_datasets)) != len(expected_datasets):
-        raise ValueError("Exp472 shape diagnostics differ")
+    traces = _trace_by_dataset_antigravity(value, expected_datasets)
     flattened: list[Mapping[str, object]] = []
-    for dataset, row in zip(expected_datasets, rows, strict=True):
-        try:
-            validate_diagnostic_exp472_antigravity(row, dataset=dataset)
-        except (TypeError, ValueError) as error:
-            raise ValueError("Exp472 shape diagnostics differ") from error
-        if row.get("schema") != _SHAPE_SCHEMA_ANTIGRAVITY:
-            raise ValueError("Exp472 shape diagnostics differ")
+    for dataset in expected_datasets:
+        row = traces[dataset]
         aggregate = {
             name: row[name]
             for name in (
@@ -253,36 +269,29 @@ def _shape_csv_rows_antigravity(
                 "input_evidence": canonical_json_bytes_exp472_antigravity(invocation["input_evidence"]).decode("utf-8").strip(),
                 "output_evidence": canonical_json_bytes_exp472_antigravity(invocation["output_evidence"]).decode("utf-8").strip(),
             })
-        if not row["invocations"]:
-            flattened.append({**aggregate, **{name: None for name in _SHAPE_CSV_FIELDS_ANTIGRAVITY if name not in aggregate}})
     return tuple(flattened)
 
 
 def _bind_trace_to_evaluation_antigravity(
     evaluation: object,
-    shape_rows: Sequence[Mapping[str, object]],
+    shape_diagnostics: Sequence[Mapping[str, object]],
     expected_datasets: tuple[str, ...],
 ) -> None:
     """Require a real evaluation's digest-bound trace summary to match leaves."""
     record = _evaluation_record_antigravity(evaluation)
     summary = record.get("diagnostic_summary")
-    # Lightweight fixture evaluations predate the v3 evaluation object.  Every
-    # production Exp472EvaluationAntigravity record includes this section.
-    if summary is None:
-        return
-    if not isinstance(summary, Mapping) or tuple(summary) != expected_datasets:
+    if not isinstance(summary, Mapping) or set(summary) != set(expected_datasets):
         raise ValueError("Exp472 evaluation diagnostic summary differs")
-    by_digest = {str(row["diagnostic_sha256"]): row for row in shape_rows}
+    traces = _trace_by_dataset_antigravity(shape_diagnostics, expected_datasets)
     for dataset in expected_datasets:
         item = summary[dataset]
-        if not isinstance(item, Mapping):
+        trace = traces[dataset]
+        if not isinstance(item, Mapping) or trace.get("dataset") != dataset:
             raise ValueError("Exp472 evaluation diagnostic summary differs")
-        digest = item.get("diagnostic_sha256")
-        trace = by_digest.get(str(digest))
         if (
-            trace is None
-            or type(item.get("upsampled_rows")) is not int
+            type(item.get("upsampled_rows")) is not int
             or type(item.get("makima_row_invocation_count")) is not int
+            or _digest_antigravity(item.get("diagnostic_sha256"), "evaluation diagnostic digest") != trace["diagnostic_sha256"]
             or trace["upsampled_rows"] != item["upsampled_rows"]
             or trace["makima_row_invocation_count"] != item["makima_row_invocation_count"]
         ):
@@ -429,11 +438,9 @@ def _report_leaf_payloads_antigravity(evaluation: object, worker_record: Mapping
         str(row.get("dataset")) for row in per_dataset
         if isinstance(row, Mapping) and row.get("method") == "E"
     )
+    _bind_trace_to_evaluation_antigravity(evaluation, shape_diagnostics, expected_shape_datasets)
     shape_rows = _shape_csv_rows_antigravity(shape_diagnostics, expected_shape_datasets)
-    _bind_trace_to_evaluation_antigravity(evaluation, shape_rows, expected_shape_datasets)
-    trace_aggregates = {
-        str(row["diagnostic_sha256"]): row for row in shape_rows
-    }
+    trace_aggregates = _trace_by_dataset_antigravity(shape_diagnostics, expected_shape_datasets)
     denominator_rows.append({
         "scope": "verified_trace", "method": "E", "dataset_count": len(trace_aggregates),
         "observation_count": None, "average_precision_denominator": None,

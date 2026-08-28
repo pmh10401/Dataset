@@ -3,7 +3,10 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from hashlib import sha256
+import json
+import os
 from pathlib import Path
+import stat
 from types import MappingProxyType
 import numpy as np
 from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
@@ -13,6 +16,8 @@ from .artifacts_antigravity import Exp472CatalogEntryAntigravity, validate_diagn
 
 METHOD_ORDER_EXP472_ANTIGRAVITY=("A","B","C","D","E","knn_distance","lof_novelty","ocsvm_rbf","isolation_forest","deep_svdd_1d","drocc_1d")
 _DRAWS=20_000; _SEED=47220260828; _TIE=1e-12
+EVALUATION_NAME_ANTIGRAVITY="exp472_evaluation_antigravity.json"
+_EVALUATION_SCHEMA_ANTIGRAVITY="exp472-evaluation-antigravity.v2"
 
 def _vector(value: object, name: str) -> np.ndarray:
     result=np.asarray(value,dtype=np.float64)
@@ -28,7 +33,7 @@ class Exp472VerifiedEBundleAntigravity:
         coordinates={};scores={};upsampled={};makima={};diagnostic_sha={}
         for d in self.dataset_order:
             coordinates[d]=_coordinate(self.coordinates[d]); values=_vector(self.scores[d],"E scores")
-            if values.size != self.coordinates[d]["count"] or type(self.upsampled_rows[d]) is not int or self.upsampled_rows[d]<0 or type(self.makima_row_invocation_count[d]) is not int or self.makima_row_invocation_count[d] < self.upsampled_rows[d] or type(self.diagnostic_sha256[d]) is not str or len(self.diagnostic_sha256[d]) != 64: raise ValueError("Exp472 E shard differs")
+            if values.size != self.coordinates[d]["count"] or type(self.upsampled_rows[d]) is not int or self.upsampled_rows[d]<0 or type(self.makima_row_invocation_count[d]) is not int or self.makima_row_invocation_count[d] < self.upsampled_rows[d] or type(self.diagnostic_sha256[d]) is not str or len(self.diagnostic_sha256[d]) != 64 or any(character not in "0123456789abcdef" for character in self.diagnostic_sha256[d]): raise ValueError("Exp472 E shard differs")
             scores[d]=tuple(float(value) for value in values);upsampled[d]=self.upsampled_rows[d];makima[d]=self.makima_row_invocation_count[d];diagnostic_sha[d]=self.diagnostic_sha256[d]
         object.__setattr__(self,"coordinates",MappingProxyType(coordinates));object.__setattr__(self,"scores",MappingProxyType(scores));object.__setattr__(self,"upsampled_rows",MappingProxyType(upsampled));object.__setattr__(self,"makima_row_invocation_count",MappingProxyType(makima));object.__setattr__(self,"diagnostic_sha256",MappingProxyType(diagnostic_sha))
 
@@ -105,9 +110,10 @@ def _curves(labels:Mapping[str,np.ndarray],scores:Mapping[str,Mapping[str,np.nda
 
 @dataclass(frozen=True,slots=True)
 class Exp472EvaluationAntigravity:
-    authority:Exp472ReuseAuthorityAntigravity; method_order:tuple[str,...]; per_dataset:tuple[Mapping[str,object],...]; subset_per_dataset:tuple[Mapping[str,object],...]; macro:Mapping[str,Mapping[str,object]]; micro:Mapping[str,Mapping[str,object]]; subset_macro:Mapping[str,Mapping[str,object]]; subset_micro:Mapping[str,Mapping[str,object]]; paired_statistics:tuple[Mapping[str,object],...]; denominators:Mapping[str,Mapping[str,object]]; diagnostic_summary:Mapping[str,Mapping[str,object]]; curves:Mapping[str,Mapping[str,object]]
+    authority:Exp472ReuseAuthorityAntigravity; method_order:tuple[str,...]; per_dataset:tuple[Mapping[str,object],...]; subset_per_dataset:tuple[Mapping[str,object],...]; macro:Mapping[str,Mapping[str,object]]; micro:Mapping[str,Mapping[str,object]]; subset_macro:Mapping[str,Mapping[str,object]]; subset_micro:Mapping[str,Mapping[str,object]]; paired_statistics:tuple[Mapping[str,object],...]; denominators:Mapping[str,Mapping[str,object]]; diagnostic_summary:Mapping[str,Mapping[str,object]]; curves:Mapping[str,Mapping[str,object]]; e_manifest_sha256:str; context_sha256:str
     def artifact_record(self)->dict[str,object]:
-        bare={"schema":"exp472-evaluation-antigravity.v2","authority":self.authority.__dict__ if hasattr(self.authority,"__dict__") else {name:getattr(self.authority,name) for name in self.authority.__dataclass_fields__},"method_order":list(self.method_order),"per_dataset":[dict(x) for x in self.per_dataset],"subset_per_dataset":[dict(x) for x in self.subset_per_dataset],"macro":{k:dict(v) for k,v in self.macro.items()},"micro":{k:dict(v) for k,v in self.micro.items()},"subset_macro":{k:dict(v) for k,v in self.subset_macro.items()},"subset_micro":{k:dict(v) for k,v in self.subset_micro.items()},"denominators":{k:dict(v) for k,v in self.denominators.items()},"diagnostic_summary":{k:dict(v) for k,v in self.diagnostic_summary.items()},"paired_statistics":[dict(x) for x in self.paired_statistics],"curves":{k:{**{a:b for a,b in v.items() if a!="rows"},"rows":[dict(row) for row in v["rows"]]} for k,v in self.curves.items()}}
+        authority=self.authority.__dict__ if hasattr(self.authority,"__dict__") else {name:getattr(self.authority,name) for name in self.authority.__dataclass_fields__}
+        bare={"schema":_EVALUATION_SCHEMA_ANTIGRAVITY,"authority":json.loads(canonical_json_bytes_exp472_antigravity(authority).decode("utf-8")),"method_order":list(self.method_order),"per_dataset":[dict(x) for x in self.per_dataset],"subset_per_dataset":[dict(x) for x in self.subset_per_dataset],"macro":{k:dict(v) for k,v in self.macro.items()},"micro":{k:dict(v) for k,v in self.micro.items()},"subset_macro":{k:dict(v) for k,v in self.subset_macro.items()},"subset_micro":{k:dict(v) for k,v in self.subset_micro.items()},"denominators":{k:dict(v) for k,v in self.denominators.items()},"diagnostic_summary":{k:dict(v) for k,v in self.diagnostic_summary.items()},"paired_statistics":[dict(x) for x in self.paired_statistics],"curves":{k:{**{a:b for a,b in v.items() if a!="rows"},"rows":[dict(row) for row in v["rows"]]} for k,v in self.curves.items()},"e_manifest_sha256":self.e_manifest_sha256,"context_sha256":self.context_sha256}
         return {**bare,"evaluation_sha256":sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
 
 def evaluate_exp472_antigravity(e_root:Path,exp471_root:Path,label_loader:Callable[[tuple[str,...]],Mapping[str,Sequence[object]]], *, context: Exp472RunContextAntigravity, catalog: Sequence[Exp472CatalogEntryAntigravity])->Exp472EvaluationAntigravity:
@@ -126,6 +132,96 @@ def evaluate_exp472_antigravity(e_root:Path,exp471_root:Path,label_loader:Callab
             common=tuple(d for d in population_order if (d,metric) in values["E"] and (d,metric) in values["D"]); stat=paired_e_minus_d_exp472_antigravity([values["E"][(d,metric)] for d in common],[values["D"][(d,metric)] for d in common]) if common else {"mean_delta":None,"ci_lower":None,"ci_upper":None,"wins":0,"ties":0,"losses":0,"seed":_SEED,"draw_count":0,"percentile":95.0,"tie_tolerance":_TIE};paired.append(MappingProxyType({"comparison":"E-D","population":population,"metric":metric,"dataset_order":common,**stat}))
     denominators=MappingProxyType({"full_population":MappingProxyType({"dataset_count":len(order),"observation_count":sum(x.size for x in labels.values())}),"upsampled_rows_gt_zero":MappingProxyType({"dataset_count":len(subset),"observation_count":sum(labels[d].size for d in subset),"dataset_order":subset})})
     diagnostic_summary=MappingProxyType({d:MappingProxyType({"upsampled_rows":e.upsampled_rows[d],"makima_row_invocation_count":e.makima_row_invocation_count[d],"diagnostic_sha256":e.diagnostic_sha256[d]}) for d in order})
-    return Exp472EvaluationAntigravity(exp471.authority,METHOD_ORDER_EXP472_ANTIGRAVITY,tuple(rows),tuple(subset_rows),MappingProxyType(macro),MappingProxyType(micro),MappingProxyType(subset_macro),MappingProxyType(subset_micro),tuple(paired),denominators,diagnostic_summary,_curves(labels,scores,order))
+    return Exp472EvaluationAntigravity(exp471.authority,METHOD_ORDER_EXP472_ANTIGRAVITY,tuple(rows),tuple(subset_rows),MappingProxyType(macro),MappingProxyType(micro),MappingProxyType(subset_macro),MappingProxyType(subset_micro),tuple(paired),denominators,diagnostic_summary,_curves(labels,scores,order),e.path_sha256,context.sha256)
 
-__all__=["Exp472EvaluationAntigravity","Exp472VerifiedEBundleAntigravity","evaluate_exp472_antigravity","paired_e_minus_d_exp472_antigravity"]
+def evaluation_path_exp472_antigravity(root: Path) -> Path:
+    target=Path(root)
+    if not target.is_absolute() or "antigravity" not in target.name:
+        raise ValueError("Exp472 evaluation root differs")
+    return target / EVALUATION_NAME_ANTIGRAVITY
+
+def _safe_evaluation_root_antigravity(root: Path, *, create: bool) -> Path:
+    target=Path(root)
+    if not target.is_absolute() or "antigravity" not in target.name:
+        raise ValueError("Exp472 evaluation root differs")
+    if create: target.mkdir(parents=True,exist_ok=True)
+    try: details=target.lstat()
+    except FileNotFoundError as error: raise FileNotFoundError("Exp472 evaluation artifact is missing") from error
+    if stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode): raise ValueError("Exp472 evaluation root is unsafe")
+    return target
+
+def _read_regular_evaluation_antigravity(path: Path) -> bytes:
+    try: linked=path.lstat()
+    except FileNotFoundError as error: raise FileNotFoundError("Exp472 evaluation artifact is missing") from error
+    if stat.S_ISLNK(linked.st_mode) or not stat.S_ISREG(linked.st_mode): raise ValueError("Exp472 evaluation artifact is unsafe")
+    try: descriptor=os.open(path,os.O_RDONLY|getattr(os,"O_NOFOLLOW",0))
+    except OSError as error: raise ValueError("Exp472 evaluation artifact is unsafe") from error
+    try:
+        opened=os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode) or opened.st_dev!=linked.st_dev or opened.st_ino!=linked.st_ino or opened.st_nlink!=1: raise ValueError("Exp472 evaluation artifact is unsafe")
+        chunks=[]
+        while True:
+            block=os.read(descriptor,1<<20)
+            if not block: return b"".join(chunks)
+            chunks.append(block)
+    finally: os.close(descriptor)
+
+def _write_create_or_identical_evaluation_antigravity(path: Path, payload: bytes) -> None:
+    try: descriptor=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
+    except FileExistsError:
+        if _read_regular_evaluation_antigravity(path)!=payload: raise ValueError("Exp472 evaluation artifact already differs")
+        return
+    try:
+        view=memoryview(payload)
+        while view:
+            written=os.write(descriptor,view)
+            if written<=0: raise OSError("Exp472 evaluation write made no progress")
+            view=view[written:]
+        os.fsync(descriptor)
+    finally: os.close(descriptor)
+    directory=os.open(path.parent,os.O_RDONLY)
+    try: os.fsync(directory)
+    finally: os.close(directory)
+    if _read_regular_evaluation_antigravity(path)!=payload: raise ValueError("Exp472 evaluation artifact changed after publication")
+
+def _digest_evaluation_antigravity(value: object, name: str) -> str:
+    if type(value) is not str or len(value)!=64 or any(character not in "0123456789abcdef" for character in value): raise ValueError(f"Exp472 {name} differs")
+    return value
+
+def _read_evaluation_record_antigravity(path: Path) -> Mapping[str, object]:
+    raw=_read_regular_evaluation_antigravity(path)
+    try: record=json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError,json.JSONDecodeError) as error: raise ValueError("Exp472 evaluation artifact is invalid") from error
+    if not isinstance(record,dict) or raw!=canonical_json_bytes_exp472_antigravity(record): raise ValueError("Exp472 evaluation artifact is noncanonical")
+    expected={"schema","authority","method_order","per_dataset","subset_per_dataset","macro","micro","subset_macro","subset_micro","paired_statistics","denominators","diagnostic_summary","curves","e_manifest_sha256","context_sha256","evaluation_sha256"}
+    if set(record)!=expected or record.get("schema")!=_EVALUATION_SCHEMA_ANTIGRAVITY: raise ValueError("Exp472 evaluation artifact schema differs")
+    bare={key:value for key,value in record.items() if key!="evaluation_sha256"}
+    if _digest_evaluation_antigravity(record["evaluation_sha256"],"evaluation digest")!=sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest(): raise ValueError("Exp472 evaluation artifact digest differs")
+    return MappingProxyType(record)
+
+def read_exp472_evaluation_antigravity(root: Path, *, authority: Exp472ReuseAuthorityAntigravity, e_manifest_sha256: str, context_sha256: str, dataset_order: Sequence[str]) -> Exp472EvaluationAntigravity:
+    """Reopen only a canonical, authority-bound evaluation; never labels."""
+    path=evaluation_path_exp472_antigravity(_safe_evaluation_root_antigravity(root,create=False))
+    record=_read_evaluation_record_antigravity(path)
+    expected_authority=json.loads(canonical_json_bytes_exp472_antigravity({name:getattr(authority,name) for name in authority.__dataclass_fields__}).decode("utf-8"))
+    if record["authority"]!=expected_authority or _digest_evaluation_antigravity(record["e_manifest_sha256"],"E manifest digest")!=e_manifest_sha256 or _digest_evaluation_antigravity(record["context_sha256"],"context digest")!=context_sha256: raise ValueError("Exp472 persisted evaluation authority differs")
+    order=tuple(dataset_order)
+    summary=record["diagnostic_summary"]
+    if tuple(record["method_order"])!=METHOD_ORDER_EXP472_ANTIGRAVITY or not isinstance(summary,dict) or set(summary)!=set(order): raise ValueError("Exp472 persisted evaluation inventory differs")
+    for dataset in order:
+        item=summary[dataset]
+        if not isinstance(item,dict) or set(item)!={"upsampled_rows","makima_row_invocation_count","diagnostic_sha256"} or type(item["upsampled_rows"]) is not int or item["upsampled_rows"]<0 or type(item["makima_row_invocation_count"]) is not int or item["makima_row_invocation_count"]<item["upsampled_rows"]: raise ValueError("Exp472 persisted evaluation diagnostic differs")
+        _digest_evaluation_antigravity(item["diagnostic_sha256"],"diagnostic digest")
+    try:
+        parsed_authority=Exp472ReuseAuthorityAntigravity(**record["authority"])
+        return Exp472EvaluationAntigravity(parsed_authority,tuple(record["method_order"]),tuple(record["per_dataset"]),tuple(record["subset_per_dataset"]),MappingProxyType(record["macro"]),MappingProxyType(record["micro"]),MappingProxyType(record["subset_macro"]),MappingProxyType(record["subset_micro"]),tuple(record["paired_statistics"]),MappingProxyType(record["denominators"]),MappingProxyType(summary),MappingProxyType(record["curves"]),record["e_manifest_sha256"],record["context_sha256"])
+    except (TypeError,ValueError) as error: raise ValueError("Exp472 persisted evaluation differs") from error
+
+def write_exp472_evaluation_antigravity(evaluation: Exp472EvaluationAntigravity, root: Path) -> Exp472EvaluationAntigravity:
+    """Create one canonical evaluation record, or reuse exactly its bytes."""
+    if not isinstance(evaluation,Exp472EvaluationAntigravity): raise ValueError("Exp472 evaluation publication requires typed evaluation")
+    target=_safe_evaluation_root_antigravity(root,create=True); path=evaluation_path_exp472_antigravity(target); payload=canonical_json_bytes_exp472_antigravity(evaluation.artifact_record())
+    _write_create_or_identical_evaluation_antigravity(path,payload)
+    return read_exp472_evaluation_antigravity(target,authority=evaluation.authority,e_manifest_sha256=evaluation.e_manifest_sha256,context_sha256=evaluation.context_sha256,dataset_order=tuple(evaluation.diagnostic_summary))
+
+__all__=["EVALUATION_NAME_ANTIGRAVITY","Exp472EvaluationAntigravity","Exp472VerifiedEBundleAntigravity","evaluate_exp472_antigravity","evaluation_path_exp472_antigravity","paired_e_minus_d_exp472_antigravity","read_exp472_evaluation_antigravity","write_exp472_evaluation_antigravity"]

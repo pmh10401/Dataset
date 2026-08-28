@@ -873,6 +873,24 @@ and input/output evidence. `upsampled_rows` is the unique verified
 `makima_row_invocation_count` is separately published as repeated exposure
 count.
 
+### Task 8 amendment: durable evaluation authority and dataset identity binding
+
+This amendment supersedes any implicit in-memory evaluation handoff. The only
+production evaluation handoff is the canonical regular-file artifact
+`evaluation_antigravity/exp472_evaluation_antigravity.json`; it remains outside
+the report's exact 15-leaf inventory. `evaluate` first reopens verified Exp471
+and E authority, returns an identical persisted artifact without labels when it
+matches, otherwise evaluates once and publishes create-or-identical then
+reopens. `report` reopens only Exp471/E and that persisted evaluation; it must
+not call evaluation or import the label module. Before leaf publication it
+matches every trace by dataset identity (not digest lookup): the exact dataset
+set, trace dataset key, diagnostic SHA-256, unique `upsampled_rows`, and
+repeated `makima_row_invocation_count` must agree. Missing, duplicate, extra,
+swapped, noncanonical, nonregular, symlinked, or digest-drifting inputs fail
+closed. Call-level CSV rows exist only for actual invocations; a sealed zero
+call trace contributes no placeholder row while its dataset summary remains
+authoritative.
+
 **Files:**
 - Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/evaluation_antigravity`
 - Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/report_antigravity`

@@ -216,7 +216,19 @@ class _EvaluationAntigravity:
         })
 
     def artifact_record(self) -> dict[str, object]:
-        bare = {"schema": "exp472-evaluation-antigravity.v2", "fixture": "verified"}
+        diagnostic = _shape_diagnostic_antigravity("fixture")
+        bare = {
+            "schema": "exp472-evaluation-antigravity.v2", "fixture": "verified",
+            "diagnostic_summary": {
+                "fixture": {
+                    "upsampled_rows": diagnostic["upsampled_rows"],
+                    "makima_row_invocation_count": diagnostic[
+                        "makima_row_invocation_count"
+                    ],
+                    "diagnostic_sha256": diagnostic["diagnostic_sha256"],
+                },
+            },
+        }
         return {**bare, "evaluation_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
 
 
@@ -235,6 +247,33 @@ class _DiagnosticBoundEvaluationAntigravity:
             "schema": "exp472-evaluation-antigravity.v2", "fixture": "verified",
             "diagnostic_summary": self._summary,
         }
+        return {**bare, "evaluation_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
+
+
+def _bound_evaluation_antigravity(
+    *diagnostics: dict[str, object],
+) -> _DiagnosticBoundEvaluationAntigravity:
+    """Bind each fixture trace by its dataset identity, not just its digest."""
+    return _DiagnosticBoundEvaluationAntigravity(
+        _EvaluationAntigravity(),
+        {
+            str(diagnostic["dataset"]): {
+                "upsampled_rows": diagnostic["upsampled_rows"],
+                "makima_row_invocation_count": diagnostic[
+                    "makima_row_invocation_count"
+                ],
+                "diagnostic_sha256": diagnostic["diagnostic_sha256"],
+            }
+            for diagnostic in diagnostics
+        },
+    )
+
+
+class _UnboundEvaluationAntigravity(_EvaluationAntigravity):
+    """Only for proving the mandatory production trace binding."""
+
+    def artifact_record(self) -> dict[str, object]:
+        bare = {"schema": "exp472-evaluation-antigravity.v2", "fixture": "unbound"}
         return {**bare, "evaluation_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
 
 
@@ -541,6 +580,86 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "shape diagnostics"):
                 write_exp472_report_antigravity(_EvaluationAntigravity(), root, _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=_shape_diagnostics_antigravity() * 2)
 
+    def test_report_requires_dataset_bound_evaluation_diagnostic_summary(self) -> None:
+        """A valid evaluation digest without its trace binding cannot publish leaves."""
+        diagnostic = _shape_diagnostics_antigravity()[0]
+        with TemporaryDirectory(prefix="exp472-summary-required-antigravity-") as temporary:
+            root = Path(temporary) / "report_antigravity"
+            with self.assertRaisesRegex(ValueError, "diagnostic summary"):
+                write_exp472_report_antigravity(
+                    _UnboundEvaluationAntigravity(), root, _worker_antigravity(),
+                    e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA,
+                    shape_diagnostics=(diagnostic,),
+                )
+            self.assertFalse((root / ".exp472_report_complete_antigravity.json").exists())
+
+    def test_report_rejects_dataset_identity_swap_even_with_known_digest(self) -> None:
+        """Digest lookup alone must not permit a diagnostic to move datasets."""
+        first = _shape_diagnostic_antigravity("fixture")
+        second = _shape_diagnostic_antigravity("other")
+        base = _EvaluationAntigravity()
+        e_rows = tuple(
+            {"method": "E", "dataset": dataset, "average_precision": 0.9,
+             "average_precision_exclusion": None, "auroc": 0.9,
+             "auroc_exclusion": None}
+            for dataset in ("fixture", "other")
+        )
+        object.__setattr__(base, "per_dataset", e_rows)
+        object.__setattr__(base, "subset_per_dataset", e_rows)
+        evaluation = _DiagnosticBoundEvaluationAntigravity(
+            base,
+            {
+                "fixture": {
+                    "upsampled_rows": second["upsampled_rows"],
+                    "makima_row_invocation_count": second["makima_row_invocation_count"],
+                    "diagnostic_sha256": second["diagnostic_sha256"],
+                },
+                "other": {
+                    "upsampled_rows": first["upsampled_rows"],
+                    "makima_row_invocation_count": first["makima_row_invocation_count"],
+                    "diagnostic_sha256": first["diagnostic_sha256"],
+                },
+            },
+        )
+        with TemporaryDirectory(prefix="exp472-summary-swap-antigravity-") as temporary:
+            with self.assertRaisesRegex(ValueError, "diagnostic summary"):
+                write_exp472_report_antigravity(
+                    evaluation, Path(temporary) / "report_antigravity", _worker_antigravity(),
+                    e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA,
+                    shape_diagnostics=(first, second),
+                )
+
+    def test_report_rejects_missing_extra_and_duplicate_trace_datasets(self) -> None:
+        """Publication needs exactly one, and only one, bound trace per dataset."""
+        first = _shape_diagnostic_antigravity("fixture")
+        second = _shape_diagnostic_antigravity("other")
+        base = _EvaluationAntigravity()
+        e_rows = tuple(
+            {"method": "E", "dataset": dataset, "average_precision": 0.9,
+             "average_precision_exclusion": None, "auroc": 0.9,
+             "auroc_exclusion": None}
+            for dataset in ("fixture", "other")
+        )
+        object.__setattr__(base, "per_dataset", e_rows)
+        object.__setattr__(base, "subset_per_dataset", e_rows)
+        missing = _bound_evaluation_antigravity(first)
+        object.__setattr__(missing._base, "per_dataset", e_rows)
+        object.__setattr__(missing._base, "subset_per_dataset", e_rows)
+        extra = _DiagnosticBoundEvaluationAntigravity(
+            base,
+            {**_bound_evaluation_antigravity(first, second)._summary,
+             "unexpected": _bound_evaluation_antigravity(first)._summary["fixture"]},
+        )
+        cases = (("missing", missing, (first, second)), ("extra", extra, (first, second)), ("duplicate", _bound_evaluation_antigravity(first, second), (first, second, first)))
+        for name, evaluation, diagnostics in cases:
+            with self.subTest(name=name), TemporaryDirectory(prefix="exp472-summary-set-antigravity-") as temporary:
+                with self.assertRaisesRegex(ValueError, "diagnostic"):
+                    write_exp472_report_antigravity(
+                        evaluation, Path(temporary) / "report_antigravity", _worker_antigravity(),
+                        e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA,
+                        shape_diagnostics=diagnostics,
+                    )
+
     def test_direct_report_flattens_actual_v3_invocations_with_call_targets(self) -> None:
         """The report preserves target length and source/phase for every real call."""
         row = np.asarray((0.0, 1.0, 0.0), dtype="<f4")
@@ -550,7 +669,7 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
         with TemporaryDirectory(prefix="exp472-nested-shape-antigravity-") as temporary:
             root = Path(temporary) / "report_antigravity"
             write_exp472_report_antigravity(
-                _EvaluationAntigravity(), root, _worker_antigravity(),
+                _bound_evaluation_antigravity(diagnostic), root, _worker_antigravity(),
                 e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA,
                 shape_diagnostics=(diagnostic,),
             )
@@ -572,7 +691,7 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
         with TemporaryDirectory(prefix="exp472-repeated-trace-antigravity-") as temporary:
             root = Path(temporary) / "report_antigravity"
             write_exp472_report_antigravity(
-                _EvaluationAntigravity(), root, _worker_antigravity(),
+                _bound_evaluation_antigravity(diagnostic), root, _worker_antigravity(),
                 e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA,
                 shape_diagnostics=(diagnostic,),
             )
@@ -591,8 +710,12 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
         legacy["diagnostic_sha256"] = sha256(canonical_json_bytes_exp472_antigravity(legacy)).hexdigest()
         with TemporaryDirectory(prefix="exp472-zero-trace-antigravity-") as temporary:
             root = Path(temporary) / "report_antigravity"
-            write_exp472_report_antigravity(_EvaluationAntigravity(), root, _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=(zero,))
-            self.assertIn(",0,0,0,0,", (root / "exp472_shape_diagnostics_antigravity.csv").read_text(encoding="utf-8"))
+            write_exp472_report_antigravity(_bound_evaluation_antigravity(zero), root, _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=(zero,))
+            self.assertEqual((root / "exp472_shape_diagnostics_antigravity.csv").read_text(encoding="utf-8").splitlines(), [
+                ",".join((
+                    "dataset", "schema", "trace_state", "alignment_status", "invocation_count", "row_invocation_count", "makima_row_invocation_count", "upsampled_rows", "input_identity_sha256", "result_sha256", "invocation_order_sha256", "invocation_aggregate_sha256", "ordinal", "phase_tag", "source_tag", "target_len", "row_count", "singleton_rows", "equal_rows", "polyphase_downsample_rows", "makima_rows", "makima_row_indices", "overshoot", "undershoot", "source_extrema", "output_extrema", "added_extrema", "input_sha256", "output_sha256", "input_evidence", "output_evidence", "invocation_sha256", "diagnostic_sha256",
+                )),
+            ])
         with TemporaryDirectory(prefix="exp472-v2-rejected-antigravity-") as temporary:
             with self.assertRaisesRegex(ValueError, "shape diagnostics"):
                 write_exp472_report_antigravity(_EvaluationAntigravity(), Path(temporary) / "report_antigravity", _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=(legacy,))
@@ -664,18 +787,37 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
     def test_typed_runtime_reopens_task4_task5_before_evaluate_and_report(self) -> None:
         """A names-only object cannot replace typed Task4/Task5 boundaries."""
         bundle, runtime = self._runtime_antigravity()
-        manifest = _task5_manifest_antigravity(bundle, runtime.context)
-        with mock.patch.object(cli, "verify_exp471_reuse_exp472_antigravity", return_value=bundle) as exp471, mock.patch.object(cli, "verify_manifest_exp472_antigravity", return_value=manifest) as verify_manifest, mock.patch.object(cli, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: _task5_shard_antigravity(entry)) as verify_shard, mock.patch.object(cli, "evaluate_exp472_antigravity", return_value=_EvaluationAntigravity()) as evaluate:
+        manifest = {**_task5_manifest_antigravity(bundle, runtime.context), "manifest_sha256": _SHA}
+        with mock.patch.object(cli, "verify_exp471_reuse_exp472_antigravity", return_value=bundle) as exp471, mock.patch.object(cli, "verify_manifest_exp472_antigravity", return_value=manifest) as verify_manifest, mock.patch.object(cli, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: _task5_shard_antigravity(entry)) as verify_shard, mock.patch.object(cli, "read_exp472_evaluation_antigravity", side_effect=FileNotFoundError), mock.patch.object(cli, "write_exp472_evaluation_antigravity", return_value=_EvaluationAntigravity()), mock.patch.object(cli, "evaluate_exp472_antigravity", return_value=_EvaluationAntigravity()) as evaluate:
             self.assertEqual(main_antigravity(("evaluate",), runtime=runtime, stdout=io.StringIO()), 0)
         self.assertEqual((exp471.call_count, verify_manifest.call_count, verify_shard.call_count, evaluate.call_count), (1, 1, 1117, 1))
         self.assertEqual(evaluate.call_args.kwargs, {"context": runtime.context, "catalog": runtime.catalog})
         self.assertEqual(evaluate.call_args.args[:2], (runtime.context.run_root, EXP471_REUSE_ROOT_ANTIGRAVITY))
 
+    def test_evaluate_reuses_valid_persisted_artifact_without_labels(self) -> None:
+        """A second evaluate must reopen the sealed artifact, not the TEST labels."""
+        bundle, runtime = self._runtime_antigravity()
+        manifest = {**_task5_manifest_antigravity(bundle, runtime.context), "manifest_sha256": _SHA}
+        with mock.patch.object(cli, "_verified_authorities_antigravity", return_value=(bundle, manifest, ())), mock.patch.object(cli, "read_exp472_evaluation_antigravity", return_value=_EvaluationAntigravity()) as read, mock.patch.object(cli.Exp472ControllerRuntimeAntigravity, "evaluate_antigravity", side_effect=AssertionError("labels must stay closed")) as evaluate:
+            self.assertEqual(main_antigravity(("evaluate",), runtime=runtime, stdout=io.StringIO()), 0)
+        read.assert_called_once()
+        evaluate.assert_not_called()
+
+    def test_report_requires_persisted_evaluation_before_any_report_leaf(self) -> None:
+        """A report never computes evaluation and cannot publish when it is absent."""
+        bundle, runtime = self._runtime_antigravity()
+        manifest = {**_task5_manifest_antigravity(bundle, runtime.context), "manifest_sha256": _SHA}
+        with mock.patch.object(cli, "_verified_authorities_antigravity", return_value=(bundle, manifest, ())), mock.patch.object(cli, "read_exp472_evaluation_antigravity", side_effect=FileNotFoundError("missing")), mock.patch.object(cli, "write_exp472_report_antigravity", side_effect=AssertionError("report leaves must stay absent")) as write, mock.patch.object(cli.Exp472ControllerRuntimeAntigravity, "evaluate_antigravity", side_effect=AssertionError("report must not labels")) as evaluate:
+            with self.assertRaisesRegex(FileNotFoundError, "missing"):
+                main_antigravity(("report",), runtime=runtime, stdout=io.StringIO())
+        write.assert_not_called()
+        evaluate.assert_not_called()
+
     def test_default_factory_replays_scored_backend_for_report_without_live_assessment(self) -> None:
         bundle = _task5_bundle_antigravity()
         persisted_context, persisted_catalog = _task5_context_catalog_antigravity(bundle)
         manifest = {**_task5_manifest_antigravity(bundle, persisted_context), "manifest_sha256": _SHA}
-        with mock.patch.object(cli, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), mock.patch.object(cli, "_read_scored_context_candidate_antigravity", return_value=persisted_context) as replay, mock.patch.object(cli, "assess_exp472_backend_antigravity", side_effect=AssertionError("post-score commands must not reassess backend")), mock.patch.object(cli, "verify_manifest_exp472_antigravity", return_value=manifest), mock.patch.object(cli, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: {**_task5_shard_antigravity(entry), "diagnostic": _shape_diagnostic_antigravity(entry.dataset)}), mock.patch.object(cli, "evaluate_exp472_antigravity", return_value=_EvaluationAntigravity()), mock.patch.object(cli, "write_exp472_report_antigravity", return_value=mock.Mock(report_manifest_sha256=_SHA)) as publish:
+        with mock.patch.object(cli, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), mock.patch.object(cli, "_read_scored_context_candidate_antigravity", return_value=persisted_context) as replay, mock.patch.object(cli, "assess_exp472_backend_antigravity", side_effect=AssertionError("post-score commands must not reassess backend")), mock.patch.object(cli, "verify_manifest_exp472_antigravity", return_value=manifest), mock.patch.object(cli, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: {**_task5_shard_antigravity(entry), "diagnostic": _shape_diagnostic_antigravity(entry.dataset)}), mock.patch.object(cli, "read_exp472_evaluation_antigravity", return_value=_EvaluationAntigravity()), mock.patch.object(cli, "evaluate_exp472_antigravity", side_effect=AssertionError("report must not evaluate")), mock.patch.object(cli, "write_exp472_report_antigravity", return_value=mock.Mock(report_manifest_sha256=_SHA)) as publish:
             runtime = cli._build_runtime_antigravity("full")
             self.assertEqual(main_antigravity(("report",), stdout=io.StringIO()), 0)
         self.assertIsInstance(runtime, cli.Exp472ControllerRuntimeAntigravity)
@@ -754,9 +896,13 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
                 value = _task5_shard_antigravity(entry)
                 value["diagnostic"] = _shape_diagnostic_antigravity(entry.dataset)
                 return value
-            with mock.patch.object(cli, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), mock.patch.object(cli, "verify_manifest_exp472_antigravity", return_value=manifest), mock.patch.object(cli, "verify_score_shard_exp472_antigravity", side_effect=shard), mock.patch.object(cli, "evaluate_exp472_antigravity", return_value=evaluation) as evaluate:
+            diagnostics = tuple(_shape_diagnostic_antigravity(entry.dataset) for entry in runtime.catalog)
+            persisted = _bound_evaluation_antigravity(*diagnostics)
+            object.__setattr__(persisted._base, "per_dataset", e_rows)
+            object.__setattr__(persisted._base, "subset_per_dataset", e_rows)
+            with mock.patch.object(cli, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), mock.patch.object(cli, "verify_manifest_exp472_antigravity", return_value=manifest), mock.patch.object(cli, "verify_score_shard_exp472_antigravity", side_effect=shard), mock.patch.object(cli, "read_exp472_evaluation_antigravity", return_value=persisted), mock.patch.object(cli, "evaluate_exp472_antigravity", side_effect=AssertionError("report must not evaluate")) as evaluate:
                 self.assertEqual(main_antigravity(("report",), runtime=runtime, stdout=io.StringIO()), 0)
-            self.assertEqual(evaluate.call_count, 1)
+            evaluate.assert_not_called()
             shapes = (runtime.report_root / "exp472_shape_diagnostics_antigravity.csv").read_text(encoding="utf-8")
             self.assertEqual(len(shapes.splitlines()), 1 + 2 * 1117)
             self.assertIn("input_evidence", shapes)

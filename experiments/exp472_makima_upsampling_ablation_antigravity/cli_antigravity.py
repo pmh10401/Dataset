@@ -44,7 +44,12 @@ from .artifacts_antigravity import (
     verify_score_shard_exp472_antigravity,
 )
 from .authority_antigravity import verify_exp471_reuse_exp472_antigravity
-from .evaluation_antigravity import evaluate_exp472_antigravity
+from .evaluation_antigravity import (
+    evaluate_exp472_antigravity,
+    evaluation_path_exp472_antigravity,
+    read_exp472_evaluation_antigravity,
+    write_exp472_evaluation_antigravity,
+)
 from .reporting_antigravity import write_exp472_report_antigravity
 from .runner_antigravity import run_score_wave_exp472_antigravity
 from .scoring_antigravity import (
@@ -292,7 +297,9 @@ def _status_antigravity(mode: str = "full") -> dict[str, object]:
             # Status reports a non-authoritative unreadable log rather than
             # attempting repair or a hidden restart.
             pass
-    return {"experiment": "Exp472", "mode": mode, "paths": _paths_antigravity(mode), "scored": completed, "failed": failed, "remaining": remaining, "eta_seconds": eta_seconds, "read_only": True}
+    evaluation_path = evaluation_path_exp472_antigravity(EXP472_EVALUATION_ROOT_ANTIGRAVITY)
+    evaluation_complete = evaluation_path.is_file() and not evaluation_path.is_symlink()
+    return {"experiment": "Exp472", "mode": mode, "paths": _paths_antigravity(mode), "scored": completed, "failed": failed, "remaining": remaining, "eta_seconds": eta_seconds, "evaluation_complete": evaluation_complete, "read_only": True}
 
 
 @dataclass(frozen=True, slots=True)
@@ -310,6 +317,7 @@ class Exp472ControllerRuntimeAntigravity:
     exp471_root: Path
     code_map_lock_sha256: str
     report_root: Path = EXP472_REPORT_ROOT_ANTIGRAVITY
+    evaluation_root: Path = EXP472_EVALUATION_ROOT_ANTIGRAVITY
 
     def __post_init__(self) -> None:
         if not isinstance(self.context, Exp472RunContextAntigravity) or (self.context.mode, self.context.run_root) not in {("smoke", EXP472_SMOKE_ROOT_ANTIGRAVITY), ("full", EXP472_OFFICIAL_ROOT_ANTIGRAVITY)}:
@@ -326,9 +334,12 @@ class Exp472ControllerRuntimeAntigravity:
             raise ValueError("Exp472 controller code-map digest differs")
         if not Path(self.report_root).is_absolute() or "antigravity" not in Path(self.report_root).name:
             raise ValueError("Exp472 controller report root differs")
+        if not Path(self.evaluation_root).is_absolute() or "antigravity" not in Path(self.evaluation_root).name:
+            raise ValueError("Exp472 controller evaluation root differs")
         object.__setattr__(self, "catalog", entries)
         object.__setattr__(self, "exp471_root", Path(self.exp471_root))
         object.__setattr__(self, "report_root", Path(self.report_root))
+        object.__setattr__(self, "evaluation_root", Path(self.evaluation_root))
 
     def verify_exp471_antigravity(self) -> object:
         return verify_exp471_reuse_exp472_antigravity(self.exp471_root)
@@ -489,13 +500,17 @@ def main_antigravity(argv: Sequence[str] | None = None, *, stdout: TextIO | None
         exp471, manifest, _shards = _verified_authorities_antigravity(typed)
         _emit_antigravity(stream, {"experiment": "Exp472", "command": "verify", "exp471_authority": type(exp471).__name__, "e_manifest_sha256": manifest["manifest_sha256"], "read_only": True}); return 0
     if command == "evaluate":
-        _verified_authorities_antigravity(typed)
-        evaluation = typed.evaluate_antigravity()
+        exp471, manifest, _shards = _verified_authorities_antigravity(typed)
+        try:
+            evaluation = read_exp472_evaluation_antigravity(typed.evaluation_root, authority=exp471.authority, e_manifest_sha256=str(manifest["manifest_sha256"]), context_sha256=typed.context.sha256, dataset_order=exp471.dataset_order)
+        except FileNotFoundError:
+            evaluation = typed.evaluate_antigravity()
+            evaluation = write_exp472_evaluation_antigravity(evaluation, typed.evaluation_root)
         _emit_antigravity(stream, {"experiment": "Exp472", "command": "evaluate", "evaluation_sha256": getattr(evaluation, "artifact_record", lambda: {})().get("evaluation_sha256")}); return 0
     # Report deliberately does not dispatch score generation.  It can only
     # consume completed, independently reopened authorities before evaluation.
-    _exp471, manifest, shards = _verified_authorities_antigravity(typed)
-    evaluation = typed.evaluate_antigravity()
+    exp471, manifest, shards = _verified_authorities_antigravity(typed)
+    evaluation = read_exp472_evaluation_antigravity(typed.evaluation_root, authority=exp471.authority, e_manifest_sha256=str(manifest["manifest_sha256"]), context_sha256=typed.context.sha256, dataset_order=exp471.dataset_order)
     # Preserve Task3's full aggregate diagnostic exactly; the reporter binds
     # its nested train/test evidence and does not invent flat substitutes.
     shape = tuple(dict(shard["diagnostic"]) for shard in shards)

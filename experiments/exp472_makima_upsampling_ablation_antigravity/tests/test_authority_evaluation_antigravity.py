@@ -20,7 +20,7 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.authority_antigra
 from experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravity import BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY, BOOTSTRAP_DRAWS_ANTIGRAVITY, BOOTSTRAP_SEED_ANTIGRAVITY, EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY, EXP472_OFFICIAL_ROOT_ANTIGRAVITY
 from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigravity import Exp472BackendDecisionAntigravity, Exp472RunContextAntigravity, canonical_json_bytes_exp472_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import Exp472AlignmentTraceAntigravity, align_rows_exp472_antigravity
-from experiments.exp472_makima_upsampling_ablation_antigravity.evaluation_antigravity import Exp472VerifiedEBundleAntigravity, evaluate_exp472_antigravity
+from experiments.exp472_makima_upsampling_ablation_antigravity.evaluation_antigravity import Exp472EvaluationAntigravity, Exp472VerifiedEBundleAntigravity, evaluate_exp472_antigravity, read_exp472_evaluation_antigravity, write_exp472_evaluation_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import test_identity_exp472_antigravity
 
 _ROOT = Path("/private/tmp/exp472-task5-fixture-antigravity")
@@ -132,6 +132,51 @@ def _shard(entry: Exp472CatalogEntryAntigravity, *, upsampled: bool = True) -> d
     return {"dataset": entry.dataset, "shard_sha256": _digest(f"E:{entry.dataset}"), "test_identity": dict(entry.test_identity), "scores": [0.2, 0.8], "upsampled_rows": diagnostic["upsampled_rows"], "diagnostic": diagnostic}
 
 class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
+    def test_evaluation_publication_reopens_only_canonical_authority_bound_bytes(self) -> None:
+        """The durable evaluation is create-or-identical and independently reopenable."""
+        bundle = _bundle(); context, _catalog = _context_and_catalog(bundle)
+        summary = {
+            dataset: {
+                "upsampled_rows": 0,
+                "makima_row_invocation_count": 0,
+                "diagnostic_sha256": _digest(f"diagnostic:{dataset}"),
+            }
+            for dataset in bundle.dataset_order
+        }
+        evaluation = Exp472EvaluationAntigravity(
+            bundle.authority, ("A", "B", "C", "D", "E", *_METHODS[4:]), (), (),
+            {}, {}, {}, {}, (), {}, summary,
+            {"roc": {"x_name": "false_positive_rate", "y_name": "true_positive_rate", "rows": ()}, "pr": {"x_name": "recall", "y_name": "precision", "rows": ()}},
+            _digest("manifest"), context.sha256,
+        )
+        with TemporaryDirectory(prefix="exp472-evaluation-publication-antigravity-") as temporary:
+            root = Path(temporary) / "evaluation_antigravity"
+            first = write_exp472_evaluation_antigravity(evaluation, root)
+            second = write_exp472_evaluation_antigravity(evaluation, root)
+            self.assertEqual(first.artifact_record(), second.artifact_record())
+            reopened = read_exp472_evaluation_antigravity(
+                root, authority=bundle.authority, e_manifest_sha256=_digest("manifest"),
+                context_sha256=context.sha256, dataset_order=bundle.dataset_order,
+            )
+            self.assertEqual(reopened.artifact_record(), evaluation.artifact_record())
+            path = root / "exp472_evaluation_antigravity.json"
+            path.write_bytes(path.read_bytes() + b"\n")
+            with self.assertRaisesRegex(ValueError, "noncanonical"):
+                read_exp472_evaluation_antigravity(
+                    root, authority=bundle.authority, e_manifest_sha256=_digest("manifest"),
+                    context_sha256=context.sha256, dataset_order=bundle.dataset_order,
+                )
+
+    def test_v2_diagnostic_is_rejected_before_labels(self) -> None:
+        """The retired raw-replay schema never crosses the label firewall."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle); calls: list[object] = []
+        def legacy(entry: Exp472CatalogEntryAntigravity) -> dict[str, object]:
+            value = _shard(entry); value["diagnostic"] = {"schema": "exp472-shape-diagnostic-antigravity.v2", "dataset": entry.dataset}; return value
+        with patch.object(evaluation_module, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), patch.object(evaluation_module, "verify_manifest_exp472_antigravity", return_value=_manifest(bundle, context)), patch.object(evaluation_module, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: legacy(entry) if entry.dataset == bundle.dataset_order[0] else _shard(entry)):
+            with self.assertRaisesRegex(ValueError, "diagnostic"):
+                evaluate_exp472_antigravity(_ROOT, _ROOT, lambda order: calls.append(order) or {}, context=context, catalog=catalog)
+        self.assertEqual(calls, [])
+
     def test_catalog_projection_matches_exp472_raw_test_identity(self) -> None:
         """Adding catalog-only dataset_id to the projected digest would break E binding."""
         row = np.asarray([1.0, 2.0], dtype=np.float32)
@@ -260,6 +305,12 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
         coordinates[bundle.dataset_order[0]]["indices"] = (9, 10); scores[bundle.dataset_order[0]] = (9.0, 10.0); upsampled[bundle.dataset_order[0]] = 0
         self.assertEqual(evidence.scores[bundle.dataset_order[0]], (0.2, 0.8)); self.assertEqual(evidence.upsampled_rows[bundle.dataset_order[0]], 1)
         with self.assertRaises(TypeError): evidence.scores[bundle.dataset_order[0]] = (9.0, 10.0)
+
+    def test_verified_e_bundle_rejects_non_lowercase_diagnostic_digest(self) -> None:
+        """A 64-character non-SHA string cannot impersonate sealed v3 evidence."""
+        bundle = _bundle(); coordinates = {dataset: dict(value) for dataset, value in bundle.coordinates.items()}; scores = {dataset: (0.2, 0.8) for dataset in bundle.dataset_order}; upsampled = {dataset: 1 for dataset in bundle.dataset_order}; makima = {dataset: 1 for dataset in bundle.dataset_order}; diagnostic_sha = {dataset: _digest(f"diagnostic:{dataset}") for dataset in bundle.dataset_order}; diagnostic_sha[bundle.dataset_order[0]] = "A" * 64
+        with self.assertRaisesRegex(ValueError, "E shard"):
+            Exp472VerifiedEBundleAntigravity(_ROOT, bundle.authority.database_sha256, bundle.dataset_order, coordinates, scores, upsampled, makima, diagnostic_sha, _digest("E uppercase"))
 
     def test_real_e_adapter_calls_public_verifiers_then_opens_labels_once(self) -> None:
         """Bypassing Task4 manifest or a descriptor verifier would admit unbound E scores."""

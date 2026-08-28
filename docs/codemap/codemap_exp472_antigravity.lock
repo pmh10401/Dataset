@@ -1,20 +1,20 @@
 {
   "artifact_sha256": {
-    "docs/codemap/codemap_exp472_antigravity.html": "eb646e44b6c0abc4888364c939b941ede57b6fd1a257e84bd532780e2dcf15b3",
-    "docs/codemap/codemap_exp472_antigravity.json": "4e2dc790c9ffdf0bfcf7a702d7197949ebacd5295826453f176c1774f78f4ab9"
+    "docs/codemap/codemap_exp472_antigravity.html": "1246d7e731f93e1279a6c40956c607deed2203219968744471273442381e8557",
+    "docs/codemap/codemap_exp472_antigravity.json": "420a21eca84fead9a676ba1caa10d4271269ebf00015f2ad0bbd89bacb4c4d33"
   },
   "fingerprint_algorithm": "sha256",
   "governance_fingerprint_evidence": {
     "design_path": "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md",
-    "design_sha256": "4753656f7cdc0503cb4515cd9a7ec98c66b516cd51333931159049746045a111",
+    "design_sha256": "91ac5d8214265d4b5d5f4946a583096963d62077cba590e8de802bc472977841",
     "plan_path": "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md",
-    "plan_sha256": "9cc387d9d3fe7aa6f99f8b2db673650a27a443891078bc991790773d1c2f281e"
+    "plan_sha256": "1cee890a1ec4bee73aa0aa18d845b99bdc648f711b5820ffb365f58a4af614fe"
   },
   "module_fingerprints": {
     ".superpowers/sdd/2026-08-28-exp472-makima-upsampling-ablation-antigravity/progress.md": "16b64f11d9d8821dbd48e27f4d96c7c3aec7732688075a2449d9c0d4c9a77d6a",
-    "docs/runbooks/exp472_makima_upsampling_ablation_antigravity.md": "10985b9f36b56665a5fe73d206adfb65d0379013bf36ac3de86f9a00162db04e",
-    "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md": "9cc387d9d3fe7aa6f99f8b2db673650a27a443891078bc991790773d1c2f281e",
-    "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md": "4753656f7cdc0503cb4515cd9a7ec98c66b516cd51333931159049746045a111",
+    "docs/runbooks/exp472_makima_upsampling_ablation_antigravity.md": "f8707b35924dfd41346383ac1ed565dc626f62b535dc18aab7a7b3ba2e5247c0",
+    "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md": "1cee890a1ec4bee73aa0aa18d845b99bdc648f711b5820ffb365f58a4af614fe",
+    "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md": "91ac5d8214265d4b5d5f4946a583096963d62077cba590e8de802bc472977841",
     "experiments/exp450_resampling_image_ablation_antigravity/artifacts_antigravity.py": "7e26a843cf394ad01d9fa7d786ad24fa88a808563a4f1c8dbc824dc204327ec1",
     "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py": "236169084afb1a6b7d82461f8f71e7d50f8634f41aa97a9833433cf3b3220ae8",
     "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py": "07504fd0787fb73bda308766847f77dfce0818486d766b17e2e7fa69b1356af6",
@@ -28,17 +28,17 @@
     "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py": "a3f2c3688dd36c41adc61f7cf098f21cadb328290c9b1a4b2248dbf4beb524bf",
     "experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py": "f8d2ca988881e6ed0de027887b59a66ca68bf1ad765921552e52203360fa8dea",
     "experiments/exp472_makima_upsampling_ablation_antigravity/authority_antigravity.py": "c3de58b3ae9a9a868e2d9e3424cc7f34f47b08d04724457bcc2e5d3e9f77d3cf",
-    "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py": "dbf77d66a8dab2da9e1f4d7e3386153552bfc3d3fa334ae80e36a8f90a55a6b2",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py": "2d820958579517bd6e6b411a7155a2db86ef7280eac49d9b79cc6277a89ab34d",
     "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py": "b9ec73b7eeb7078a2812aea4d13cddb53077fcc7cf2ffa94d0c63c30ffb7b3f2",
     "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py": "eaf2acc726d4a372903094684278e7c54e9e9f0e8338da6d73aa68148f6213c2",
-    "experiments/exp472_makima_upsampling_ablation_antigravity/evaluation_antigravity.py": "a4db15acd3582d6ec8f3fdf3d1c07391994495d76d2c19fe2b38db49b6780dd8",
-    "experiments/exp472_makima_upsampling_ablation_antigravity/reporting_antigravity.py": "96838d841a8e19d6b1ed891c39387eb2c0daeac10a6741dbaf66763dd0615487",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/evaluation_antigravity.py": "fbd6df54a63d4bbd509e8b82ce88a7615eeadbaab542e9f4395daabdda4f1327",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/reporting_antigravity.py": "a9870c7927708aa2ba619062ca5737059ea80b3ea4c57be193b7902155108418",
     "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py": "37413d1e6b3bcf3344f5371b77503f48c4e1cbb1ed2d6ceaf36fcd3359f97bf4",
     "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py": "2988bb4dd0a02e376f09705a4b4967f4b9266a2c15f2c240af7dec6517f39438",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py": "783d28e51ffa69d7ee5aae0b99bd4948bfad56a114728f1e9e588ed7a6e030ca",
-    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py": "78972bccbb450e62e15db94c5b98e16201906ca218424c22227dc75ecf142129",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py": "07dcc0a46a43fb42cab4c112e316696f8b81e7bc4cec62fb621bc3c95051d00b",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py": "9c1822c7c47c491074cbaecc5f4b8df540d17235526e1548ff44394ba003d3d9",
-    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py": "b8bd5e24d35d2d9159e451ed3a71f1619ae0987bd258c61de64f6a72305c907c",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py": "d6bfe93bb19ca954234cbe90cd94d5584578e55849857a4eb903e24fd1c46bf8",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py": "5097229c9534760b205696046df6130761903af4112be4cd030cec76b85f8db9",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py": "491a24885468341d56712d75a8251919bca09a47c2fd3826a975e58fcd0b6151",
     "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py": "81e30c0bb3cb5f6f63aa977551856f94792321148ba68c493eb7c65819b38fc2",

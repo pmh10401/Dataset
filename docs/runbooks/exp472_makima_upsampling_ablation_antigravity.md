@@ -25,7 +25,7 @@ $PYTHON scratch/run_exp472_makima_upsampling_ablation_antigravity.py evaluate
 $PYTHON scratch/run_exp472_makima_upsampling_ablation_antigravity.py report
 ```
 
-`verify`는 E 1,117개와 동결된 Exp471 권한을 읽기 전용으로 다시 확인합니다. `evaluate`는 두 권한이 모두 끝난 뒤에만 TEST label 경계를 엽니다. `report`는 완성된 평가만 소비하며 E 점수 생성을 시작하지 않습니다.
+`verify`는 E 1,117개와 동결된 Exp471 권한을 읽기 전용으로 다시 확인합니다. `evaluate`는 먼저 `evaluation_antigravity/exp472_evaluation_antigravity.json`을 canonical bytes와 권한 digest로 다시 확인합니다. 유효한 파일이 있으면 TEST label을 다시 열지 않고 그 파일을 반환합니다. 파일이 없을 때만 두 권한 검증 뒤에 한 번 평가하고 create-or-identical 방식으로 저장한 뒤 다시 읽어 확인합니다. `report`는 이 저장된 평가 파일과 E/Exp471 권한만 읽으며, 평가 함수·label loader·점수 생성을 호출하지 않습니다. 파일이 없거나 검증에 실패하면 15개 보고서 리프를 만들기 전에 중단합니다.
 
 예상 최종 수는 E 1,117개 shard, Exp471 재사용 11,170개 shard(10,775 scored + 395 abstained + 0 failed), 공통 support 922개입니다. 보고서는 `report_antigravity`에 15개 리프, manifest, 완료 marker 순서로 생성됩니다.
 
@@ -37,6 +37,6 @@ E shard는 이름만 같은 입력을 재사용할 수 없습니다. 각 shard�
 
 ## v3 진단 표와 부분집합의 의미
 
-`exp472_shape_diagnostics_antigravity.csv`의 한 행은 데이터셋 전체 요약이 아니라 Exp450가 실제로 수행한 한 번의 정렬 호출입니다. 따라서 각 행에는 `phase_tag`, `source_tag`, 그 호출의 `target_len`, 행 수, Makima 행 인덱스, 입력·출력 증거가 함께 기록됩니다.
+`exp472_shape_diagnostics_antigravity.csv`의 한 행은 데이터셋 전체 요약이 아니라 Exp450가 실제로 수행한 한 번의 정렬 호출입니다. 따라서 각 행에는 `phase_tag`, `source_tag`, 그 호출의 `target_len`, 행 수, Makima 행 인덱스, 입력·출력 증거가 함께 기록됩니다. sealed trace에 호출이 0개이면 CSV에는 가짜 null 행을 만들지 않습니다. 그 데이터셋의 0값 요약은 평가 권한의 `diagnostic_summary`에 남습니다.
 
 `upsampled_rows`는 검증된 trace에서 중복을 제거한 실제 `(TRAIN|TEST, row_index)` 슬롯 수입니다. 평가의 `upsampled_rows_gt_zero` 부분집합은 이 수가 0보다 큰 데이터셋으로만 만들며, 라벨이나 성능 지표로 대상을 고르지 않습니다. 반면 `makima_row_invocation_count`는 같은 슬롯이 서로 다른 경로에서 다시 Makima를 거친 경우도 모두 세는 호출 노출 횟수입니다. 두 수는 목적이 다르므로 논문 표와 해석에서 서로 바꾸어 쓰면 안 됩니다.
