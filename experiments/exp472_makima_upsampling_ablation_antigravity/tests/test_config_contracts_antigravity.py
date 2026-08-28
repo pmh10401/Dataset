@@ -91,6 +91,27 @@ class Exp472ConfigContractsTests(unittest.TestCase):
             all("antigravity" in part.name for part in FROZEN_EXP472_CONFIG.roots)
         )
 
+    def test_bootstrap_interval_is_frozen_to_95_percentile(self) -> None:
+        """A non-percentile method or non-95% level must fail paired analysis."""
+        self.assertEqual(
+            (
+                getattr(FROZEN_EXP472_CONFIG, "bootstrap_interval_method", None),
+                getattr(FROZEN_EXP472_CONFIG, "bootstrap_confidence_level", None),
+            ),
+            ("percentile", 0.95),
+        )
+        with self.assertRaisesRegex(ValueError, "paired-analysis policy"):
+            replace(FROZEN_EXP472_CONFIG, bootstrap_confidence_level=0.90)
+
+    def test_policy_tie_tolerance_and_database_digest_are_literal_frozen(self) -> None:
+        """Policy, tie, or database drift must not borrow a mutable peer value."""
+        self.assertEqual(FROZEN_EXP472_CONFIG.policy_id, "hard_plus_stable")
+        self.assertEqual(FROZEN_EXP472_CONFIG.tie_tolerance, 1e-12)
+        self.assertEqual(
+            FROZEN_EXP472_CONFIG.database_sha256,
+            "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+        )
+
     def test_exp450_population_paper_identity_and_exp471_root_are_reused(self) -> None:
         """A copied or reordered input identity must fail the reuse contract."""
         paper = FrozenPaperConfig()
@@ -255,6 +276,19 @@ class Exp472ConfigContractsTests(unittest.TestCase):
             manifest.shard_sha256[datasets[0]] = _DIGEST_D_ANTIGRAVITY
         with self.assertRaisesRegex(ValueError, "complete unique coverage"):
             replace(manifest, dataset_order=datasets[:-1])
+
+    def test_smoke_manifest_rejects_reordered_exp450_inventory(self) -> None:
+        """Twenty-three valid names in the wrong order must not form authority."""
+        datasets = tuple(reversed(FROZEN_EXP450_CONFIG.smoke_datasets))
+        shards = {dataset: _DIGEST_A_ANTIGRAVITY for dataset in datasets}
+        with self.assertRaisesRegex(ValueError, "frozen Exp450 smoke inventory"):
+            Exp472ScoreManifestAntigravity(
+                mode="smoke",
+                context_sha256=_DIGEST_B_ANTIGRAVITY,
+                dataset_order=datasets,
+                shard_sha256=shards,
+                manifest_sha256=_DIGEST_C_ANTIGRAVITY,
+            )
 
 
 if __name__ == "__main__":

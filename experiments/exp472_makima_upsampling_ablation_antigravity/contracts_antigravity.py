@@ -14,6 +14,10 @@ from typing import Literal
 
 import numpy as np
 
+from experiments.exp450_resampling_image_ablation_antigravity.config_antigravity import (
+    FROZEN_EXP450_CONFIG,
+)
+
 
 MLX_FALLBACK_REASON_ANTIGRAVITY = (
     "MLX is assessed and recorded as unsuitable for the exact irregular 1-D "
@@ -22,15 +26,22 @@ MLX_FALLBACK_REASON_ANTIGRAVITY = (
     "tolerance, and at least 1.1x end-to-end speed are demonstrated."
 )
 
-_EXP472_ROOT_ANTIGRAVITY = Path(
-    "/Users/mac/Documents/Dataset/"
-    "exp472_makima_upsampling_ablation_antigravity_20260828"
-)
-_RUN_ROOT_BY_MODE_ANTIGRAVITY = {
-    "smoke": _EXP472_ROOT_ANTIGRAVITY / "smoke_antigravity",
-    "full": _EXP472_ROOT_ANTIGRAVITY / "official_antigravity",
-}
 _SHA256_ANTIGRAVITY = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _run_root_by_mode_antigravity() -> Mapping[str, Path]:
+    """Resolve the single frozen root authority without an import-time cycle."""
+    from .config_antigravity import (
+        EXP472_OFFICIAL_ROOT_ANTIGRAVITY,
+        EXP472_SMOKE_ROOT_ANTIGRAVITY,
+    )
+
+    return MappingProxyType(
+        {
+            "smoke": EXP472_SMOKE_ROOT_ANTIGRAVITY,
+            "full": EXP472_OFFICIAL_ROOT_ANTIGRAVITY,
+        }
+    )
 
 
 def _sha256_antigravity(value: object, field_name: str) -> str:
@@ -255,10 +266,11 @@ class Exp472RunContextAntigravity:
     config_sha256: str
 
     def __post_init__(self) -> None:
-        if self.mode not in _RUN_ROOT_BY_MODE_ANTIGRAVITY:
+        run_roots = _run_root_by_mode_antigravity()
+        if self.mode not in run_roots:
             raise ValueError("Exp472 run mode is invalid")
         root = Path(self.run_root)
-        if root != _RUN_ROOT_BY_MODE_ANTIGRAVITY[self.mode]:
+        if root != run_roots[self.mode]:
             raise ValueError("Exp472 run root differs from the frozen mode root")
         for field_name in (
             "database_sha256",
@@ -366,6 +378,13 @@ class Exp472ScoreManifestAntigravity:
         expected_count = 23 if self.mode == "smoke" else 1117
         if len(datasets) != expected_count or len(set(datasets)) != expected_count:
             raise ValueError("Exp472 manifest requires complete unique coverage")
+        if (
+            self.mode == "smoke"
+            and datasets != FROZEN_EXP450_CONFIG.smoke_datasets
+        ):
+            raise ValueError(
+                "Exp472 manifest differs from the frozen Exp450 smoke inventory"
+            )
         shards = _frozen_digest_mapping_antigravity(
             self.shard_sha256, "shard_sha256"
         )

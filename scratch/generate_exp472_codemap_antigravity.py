@@ -237,9 +237,10 @@ def build_codemap_payload_antigravity(
         )
     namespace_root = REPOSITORY_ROOT / _EXP472_NAMESPACE_ANTIGRAVITY
     return {
-        "schema": "exp472-codemap.v1",
+        "schema": f"{VERSION_ANTIGRAVITY}-codemap.v1",
         "scope": {
-            "experiment": "Exp472",
+            "experiment": VERSION_ANTIGRAVITY.replace("exp", "Exp", 1),
+            "version": VERSION_ANTIGRAVITY,
             "namespace": _EXP472_NAMESPACE_ANTIGRAVITY,
             "node_count": len(nodes),
             "production_node_count": sum(
@@ -318,7 +319,7 @@ def render_triplet_antigravity(
         f"{embedded}</script></body>\n</html>\n"
     ).encode("utf-8")
     lock = {
-        "schema": "exp472-codemap-lock.v1",
+        "schema": f"{VERSION_ANTIGRAVITY}-codemap-lock.v1",
         "fingerprint_algorithm": "sha256",
         "artifact_sha256": {
             _relative_antigravity(HTML_PATH): sha256(html_bytes).hexdigest(),

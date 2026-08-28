@@ -48,6 +48,8 @@ APPROVED_PLAN_PATH_ANTIGRAVITY = Path(
 )
 BOOTSTRAP_SEED_ANTIGRAVITY = 47220260828
 BOOTSTRAP_DRAWS_ANTIGRAVITY = 20_000
+BOOTSTRAP_INTERVAL_METHOD_ANTIGRAVITY = "percentile"
+BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY = 0.95
 SCORE_THRESHOLD_ANTIGRAVITY = 0.5
 TIE_TOLERANCE_ANTIGRAVITY = 1e-12
 POLICY_ID_ANTIGRAVITY = "hard_plus_stable"
@@ -100,6 +102,8 @@ class FrozenExp472ConfigAntigravity:
     exp471_reuse_root: Path
     bootstrap_seed: int
     bootstrap_draws: int
+    bootstrap_interval_method: str
+    bootstrap_confidence_level: float
     tie_tolerance: float
     approved_design_path: Path
     approved_plan_path: Path
@@ -143,6 +147,10 @@ class FrozenExp472ConfigAntigravity:
         if (
             self.bootstrap_seed != BOOTSTRAP_SEED_ANTIGRAVITY
             or self.bootstrap_draws != BOOTSTRAP_DRAWS_ANTIGRAVITY
+            or self.bootstrap_interval_method
+            != BOOTSTRAP_INTERVAL_METHOD_ANTIGRAVITY
+            or self.bootstrap_confidence_level
+            != BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY
             or self.tie_tolerance != TIE_TOLERANCE_ANTIGRAVITY
         ):
             raise ValueError("Exp472 paired-analysis policy differs")
@@ -219,6 +227,8 @@ FROZEN_EXP472_CONFIG = FrozenExp472ConfigAntigravity(
     exp471_reuse_root=EXP471_REUSE_ROOT_ANTIGRAVITY,
     bootstrap_seed=BOOTSTRAP_SEED_ANTIGRAVITY,
     bootstrap_draws=BOOTSTRAP_DRAWS_ANTIGRAVITY,
+    bootstrap_interval_method=BOOTSTRAP_INTERVAL_METHOD_ANTIGRAVITY,
+    bootstrap_confidence_level=BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY,
     tie_tolerance=TIE_TOLERANCE_ANTIGRAVITY,
     approved_design_path=APPROVED_DESIGN_PATH_ANTIGRAVITY,
     approved_plan_path=APPROVED_PLAN_PATH_ANTIGRAVITY,
@@ -228,7 +238,9 @@ FROZEN_EXP472_CONFIG = FrozenExp472ConfigAntigravity(
 __all__ = [
     "APPROVED_DESIGN_PATH_ANTIGRAVITY",
     "APPROVED_PLAN_PATH_ANTIGRAVITY",
+    "BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY",
     "BOOTSTRAP_DRAWS_ANTIGRAVITY",
+    "BOOTSTRAP_INTERVAL_METHOD_ANTIGRAVITY",
     "BOOTSTRAP_SEED_ANTIGRAVITY",
     "CONDITION_E_ANTIGRAVITY",
     "CPU_WORKERS_ANTIGRAVITY",

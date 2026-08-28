@@ -222,6 +222,11 @@
     },
     {
       "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
       "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
       "kind": "ast_import"
     },
@@ -475,6 +480,7 @@
     },
     {
       "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py"
       ],
       "effects": "Frozen Exp472 population, roots, scoring identity, and backend policy.",
@@ -570,7 +576,8 @@
     "node_count": 17,
     "production_node_count": 2,
     "retained_boundary_node_count": 13,
-    "test_node_count": 1
+    "test_node_count": 1,
+    "version": "exp472"
   },
   "unknowns": []
 }
