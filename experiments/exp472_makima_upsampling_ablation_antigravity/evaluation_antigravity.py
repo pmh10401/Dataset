@@ -8,7 +8,8 @@ from types import MappingProxyType
 import numpy as np
 from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
 from .authority_antigravity import Exp472ReuseAuthorityAntigravity, Exp472VerifiedExp471BundleAntigravity, bind_e_to_exp471_exp472_antigravity, verify_exp471_reuse_exp472_antigravity, _coordinate
-from .contracts_antigravity import canonical_json_bytes_exp472_antigravity
+from .contracts_antigravity import Exp472RunContextAntigravity, canonical_json_bytes_exp472_antigravity
+from .artifacts_antigravity import Exp472CatalogEntryAntigravity, verify_manifest_exp472_antigravity, verify_score_shard_exp472_antigravity
 
 METHOD_ORDER_EXP472_ANTIGRAVITY=("A","B","C","D","E","knn_distance","lof_novelty","ocsvm_rbf","isolation_forest","deep_svdd_1d","drocc_1d")
 _DRAWS=20_000; _SEED=47220260828; _TIE=1e-12
@@ -28,11 +29,19 @@ class Exp472VerifiedEBundleAntigravity:
             _coordinate(self.coordinates[d]); values=_vector(self.scores[d],"E scores")
             if values.size != self.coordinates[d]["count"] or type(self.upsampled_rows[d]) is not int or self.upsampled_rows[d]<0: raise ValueError("Exp472 E shard differs")
 
-def _read_verified_e_path_antigravity(root: Path, exp471: Exp472VerifiedExp471BundleAntigravity)->Exp472VerifiedEBundleAntigravity:
-    """Task 5 is intentionally not an official-run reader; Task 6 supplies its frozen context/catalog.
-    Rejecting an unbound Path is safer than accepting an unverified manifest mapping.
-    """
-    raise ValueError("Exp472 E Path requires the Task 6 verified manifest adapter")
+def _read_verified_e_path_antigravity(root: Path, exp471: Exp472VerifiedExp471BundleAntigravity, context: Exp472RunContextAntigravity, catalog: Sequence[Exp472CatalogEntryAntigravity])->Exp472VerifiedEBundleAntigravity:
+    """Reopen Task 4's terminal manifest and every bound E shard before labels."""
+    if not isinstance(root,Path) or not isinstance(context,Exp472RunContextAntigravity): raise ValueError("Exp472 E Path context differs")
+    entries=tuple(catalog)
+    if len(entries)!=1117 or tuple(entry.dataset for entry in entries)!=exp471.dataset_order: raise ValueError("Exp472 E catalog order differs")
+    manifest=verify_manifest_exp472_antigravity(root,context,entries)
+    if manifest["database_sha256"]!=exp471.authority.database_sha256 or tuple(manifest["dataset_order"])!=exp471.dataset_order: raise ValueError("Exp472 E manifest identity differs")
+    coordinates={};scores={};upsampled={}
+    for entry,descriptor in zip(entries,manifest["descriptors"],strict=True):
+        shard=verify_score_shard_exp472_antigravity(root,context,entry)
+        if descriptor.get("dataset")!=entry.dataset or descriptor.get("shard_sha256")!=shard.get("shard_sha256"): raise ValueError("Exp472 E manifest shard differs")
+        coordinates[entry.dataset]=_coordinate(shard["test_identity"]);scores[entry.dataset]=tuple(shard["scores"]);upsampled[entry.dataset]=shard["upsampled_rows"]
+    return Exp472VerifiedEBundleAntigravity(root,context.database_sha256,exp471.dataset_order,coordinates,scores,upsampled,sha256(canonical_json_bytes_exp472_antigravity(manifest)).hexdigest())
 
 def paired_e_minus_d_exp472_antigravity(e_values:Sequence[object],d_values:Sequence[object],*,seed:int=_SEED)->Mapping[str,object]:
     e=_vector(e_values,"paired E"); d=_vector(d_values,"paired D")
@@ -83,19 +92,19 @@ def _curves(labels:Mapping[str,np.ndarray],scores:Mapping[str,Mapping[str,np.nda
         fpr,tpr,th=roc_curve(y,s);precision,recall,_=precision_recall_curve(y,s)
         if not(np.all((0<=fpr)&(fpr<=1)) and np.all((0<=tpr)&(tpr<=1)) and np.all(np.diff(fpr)>=0) and np.all(np.diff(tpr)>=0) and (fpr[0],tpr[0])==(0,0) and (fpr[-1],tpr[-1])==(1,1)): raise ValueError("Exp472 ROC table differs")
         if not(np.all((0<=recall)&(recall<=1)) and np.all((0<=precision)&(precision<=1)) and np.all(np.diff(recall)<=0)): raise ValueError("Exp472 PR table differs")
-        roc_rows.extend(MappingProxyType({"method":method,"false_positive_rate":float(x),"true_positive_rate":float(z),"threshold":float(t)}) for x,z,t in zip(fpr,tpr,th,strict=True));pr_rows.extend(MappingProxyType({"method":method,"recall":float(x),"precision":float(z)}) for x,z in zip(recall,precision,strict=True))
+        roc_rows.extend(MappingProxyType({"method":method,"false_positive_rate":float(x),"true_positive_rate":float(z),"threshold":float(t) if np.isfinite(t) else None}) for x,z,t in zip(fpr,tpr,th,strict=True));pr_rows.extend(MappingProxyType({"method":method,"recall":float(x),"precision":float(z)}) for x,z in zip(recall,precision,strict=True))
     return MappingProxyType({"roc":MappingProxyType({"x_name":"false_positive_rate","y_name":"true_positive_rate","rows":tuple(roc_rows)}),"pr":MappingProxyType({"x_name":"recall","y_name":"precision","rows":tuple(pr_rows)})})
 
 @dataclass(frozen=True,slots=True)
 class Exp472EvaluationAntigravity:
     authority:Exp472ReuseAuthorityAntigravity; method_order:tuple[str,...]; per_dataset:tuple[Mapping[str,object],...]; macro:Mapping[str,Mapping[str,object]]; micro:Mapping[str,Mapping[str,object]]; paired_statistics:tuple[Mapping[str,object],...]; denominators:Mapping[str,Mapping[str,object]]; curves:Mapping[str,Mapping[str,object]]
     def artifact_record(self)->dict[str,object]:
-        bare={"schema":"exp472-evaluation-antigravity.v1","authority":self.authority.__dict__ if hasattr(self.authority,"__dict__") else {name:getattr(self.authority,name) for name in self.authority.__dataclass_fields__},"method_order":list(self.method_order),"denominators":{k:dict(v) for k,v in self.denominators.items()},"paired_statistics":[dict(x) for x in self.paired_statistics]}
+        bare={"schema":"exp472-evaluation-antigravity.v1","authority":self.authority.__dict__ if hasattr(self.authority,"__dict__") else {name:getattr(self.authority,name) for name in self.authority.__dataclass_fields__},"method_order":list(self.method_order),"per_dataset":[dict(x) for x in self.per_dataset],"macro":{k:dict(v) for k,v in self.macro.items()},"micro":{k:dict(v) for k,v in self.micro.items()},"denominators":{k:dict(v) for k,v in self.denominators.items()},"paired_statistics":[dict(x) for x in self.paired_statistics],"curves":{k:{**{a:b for a,b in v.items() if a!="rows"},"rows":[dict(row) for row in v["rows"]]} for k,v in self.curves.items()}}
         return {**bare,"evaluation_sha256":sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
 
-def evaluate_exp472_antigravity(e_root:Path,exp471_root:Path,label_loader:Callable[[tuple[str,...]],Mapping[str,Sequence[object]]])->Exp472EvaluationAntigravity:
+def evaluate_exp472_antigravity(e_root:Path,exp471_root:Path,label_loader:Callable[[tuple[str,...]],Mapping[str,Sequence[object]]], *, context: Exp472RunContextAntigravity, catalog: Sequence[Exp472CatalogEntryAntigravity])->Exp472EvaluationAntigravity:
     if not isinstance(e_root,Path) or not isinstance(exp471_root,Path) or not callable(label_loader): raise ValueError("Exp472 evaluation requires Path authorities and label loader")
-    exp471=verify_exp471_reuse_exp472_antigravity(exp471_root); e=_read_verified_e_path_antigravity(e_root,exp471); order=bind_e_to_exp471_exp472_antigravity(e,exp471)
+    exp471=verify_exp471_reuse_exp472_antigravity(exp471_root); e=_read_verified_e_path_antigravity(e_root,exp471,context,catalog); order=bind_e_to_exp471_exp472_antigravity(e,exp471)
     e_scores={d:_vector(e.scores[d],"E scores") for d in order}; subset=tuple(d for d in order if e.upsampled_rows[d]>0)
     scores={m:{d:None if exp471.statuses[m][d]=="abstained" else _vector(exp471.scores[m][d],"D scores") for d in order} for m in METHOD_ORDER_EXP472_ANTIGRAVITY if m!="E"};scores["E"]=e_scores
     labels=_labels(label_loader(order),order)

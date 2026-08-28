@@ -47,7 +47,7 @@ def _e_bundle(bundle: Exp472VerifiedExp471BundleAntigravity, *, drift: bool = Fa
 class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
     def _run(self, exp471, e, labels):
         with patch.object(authority_module, "_read_verified_exp471_path_antigravity", return_value=exp471), patch.object(evaluation_module, "_read_verified_e_path_antigravity", return_value=e):
-            return evaluate_exp472_antigravity(_ROOT, _ROOT, labels)
+            return evaluate_exp472_antigravity(_ROOT, _ROOT, labels, context=object(), catalog=())
 
     def test_path_verifier_requires_full_terminal_inventory(self):
         bundle = _bundle()
@@ -61,7 +61,7 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
         def labels(_): calls.append(True); return {}
         with patch.object(authority_module, "_read_verified_exp471_path_antigravity", side_effect=ValueError("bad Exp471")):
             with self.assertRaisesRegex(ValueError, "bad Exp471"):
-                evaluate_exp472_antigravity(_ROOT, _ROOT, labels)
+                evaluate_exp472_antigravity(_ROOT, _ROOT, labels, context=object(), catalog=())
         self.assertEqual(calls, [])
 
     def test_coordinate_and_nonfinite_e_fail_before_labels(self):
@@ -70,7 +70,7 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
         with self.assertRaises(ValueError): self._run(bundle, _e_bundle(bundle, drift=True), labels)
         with patch.object(authority_module, "_read_verified_exp471_path_antigravity", return_value=bundle), patch.object(evaluation_module, "_read_verified_e_path_antigravity", side_effect=ValueError("nonfinite E")):
             with self.assertRaisesRegex(ValueError, "nonfinite E"):
-                evaluate_exp472_antigravity(_ROOT, _ROOT, labels)
+                evaluate_exp472_antigravity(_ROOT, _ROOT, labels, context=object(), catalog=())
         self.assertEqual(calls, [])
 
     def test_happy_path_opens_labels_once_after_path_binding(self):
