@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -39,9 +40,13 @@ from experiments.exp450_resampling_image_ablation_antigravity.transforms_antigra
 )
 from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigravity import (
     Exp472BackendDecisionAntigravity,
+    canonical_json_bytes_exp472_antigravity,
 )
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import (
     align_rows_exp472_antigravity,
+    count_upsampled_rows_exp472_antigravity,
+    dataset_shape_diagnostic_exp472_antigravity,
+    test_identity_exp472_antigravity,
 )
 import experiments.exp472_makima_upsampling_ablation_antigravity.scoring_antigravity as scoring
 
@@ -90,6 +95,35 @@ def _raw_fixture(dataset: str, row_length: int) -> RawDataset:
     )
 
 
+def _mixed_length_fixture(dataset: str) -> RawDataset:
+    train_source = _raw_fixture(f"{dataset}_train", 12)
+    test_source = _raw_fixture(f"{dataset}_test", 4)
+    return RawDataset(
+        dataset,
+        16,
+        train_source.train_indices,
+        train_source.train_blobs,
+        train_source.train_rows,
+        test_source.test_indices,
+        test_source.test_blobs,
+        test_source.test_rows,
+    )
+
+
+def _science_bytes(result: object) -> bytes:
+    payload = json.loads(canonical_result_bytes_antigravity(result))
+    return (
+        json.dumps(
+            payload["payload"],
+            allow_nan=False,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+        + b"\n"
+    )
+
+
 RAW_FIXTURE = _raw_fixture("exp472_upsample_fixture", 12)
 DOWNSAMPLE_FIXTURE = _raw_fixture("exp472_downsample_fixture", 24)
 
@@ -108,11 +142,17 @@ class Exp472ScoringTests(unittest.TestCase):
                 "imaging_score_pair_exp450_antigravity",
                 wraps=imaging_score_pair_exp450_antigravity,
             ) as image,
+            patch.object(
+                exp450_scoring,
+                "align_rows_exp450_antigravity",
+                wraps=align_rows_exp450_antigravity,
+            ) as default_align,
         ):
             scoring.score_dataset_condition_e_exp472_antigravity(
                 RAW_FIXTURE, BACKEND_CPU
             )
         self.assertGreater(align.call_count, 0)
+        self.assertEqual(default_align.call_count, 0)
         self.assertGreater(image.call_count, 0)
         self.assertTrue(
             all(call.kwargs["image_mode"] == "area" for call in image.call_args_list)
@@ -126,30 +166,36 @@ class Exp472ScoringTests(unittest.TestCase):
 
     def test_downsample_only_e_equals_exp450_d(self) -> None:
         """Routing a downsample-only input to Makima would break D control parity."""
-        e_result = score_dataset_condition_with_alignment_exp450_antigravity(
-            DOWNSAMPLE_FIXTURE,
+        e_result = scoring.score_dataset_condition_e_exp472_antigravity(
+            DOWNSAMPLE_FIXTURE, BACKEND_CPU
+        )
+        d_result = score_dataset_condition_exp450_antigravity(
+            DOWNSAMPLE_FIXTURE, CONDITION_D, BACKEND_CPU
+        )
+        self.assertEqual(e_result.condition_id, "E")
+        self.assertEqual(d_result.condition_id, "D")
+        self.assertEqual(_science_bytes(e_result), _science_bytes(d_result))
+
+    def test_only_true_upsampling_changes_e_from_d(self) -> None:
+        """E must equal D-plus-Makima and differ from D on scored short TEST rows."""
+        values = _mixed_length_fixture("exp472_scoring_upsample_fixture")
+        e_result = scoring.score_dataset_condition_e_exp472_antigravity(
+            values, BACKEND_CPU
+        )
+        makima_result = score_dataset_condition_with_alignment_exp450_antigravity(
+            values,
             CONDITION_D,
             BACKEND_CPU,
             align_rows_override=align_rows_exp472_antigravity,
         )
         d_result = score_dataset_condition_exp450_antigravity(
-            DOWNSAMPLE_FIXTURE, CONDITION_D, BACKEND_CPU
+            values, CONDITION_D, BACKEND_CPU
         )
-        self.assertEqual(
-            canonical_result_bytes_antigravity(e_result),
-            canonical_result_bytes_antigravity(d_result),
-        )
-
-    def test_only_true_upsampling_changes_e_from_d(self) -> None:
-        """Applying Makima to an upsample must differ from D before source scoring."""
-        makima = align_rows_exp472_antigravity(RAW_FIXTURE.train_rows, 16)
-        pchip = align_rows_exp450_antigravity(
-            RAW_FIXTURE.train_rows, 16, mode="polyphase_pchip"
-        )
-        self.assertFalse(np.array_equal(makima, pchip))
+        self.assertEqual(_science_bytes(e_result), _science_bytes(makima_result))
+        self.assertNotEqual(_science_bytes(makima_result), _science_bytes(d_result))
 
     def test_per_dataset_composition_equals_explicit_full_map_composition(self) -> None:
-        """Dropping another dataset from policy construction must alter its global route."""
+        """Local composition must preserve this fixture's full-map policy output."""
         other = _raw_fixture("exp472_second_upsample_fixture", 12)
         first_result = scoring.score_dataset_condition_e_exp472_antigravity(
             RAW_FIXTURE, BACKEND_CPU
@@ -174,13 +220,35 @@ class Exp472ScoringTests(unittest.TestCase):
         expected = next(
             policy for policy in policies.policies if policy.name == "hard_plus_stable"
         )
-        actual = scoring.compose_final_score_exp472_antigravity(
-            RAW_FIXTURE, first_result, BACKEND_CPU
-        )
-        np.testing.assert_array_equal(
-            actual.scores, np.asarray(expected.scores[RAW_FIXTURE.dataset], dtype=np.float64)
-        )
-        self.assertEqual(actual.alerts, expected.alerts[RAW_FIXTURE.dataset])
+        for values, result in ((RAW_FIXTURE, first_result), (other, second_result)):
+            with self.subTest(dataset=values.dataset):
+                actual = scoring.compose_final_score_exp472_antigravity(
+                    values, result, BACKEND_CPU
+                )
+                np.testing.assert_array_equal(
+                    actual.scores,
+                    np.asarray(expected.scores[values.dataset], dtype=np.float64),
+                )
+                self.assertEqual(actual.dataset, values.dataset)
+                self.assertEqual(actual.alerts, expected.alerts[values.dataset])
+                self.assertEqual(actual.scores.dtype, np.dtype("float64"))
+                self.assertTrue(np.isfinite(actual.scores).all())
+                self.assertEqual(
+                    canonical_json_bytes_exp472_antigravity(actual.test_identity),
+                    canonical_json_bytes_exp472_antigravity(
+                        test_identity_exp472_antigravity(values)
+                    ),
+                )
+                self.assertEqual(
+                    actual.upsampled_rows,
+                    count_upsampled_rows_exp472_antigravity(values),
+                )
+                self.assertEqual(
+                    canonical_json_bytes_exp472_antigravity(actual.diagnostic),
+                    canonical_json_bytes_exp472_antigravity(
+                        dataset_shape_diagnostic_exp472_antigravity(values)
+                    ),
+                )
 
 
 if __name__ == "__main__":

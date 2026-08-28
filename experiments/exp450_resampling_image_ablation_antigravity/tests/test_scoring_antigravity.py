@@ -24,6 +24,9 @@ from paper.equipment_anomaly_detection.sources_paper.minirocket_paper import (
 )
 
 import experiments.exp450_resampling_image_ablation_antigravity.scoring_antigravity as scoring_antigravity
+from experiments.exp450_resampling_image_ablation_antigravity.artifacts_antigravity import (
+    canonical_result_bytes_antigravity,
+)
 from experiments.exp450_resampling_image_ablation_antigravity.contracts_antigravity import (
     Exp450BackendDecision,
     Exp450Condition,
@@ -36,6 +39,12 @@ CONDITION_A = Exp450Condition("A", "linear", "linear")
 CONDITION_B = Exp450Condition("B", "polyphase_pchip", "linear")
 CONDITION_C = Exp450Condition("C", "linear", "area")
 CONDITION_D = Exp450Condition("D", "polyphase_pchip", "area")
+BASE_A_D_CANONICAL_SHA256_ANTIGRAVITY = {
+    "A": "c2e50655304a8dc15ce42ab86410981f8605ec26bbe8a7ec62b9c9f1c8f7ebbf",
+    "B": "e88dcf2134ca69c620bcf6715684a4505f09b297e0f2722b035a5838169bc782",
+    "C": "a53caf5f60627e259f8b0702b7491e12db8a38d85ad052734ce9ab1d388c3a9d",
+    "D": "ed609e7ebe9a2dabde4dd487f7a19150b5bf1ff55edefa280e491491c5eff763",
+}
 
 
 def _raw_fixture() -> RawDataset:
@@ -65,6 +74,19 @@ def _pickle_digest(value: object) -> str:
 
 
 class Exp450DatasetScoringTests(unittest.TestCase):
+    def test_public_a_to_d_results_match_pre_refactor_canonical_bytes(self) -> None:
+        """Changing default alignment routing must break the frozen A--D bytes."""
+        values = _raw_fixture()
+        for condition in (CONDITION_A, CONDITION_B, CONDITION_C, CONDITION_D):
+            with self.subTest(condition=condition.condition_id):
+                result = scoring_antigravity.score_dataset_condition_exp450_antigravity(
+                    values, condition, BACKEND_CPU
+                )
+                self.assertEqual(
+                    sha256(canonical_result_bytes_antigravity(result)).hexdigest(),
+                    BASE_A_D_CANONICAL_SHA256_ANTIGRAVITY[condition.condition_id],
+                )
+
     def test_condition_a_delegates_to_exact_exp449_science(self) -> None:
         """Replacing A with an Exp450 copy must break its frozen object identity."""
         expected_sources = object()

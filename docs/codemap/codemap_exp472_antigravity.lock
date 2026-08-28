@@ -26,7 +26,7 @@
     "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py": "eaf2acc726d4a372903094684278e7c54e9e9f0e8338da6d73aa68148f6213c2",
     "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py": "15c513a440055b56a5d37ef039109909104920b99aecc5c94550bd690e86f5d2",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py": "8342bed3a33631b2a02fbeeb3fbd63f92863d9e62c07ce18a2c9792ac9f7d8a8",
-    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py": "4a6883787cc92d821ee8f7245fc96ca39f921d428e5678f5219c686817efff11",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py": "557a633babdf914291168bca73259a9a1c5e74f3532b1c2b3d0fa2b507aabf30",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py": "f3ed497485be6c67626f56ee8dd2228e743d69c1c9821f394e675855bc8bd19a",
     "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py": "d1b4f28fe147291dd13700869efe6d27687eeb99b6c20f0b042dab411fd775f1",
     "paper/equipment_anomaly_detection/data_paper.py": "da6d2e208f7293f782d3bac8fd6c10a32456d6e51c48ce7528f34ef4aa328207",
