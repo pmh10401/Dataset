@@ -31,8 +31,6 @@ from .contracts_antigravity import (
 from .transforms_antigravity import (
     align_rows_exp472_antigravity,
     Exp472AlignmentTraceAntigravity,
-    count_upsampled_rows_exp472_antigravity,
-    dataset_shape_diagnostic_exp472_antigravity,
     test_identity_exp472_antigravity,
 )
 
@@ -62,6 +60,11 @@ def compose_final_score_exp472_antigravity(
 ) -> Exp472ScoreShardAntigravity:
     """Apply the frozen hard-plus-stable policy to one label-free E result."""
     del backend
+    if alignment_trace is None:
+        raise ValueError("Exp472 composition requires one sealed alignment trace")
+    diagnostic = alignment_trace.sealed_diagnostic()
+    if diagnostic["dataset"] != values.dataset:
+        raise ValueError("Exp472 alignment trace dataset differs")
     raw = {values.dataset: values}
     sources = {values.dataset: result.sources}
     routes = {values.dataset: result.route}
@@ -79,8 +82,8 @@ def compose_final_score_exp472_antigravity(
         test_identity=test_identity_exp472_antigravity(values),
         scores=scores,
         alerts=policy.alerts[values.dataset],
-        upsampled_rows=(int(alignment_trace.seal()["upsampled_rows"]) if alignment_trace is not None else count_upsampled_rows_exp472_antigravity(values)),
-        diagnostic=(alignment_trace.seal() if alignment_trace is not None else dataset_shape_diagnostic_exp472_antigravity(values)),
+        upsampled_rows=int(diagnostic["upsampled_rows"]),
+        diagnostic=diagnostic,
     )
 
 

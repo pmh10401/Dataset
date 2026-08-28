@@ -67,6 +67,39 @@ class Exp472TransformTests(unittest.TestCase):
         self.assertEqual((diagnostic["invocation_count"], diagnostic["row_invocation_count"], diagnostic["makima_row_invocation_count"], diagnostic["upsampled_rows"]), (1, 2, 1, 1))
         self.assertEqual(diagnostic["invocations"][0]["source_tag"], "hard_sources")
         self.assertEqual(diagnostic["invocations"][0]["phase_tag"], "TRAIN")
+        invocation = diagnostic["invocations"][0]
+        self.assertEqual(invocation["input_evidence"]["dtype"], "float32")
+        self.assertEqual(invocation["input_evidence"]["shape"], [2, 7])
+        self.assertEqual(invocation["input_evidence"]["row_boundaries"], [3, 1])
+        self.assertEqual(invocation["output_evidence"]["shape"], [2, 7])
+
+    def test_trace_is_one_shot_and_poisoned_after_an_invalid_observation(self) -> None:
+        """A partial trace must not be sealed or reused to publish a shard."""
+        trace = transforms.Exp472AlignmentTraceAntigravity("fixture")
+        rows = (np.asarray([0.0, 1.0], dtype=np.float32),)
+        output = transforms.align_rows_exp472_antigravity(rows, 4)
+        trace.observe(rows, 4, output, "hard_sources", "TRAIN")
+        with self.assertRaisesRegex(ValueError, "trace is not sealed"):
+            trace.sealed_diagnostic()
+        trace.seal()
+        with self.assertRaisesRegex(ValueError, "trace is not open"):
+            trace.seal()
+        with self.assertRaisesRegex(ValueError, "trace is not open"):
+            trace.observe(rows, 4, output, "hard_sources", "TEST")
+
+        poisoned = transforms.Exp472AlignmentTraceAntigravity("fixture")
+        with self.assertRaisesRegex(ValueError, "trace output differs"):
+            poisoned.observe(rows, 4, np.zeros((1, 3), dtype=np.float32), "hard_sources", "TRAIN")
+        with self.assertRaisesRegex(ValueError, "trace is poisoned"):
+            poisoned.seal()
+
+    def test_trace_rejects_non_float32_actual_inputs_without_coercion(self) -> None:
+        """Trace evidence must bind the aligner's actual float32 input boundary."""
+        trace = transforms.Exp472AlignmentTraceAntigravity("fixture")
+        rows = (np.asarray([0.0, 1.0], dtype=np.float64),)
+        output = np.asarray([[0.0, 0.5, 1.0]], dtype=np.float32)
+        with self.assertRaisesRegex(ValueError, "trace input differs"):
+            trace.observe(rows, 3, output, "hard_sources", "TRAIN")
     def test_makima_is_used_only_for_true_upsampling(self) -> None:
         """Routing equal or shorter targets to Makima would change frozen D parity."""
         row = np.asarray([0.0, 1.0, -0.5, 2.0], dtype=np.float32)

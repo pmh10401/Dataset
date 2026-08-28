@@ -39,6 +39,10 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.runner_antigravit
     pending_datasets_exp472_antigravity,
     run_score_wave_exp472_antigravity,
 )
+from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import (
+    Exp472AlignmentTraceAntigravity,
+    align_rows_exp472_antigravity,
+)
 
 
 _DIGEST_A_ANTIGRAVITY = "a" * 64
@@ -104,11 +108,41 @@ def _catalog_antigravity(names: tuple[str, ...] = ("A", "B", "C", "D")) -> tuple
 
 
 def _diagnostic_antigravity(dataset: str, shape: str) -> dict[str, object]:
-    bare = {"dataset": dataset, "shape": shape}
-    return {
-        **bare,
-        "diagnostic_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest(),
+    del shape
+    input_evidence = {
+        "dtype": "float32", "shape": [1, 3], "row_boundaries": [2],
+        "row_bytes_sha256": [_DIGEST_A_ANTIGRAVITY],
     }
+    output_evidence = {
+        "dtype": "float32", "shape": [1, 3], "row_boundaries": [3],
+        "row_bytes_sha256": [_DIGEST_B_ANTIGRAVITY],
+    }
+    invocation = {
+        "ordinal": 0, "source_tag": "hard_sources", "phase_tag": "TRAIN",
+        "target_len": 3, "row_count": 1, "input_evidence": input_evidence,
+        "input_sha256": sha256(canonical_json_bytes_exp472_antigravity(input_evidence)).hexdigest(),
+        "output_evidence": output_evidence,
+        "output_sha256": sha256(canonical_json_bytes_exp472_antigravity(output_evidence)).hexdigest(),
+        "singleton_rows": 0, "equal_rows": 0, "polyphase_downsample_rows": 0,
+        "makima_rows": 1, "makima_row_indices": [0], "overshoot": 0.0,
+        "undershoot": 0.0, "source_extrema": 0, "output_extrema": 0,
+        "added_extrema": 0,
+    }
+    invocation["invocation_sha256"] = sha256(
+        canonical_json_bytes_exp472_antigravity(invocation)
+    ).hexdigest()
+    aggregate = {
+        "invocation_count": 1, "row_invocation_count": 1,
+        "makima_row_invocation_count": 1, "upsampled_rows": 1,
+    }
+    bare = {
+        "schema": "exp472-shape-diagnostic-antigravity.v3", "dataset": dataset,
+        "trace_state": "sealed", "alignment_status": "completed", **aggregate,
+        "invocations": [invocation],
+        "invocation_order_sha256": sha256(canonical_json_bytes_exp472_antigravity([("hard_sources", "TRAIN")])).hexdigest(),
+        "invocation_aggregate_sha256": sha256(canonical_json_bytes_exp472_antigravity(aggregate)).hexdigest(),
+    }
+    return {**bare, "diagnostic_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
 
 
 def _cpu_score_succeeds_antigravity(dataset: str) -> Exp472ScoreShardAntigravity:
@@ -174,7 +208,7 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
             },
             scores=np.asarray([0.9], dtype=np.float64),
             alerts=frozenset({0}),
-            upsampled_rows=0,
+            upsampled_rows=1,
             diagnostic=_diagnostic_antigravity("A", "nested"),
         )
         path = publish_score_shard_exp472_antigravity(self.root, context, entry, shard)
@@ -289,6 +323,43 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
                     verify_score_shard_exp472_antigravity(self.root, self.context, self.catalog[0])
         path.write_bytes(canonical_json_bytes_exp472_antigravity(original))
 
+    def test_v3_trace_validator_rejects_nested_recomputed_tampering(self) -> None:
+        """A recomputed outer digest cannot make a malformed trace authoritative."""
+        rows = (np.asarray([0.0, 1.0], dtype=np.float32),)
+        trace = Exp472AlignmentTraceAntigravity("A")
+        output = align_rows_exp472_antigravity(rows, 3)
+        trace.observe(rows, 3, output, "hard_sources", "TRAIN")
+        trace.observe(rows, 3, output, "hard_sources", "TEST")
+        shard = replace(
+            _shard_antigravity(), upsampled_rows=1, diagnostic=trace.seal()
+        )
+        path = publish_score_shard_exp472_antigravity(
+            self.root, self.context, self.catalog[0], shard
+        )
+        original = json.loads(path.read_text())
+        mutations = (
+            ("ordinal", 2),
+            ("phase_tag", "TRAIN"),
+            ("upsampled_rows", 0),
+        )
+        for field, value in mutations:
+            with self.subTest(field=field):
+                changed = json.loads(json.dumps(original))
+                if field == "upsampled_rows":
+                    changed["upsampled_rows"] = value
+                else:
+                    changed["diagnostic"]["invocations"][1][field] = value
+                    invocation = changed["diagnostic"]["invocations"][1]
+                    invocation["invocation_sha256"] = sha256(canonical_json_bytes_exp472_antigravity({key: item for key, item in invocation.items() if key != "invocation_sha256"})).hexdigest()
+                    diagnostic = changed["diagnostic"]
+                    diagnostic["diagnostic_sha256"] = sha256(canonical_json_bytes_exp472_antigravity({key: item for key, item in diagnostic.items() if key != "diagnostic_sha256"})).hexdigest()
+                bare = {key: item for key, item in changed.items() if key != "shard_sha256"}
+                changed["shard_sha256"] = sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()
+                path.write_bytes(canonical_json_bytes_exp472_antigravity(changed))
+                with self.assertRaisesRegex(ValueError, "diagnostic|upsampled"):
+                    verify_score_shard_exp472_antigravity(self.root, self.context, self.catalog[0])
+        path.write_bytes(canonical_json_bytes_exp472_antigravity(original))
+
     def test_torn_existing_shard_is_rejected_without_overwrite(self) -> None:
         """A crash-truncated create-only path must preserve evidence instead of overwriting it."""
         shard = _shard_antigravity()
@@ -331,7 +402,7 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
             self.assertEqual(succeeded["failures"], ())
             self.assertEqual(succeeded["workers"], context.backend.cpu_workers)
             for entry in self.catalog:
-                self.assertEqual(verify_score_shard_exp472_antigravity(cpu_root, context, entry)["diagnostic"]["shape"], "cpu-1")
+                self.assertEqual(verify_score_shard_exp472_antigravity(cpu_root, context, entry)["diagnostic"]["dataset"], entry.dataset)
         with tempfile.TemporaryDirectory(prefix="exp472_cpu_error_antigravity_") as other:
             failed = run_score_wave_exp472_antigravity(Path(other), context, self.catalog, score_one=_cpu_score_raises_antigravity)
             self.assertEqual(failed["failures"], ("A", "B", "C", "D"))

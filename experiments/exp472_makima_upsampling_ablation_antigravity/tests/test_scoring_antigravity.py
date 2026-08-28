@@ -43,6 +43,7 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigra
     canonical_json_bytes_exp472_antigravity,
 )
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import (
+    Exp472AlignmentTraceAntigravity,
     align_rows_exp472_antigravity,
     count_upsampled_rows_exp472_antigravity,
     dataset_shape_diagnostic_exp472_antigravity,
@@ -129,6 +130,12 @@ DOWNSAMPLE_FIXTURE = _raw_fixture("exp472_downsample_fixture", 24)
 
 
 class Exp472ScoringTests(unittest.TestCase):
+    def test_compose_requires_one_sealed_actual_trace(self) -> None:
+        """Production composition must not manufacture a diagnostic from raw data."""
+        with self.assertRaisesRegex(ValueError, "sealed alignment trace"):
+            scoring.compose_final_score_exp472_antigravity(
+                RAW_FIXTURE, object(), BACKEND_CPU
+            )
     def test_e_routes_all_alignment_through_exp472_and_keeps_area_images(self) -> None:
         """Falling back to Exp450 alignment or linear images changes E factors."""
         with (
@@ -222,8 +229,13 @@ class Exp472ScoringTests(unittest.TestCase):
         )
         for values, result in ((RAW_FIXTURE, first_result), (other, second_result)):
             with self.subTest(dataset=values.dataset):
+                trace = Exp472AlignmentTraceAntigravity(values.dataset)
+                result = scoring.score_dataset_condition_e_exp472_antigravity(
+                    values, BACKEND_CPU, alignment_trace=trace
+                )
+                trace.seal()
                 actual = scoring.compose_final_score_exp472_antigravity(
-                    values, result, BACKEND_CPU
+                    values, result, BACKEND_CPU, alignment_trace=trace
                 )
                 np.testing.assert_array_equal(
                     actual.scores,
@@ -239,16 +251,8 @@ class Exp472ScoringTests(unittest.TestCase):
                         test_identity_exp472_antigravity(values)
                     ),
                 )
-                self.assertEqual(
-                    actual.upsampled_rows,
-                    count_upsampled_rows_exp472_antigravity(values),
-                )
-                self.assertEqual(
-                    canonical_json_bytes_exp472_antigravity(actual.diagnostic),
-                    canonical_json_bytes_exp472_antigravity(
-                        dataset_shape_diagnostic_exp472_antigravity(values)
-                    ),
-                )
+                self.assertEqual(actual.upsampled_rows, actual.diagnostic["upsampled_rows"])
+                self.assertEqual(actual.diagnostic["trace_state"], "sealed")
 
 
 if __name__ == "__main__":

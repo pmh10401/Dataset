@@ -180,12 +180,155 @@ def _condition_record_antigravity() -> dict[str, str]:
     return {"id": "E", "downsampling": "polyphase", "upsampling": "makima", "image_mode": "area"}
 
 
-def _validate_diagnostic_antigravity(value: object) -> None:
-    if not isinstance(value, Mapping) or type(value.get("diagnostic_sha256")) is not str:
-        raise ValueError("Exp472 score shard diagnostic differs")
+_TRACE_ORDER_ANTIGRAVITY = (
+    ("hard_sources", "TRAIN"), ("hard_sources", "TEST"),
+    ("minirocket", "TRAIN"), ("minirocket", "TEST"),
+    ("legacy_exp40", "TRAIN"), ("legacy_exp40", "TEST"),
+    ("legacy_route", "TRAIN"), ("legacy_route", "TEST"),
+)
+
+
+def _diagnostic_error_antigravity() -> None:
+    raise ValueError("Exp472 score shard diagnostic differs")
+
+
+def _is_count_antigravity(value: object) -> bool:
+    return type(value) is int and value >= 0
+
+
+def _validate_digest_antigravity(value: object) -> bool:
+    return (
+        type(value) is str and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def _validate_evidence_antigravity(
+    value: object, row_count: int, target_len: int, *, output: bool,
+) -> tuple[int, ...]:
+    if not isinstance(value, Mapping) or set(value) != {
+        "dtype", "shape", "row_boundaries", "row_bytes_sha256"
+    }:
+        _diagnostic_error_antigravity()
+    shape, boundaries, digests = (
+        value["shape"], value["row_boundaries"], value["row_bytes_sha256"]
+    )
+    if (
+        value["dtype"] != "float32" or not isinstance(shape, (list, tuple))
+        or list(shape) != [row_count, target_len]
+        or not isinstance(boundaries, (list, tuple))
+        or not isinstance(digests, (list, tuple))
+        or len(boundaries) != row_count or len(digests) != row_count
+        or any(type(length) is not int or length <= 0 for length in boundaries)
+        or any(not _validate_digest_antigravity(digest) for digest in digests)
+        or (output and tuple(boundaries) != (target_len,) * row_count)
+    ):
+        _diagnostic_error_antigravity()
+    return tuple(boundaries)
+
+
+def _validate_diagnostic_antigravity(
+    value: object, *, dataset: str | None = None, upsampled_rows: int | None = None,
+) -> None:
+    """Authenticate the complete sealed v3 observer payload before reuse."""
+    required = {
+        "schema", "dataset", "trace_state", "alignment_status", "invocation_count",
+        "row_invocation_count", "makima_row_invocation_count", "upsampled_rows",
+        "invocations", "invocation_order_sha256", "invocation_aggregate_sha256",
+        "diagnostic_sha256",
+    }
+    if (
+        not isinstance(value, Mapping) or set(value) != required
+        or value.get("schema") != "exp472-shape-diagnostic-antigravity.v3"
+        or value.get("trace_state") != "sealed" or value.get("alignment_status") != "completed"
+        or type(value.get("dataset")) is not str or not value["dataset"]
+        or (dataset is not None and value["dataset"] != dataset)
+        or not isinstance(value.get("invocations"), (list, tuple))
+        or any(not _is_count_antigravity(value.get(name)) for name in (
+            "invocation_count", "row_invocation_count", "makima_row_invocation_count", "upsampled_rows",
+        ))
+        or not _validate_digest_antigravity(value.get("diagnostic_sha256"))
+        or not _validate_digest_antigravity(value.get("invocation_order_sha256"))
+        or not _validate_digest_antigravity(value.get("invocation_aggregate_sha256"))
+        or (upsampled_rows is not None and value["upsampled_rows"] != upsampled_rows)
+    ):
+        _diagnostic_error_antigravity()
     bare = {key: item for key, item in value.items() if key != "diagnostic_sha256"}
     if value["diagnostic_sha256"] != sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest():
-        raise ValueError("Exp472 score shard diagnostic differs")
+        _diagnostic_error_antigravity()
+    records = value["invocations"]
+    slots: set[tuple[str, int]] = set()
+    expected_order: list[tuple[str, str]] = []
+    row_total = makima_total = 0
+    record_required = {
+        "ordinal", "source_tag", "phase_tag", "target_len", "row_count",
+        "input_evidence", "input_sha256", "output_evidence", "output_sha256",
+        "singleton_rows", "equal_rows", "polyphase_downsample_rows", "makima_rows",
+        "makima_row_indices", "overshoot", "undershoot", "source_extrema",
+        "output_extrema", "added_extrema", "invocation_sha256",
+    }
+    previous = -1
+    for ordinal, record in enumerate(records):
+        if not isinstance(record, Mapping) or set(record) != record_required:
+            _diagnostic_error_antigravity()
+        target_len, row_count = record["target_len"], record["row_count"]
+        pair = (record["source_tag"], record["phase_tag"])
+        if (
+            record["ordinal"] != ordinal or not _is_count_antigravity(target_len) or target_len == 0
+            or not _is_count_antigravity(row_count) or pair not in _TRACE_ORDER_ANTIGRAVITY
+            or _TRACE_ORDER_ANTIGRAVITY.index(pair) <= previous
+            or not _validate_digest_antigravity(record["input_sha256"])
+            or not _validate_digest_antigravity(record["output_sha256"])
+            or not _validate_digest_antigravity(record["invocation_sha256"])
+        ):
+            _diagnostic_error_antigravity()
+        previous = _TRACE_ORDER_ANTIGRAVITY.index(pair)
+        input_boundaries = _validate_evidence_antigravity(
+            record["input_evidence"], row_count, target_len, output=False
+        )
+        _validate_evidence_antigravity(record["output_evidence"], row_count, target_len, output=True)
+        if (
+            record["input_sha256"] != sha256(canonical_json_bytes_exp472_antigravity(record["input_evidence"])).hexdigest()
+            or record["output_sha256"] != sha256(canonical_json_bytes_exp472_antigravity(record["output_evidence"])).hexdigest()
+            or record["invocation_sha256"] != sha256(canonical_json_bytes_exp472_antigravity({key: item for key, item in record.items() if key != "invocation_sha256"})).hexdigest()
+        ):
+            _diagnostic_error_antigravity()
+        route_counts = ("singleton_rows", "equal_rows", "polyphase_downsample_rows", "makima_rows")
+        if any(not _is_count_antigravity(record[name]) for name in route_counts):
+            _diagnostic_error_antigravity()
+        expected_routes = (
+            sum(length == 1 for length in input_boundaries),
+            sum(length == target_len for length in input_boundaries),
+            sum(length > target_len for length in input_boundaries),
+            sum(1 < length < target_len for length in input_boundaries),
+        )
+        if tuple(record[name] for name in route_counts) != expected_routes or sum(expected_routes) != row_count:
+            _diagnostic_error_antigravity()
+        makima_indices = record["makima_row_indices"]
+        if (
+            not isinstance(makima_indices, (list, tuple))
+            or list(makima_indices) != [index for index, length in enumerate(input_boundaries) if 1 < length < target_len]
+            or any(type(item) is not int for item in makima_indices)
+        ):
+            _diagnostic_error_antigravity()
+        for name in ("overshoot", "undershoot", "source_extrema", "output_extrema", "added_extrema"):
+            item = record[name]
+            if type(item) not in (int, float) or not math.isfinite(float(item)) or item < 0:
+                _diagnostic_error_antigravity()
+        slots.update((record["source_tag"], index) for index in makima_indices)
+        expected_order.append(pair)
+        row_total += row_count
+        makima_total += record["makima_rows"]
+    aggregate = {
+        "invocation_count": len(records), "row_invocation_count": row_total,
+        "makima_row_invocation_count": makima_total, "upsampled_rows": len(slots),
+    }
+    if (
+        any(value[name] != item for name, item in aggregate.items())
+        or value["invocation_order_sha256"] != sha256(canonical_json_bytes_exp472_antigravity(expected_order)).hexdigest()
+        or value["invocation_aggregate_sha256"] != sha256(canonical_json_bytes_exp472_antigravity(aggregate)).hexdigest()
+    ):
+        _diagnostic_error_antigravity()
 
 
 def score_shard_record_exp472_antigravity(
@@ -194,6 +337,9 @@ def score_shard_record_exp472_antigravity(
     """Serialize one digest-bound, finite condition-E score result."""
     if not isinstance(context, Exp472RunContextAntigravity) or not isinstance(shard, Exp472ScoreShardAntigravity):
         raise ValueError("Exp472 score shard inputs are invalid")
+    _validate_diagnostic_antigravity(
+        shard.diagnostic, dataset=shard.dataset, upsampled_rows=shard.upsampled_rows
+    )
     bare: dict[str, object] = {
         "schema": _SHARD_SCHEMA_ANTIGRAVITY,
         "context_sha256": context.sha256,
@@ -241,7 +387,9 @@ def _verify_shard_record_antigravity(
         raise ValueError("Exp472 score shard TEST identity differs")
     if record["score_dtype"] != "float64" or not isinstance(record["scores"], list):
         raise ValueError("Exp472 score shard score encoding differs")
-    _validate_diagnostic_antigravity(record["diagnostic"])
+    _validate_diagnostic_antigravity(
+        record["diagnostic"], dataset=record["dataset"], upsampled_rows=record["upsampled_rows"]
+    )
     try:
         reconstructed = Exp472ScoreShardAntigravity(
             dataset=str(record["dataset"]),

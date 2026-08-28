@@ -62,6 +62,7 @@ def _score_one_from_raw_antigravity(raw_by_dataset: Mapping[str, object], backen
     values = raw_by_dataset[dataset]
     trace = Exp472AlignmentTraceAntigravity(values.dataset)
     result = score_dataset_condition_e_exp472_antigravity(values, backend, alignment_trace=trace)
+    trace.seal()
     return compose_final_score_exp472_antigravity(values, result, backend, alignment_trace=trace)
 
 

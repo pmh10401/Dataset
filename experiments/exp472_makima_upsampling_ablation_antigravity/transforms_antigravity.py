@@ -108,24 +108,81 @@ class Exp472AlignmentTraceAntigravity:
     """Seals diagnostics from the actual Exp450-selected alignment calls."""
     dataset: str
     _records: list[dict[str, object]] = field(default_factory=list)
+    _state: str = field(default="open", init=False)
+    _diagnostic: Mapping[str, object] | None = field(default=None, init=False)
+
+    def __post_init__(self) -> None:
+        if type(self.dataset) is not str or not self.dataset:
+            raise ValueError("Exp472 trace dataset differs")
+
+    def _require_open_antigravity(self) -> None:
+        if self._state == "poisoned":
+            raise ValueError("Exp472 trace is poisoned")
+        if self._state != "open":
+            raise ValueError("Exp472 trace is not open")
+
+    @staticmethod
+    def _row_evidence_antigravity(
+        rows: Sequence[np.ndarray],
+        shape: Sequence[int],
+    ) -> dict[str, object]:
+        return {
+            "dtype": "float32",
+            "shape": list(shape),
+            "row_boundaries": [int(row.size) for row in rows],
+            "row_bytes_sha256": [sha256(row.tobytes()).hexdigest() for row in rows],
+        }
+
+    @staticmethod
+    def _actual_input_row_antigravity(value: object) -> np.ndarray:
+        row = np.asarray(value)
+        if (
+            row.dtype != np.dtype("float32") or row.ndim != 1
+            or row.size == 0 or not np.isfinite(row).all()
+        ):
+            raise ValueError("Exp472 trace input differs")
+        return row
 
     def observe(self, rows: Sequence[np.ndarray], target_len: int, output: np.ndarray, source_tag: str, phase_tag: str) -> None:
-        if (source_tag, phase_tag) not in _TRACE_ORDER_ANTIGRAVITY:
-            raise ValueError("Exp472 trace tag differs")
-        if self._records and _TRACE_ORDER_ANTIGRAVITY.index((source_tag, phase_tag)) <= _TRACE_ORDER_ANTIGRAVITY.index((self._records[-1]["source_tag"], self._records[-1]["phase_tag"])):
-            raise ValueError("Exp472 trace order differs")
-        materialized = tuple(_finite_row_exp472_antigravity(row) for row in rows)
-        array = np.asarray(output)
-        if array.dtype != np.dtype("float32") or array.shape != (len(materialized), target_len) or not np.isfinite(array).all():
-            raise ValueError("Exp472 trace output differs")
-        row_details = [shape_diagnostic_exp472_antigravity(row, array[index]) for index, row in enumerate(materialized)]
-        bare = {"ordinal": len(self._records), "source_tag": source_tag, "phase_tag": phase_tag, "target_len": target_len, "row_count": len(materialized), "input_sha256": sha256(b"".join(row.tobytes() for row in materialized)).hexdigest(), "output_sha256": sha256(array.tobytes()).hexdigest(), "singleton_rows": sum(row.size == 1 for row in materialized), "equal_rows": sum(row.size == target_len for row in materialized), "polyphase_downsample_rows": sum(row.size > target_len for row in materialized), "makima_rows": sum(1 < row.size < target_len for row in materialized), "overshoot": float(sum(item["overshoot"] for item in row_details)), "undershoot": float(sum(item["undershoot"] for item in row_details)), "source_extrema": sum(item["source_extrema"] for item in row_details), "output_extrema": sum(item["output_extrema"] for item in row_details), "added_extrema": sum(item["added_extrema"] for item in row_details)}
-        self._records.append({**bare, "invocation_sha256": sha256(_canonical_json_bytes_exp472_antigravity(bare)).hexdigest()})
+        """Passively bind exactly one already-computed Exp450 alignment result."""
+        self._require_open_antigravity()
+        try:
+            if (source_tag, phase_tag) not in _TRACE_ORDER_ANTIGRAVITY:
+                raise ValueError("Exp472 trace tag differs")
+            if self._records and _TRACE_ORDER_ANTIGRAVITY.index((source_tag, phase_tag)) <= _TRACE_ORDER_ANTIGRAVITY.index((self._records[-1]["source_tag"], self._records[-1]["phase_tag"])):
+                raise ValueError("Exp472 trace order differs")
+            if type(target_len) is not int or target_len <= 0:
+                raise ValueError("Exp472 trace target differs")
+            materialized = tuple(self._actual_input_row_antigravity(row) for row in rows)
+            array = np.asarray(output)
+            if array.dtype != np.dtype("float32") or array.shape != (len(materialized), target_len) or not np.isfinite(array).all():
+                raise ValueError("Exp472 trace output differs")
+            output_rows = tuple(array[index] for index in range(array.shape[0]))
+            input_evidence = self._row_evidence_antigravity(materialized, (len(materialized), target_len))
+            output_evidence = self._row_evidence_antigravity(output_rows, array.shape)
+            row_details = [shape_diagnostic_exp472_antigravity(row, array[index]) for index, row in enumerate(materialized)]
+            makima_pairs = [(index, item) for index, (row, item) in enumerate(zip(materialized, row_details, strict=True)) if 1 < row.size < target_len]
+            bare = {"ordinal": len(self._records), "source_tag": source_tag, "phase_tag": phase_tag, "target_len": target_len, "row_count": len(materialized), "input_evidence": input_evidence, "input_sha256": sha256(_canonical_json_bytes_exp472_antigravity(input_evidence)).hexdigest(), "output_evidence": output_evidence, "output_sha256": sha256(_canonical_json_bytes_exp472_antigravity(output_evidence)).hexdigest(), "singleton_rows": sum(row.size == 1 for row in materialized), "equal_rows": sum(row.size == target_len for row in materialized), "polyphase_downsample_rows": sum(row.size > target_len for row in materialized), "makima_rows": len(makima_pairs), "makima_row_indices": [index for index, _item in makima_pairs], "overshoot": float(sum(item["overshoot"] for _index, item in makima_pairs)), "undershoot": float(sum(item["undershoot"] for _index, item in makima_pairs)), "source_extrema": sum(item["source_extrema"] for _index, item in makima_pairs), "output_extrema": sum(item["output_extrema"] for _index, item in makima_pairs), "added_extrema": sum(item["added_extrema"] for _index, item in makima_pairs)}
+            self._records.append({**bare, "invocation_sha256": sha256(_canonical_json_bytes_exp472_antigravity(bare)).hexdigest()})
+        except Exception:
+            self._state = "poisoned"
+            raise
 
     def seal(self) -> Mapping[str, object]:
+        self._require_open_antigravity()
         records = tuple(self._records)
-        bare = {"schema": "exp472-shape-diagnostic-antigravity.v3", "dataset": self.dataset, "trace_state": "sealed", "alignment_status": "completed", "invocation_count": len(records), "row_invocation_count": sum(int(r["row_count"]) for r in records), "makima_row_invocation_count": sum(int(r["makima_rows"]) for r in records), "upsampled_rows": sum(int(r["makima_rows"]) for r in records), "invocations": records, "invocation_order_sha256": sha256(_canonical_json_bytes_exp472_antigravity([(r["source_tag"], r["phase_tag"]) for r in records])).hexdigest()}
-        return {**bare, "diagnostic_sha256": sha256(_canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
+        slots = {(r["source_tag"], index) for r in records for index in r["makima_row_indices"]}
+        aggregate = {"invocation_count": len(records), "row_invocation_count": sum(int(r["row_count"]) for r in records), "makima_row_invocation_count": sum(int(r["makima_rows"]) for r in records), "upsampled_rows": len(slots)}
+        bare = {"schema": "exp472-shape-diagnostic-antigravity.v3", "dataset": self.dataset, "trace_state": "sealed", "alignment_status": "completed", **aggregate, "invocations": records, "invocation_order_sha256": sha256(_canonical_json_bytes_exp472_antigravity([(r["source_tag"], r["phase_tag"]) for r in records])).hexdigest(), "invocation_aggregate_sha256": sha256(_canonical_json_bytes_exp472_antigravity(aggregate)).hexdigest()}
+        self._state = "sealed"
+        self._diagnostic = {**bare, "diagnostic_sha256": sha256(_canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
+        return self._diagnostic
+
+    def sealed_diagnostic(self) -> Mapping[str, object]:
+        """Return only a trace sealed by the exact completed score invocation."""
+        if self._state != "sealed" or self._diagnostic is None:
+            raise ValueError("Exp472 trace is not sealed")
+        return self._diagnostic
 
 
 def align_rows_exp472_antigravity(
@@ -295,6 +352,7 @@ def test_identity_exp472_antigravity(values: RawDataset) -> Mapping[str, object]
 
 
 __all__ = [
+    "Exp472AlignmentTraceAntigravity",
     "align_rows_exp472_antigravity",
     "count_upsampled_rows_exp472_antigravity",
     "dataset_shape_diagnostic_exp472_antigravity",
