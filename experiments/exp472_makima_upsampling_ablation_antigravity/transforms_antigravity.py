@@ -1,0 +1,246 @@
+"""Exact SciPy Makima alignment and label-free shape evidence for Exp472."""
+
+from __future__ import annotations
+
+from collections.abc import Mapping, MutableSequence, Sequence
+from hashlib import sha256
+import json
+import math
+
+import numpy as np
+import scipy.interpolate
+import scipy.signal
+
+from paper.equipment_anomaly_detection.contracts_paper import RawDataset
+
+
+def _canonical_json_bytes_exp472_antigravity(value: object) -> bytes:
+    return (
+        json.dumps(
+            value,
+            allow_nan=False,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
+        + b"\n"
+    )
+
+
+def _finite_row_exp472_antigravity(values: np.ndarray) -> np.ndarray:
+    row = np.asarray(values, dtype=np.float32).reshape(-1)
+    if row.size == 0 or not np.isfinite(row).all():
+        raise ValueError("Exp472 resampling requires finite nonempty input and positive target")
+    return row
+
+
+def _extrema_count_exp472_antigravity(values: np.ndarray) -> int:
+    differences = np.diff(values)
+    signs = np.sign(differences)
+    nonzero = signs[signs != 0]
+    if nonzero.size < 2:
+        return 0
+    return int(np.count_nonzero(nonzero[1:] != nonzero[:-1]))
+
+
+def resample_series_exp472_antigravity(values: np.ndarray, target_len: int) -> np.ndarray:
+    """Return one finite exact-length row, changing Exp450 only for Makima upsampling."""
+    row = _finite_row_exp472_antigravity(values)
+    if target_len <= 0:
+        raise ValueError("Exp472 resampling requires finite nonempty input and positive target")
+    if row.size == target_len:
+        return row.astype(np.float32, copy=False)
+    if row.size == 1:
+        return np.full(target_len, row[0], dtype=np.float32)
+    if target_len < row.size:
+        divisor = math.gcd(row.size, target_len)
+        result = scipy.signal.resample_poly(
+            row, target_len // divisor, row.size // divisor
+        )
+    else:
+        source_x = np.linspace(0.0, 1.0, row.size, dtype=np.float64)
+        target_x = np.linspace(0.0, 1.0, target_len, dtype=np.float64)
+        result = scipy.interpolate.Akima1DInterpolator(
+            source_x, row, method="makima", extrapolate=False
+        )(target_x)
+    output = np.asarray(result, dtype=np.float32)
+    if output.shape != (target_len,) or not np.isfinite(output).all():
+        raise ValueError("Exp472 resampler output differs")
+    if target_len > row.size and (output[0] != row[0] or output[-1] != row[-1]):
+        raise ValueError("Exp472 Makima endpoints differ")
+    return output
+
+
+def shape_diagnostic_exp472_antigravity(
+    source: np.ndarray, output: np.ndarray
+) -> Mapping[str, object]:
+    """Describe finite interpolation shape without clipping or selecting on it."""
+    source_row = _finite_row_exp472_antigravity(source)
+    output_row = _finite_row_exp472_antigravity(output)
+    source_min = float(np.min(source_row))
+    source_max = float(np.max(source_row))
+    output_min = float(np.min(output_row))
+    output_max = float(np.max(output_row))
+    source_extrema = _extrema_count_exp472_antigravity(source_row)
+    output_extrema = _extrema_count_exp472_antigravity(output_row)
+    return {
+        "source_min": source_min,
+        "source_max": source_max,
+        "output_min": output_min,
+        "output_max": output_max,
+        "overshoot": float(max(0.0, output_max - source_max)),
+        "undershoot": float(max(0.0, source_min - output_min)),
+        "source_extrema": source_extrema,
+        "output_extrema": output_extrema,
+        "added_extrema": max(0, output_extrema - source_extrema),
+        "source_sha256": sha256(source_row.tobytes()).hexdigest(),
+        "output_sha256": sha256(output_row.tobytes()).hexdigest(),
+    }
+
+
+def align_rows_exp472_antigravity(
+    rows: Sequence[np.ndarray],
+    target_len: int,
+    diagnostics: MutableSequence[Mapping[str, object]] | None = None,
+) -> np.ndarray:
+    """Align rows in source order and optionally append one diagnostic per row."""
+    if target_len <= 0:
+        raise ValueError("Exp472 resampling requires finite nonempty input and positive target")
+    materialized_rows = tuple(rows)
+    if not materialized_rows:
+        return np.empty((0, target_len), dtype=np.float32)
+    output_rows = []
+    for row in materialized_rows:
+        output = resample_series_exp472_antigravity(row, target_len)
+        output_rows.append(output)
+        if diagnostics is not None:
+            diagnostics.append(shape_diagnostic_exp472_antigravity(row, output))
+    return np.stack(output_rows).astype(np.float32, copy=False)
+
+
+def _validated_raw_exp472_antigravity(values: RawDataset) -> RawDataset:
+    if (
+        not isinstance(values, RawDataset)
+        or type(values.dataset) is not str
+        or not values.dataset
+        or type(values.metadata_length) is not int
+        or values.metadata_length <= 0
+    ):
+        raise ValueError("Exp472 requires a finite label-free raw dataset")
+    for indices, blobs, rows in (
+        (values.train_indices, values.train_blobs, values.train_rows),
+        (values.test_indices, values.test_blobs, values.test_rows),
+    ):
+        if (
+            len(indices) != len(blobs)
+            or len(blobs) != len(rows)
+            or any(type(index) is not int or index < 0 for index in indices)
+        ):
+            raise ValueError("Exp472 raw dataset identity differs")
+        for blob, row in zip(blobs, rows, strict=True):
+            array = np.asarray(row)
+            normalized = _finite_row_exp472_antigravity(row)
+            if (
+                not isinstance(blob, bytes)
+                or array.dtype != np.dtype("<f4")
+                or array.ndim != 1
+                or array.shape != normalized.shape
+                or array.tobytes() != blob
+            ):
+                raise ValueError("Exp472 raw dataset identity differs")
+    return values
+
+
+def _split_shape_diagnostic_exp472_antigravity(
+    rows: Sequence[np.ndarray], target_len: int
+) -> Mapping[str, object]:
+    diagnostics: list[Mapping[str, object]] = []
+    for row in rows:
+        output = resample_series_exp472_antigravity(row, target_len)
+        diagnostics.append(shape_diagnostic_exp472_antigravity(row, output))
+    if not diagnostics:
+        return {
+            "row_count": 0,
+            "upsampled_rows": 0,
+            "overshoot": 0.0,
+            "undershoot": 0.0,
+            "source_extrema": 0,
+            "output_extrema": 0,
+            "added_extrema": 0,
+            "rows_sha256": sha256(_canonical_json_bytes_exp472_antigravity([])).hexdigest(),
+        }
+    return {
+        "row_count": len(diagnostics),
+        "upsampled_rows": sum(1 for row in rows if 1 < np.asarray(row).size < target_len),
+        "overshoot": float(sum(float(item["overshoot"]) for item in diagnostics)),
+        "undershoot": float(sum(float(item["undershoot"]) for item in diagnostics)),
+        "source_extrema": sum(int(item["source_extrema"]) for item in diagnostics),
+        "output_extrema": sum(int(item["output_extrema"]) for item in diagnostics),
+        "added_extrema": sum(int(item["added_extrema"]) for item in diagnostics),
+        "rows_sha256": sha256(
+            _canonical_json_bytes_exp472_antigravity(diagnostics)
+        ).hexdigest(),
+    }
+
+
+def count_upsampled_rows_exp472_antigravity(values: RawDataset) -> int:
+    """Count only rows for which condition E actually invokes Makima."""
+    raw = _validated_raw_exp472_antigravity(values)
+    return sum(
+        1
+        for row in (*raw.train_rows, *raw.test_rows)
+        if 1 < np.asarray(row).size < raw.metadata_length
+    )
+
+
+def dataset_shape_diagnostic_exp472_antigravity(values: RawDataset) -> Mapping[str, object]:
+    """Aggregate all train/test shape diagnostics without reading labels."""
+    raw = _validated_raw_exp472_antigravity(values)
+    train = _split_shape_diagnostic_exp472_antigravity(
+        raw.train_rows, raw.metadata_length
+    )
+    test = _split_shape_diagnostic_exp472_antigravity(raw.test_rows, raw.metadata_length)
+    bare = {
+        "schema": "exp472-shape-diagnostic-antigravity.v1",
+        "dataset": raw.dataset,
+        "target_len": raw.metadata_length,
+        "row_count": int(train["row_count"]) + int(test["row_count"]),
+        "upsampled_rows": int(train["upsampled_rows"]) + int(test["upsampled_rows"]),
+        "train": train,
+        "test": test,
+    }
+    return {
+        **bare,
+        "diagnostic_sha256": sha256(
+            _canonical_json_bytes_exp472_antigravity(bare)
+        ).hexdigest(),
+    }
+
+
+def test_identity_exp472_antigravity(values: RawDataset) -> Mapping[str, object]:
+    """Return a deterministic TEST-only value identity for the E score shard."""
+    raw = _validated_raw_exp472_antigravity(values)
+    bare = {
+        "dataset": raw.dataset,
+        "series_length": raw.metadata_length,
+        "split": "TEST",
+        "indices": list(raw.test_indices),
+        "values_blob_sha256": [
+            sha256(blob).hexdigest() for blob in raw.test_blobs
+        ],
+    }
+    return {
+        **bare,
+        "row_digest": sha256(_canonical_json_bytes_exp472_antigravity(bare)).hexdigest(),
+        "count": len(raw.test_rows),
+    }
+
+
+__all__ = [
+    "align_rows_exp472_antigravity",
+    "count_upsampled_rows_exp472_antigravity",
+    "dataset_shape_diagnostic_exp472_antigravity",
+    "resample_series_exp472_antigravity",
+    "shape_diagnostic_exp472_antigravity",
+    "test_identity_exp472_antigravity",
+]

@@ -1,7 +1,7 @@
 {
   "artifact_sha256": {
-    "docs/codemap/codemap_exp472_antigravity.html": "a1057ed686ba0de14efafe983b42544ea6528cf03082b83786b23a7d22d834c8",
-    "docs/codemap/codemap_exp472_antigravity.json": "ad32661d562fa6decd7e3b4fd336181eeeecb7dd480fe7c310abae81c911bbb4"
+    "docs/codemap/codemap_exp472_antigravity.html": "fde88c0a2f589301d3dfdc7f2b1a9165b2375af0cf64d63bd02c7a4ef30a2a90",
+    "docs/codemap/codemap_exp472_antigravity.json": "69f87681aa7ce147a61b8a3f196ee433ea77b6f1b6684e2a8a8faddf44d39e0a"
   },
   "fingerprint_algorithm": "sha256",
   "governance_fingerprint_evidence": {
@@ -25,6 +25,8 @@
     "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py": "d7d84b5ef78d66b1b12a06d43eb8a7d8b33fafb8848d5bf678b3181cb385e5f6",
     "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py": "eaf2acc726d4a372903094684278e7c54e9e9f0e8338da6d73aa68148f6213c2",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py": "8342bed3a33631b2a02fbeeb3fbd63f92863d9e62c07ce18a2c9792ac9f7d8a8",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py": "f3ed497485be6c67626f56ee8dd2228e743d69c1c9821f394e675855bc8bd19a",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py": "d1b4f28fe147291dd13700869efe6d27687eeb99b6c20f0b042dab411fd775f1",
     "paper/equipment_anomaly_detection/data_paper.py": "da6d2e208f7293f782d3bac8fd6c10a32456d6e51c48ce7528f34ef4aa328207",
     "paper/equipment_anomaly_detection/label_access_paper.py": "566984e5132857f9c2563e8c473612266f8f750fad4029e6654b5f216764448f",
     "scratch/generate_exp472_codemap_antigravity.py": "cca8531e25c2ec3d14f7bf577debd0e382e216b845f09fe0ac99b0921a96299f"
@@ -44,6 +46,8 @@
     "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
     "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py",
     "paper/equipment_anomaly_detection/data_paper.py",
     "paper/equipment_anomaly_detection/label_access_paper.py",
     "scratch/generate_exp472_codemap_antigravity.py"
