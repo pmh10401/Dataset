@@ -28,7 +28,10 @@ from .config_antigravity import (
     assess_exp472_backend_antigravity,
 )
 from .contracts_antigravity import canonical_json_bytes_exp472_antigravity
-from .contracts_antigravity import Exp472RunContextAntigravity
+from .contracts_antigravity import (
+    Exp472BackendDecisionAntigravity,
+    Exp472RunContextAntigravity,
+)
 from .artifacts_antigravity import (
     Exp472CatalogEntryAntigravity,
     catalog_sha256_exp472_antigravity,
@@ -76,6 +79,70 @@ def _code_closure_antigravity() -> Mapping[str, str]:
 def _config_sha256_antigravity() -> str:
     value = {"experiment": FROZEN_EXP472_CONFIG.experiment_id, "database_sha256": FROZEN_EXP472_CONFIG.database_sha256, "dataset_count": FROZEN_EXP472_CONFIG.dataset_count, "test_row_count": FROZEN_EXP472_CONFIG.test_row_count, "condition": {"id": "E", "downsampling": "polyphase", "upsampling": "makima", "image_mode": "area"}, "policy": FROZEN_EXP472_CONFIG.policy_id, "threshold": FROZEN_EXP472_CONFIG.score_threshold, "bootstrap_seed": FROZEN_EXP472_CONFIG.bootstrap_seed}
     return sha256(canonical_json_bytes_exp472_antigravity(value)).hexdigest()
+
+
+def _read_scored_context_candidate_antigravity(
+    root: Path, catalog: tuple[Exp472CatalogEntryAntigravity, ...],
+) -> Exp472RunContextAntigravity:
+    """Read one untrusted canonical E shard only to reconstruct its context.
+
+    The candidate is not authority: immediately after construction every
+    public Task4 manifest/shard verifier must authenticate its exact digest,
+    catalog, closure, and backend before it can reach evaluation or reporting.
+    """
+    if Path(root) != EXP472_OFFICIAL_ROOT_ANTIGRAVITY or len(catalog) != 1117:
+        raise ValueError("Exp472 scored context requires the official full E root")
+    token = sha256(catalog[0].dataset.encode("utf-8")).hexdigest()
+    paths = (
+        Path(root),
+        Path(root) / "score_shards_antigravity",
+        Path(root) / "score_shards_antigravity" / f"{token}_antigravity",
+    )
+    for path in paths:
+        try:
+            details = path.lstat()
+        except FileNotFoundError as error:
+            raise ValueError("Exp472 scored context is missing") from error
+        if path.is_symlink() or not path.is_dir():
+            raise ValueError("Exp472 scored context is unsafe")
+    shard_path = paths[-1] / "score_shard_antigravity.json"
+    try:
+        details = shard_path.lstat()
+    except FileNotFoundError as error:
+        raise ValueError("Exp472 scored context is missing") from error
+    if shard_path.is_symlink() or not shard_path.is_file() or details.st_nlink != 1:
+        raise ValueError("Exp472 scored context is unsafe")
+    raw = shard_path.read_bytes()
+    try:
+        record = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("Exp472 scored context is invalid") from error
+    if not isinstance(record, dict) or raw != canonical_json_bytes_exp472_antigravity(record):
+        raise ValueError("Exp472 scored context is noncanonical")
+    backend_record = record.get("backend")
+    closure = record.get("code_closure")
+    if (
+        record.get("schema") != "exp472-score-shard-antigravity.v1"
+        or record.get("dataset") != catalog[0].dataset
+        or record.get("database_sha256") != FROZEN_EXP472_CONFIG.database_sha256
+        or record.get("catalog_sha256") != catalog_sha256_exp472_antigravity(catalog)
+        or not isinstance(backend_record, Mapping)
+        or not isinstance(closure, Mapping)
+    ):
+        raise ValueError("Exp472 scored context identity differs")
+    try:
+        backend = Exp472BackendDecisionAntigravity(**dict(backend_record))
+        context = Exp472RunContextAntigravity(
+            "full", EXP472_OFFICIAL_ROOT_ANTIGRAVITY,
+            FROZEN_EXP472_CONFIG.database_sha256,
+            catalog_sha256_exp472_antigravity(catalog), closure, backend,
+            _config_sha256_antigravity(),
+        )
+    except (TypeError, ValueError) as error:
+        raise ValueError("Exp472 scored context differs") from error
+    if record.get("context_sha256") != context.sha256:
+        raise ValueError("Exp472 scored context digest differs")
+    return context
 
 
 def _emit_antigravity(stream: TextIO, value: object) -> None:
@@ -200,15 +267,19 @@ class Exp472ControllerRuntimeAntigravity:
         return run_score_wave_exp472_antigravity(self.context.run_root, self.context, self.catalog, score_one=score_one)
 
 
-def _runtime_antigravity(runtime: object | None) -> Exp472ControllerRuntimeAntigravity:
+def _runtime_antigravity(
+    runtime: object | None, *, for_scoring: bool = False,
+) -> Exp472ControllerRuntimeAntigravity:
     if runtime is None:
-        return _build_runtime_antigravity("full")
+        return _build_runtime_antigravity("full", for_scoring=for_scoring)
     if not isinstance(runtime, Exp472ControllerRuntimeAntigravity):
         raise ValueError("Exp472 command requires a typed controller runtime; completion flags are not authority")
     return runtime
 
 
-def _build_runtime_antigravity(mode: str) -> Exp472ControllerRuntimeAntigravity:
+def _build_runtime_antigravity(
+    mode: str, *, for_scoring: bool = False,
+) -> Exp472ControllerRuntimeAntigravity:
     """Build the executable official controller from frozen public authority."""
     if mode not in {"smoke", "full"}:
         raise ValueError("Exp472 runtime mode differs")
@@ -216,7 +287,15 @@ def _build_runtime_antigravity(mode: str) -> Exp472ControllerRuntimeAntigravity:
     names = FROZEN_EXP472_CONFIG.smoke_datasets if mode == "smoke" else exp471.dataset_order
     catalog = tuple(Exp472CatalogEntryAntigravity(name, exp471.coordinates[name]) for name in names)
     run_root = EXP472_SMOKE_ROOT_ANTIGRAVITY if mode == "smoke" else EXP472_OFFICIAL_ROOT_ANTIGRAVITY
-    context = Exp472RunContextAntigravity(mode, run_root, FROZEN_EXP472_CONFIG.database_sha256, catalog_sha256_exp472_antigravity(catalog), _code_closure_antigravity(), assess_exp472_backend_antigravity(), _config_sha256_antigravity())
+    if mode == "full" and not for_scoring:
+        context = _read_scored_context_candidate_antigravity(run_root, catalog)
+    else:
+        context = Exp472RunContextAntigravity(
+            mode, run_root, FROZEN_EXP472_CONFIG.database_sha256,
+            catalog_sha256_exp472_antigravity(catalog),
+            _code_closure_antigravity(), assess_exp472_backend_antigravity(),
+            _config_sha256_antigravity(),
+        )
     return Exp472ControllerRuntimeAntigravity(context, catalog, EXP471_REUSE_ROOT_ANTIGRAVITY, _code_map_lock_sha256_antigravity())
 
 
@@ -250,7 +329,7 @@ def main_antigravity(argv: Sequence[str] | None = None, *, stdout: TextIO | None
         result = typed_smoke.run_e_antigravity()
         _emit_antigravity(stream, {"experiment": "Exp472", "command": "smoke", "result": result}); return 0
     if command == "run":
-        typed_run = _runtime_antigravity(runtime)
+        typed_run = _runtime_antigravity(runtime, for_scoring=True)
         if typed_run.context.mode != "full":
             raise ValueError("Exp472 run requires the frozen full E context")
         result = typed_run.run_e_antigravity()

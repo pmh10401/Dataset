@@ -263,7 +263,10 @@ def _png_antigravity(roc_rows: Sequence[Mapping[str, object]], pr_rows: Sequence
         line(offset + 20, 210, offset + 170, 210, (0, 0, 0)); line(offset + 20, 30, offset + 20, 210, (0, 0, 0))
     for rows, x_name, y_name, offset, color in ((roc_rows, "false_positive_rate", "true_positive_rate", 0, (31, 78, 121)), (pr_rows, "recall", "precision", 190, (180, 70, 30))):
         for method in sorted({str(row["method"]) for row in rows}):
-            series = [row for row in rows if row["method"] == method]
+            series = sorted(
+                (row for row in rows if row["method"] == method),
+                key=lambda row: (float(row[x_name]), float(row[y_name])),
+            )
             previous: tuple[int, int] | None = None
             for row in series:
                 coordinate = (offset + 20 + round(150 * float(row[x_name])), 210 - round(180 * float(row[y_name])))
@@ -325,8 +328,31 @@ def _report_leaf_payloads_antigravity(evaluation: object, worker_record: Mapping
     for method in methods:
         row = _mapping_antigravity(subset_macro[method], "subset macro denominator")
         denominator_rows.append({"scope": "upsampled_rows_gt_zero", "method": method, "dataset_count": None, "observation_count": None, "average_precision_denominator": row.get("average_precision_denominator"), "auroc_denominator": row.get("auroc_denominator"), "average_precision_excluded": row.get("average_precision_excluded"), "auroc_excluded": row.get("auroc_excluded")})
+    expected_shape_datasets = tuple(
+        str(row.get("dataset")) for row in per_dataset
+        if isinstance(row, Mapping) and row.get("method") == "E"
+    )
     shape_rows = [dict(row) for row in shape_diagnostics]
-    if any(type(row.get("dataset")) is not str or type(row.get("upsampled_rows")) is not int for row in shape_rows):
+    required_shape_fields = {
+        "dataset", "upsampled_rows", "overshoot", "added_extrema",
+        "source_extrema", "output_extrema", "diagnostic_sha256",
+    }
+    if (
+        not expected_shape_datasets
+        or len(set(expected_shape_datasets)) != len(expected_shape_datasets)
+        or tuple(row.get("dataset") for row in shape_rows) != expected_shape_datasets
+        or any(
+            set(row) != required_shape_fields
+            or type(row.get("upsampled_rows")) is not int
+            or row["upsampled_rows"] < 0
+            or type(row.get("overshoot")) not in (int, float)
+            or not math.isfinite(float(row["overshoot"]))
+            or any(type(row.get(name)) is not int or row[name] < 0 for name in ("added_extrema", "source_extrema", "output_extrema"))
+            or type(row.get("diagnostic_sha256")) is not str
+            or len(row["diagnostic_sha256"]) != 64
+            for row in shape_rows
+        )
+    ):
         raise ValueError("Exp472 shape diagnostics differ")
     html = "".join(("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Exp472 Makima versus PCHIP</title></head><body>", "<h1>Exp472: Makima versus PCHIP</h1>", f"<p>{english}</p>", "<p>ROC: x-axis False-positive rate; y-axis True-positive rate.</p>", "<p>Precision–recall: x-axis Recall; y-axis Precision.</p>", "<p>Context includes A–E and six frozen public baselines (11 methods).</p>", "</body></html>\n"))
     summary = "\n".join(("# Exp472 Makima 업샘플링 보조 실험", "", korean, "", "ROC의 x축은 False-positive rate이고 y축은 True-positive rate입니다.", "PR의 x축은 Recall이고 y축은 Precision입니다.", "구간이 0을 포함하면 동등하다고 결론내리지 않습니다.", ""))
