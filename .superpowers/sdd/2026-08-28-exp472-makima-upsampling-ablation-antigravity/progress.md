@@ -160,3 +160,17 @@ actual-observer plan and public A--D canonical-byte tests both pass. Code-map
 check, JSON parsing, compileall, and diff whitespace checks pass. No smoke,
 official result root, database, labels outside temporary fixtures, or process
 was started or changed by this migration.
+
+CLI synthetic E2E repair: the production `main_antigravity` path now has a
+1,117-dataset synthetic authority test that performs first `evaluate`, second
+`evaluate`, and `report` through the real persistence reader and report
+publisher. The only injected seam is the label loader, which returns in-memory
+synthetic labels and records one opening; Exp471/E verification boundaries use
+canonical synthetic authorities. The test proves the first evaluate persists,
+the second strictly reopens without another label opening, report consumes the
+same evaluation without labels, and the actual 15-leaf report manifest/marker
+chain reopens with the report verifier. RED initially exposed that canonical
+JSON sorts manifest leaf keys while the report authority constructor requires
+the frozen leaf order; the test reconstructs that contractual order before
+reopening. GREEN focused command: 1/1 passed in 19.601s. No production path,
+official data, TEST label, database, result root, or process was accessed.

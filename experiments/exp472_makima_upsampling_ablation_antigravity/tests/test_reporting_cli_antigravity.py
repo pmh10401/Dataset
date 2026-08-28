@@ -20,7 +20,10 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.cli_antigravity i
 )
 from experiments.exp472_makima_upsampling_ablation_antigravity import cli_antigravity as cli
 from experiments.exp472_makima_upsampling_ablation_antigravity.reporting_antigravity import (
+    Exp472ReportAuthorityAntigravity,
+    REPORT_COMPLETE_NAME_ANTIGRAVITY,
     REPORT_LEAVES_ANTIGRAVITY,
+    REPORT_MANIFEST_NAME_ANTIGRAVITY,
     verify_exp472_report_antigravity,
     write_exp472_report_antigravity,
 )
@@ -34,6 +37,7 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravit
 )
 from experiments.exp471_exp467_evaluation_recovery_antigravity import source_authority_antigravity as exp471_source
 from experiments.exp472_makima_upsampling_ablation_antigravity import config_antigravity as config_module
+from experiments.exp472_makima_upsampling_ablation_antigravity import evaluation_antigravity as evaluation_module
 from experiments.exp472_makima_upsampling_ablation_antigravity.artifacts_antigravity import (
     score_shard_record_exp472_antigravity,
 )
@@ -802,6 +806,90 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
             self.assertEqual(main_antigravity(("evaluate",), runtime=runtime, stdout=io.StringIO()), 0)
         read.assert_called_once()
         evaluate.assert_not_called()
+
+    def test_production_cli_synthetic_e2e_persists_once_reopens_and_reports(self) -> None:
+        """The actual CLI shares one sealed evaluation between evaluate and report."""
+        bundle, base_runtime = self._runtime_antigravity()
+        manifest = _task5_manifest_antigravity(bundle, base_runtime.context)
+        labels_opened = 0
+
+        def synthetic_labels(database_path: Path, order: tuple[str, ...]) -> dict[str, tuple[int, int]]:
+            nonlocal labels_opened
+            self.assertEqual(database_path, FROZEN_EXP472_CONFIG.database_path)
+            self.assertEqual(order, bundle.dataset_order)
+            labels_opened += 1
+            return {dataset: (0, 1) for dataset in order}
+
+        def verified_shard(
+            _root: Path,
+            _context: Exp472RunContextAntigravity,
+            entry: object,
+        ) -> dict[str, object]:
+            self.assertIs(_context, base_runtime.context)
+            return _task5_shard_antigravity(entry)  # type: ignore[arg-type]
+
+        with TemporaryDirectory(prefix="exp472-cli-e2e-antigravity-") as temporary:
+            root = Path(temporary)
+            evaluation_root = root / "evaluation_antigravity"
+            report_root = root / "report_antigravity"
+            runtime = cli.Exp472ControllerRuntimeAntigravity(
+                base_runtime.context, base_runtime.catalog,
+                EXP471_REUSE_ROOT_ANTIGRAVITY, _SHA, report_root, evaluation_root,
+            )
+            with (
+                mock.patch.object(cli, "verify_exp471_reuse_exp472_antigravity", return_value=bundle),
+                mock.patch.object(cli, "verify_manifest_exp472_antigravity", return_value=manifest),
+                mock.patch.object(cli, "verify_score_shard_exp472_antigravity", side_effect=verified_shard),
+                mock.patch.object(evaluation_module, "verify_exp471_reuse_exp472_antigravity", return_value=bundle),
+                mock.patch.object(evaluation_module, "verify_manifest_exp472_antigravity", return_value=manifest),
+                mock.patch.object(evaluation_module, "verify_score_shard_exp472_antigravity", side_effect=verified_shard),
+                mock.patch(
+                    "paper.equipment_anomaly_detection.label_access_paper.load_test_labels",
+                    side_effect=synthetic_labels,
+                ),
+            ):
+                first_output = io.StringIO()
+                self.assertEqual(main_antigravity(("evaluate",), runtime=runtime, stdout=first_output), 0)
+                first = json.loads(first_output.getvalue())
+                self.assertEqual(labels_opened, 1)
+                self.assertTrue((evaluation_root / "exp472_evaluation_antigravity.json").is_file())
+
+                second_output = io.StringIO()
+                self.assertEqual(main_antigravity(("evaluate",), runtime=runtime, stdout=second_output), 0)
+                second = json.loads(second_output.getvalue())
+                self.assertEqual(second["evaluation_sha256"], first["evaluation_sha256"])
+                self.assertEqual(labels_opened, 1)
+
+                report_output = io.StringIO()
+                self.assertEqual(main_antigravity(("report",), runtime=runtime, stdout=report_output), 0)
+                report = json.loads(report_output.getvalue())
+                self.assertEqual(labels_opened, 1)
+
+            manifest_record = json.loads(
+                (report_root / REPORT_MANIFEST_NAME_ANTIGRAVITY).read_text(encoding="utf-8")
+            )
+            marker = json.loads(
+                (report_root / REPORT_COMPLETE_NAME_ANTIGRAVITY).read_text(encoding="utf-8")
+            )
+            self.assertEqual(
+                {path.name for path in report_root.iterdir()},
+                set(REPORT_LEAVES_ANTIGRAVITY)
+                | {REPORT_MANIFEST_NAME_ANTIGRAVITY, REPORT_COMPLETE_NAME_ANTIGRAVITY},
+            )
+            self.assertEqual(len(manifest_record["leaves"]), 15)
+            self.assertEqual(manifest_record["evaluation_sha256"], first["evaluation_sha256"])
+            self.assertEqual(manifest_record["e_manifest_sha256"], manifest["manifest_sha256"])
+            self.assertEqual(manifest_record["report_manifest_sha256"], report["report_manifest_sha256"])
+            self.assertEqual(marker["report_manifest_sha256"], report["report_manifest_sha256"])
+            authority = Exp472ReportAuthorityAntigravity(
+                {name: manifest_record["leaves"][name] for name in REPORT_LEAVES_ANTIGRAVITY},
+                manifest_record["evaluation_sha256"],
+                manifest_record["e_manifest_sha256"],
+                manifest_record["exp471_reuse_authority_sha256"],
+                manifest_record["code_map_lock_sha256"],
+                manifest_record["report_manifest_sha256"],
+            )
+            self.assertTrue(verify_exp472_report_antigravity(report_root, authority))
 
     def test_report_requires_persisted_evaluation_before_any_report_leaf(self) -> None:
         """A report never computes evaluation and cannot publish when it is absent."""
