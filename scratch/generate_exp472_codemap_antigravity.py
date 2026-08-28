@@ -46,6 +46,7 @@ _RETAINED_PATHS_ANTIGRAVITY = (
     "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+    "paper/equipment_anomaly_detection/contracts_paper.py",
     "paper/equipment_anomaly_detection/data_paper.py",
     "paper/equipment_anomaly_detection/label_access_paper.py",
 )

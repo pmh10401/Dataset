@@ -106,6 +106,7 @@ def _adapt_captured_raw_dataset_exp472_antigravity(
             type(indices) is not tuple
             or type(blobs) is not tuple
             or type(rows) is not tuple
+            or not indices
             or len(indices) != len(blobs)
             or len(blobs) != len(rows)
             or indices != tuple(range(len(indices)))
@@ -144,6 +145,7 @@ def _code_closure_antigravity() -> Mapping[str, str]:
         "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
     )
     return {name: sha256((root / name).read_bytes()).hexdigest() for name in names}
 

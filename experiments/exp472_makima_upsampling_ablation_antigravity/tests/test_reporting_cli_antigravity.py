@@ -51,6 +51,7 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.tests.test_author
     _manifest as _task5_manifest_antigravity,
     _shard as _task5_shard_antigravity,
 )
+from scratch import generate_exp472_codemap_antigravity as codemap_generator
 
 
 _SHA = sha256(b"exp472-report-fixture-antigravity").hexdigest()
@@ -348,6 +349,71 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
             cli._adapt_captured_raw_dataset_exp472_antigravity(
                 malformed, _CapturedRawDatasetAntigravity, "fixture"
             )
+
+    def test_captured_raw_adapter_rejects_empty_train_or_test_group(self) -> None:
+        """The frozen captured loader promises at least one value row per split."""
+        captured = _captured_raw_antigravity()
+        empty_train = _CapturedRawDatasetAntigravity(
+            "fixture", 4, (), (), (), captured.test_indices,
+            captured.test_blobs, captured.test_rows,
+        )
+        empty_test = _CapturedRawDatasetAntigravity(
+            "fixture", 4, captured.train_indices, captured.train_blobs,
+            captured.train_rows, (), (), (),
+        )
+        for values in (empty_train, empty_test):
+            with self.subTest(values=values):
+                with self.assertRaisesRegex(ValueError, "schema"):
+                    cli._adapt_captured_raw_dataset_exp472_antigravity(
+                        values, _CapturedRawDatasetAntigravity, "fixture"
+                    )
+
+    def test_current_cli_boundary_is_context_closure_bound(self) -> None:
+        """Changing the adapter's module must change the durable E context."""
+        cli_path = (
+            "experiments/exp472_makima_upsampling_ablation_antigravity/"
+            "cli_antigravity.py"
+        )
+        closure = dict(cli._code_closure_antigravity())
+        self.assertIn(cli_path, closure)
+        bundle = _task5_bundle_antigravity()
+        template, catalog = _task5_context_catalog_antigravity(bundle)
+        current = Exp472RunContextAntigravity(
+            "smoke", cli.EXP472_SMOKE_ROOT_ANTIGRAVITY,
+            template.database_sha256,
+            cli.catalog_sha256_exp472_antigravity(catalog[:23]), closure,
+            template.backend, template.config_sha256,
+        )
+        changed_closure = {
+            **closure,
+            cli_path: sha256(b"changed-exp472-adapter-boundary-antigravity").hexdigest(),
+        }
+        changed = Exp472RunContextAntigravity(
+            "smoke", cli.EXP472_SMOKE_ROOT_ANTIGRAVITY,
+            template.database_sha256,
+            cli.catalog_sha256_exp472_antigravity(catalog[:23]),
+            changed_closure, template.backend, template.config_sha256,
+        )
+        self.assertNotEqual(current.sha256, changed.sha256)
+
+    def test_codemap_retains_current_rawdataset_dependency_and_cli_edge(self) -> None:
+        """The adapter's current-contract import is an explicit Exp472 boundary."""
+        paths = codemap_generator.tracked_existing_paths_antigravity(
+            codemap_generator.REPOSITORY_ROOT
+        )
+        payload = codemap_generator.build_codemap_payload_antigravity(
+            paths, codemap_generator.ast_callers_antigravity(paths)
+        )
+        contracts = "paper/equipment_anomaly_detection/contracts_paper.py"
+        cli_path = (
+            "experiments/exp472_makima_upsampling_ablation_antigravity/"
+            "cli_antigravity.py"
+        )
+        self.assertIn(contracts, {node["path"] for node in payload["nodes"]})
+        self.assertIn(
+            {"caller": cli_path, "callee": contracts, "kind": "ast_import"},
+            payload["edges"],
+        )
 
     def test_run_e_uses_pinned_exp467_repository_for_values_only(self) -> None:
         """Exp472 scores with current code but obtains values from frozen Exp467 bytes."""
