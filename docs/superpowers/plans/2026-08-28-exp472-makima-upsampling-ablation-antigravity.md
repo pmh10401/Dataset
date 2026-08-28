@@ -4,7 +4,7 @@
 
 **Goal:** Add one isolated Makima-upsampled condition E, compute it for the frozen 1,117 datasets, and publish a paper-ready E-versus-D comparison while reusing verified Exp471 evidence.
 
-**Architecture:** Exp472 vendors only the dataset-local Exp450 scientific scoring closure that must call a different length aligner. It writes one durable final-score shard per dataset, then combines the verified E manifest with the immutable Exp471 cache for D, A--C, and six public baselines. A values-only smoke gates the full run; TEST labels remain inaccessible until E and the reused Exp471 authorities both verify.
+**Architecture:** Exp450's dataset-local scorer gains one keyword-only alignment-function injection point while its existing A--D entry point and default alignment remain unchanged and byte-parity tested. Exp472 supplies the Makima aligner through that narrow interface, writes one durable final-score shard per dataset, then combines the verified E manifest with the immutable Exp471 cache for D, A--C, and six public baselines. A values-only smoke gates the full run; TEST labels remain inaccessible until E and the reused Exp471 authorities both verify.
 
 **Tech Stack:** Python 3.14.6, NumPy, SciPy 1.17.1 `Akima1DInterpolator(method="makima")`, PyTorch 2.13 MPS for the unchanged area-image path, scikit-learn, aeon, SQLite read-only access, `unittest`, canonical JSON/JSONL/CSV/SVG/PNG/HTML artifacts.
 
@@ -35,7 +35,7 @@
 - `experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py`: frozen roots, identities, method order, backend assessment, bootstrap seed, and worker policy.
 - `experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py`: condition, run context, score shard, manifest, and evaluation/report authority types.
 - `experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py`: exact polyphase/Makima alignment and label-free shape diagnostics.
-- `experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py`: frozen Exp450 dataset-local closure with only the Exp472 aligner substituted.
+- `experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py`: thin condition-E adapter over the byte-parity-tested Exp450 alignment-injection boundary.
 - `experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py`: create-only E shards, failure records, manifest, progress log, and scorer-free verification.
 - `experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py`: smoke/full input loading, one-dataset final score composition, two-wave recovery, and backend-safe scheduling.
 - `experiments/exp472_makima_upsampling_ablation_antigravity/authority_antigravity.py`: read-only Exp471 D/context authority and E-to-D TEST-coordinate binding.
@@ -320,6 +320,7 @@ git commit -m "feat(exp472): add exact makima alignment"
 ### Task 3: Build the Isolated Dataset-Local E Scorer
 
 **Files:**
+- Modify: `experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py`
 - Create: `experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py`
 - Create: `experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py`
 - Modify together: `docs/codemap/codemap_exp472_antigravity.{html,json,lock}`
@@ -354,20 +355,26 @@ def test_downsample_only_e_equals_exp450_d(self):
 NUMBA_CACHE_DIR=/private/tmp/exp472_numba_cache_antigravity PYTHONDONTWRITEBYTECODE=1 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -m unittest experiments.exp472_makima_upsampling_ablation_antigravity.tests.test_scoring_antigravity -v
 ```
 
-- [ ] **Step 3: Vendor and narrowly adapt the scientific closure**
+- [ ] **Step 3: Add one alignment-function injection boundary without changing A--D**
 
-Copy the tracked Exp450 `scoring_antigravity.py` bytes from base commit `60db771104bc32f44bbf3686af8ecdb145e471f6` into the Exp472 namespace, then make only these semantic substitutions:
+In the Exp450 scorer, add a private keyword-only `align_rows_override` argument to the four functions that currently perform row alignment. Centralize the selection in one helper; all existing calls omit the override and therefore execute the original `align_rows_exp450_antigravity(..., mode=condition.length_mode)` expression:
 
-1. Import `Exp472ConditionAntigravity` and `align_rows_exp472_antigravity`.
-2. Replace every call to `align_rows_exp450_antigravity(..., mode=condition.length_mode)` with `align_rows_exp472_antigravity(...)`.
-3. Keep `imaging_score_pair_exp450_antigravity(..., image_mode="area", device=backend.tensor_backend)` unchanged.
-4. Remove the condition-A delegation and reject any condition ID other than E.
-5. Rename public functions with the `exp472_antigravity` suffix.
-6. Preserve every paper constant, fold plan, repair function, estimator, seed, threshold, and route selector byte-for-byte.
+```python
+AlignmentRowsAntigravity = Callable[[Sequence[np.ndarray], int], np.ndarray]
 
-Record the base scoring SHA-256 and a machine-readable substitution list in `SCORING_ORIGIN_ANTIGRAVITY`. A test compares the normalized AST of the base and vendored closures after reversing the declared identifier/import substitutions; undeclared changes fail.
+def _align_rows_selected_antigravity(rows, target_len, condition, align_rows_override):
+    if align_rows_override is None:
+        return align_rows_exp450_antigravity(
+            rows, target_len, mode=condition.length_mode
+        )
+    return np.asarray(align_rows_override(rows, target_len), dtype=np.float32)
+```
 
-The public entry point is fixed to:
+Add `score_dataset_condition_with_alignment_exp450_antigravity(values, condition, backend, *, align_rows_override)` as the only new shared entry point. It threads the override through Hard sources, MiniROCKET, and legacy-route evidence. Keep `score_dataset_condition_exp450_antigravity(values, condition, backend)` unchanged in signature and make it delegate with `align_rows_override=None`.
+
+Add a retained Exp450 test that serializes A--D fixture results before and after the refactor and requires identical canonical bytes. Add an Exp472 test that passes `align_rows_exp472_antigravity` and proves only true upsampling differs from D.
+
+The Exp472 public entry point is fixed to:
 
 ```python
 CONDITION_E_ANTIGRAVITY = Exp472ConditionAntigravity()
@@ -376,10 +383,12 @@ def score_dataset_condition_e_exp472_antigravity(
     values: RawDataset,
     backend: Exp472BackendDecisionAntigravity,
 ) -> Exp450DatasetConditionResult:
-    sources = score_hard_sources_exp472_antigravity(values, backend)
-    mini = score_minirocket_exp472_antigravity(values, backend)
-    route = replay_hard_route_exp472_antigravity(values, sources, mini, backend)
-    return Exp450DatasetConditionResult(values.dataset, "E", sources, route)
+    return score_dataset_condition_with_alignment_exp450_antigravity(
+        values,
+        CONDITION_E_ANTIGRAVITY,
+        backend,
+        align_rows_override=align_rows_exp472_antigravity,
+    )
 ```
 
 - [ ] **Step 4: Compose the final policy score per dataset**
@@ -414,7 +423,7 @@ Add a fixture test proving per-dataset composition equals full-map composition f
 NUMBA_CACHE_DIR=/private/tmp/exp472_numba_cache_antigravity PYTHONDONTWRITEBYTECODE=1 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python -m unittest experiments.exp472_makima_upsampling_ablation_antigravity.tests.test_scoring_antigravity -v
 python3 scratch/generate_exp472_codemap_antigravity.py
 python3 scratch/generate_exp472_codemap_antigravity.py --check
-git add experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py docs/codemap/codemap_exp472_antigravity.html docs/codemap/codemap_exp472_antigravity.json docs/codemap/codemap_exp472_antigravity.lock
+git add experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py docs/codemap/codemap_exp472_antigravity.html docs/codemap/codemap_exp472_antigravity.json docs/codemap/codemap_exp472_antigravity.lock
 git commit -m "feat(exp472): add isolated condition e scorer"
 ```
 
@@ -650,6 +659,7 @@ def test_report_contains_e_vs_d_and_correct_axes(self):
     self.assertIn("False-positive rate", html)
     self.assertIn("Recall", html)
     self.assertEqual(len(authority.leaf_sha256), 15)
+    self.assertNotIn("exp472_report_manifest_antigravity.json", authority.leaf_sha256)
 ```
 
 - [ ] **Step 2: Run RED**
@@ -678,11 +688,11 @@ REPORT_LEAVES_ANTIGRAVITY = (
     "exp472_roc_curve_antigravity.svg",
     "exp472_pr_curve_antigravity.svg",
     "exp472_curves_antigravity.png",
-    "exp472_report_manifest_antigravity.json",
+    "exp472_backend_provenance_antigravity.json",
 )
 ```
 
-The report manifest binds every leaf hash, the Exp472 evaluation digest, E manifest digest, Exp471 reuse authority digest, code-map lock digest, backend/worker record, and report closure digest. HTML and Korean summary state improvement, degradation, or no decisive difference according to the frozen interval; they never claim equivalence merely because an interval crosses zero.
+After those 15 content leaves are durable, publish `exp472_report_manifest_antigravity.json`; it binds all 15 leaf hashes, the Exp472 evaluation digest, E manifest digest, Exp471 reuse authority digest, code-map lock digest, backend/worker record, and report closure digest. The separate completion marker binds the manifest hash, so no artifact contains a recursive self-hash. HTML and Korean summary state improvement, degradation, or no decisive difference according to the frozen interval; they never claim equivalence merely because an interval crosses zero.
 
 - [ ] **Step 4: Implement closed commands and runbook**
 
@@ -865,7 +875,7 @@ Expected: 1,117 full datasets, a separately reported actual-upsampling subset, A
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python scratch/run_exp472_makima_upsampling_ablation_antigravity.py report
 ```
 
-Expected: all 15 leaves exist and the completion marker binds their hashes to the evaluation, E manifest, Exp471 reuse authority, code map, and worker/backend record.
+Expected: all 15 content leaves, the report manifest, and the completion marker exist; the marker binds the manifest that binds the content leaves to the evaluation, E manifest, Exp471 reuse authority, code map, and worker/backend record.
 
 - [ ] **Step 3: Run final read-only verification**
 
@@ -874,7 +884,7 @@ Expected: all 15 leaves exist and the completion marker binds their hashes to th
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python scratch/run_exp472_makima_upsampling_ablation_antigravity.py status --mode full
 ```
 
-Expected: 1,117 E shards, zero failures, evaluation complete, report complete, 15 verified report leaves, and no live Exp472 process.
+Expected: 1,117 E shards, zero failures, evaluation complete, report complete, 15 verified report content leaves, one verified report manifest, and no live Exp472 process.
 
 - [ ] **Step 4: Record the frozen conclusion and commit**
 
