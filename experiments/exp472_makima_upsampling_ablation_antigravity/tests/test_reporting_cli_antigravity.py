@@ -36,6 +36,10 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigra
     Exp472RunContextAntigravity,
     Exp472ScoreShardAntigravity,
 )
+from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import (
+    dataset_shape_diagnostic_exp472_antigravity,
+)
+from paper.equipment_anomaly_detection.contracts_paper import RawDataset
 from experiments.exp472_makima_upsampling_ablation_antigravity.tests.test_authority_evaluation_antigravity import (
     _bundle as _task5_bundle_antigravity,
     _context_and_catalog as _task5_context_catalog_antigravity,
@@ -59,10 +63,19 @@ def _worker_antigravity() -> dict[str, object]:
             "mlx_metal_version": "unavailable", "mps_available": True}
 
 
+def _shape_diagnostic_antigravity(dataset: str) -> dict[str, object]:
+    """Use Task3's actual nested aggregate, never a report-only fixture."""
+    train = np.asarray([0.0, 1.0, 0.5, 1.5], dtype="<f4")
+    test = np.asarray([1.0, 0.0, 1.0, 0.0], dtype="<f4")
+    raw = RawDataset(
+        dataset, 4, (0,), (train.tobytes(),), (train,), (1,),
+        (test.tobytes(),), (test,),
+    )
+    return dict(dataset_shape_diagnostic_exp472_antigravity(raw))
+
+
 def _shape_diagnostics_antigravity() -> tuple[dict[str, object], ...]:
-    return ({"dataset": "fixture", "upsampled_rows": 1, "overshoot": 0.0,
-             "added_extrema": 0, "source_extrema": 1, "output_extrema": 1,
-             "diagnostic_sha256": _SHA},)
+    return (_shape_diagnostic_antigravity("fixture"),)
 
 
 @dataclass(frozen=True)
@@ -224,6 +237,60 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "shape diagnostics"):
                 write_exp472_report_antigravity(_EvaluationAntigravity(), root, _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=_shape_diagnostics_antigravity() * 2)
 
+    def test_direct_report_flattens_authentic_nested_shape_diagnostic(self) -> None:
+        """All nested Task3 train/test evidence survives canonical CSV export."""
+        with TemporaryDirectory(prefix="exp472-nested-shape-antigravity-") as temporary:
+            root = Path(temporary) / "report_antigravity"
+            write_exp472_report_antigravity(
+                _EvaluationAntigravity(), root, _worker_antigravity(),
+                e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA,
+                shape_diagnostics=_shape_diagnostics_antigravity(),
+            )
+            text = (root / "exp472_shape_diagnostics_antigravity.csv").read_text(encoding="utf-8")
+            self.assertIn("train_rows_sha256", text)
+            self.assertIn("test_rows_sha256", text)
+            self.assertIn(_shape_diagnostics_antigravity()[0]["diagnostic_sha256"], text)
+
+    def test_direct_report_rejects_nested_shape_tamper_schema_duplicate_and_missing_before_completion(self) -> None:
+        """Nested E evidence is authenticated before any report completion marker."""
+        diagnostic = _shape_diagnostics_antigravity()[0]
+        altered_train = {**diagnostic["train"], "overshoot": 0.25}
+        tampered = {**diagnostic, "train": altered_train}
+        bad_schema_bare = {**diagnostic, "schema": "wrong-shape-schema-antigravity.v1"}
+        bad_schema_bare.pop("diagnostic_sha256")
+        bad_schema = {
+            **bad_schema_bare,
+            "diagnostic_sha256": sha256(canonical_json_bytes_exp472_antigravity(bad_schema_bare)).hexdigest(),
+        }
+        bad_nested_bare = {
+            **diagnostic,
+            "train": {
+                key: value for key, value in diagnostic["train"].items()
+                if key != "overshoot"
+            },
+        }
+        bad_nested_bare.pop("diagnostic_sha256")
+        bad_nested = {
+            **bad_nested_bare,
+            "diagnostic_sha256": sha256(canonical_json_bytes_exp472_antigravity(bad_nested_bare)).hexdigest(),
+        }
+        for name, shapes in (
+            ("tamper", (tampered,)),
+            ("schema", (bad_schema,)),
+            ("nested-schema", (bad_nested,)),
+            ("duplicate", (diagnostic, diagnostic)),
+            ("missing", ()),
+        ):
+            with self.subTest(name=name), TemporaryDirectory(prefix=f"exp472-shape-{name}-antigravity-") as temporary:
+                root = Path(temporary) / "report_antigravity"
+                with self.assertRaisesRegex(ValueError, "shape diagnostics"):
+                    write_exp472_report_antigravity(
+                        _EvaluationAntigravity(), root, _worker_antigravity(),
+                        e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA,
+                        shape_diagnostics=shapes,
+                    )
+                self.assertFalse((root / ".exp472_report_complete_antigravity.json").exists())
+
     def test_report_is_byte_identical_and_detects_leaf_manifest_and_marker_tampering(self) -> None:
         with TemporaryDirectory(prefix="exp472-report-antigravity-") as temporary:
             root = Path(temporary) / "report_antigravity"
@@ -271,8 +338,7 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
         bundle = _task5_bundle_antigravity()
         persisted_context, persisted_catalog = _task5_context_catalog_antigravity(bundle)
         manifest = {**_task5_manifest_antigravity(bundle, persisted_context), "manifest_sha256": _SHA}
-        diagnostic = {"diagnostic_sha256": _SHA, "overshoot": 0.1, "added_extrema": 2, "source_extrema": 1, "output_extrema": 3}
-        with mock.patch.object(cli, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), mock.patch.object(cli, "_read_scored_context_candidate_antigravity", return_value=persisted_context) as replay, mock.patch.object(cli, "assess_exp472_backend_antigravity", side_effect=AssertionError("post-score commands must not reassess backend")), mock.patch.object(cli, "verify_manifest_exp472_antigravity", return_value=manifest), mock.patch.object(cli, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: {**_task5_shard_antigravity(entry), "diagnostic": diagnostic}), mock.patch.object(cli, "evaluate_exp472_antigravity", return_value=_EvaluationAntigravity()), mock.patch.object(cli, "write_exp472_report_antigravity", return_value=mock.Mock(report_manifest_sha256=_SHA)) as publish:
+        with mock.patch.object(cli, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), mock.patch.object(cli, "_read_scored_context_candidate_antigravity", return_value=persisted_context) as replay, mock.patch.object(cli, "assess_exp472_backend_antigravity", side_effect=AssertionError("post-score commands must not reassess backend")), mock.patch.object(cli, "verify_manifest_exp472_antigravity", return_value=manifest), mock.patch.object(cli, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: {**_task5_shard_antigravity(entry), "diagnostic": _shape_diagnostic_antigravity(entry.dataset)}), mock.patch.object(cli, "evaluate_exp472_antigravity", return_value=_EvaluationAntigravity()), mock.patch.object(cli, "write_exp472_report_antigravity", return_value=mock.Mock(report_manifest_sha256=_SHA)) as publish:
             runtime = cli._build_runtime_antigravity("full")
             self.assertEqual(main_antigravity(("report",), stdout=io.StringIO()), 0)
         self.assertIsInstance(runtime, cli.Exp472ControllerRuntimeAntigravity)
@@ -280,9 +346,10 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
         self.assertEqual(runtime.context.backend.artifact_record(), persisted_context.backend.artifact_record())
         replay.assert_called()
         self.assertEqual(publish.call_args.args[2], persisted_context.backend.artifact_record())
-        with mock.patch.object(cli, "_build_runtime_antigravity", return_value=runtime), mock.patch.object(cli.Exp472ControllerRuntimeAntigravity, "run_e_antigravity", return_value={"completed": ("E",), "failures": ()}) as run_e:
+        with mock.patch.object(cli, "_build_runtime_antigravity", return_value=runtime) as build, mock.patch.object(cli.Exp472ControllerRuntimeAntigravity, "run_e_antigravity", return_value={"completed": ("E",), "failures": ()}) as run_e:
             self.assertEqual(main_antigravity(("run",), stdout=io.StringIO()), 0)
         run_e.assert_called_once_with()
+        build.assert_called_once_with("full", for_scoring=True)
 
     def test_scored_context_candidate_reopens_the_durable_backend_record(self) -> None:
         """The replay candidate is a canonical scored shard, not a live probe."""
@@ -338,7 +405,6 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
         with TemporaryDirectory(prefix="exp472-runtime-report-antigravity-") as temporary:
             bundle, runtime = self._runtime_antigravity(Path(temporary) / "report_antigravity")
             manifest = {**_task5_manifest_antigravity(bundle, runtime.context), "manifest_sha256": _SHA}
-            diagnostic = {"diagnostic_sha256": _SHA, "overshoot": 0.1, "added_extrema": 2, "source_extrema": 1, "output_extrema": 3}
             evaluation = _EvaluationAntigravity()
             e_rows = tuple(
                 {"method": "E", "dataset": entry.dataset, "average_precision": 0.9,
@@ -349,12 +415,16 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
             object.__setattr__(evaluation, "per_dataset", e_rows)
             object.__setattr__(evaluation, "subset_per_dataset", e_rows)
             def shard(_root, _context, entry):
-                value = _task5_shard_antigravity(entry); value["diagnostic"] = diagnostic; return value
+                value = _task5_shard_antigravity(entry)
+                value["diagnostic"] = _shape_diagnostic_antigravity(entry.dataset)
+                return value
             with mock.patch.object(cli, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), mock.patch.object(cli, "verify_manifest_exp472_antigravity", return_value=manifest), mock.patch.object(cli, "verify_score_shard_exp472_antigravity", side_effect=shard), mock.patch.object(cli, "evaluate_exp472_antigravity", return_value=evaluation) as evaluate:
                 self.assertEqual(main_antigravity(("report",), runtime=runtime, stdout=io.StringIO()), 0)
             self.assertEqual(evaluate.call_count, 1)
             shapes = (runtime.report_root / "exp472_shape_diagnostics_antigravity.csv").read_text(encoding="utf-8")
-            self.assertIn("0.1", shapes); self.assertIn("diagnostic_sha256", shapes)
+            self.assertEqual(len(shapes.splitlines()), 1118)
+            self.assertIn("train_rows_sha256", shapes)
+            self.assertIn(_shape_diagnostic_antigravity(runtime.catalog[0].dataset)["diagnostic_sha256"], shapes)
 
     def test_report_authority_failure_opens_no_real_label_module_or_scorer(self) -> None:
         bundle, runtime = self._runtime_antigravity()
@@ -398,3 +468,26 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
                 (one / "exp472_curves_antigravity.png").read_bytes(),
                 (two / "exp472_curves_antigravity.png").read_bytes(),
             )
+
+    def test_shuffled_frozen_curve_coordinates_have_identical_svg_and_png_bytes(self) -> None:
+        """The canonical graph ordering is independent of Task5 row iteration order."""
+        ordered, shuffled = _EvaluationAntigravity(), _EvaluationAntigravity()
+        object.__setattr__(shuffled, "curves", {
+            key: {**value, "rows": tuple(reversed(value["rows"]))}
+            for key, value in shuffled.curves.items()
+        })
+        with TemporaryDirectory(prefix="exp472-canonical-curves-antigravity-") as temporary:
+            root = Path(temporary)
+            one, two = root / "one_antigravity", root / "two_antigravity"
+            for evaluation, output in ((ordered, one), (shuffled, two)):
+                write_exp472_report_antigravity(
+                    evaluation, output, _worker_antigravity(),
+                    e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA,
+                    shape_diagnostics=_shape_diagnostics_antigravity(),
+                )
+            for name in (
+                "exp472_roc_curve_antigravity.svg",
+                "exp472_pr_curve_antigravity.svg",
+                "exp472_curves_antigravity.png",
+            ):
+                self.assertEqual((one / name).read_bytes(), (two / name).read_bytes())

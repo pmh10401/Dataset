@@ -46,6 +46,17 @@ REPORT_COMPLETE_NAME_ANTIGRAVITY = ".exp472_report_complete_antigravity.json"
 _REPORT_SCHEMA_ANTIGRAVITY = "exp472-report-publication-antigravity.v1"
 _MANIFEST_SCHEMA_ANTIGRAVITY = "exp472-report-manifest-antigravity.v1"
 _COMPLETE_SCHEMA_ANTIGRAVITY = "exp472-report-complete-antigravity.v1"
+_SHAPE_SCHEMA_ANTIGRAVITY = "exp472-shape-diagnostic-antigravity.v1"
+_SHAPE_SPLIT_FIELDS_ANTIGRAVITY = (
+    "row_count", "upsampled_rows", "overshoot", "undershoot",
+    "source_extrema", "output_extrema", "added_extrema", "rows_sha256",
+)
+_SHAPE_CSV_FIELDS_ANTIGRAVITY = (
+    "dataset", "schema", "target_len", "row_count", "upsampled_rows",
+    *(f"train_{field}" for field in _SHAPE_SPLIT_FIELDS_ANTIGRAVITY),
+    *(f"test_{field}" for field in _SHAPE_SPLIT_FIELDS_ANTIGRAVITY),
+    "diagnostic_sha256",
+)
 
 
 def _digest_antigravity(value: object, name: str) -> str:
@@ -192,6 +203,55 @@ def _methods_antigravity(evaluation: object) -> tuple[str, ...]:
     return methods
 
 
+def _shape_csv_rows_antigravity(
+    value: Sequence[Mapping[str, object]], expected_datasets: tuple[str, ...],
+) -> tuple[Mapping[str, object], ...]:
+    """Authenticate and flatten the exact Task3 aggregate diagnostic schema."""
+    rows = tuple(dict(row) for row in value)
+    if not expected_datasets or tuple(row.get("dataset") for row in rows) != expected_datasets:
+        raise ValueError("Exp472 shape diagnostics differ")
+    if len(set(expected_datasets)) != len(expected_datasets):
+        raise ValueError("Exp472 shape diagnostics differ")
+    expected = {
+        "schema", "dataset", "target_len", "row_count", "upsampled_rows",
+        "train", "test", "diagnostic_sha256",
+    }
+    split_fields = set(_SHAPE_SPLIT_FIELDS_ANTIGRAVITY)
+    flattened: list[Mapping[str, object]] = []
+    for dataset, row in zip(expected_datasets, rows, strict=True):
+        if set(row) != expected or row.get("schema") != _SHAPE_SCHEMA_ANTIGRAVITY or row.get("dataset") != dataset:
+            raise ValueError("Exp472 shape diagnostics differ")
+        bare = {name: item for name, item in row.items() if name != "diagnostic_sha256"}
+        digest = row.get("diagnostic_sha256")
+        if _digest_antigravity(digest, "shape diagnostic") != sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest():
+            raise ValueError("Exp472 shape diagnostics differ")
+        if type(row.get("target_len")) is not int or row["target_len"] <= 0 or type(row.get("row_count")) is not int or row["row_count"] < 0 or type(row.get("upsampled_rows")) is not int or row["upsampled_rows"] < 0:
+            raise ValueError("Exp472 shape diagnostics differ")
+        output: dict[str, object] = {
+            "dataset": dataset, "schema": row["schema"],
+            "target_len": row["target_len"], "row_count": row["row_count"],
+            "upsampled_rows": row["upsampled_rows"],
+            "diagnostic_sha256": digest,
+        }
+        splits: list[Mapping[str, object]] = []
+        for name in ("train", "test"):
+            split = row.get(name)
+            if not isinstance(split, Mapping) or set(split) != split_fields:
+                raise ValueError("Exp472 shape diagnostics differ")
+            if any(type(split.get(field)) is not int or split[field] < 0 for field in ("row_count", "upsampled_rows", "source_extrema", "output_extrema", "added_extrema")):
+                raise ValueError("Exp472 shape diagnostics differ")
+            if any(type(split.get(field)) not in (int, float) or not math.isfinite(float(split[field])) or float(split[field]) < 0.0 for field in ("overshoot", "undershoot")):
+                raise ValueError("Exp472 shape diagnostics differ")
+            _digest_antigravity(split.get("rows_sha256"), f"{name} rows")
+            splits.append(split)
+            for field in _SHAPE_SPLIT_FIELDS_ANTIGRAVITY:
+                output[f"{name}_{field}"] = split[field]
+        if row["row_count"] != sum(int(split["row_count"]) for split in splits) or row["upsampled_rows"] != sum(int(split["upsampled_rows"]) for split in splits):
+            raise ValueError("Exp472 shape diagnostics differ")
+        flattened.append(output)
+    return tuple(flattened)
+
+
 def _mapping_antigravity(value: object, name: str) -> Mapping[str, object]:
     if not isinstance(value, Mapping):
         raise ValueError(f"Exp472 {name} differs")
@@ -332,28 +392,7 @@ def _report_leaf_payloads_antigravity(evaluation: object, worker_record: Mapping
         str(row.get("dataset")) for row in per_dataset
         if isinstance(row, Mapping) and row.get("method") == "E"
     )
-    shape_rows = [dict(row) for row in shape_diagnostics]
-    required_shape_fields = {
-        "dataset", "upsampled_rows", "overshoot", "added_extrema",
-        "source_extrema", "output_extrema", "diagnostic_sha256",
-    }
-    if (
-        not expected_shape_datasets
-        or len(set(expected_shape_datasets)) != len(expected_shape_datasets)
-        or tuple(row.get("dataset") for row in shape_rows) != expected_shape_datasets
-        or any(
-            set(row) != required_shape_fields
-            or type(row.get("upsampled_rows")) is not int
-            or row["upsampled_rows"] < 0
-            or type(row.get("overshoot")) not in (int, float)
-            or not math.isfinite(float(row["overshoot"]))
-            or any(type(row.get(name)) is not int or row[name] < 0 for name in ("added_extrema", "source_extrema", "output_extrema"))
-            or type(row.get("diagnostic_sha256")) is not str
-            or len(row["diagnostic_sha256"]) != 64
-            for row in shape_rows
-        )
-    ):
-        raise ValueError("Exp472 shape diagnostics differ")
+    shape_rows = _shape_csv_rows_antigravity(shape_diagnostics, expected_shape_datasets)
     html = "".join(("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Exp472 Makima versus PCHIP</title></head><body>", "<h1>Exp472: Makima versus PCHIP</h1>", f"<p>{english}</p>", "<p>ROC: x-axis False-positive rate; y-axis True-positive rate.</p>", "<p>Precision–recall: x-axis Recall; y-axis Precision.</p>", "<p>Context includes A–E and six frozen public baselines (11 methods).</p>", "</body></html>\n"))
     summary = "\n".join(("# Exp472 Makima 업샘플링 보조 실험", "", korean, "", "ROC의 x축은 False-positive rate이고 y축은 True-positive rate입니다.", "PR의 x축은 Recall이고 y축은 Precision입니다.", "구간이 0을 포함하면 동등하다고 결론내리지 않습니다.", ""))
     appendix = "\n".join(("# Methods appendix", "", "E = polyphase downsampling + Makima upsampling + area/local-mean imaging.", "D = frozen Exp471 polyphase + PCHIP + area/local-mean control.", "Only E was newly scored; A–D and public baselines are reused context.", ""))
@@ -365,7 +404,7 @@ def _report_leaf_payloads_antigravity(evaluation: object, worker_record: Mapping
         "exp472_per_dataset_metrics_antigravity.csv": _csv_antigravity(("method", "dataset", "average_precision", "average_precision_exclusion", "auroc", "auroc_exclusion"), [dict(row) for row in per_dataset]),
         "exp472_paired_e_minus_d_antigravity.csv": _csv_antigravity(("comparison", "population", "metric", "mean_delta", "ci_lower", "ci_upper", "wins", "ties", "losses", "seed", "draw_count", "percentile", "tie_tolerance"), [dict(row) for row in paired]),
         "exp472_upsampling_subset_antigravity.csv": _csv_antigravity(("method", "dataset", "average_precision", "average_precision_exclusion", "auroc", "auroc_exclusion"), [dict(row) for row in subset_dataset]),
-        "exp472_shape_diagnostics_antigravity.csv": _csv_antigravity(("dataset", "upsampled_rows", "overshoot", "added_extrema", "source_extrema", "output_extrema", "diagnostic_sha256"), [{name: row.get(name) for name in ("dataset", "upsampled_rows", "overshoot", "added_extrema", "source_extrema", "output_extrema", "diagnostic_sha256")} for row in shape_rows]),
+        "exp472_shape_diagnostics_antigravity.csv": _csv_antigravity(_SHAPE_CSV_FIELDS_ANTIGRAVITY, shape_rows),
         "exp472_denominator_audit_antigravity.csv": _csv_antigravity(("scope", "method", "dataset_count", "observation_count", "average_precision_denominator", "auroc_denominator", "average_precision_excluded", "auroc_excluded"), denominator_rows),
         "exp472_roc_coordinates_antigravity.csv": _csv_antigravity(("method", "false_positive_rate", "true_positive_rate", "threshold"), roc_rows),
         "exp472_pr_coordinates_antigravity.csv": _csv_antigravity(("method", "recall", "precision"), pr_rows),

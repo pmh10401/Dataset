@@ -348,7 +348,9 @@ def main_antigravity(argv: Sequence[str] | None = None, *, stdout: TextIO | None
     # consume completed, independently reopened authorities before evaluation.
     _exp471, manifest, shards = _verified_authorities_antigravity(typed)
     evaluation = typed.evaluate_antigravity()
-    shape = tuple({"dataset": shard["dataset"], "upsampled_rows": shard["upsampled_rows"], **dict(shard["diagnostic"])} for shard in shards)
+    # Preserve Task3's full aggregate diagnostic exactly; the reporter binds
+    # its nested train/test evidence and does not invent flat substitutes.
+    shape = tuple(dict(shard["diagnostic"]) for shard in shards)
     authority = write_exp472_report_antigravity(evaluation, typed.report_root, typed.worker_record_antigravity(), e_manifest_sha256=str(manifest["manifest_sha256"]), code_map_lock_sha256=typed.code_map_lock_sha256, shape_diagnostics=shape)
     _emit_antigravity(stream, {"experiment": "Exp472", "command": "report", "report_manifest_sha256": authority.report_manifest_sha256}); return 0
 
