@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from hashlib import sha256
 import json
+import math
 import os
 from pathlib import Path
 import stat
+from time import monotonic
 
 import numpy as np
 
@@ -29,16 +32,55 @@ _PROGRESS_FILENAME_ANTIGRAVITY = "progress_antigravity.jsonl"
 _FAILURE_FILENAME_ANTIGRAVITY = "failures_antigravity.jsonl"
 
 
+@dataclass(frozen=True, slots=True)
+class Exp472CatalogEntryAntigravity:
+    """Typed, immutable consumed boundary for one frozen score coordinate."""
+
+    dataset: str
+    test_identity: Mapping[str, object]
+
+    def __post_init__(self) -> None:
+        if type(self.dataset) is not str or not self.dataset:
+            raise ValueError("Exp472 catalog entry dataset is invalid")
+        try:
+            identity = json.loads(
+                canonical_json_bytes_exp472_antigravity(self.test_identity).decode("utf-8")
+            )
+        except ValueError as error:
+            raise ValueError("Exp472 catalog entry test_identity is invalid") from error
+        if not isinstance(identity, dict) or identity.get("dataset") != self.dataset:
+            raise ValueError("Exp472 catalog entry test_identity is invalid")
+        object.__setattr__(self, "test_identity", identity)
+
+    def artifact_record(self) -> dict[str, object]:
+        return {"dataset": self.dataset, "test_identity": dict(self.test_identity)}
+
+
+def _catalog_entry_antigravity(entry: object) -> Exp472CatalogEntryAntigravity:
+    if not isinstance(entry, Exp472CatalogEntryAntigravity):
+        raise ValueError("Exp472 catalog entry requires dataset and test_identity")
+    return entry
+
+
 def _dataset_from_entry_antigravity(entry: object) -> str:
-    value = entry.get("dataset") if isinstance(entry, Mapping) else getattr(entry, "dataset", None)
-    if type(value) is not str or not value:
+    typed = _catalog_entry_antigravity(entry)
+    if type(typed.dataset) is not str or not typed.dataset:
         raise ValueError("Exp472 catalog entry dataset is invalid")
-    return value
+    return typed.dataset
 
 
-def _entry_identity_antigravity(entry: object) -> object | None:
-    value = entry.get("test_identity") if isinstance(entry, Mapping) else getattr(entry, "test_identity", None)
-    return value
+def _entry_identity_antigravity(entry: object) -> Mapping[str, object]:
+    return _catalog_entry_antigravity(entry).test_identity
+
+
+def catalog_sha256_exp472_antigravity(catalog: Sequence[object]) -> str:
+    """Digest the exact ordered catalog coordinate and TEST-identity sequence."""
+    entries = _catalog_entries_antigravity(catalog)
+    return sha256(
+        canonical_json_bytes_exp472_antigravity(
+            [entry.artifact_record() for entry in entries]
+        )
+    ).hexdigest()
 
 
 def _safe_root_antigravity(root: Path, *, create: bool) -> Path:
@@ -138,6 +180,14 @@ def _condition_record_antigravity() -> dict[str, str]:
     return {"id": "E", "downsampling": "polyphase", "upsampling": "makima", "image_mode": "area"}
 
 
+def _validate_diagnostic_antigravity(value: object) -> None:
+    if not isinstance(value, Mapping) or type(value.get("diagnostic_sha256")) is not str:
+        raise ValueError("Exp472 score shard diagnostic differs")
+    bare = {key: item for key, item in value.items() if key != "diagnostic_sha256"}
+    if value["diagnostic_sha256"] != sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest():
+        raise ValueError("Exp472 score shard diagnostic differs")
+
+
 def score_shard_record_exp472_antigravity(
     context: Exp472RunContextAntigravity, shard: Exp472ScoreShardAntigravity
 ) -> dict[str, object]:
@@ -187,10 +237,11 @@ def _verify_shard_record_antigravity(
     ):
         raise ValueError("Exp472 score shard identity differs")
     entry_identity = _entry_identity_antigravity(entry)
-    if entry_identity is not None and canonical_json_bytes_exp472_antigravity(record["test_identity"]) != canonical_json_bytes_exp472_antigravity(entry_identity):
+    if canonical_json_bytes_exp472_antigravity(record["test_identity"]) != canonical_json_bytes_exp472_antigravity(entry_identity):
         raise ValueError("Exp472 score shard TEST identity differs")
     if record["score_dtype"] != "float64" or not isinstance(record["scores"], list):
         raise ValueError("Exp472 score shard score encoding differs")
+    _validate_diagnostic_antigravity(record["diagnostic"])
     try:
         reconstructed = Exp472ScoreShardAntigravity(
             dataset=str(record["dataset"]),
@@ -217,7 +268,7 @@ def publish_score_shard_exp472_antigravity(
     if _dataset_from_entry_antigravity(entry) != shard.dataset:
         raise ValueError("Exp472 score shard dataset identity differs")
     entry_identity = _entry_identity_antigravity(entry)
-    if entry_identity is not None and canonical_json_bytes_exp472_antigravity(entry_identity) != canonical_json_bytes_exp472_antigravity(shard.test_identity):
+    if canonical_json_bytes_exp472_antigravity(entry_identity) != canonical_json_bytes_exp472_antigravity(shard.test_identity):
         raise ValueError("Exp472 score shard TEST identity differs")
     destination = _shard_path_antigravity(Path(root), shard.dataset, create=True)
     _create_only_bytes_antigravity(destination, canonical_json_bytes_exp472_antigravity(score_shard_record_exp472_antigravity(context, shard)))
@@ -235,16 +286,25 @@ def verify_score_shard_exp472_antigravity(
     )
 
 
-def _catalog_entries_antigravity(catalog: Sequence[object]) -> tuple[object, ...]:
-    entries = tuple(catalog)
-    datasets = tuple(_dataset_from_entry_antigravity(entry) for entry in entries)
+def _catalog_entries_antigravity(catalog: Sequence[object]) -> tuple[Exp472CatalogEntryAntigravity, ...]:
+    entries = tuple(_catalog_entry_antigravity(entry) for entry in catalog)
+    datasets = tuple(entry.dataset for entry in entries)
     if not entries or len(set(datasets)) != len(datasets):
         raise ValueError("Exp472 catalog coverage is invalid")
     return entries
 
 
+def _validated_catalog_antigravity(
+    context: Exp472RunContextAntigravity, catalog: Sequence[object]
+) -> tuple[Exp472CatalogEntryAntigravity, ...]:
+    entries = _catalog_entries_antigravity(catalog)
+    if catalog_sha256_exp472_antigravity(entries) != context.catalog_sha256:
+        raise ValueError("Exp472 catalog digest differs from run context")
+    return entries
+
+
 def _manifest_record_antigravity(
-    context: Exp472RunContextAntigravity, entries: tuple[object, ...], shards: Sequence[Mapping[str, object]]
+    context: Exp472RunContextAntigravity, entries: tuple[Exp472CatalogEntryAntigravity, ...], shards: Sequence[Mapping[str, object]]
 ) -> dict[str, object]:
     dataset_order = [_dataset_from_entry_antigravity(entry) for entry in entries]
     descriptors = [
@@ -264,7 +324,7 @@ def _manifest_record_antigravity(
 
 
 def _verify_manifest_record_antigravity(
-    record: Mapping[str, object], root: Path, context: Exp472RunContextAntigravity, entries: tuple[object, ...]
+    record: Mapping[str, object], root: Path, context: Exp472RunContextAntigravity, entries: tuple[Exp472CatalogEntryAntigravity, ...]
 ) -> dict[str, object]:
     expected = {"schema", "mode", "context_sha256", "database_sha256", "catalog_sha256", "dataset_order", "descriptors", "manifest_sha256"}
     if set(record) != expected or record.get("schema") != _MANIFEST_SCHEMA_ANTIGRAVITY:
@@ -302,7 +362,7 @@ def publish_manifest_exp472_antigravity(
     root: Path, context: Exp472RunContextAntigravity, catalog: Sequence[object], *, failures: set[str] | frozenset[str] = frozenset()
 ) -> Path:
     """Publish a terminal manifest only after complete scorer-free re-verification."""
-    entries = _catalog_entries_antigravity(catalog)
+    entries = _validated_catalog_antigravity(context, catalog)
     if failures:
         raise ValueError("Exp472 terminal manifest requires zero failures")
     shards = [verify_score_shard_exp472_antigravity(root, context, entry) for entry in entries]
@@ -317,24 +377,31 @@ def verify_manifest_exp472_antigravity(
     root: Path, context: Exp472RunContextAntigravity, catalog: Sequence[object]
 ) -> dict[str, object]:
     """Independently reopen every listed shard before accepting a manifest."""
-    entries = _catalog_entries_antigravity(catalog)
+    entries = _validated_catalog_antigravity(context, catalog)
     path = _safe_root_antigravity(Path(root), create=False) / _MANIFEST_FILENAME_ANTIGRAVITY
     return _verify_manifest_record_antigravity(_read_canonical_record_antigravity(path), Path(root), context, entries)
 
 
 def append_progress_exp472_antigravity(
-    root: Path, *, completed: int, failed: int, remaining: int, elapsed_seconds: float, dataset: str, wave: int, status: str
+    root: Path, *, completed: int, failed: int, remaining: int, elapsed_seconds: float,
+    dataset: str, wave: int, status: str, observed_monotonic: float | None = None,
 ) -> None:
     """Durably append one immutable lifecycle observation."""
     if status not in {"completed", "failed"} or wave not in {1, 2} or type(dataset) is not str or not dataset:
         raise ValueError("Exp472 progress record is invalid")
-    if any(type(value) is not int or value < 0 for value in (completed, failed, remaining)) or type(elapsed_seconds) not in {int, float} or elapsed_seconds < 0:
+    observed = monotonic() if observed_monotonic is None else observed_monotonic
+    if (
+        any(type(value) is not int or value < 0 for value in (completed, failed, remaining))
+        or type(elapsed_seconds) not in {int, float} or not math.isfinite(elapsed_seconds) or elapsed_seconds < 0
+        or type(observed) not in {int, float} or not math.isfinite(observed) or observed < elapsed_seconds
+    ):
         raise ValueError("Exp472 progress counters are invalid")
     safe_root = _safe_root_antigravity(Path(root), create=True)
     _append_jsonl_antigravity(safe_root / _PROGRESS_FILENAME_ANTIGRAVITY, {
         "schema": _PROGRESS_SCHEMA_ANTIGRAVITY, "completed": completed, "failed": failed,
-        "remaining": remaining, "elapsed_seconds": float(elapsed_seconds), "dataset": dataset,
-        "wave": wave, "status": status,
+        "remaining": remaining, "elapsed_seconds": float(elapsed_seconds),
+        "observed_monotonic": float(observed), "dataset": dataset, "wave": wave,
+        "status": status,
     })
 
 
@@ -369,6 +436,14 @@ def _jsonl_records_antigravity(path: Path) -> list[dict[str, object]]:
     return records
 
 
+def _regular_file_exists_antigravity(path: Path) -> bool:
+    try:
+        details = path.lstat()
+    except FileNotFoundError:
+        return False
+    return stat.S_ISREG(details.st_mode) and not stat.S_ISLNK(details.st_mode)
+
+
 def status_exp472_antigravity(root: Path, *, total: int = 1117, now_monotonic: float | None = None) -> dict[str, object]:
     """Report current durable progress with rate and ETA from completed work."""
     if type(total) is not int or total < 1:
@@ -379,22 +454,37 @@ def status_exp472_antigravity(root: Path, *, total: int = 1117, now_monotonic: f
     completed = int(latest["completed"]) if latest else 0
     failed = int(latest["failed"]) if latest else 0
     remaining = int(latest["remaining"]) if latest else total
-    elapsed = float(latest["elapsed_seconds"]) if latest else 0.0
-    del now_monotonic
+    now = monotonic() if now_monotonic is None else now_monotonic
+    if type(now) not in {int, float} or not math.isfinite(now) or now < 0:
+        raise ValueError("Exp472 status monotonic clock is invalid")
+    elapsed = 0.0
+    if latest:
+        observed = latest.get("observed_monotonic")
+        elapsed_recorded = latest.get("elapsed_seconds")
+        if (
+            type(observed) not in {int, float} or type(elapsed_recorded) not in {int, float}
+            or not math.isfinite(observed) or not math.isfinite(elapsed_recorded)
+            or elapsed_recorded < 0 or observed < elapsed_recorded
+        ):
+            raise ValueError("Exp472 progress monotonic data is invalid")
+        started = float(observed) - float(elapsed_recorded)
+        elapsed = max(float(elapsed_recorded), float(now) - started)
     rate = completed / elapsed if elapsed > 0 else 0.0
     eta = remaining / rate if rate > 0 else None
     return {
         "schema": "exp472-score-status-antigravity.v1", "completed": completed, "failed": failed,
         "remaining": remaining, "total": total, "rate_per_second": rate, "eta_seconds": eta,
-        "manifest_complete": (safe_root / _MANIFEST_FILENAME_ANTIGRAVITY).is_file(),
-        "evaluation_complete": (safe_root / "exp472_evaluation_antigravity.json").is_file(),
-        "report_complete": (safe_root / "exp472_report_antigravity.json").is_file(),
+        "manifest_complete": _regular_file_exists_antigravity(safe_root / _MANIFEST_FILENAME_ANTIGRAVITY),
+        "evaluation_complete": _regular_file_exists_antigravity(safe_root / "exp472_evaluation_antigravity.json"),
+        "report_complete": _regular_file_exists_antigravity(safe_root / "exp472_report_antigravity.json"),
         "latest_progress": latest,
     }
 
 
 __all__ = [
+    "Exp472CatalogEntryAntigravity",
     "append_failure_exp472_antigravity", "append_progress_exp472_antigravity",
+    "catalog_sha256_exp472_antigravity",
     "publish_manifest_exp472_antigravity", "publish_score_shard_exp472_antigravity",
     "score_shard_record_exp472_antigravity", "status_exp472_antigravity",
     "verify_manifest_exp472_antigravity", "verify_score_shard_exp472_antigravity",

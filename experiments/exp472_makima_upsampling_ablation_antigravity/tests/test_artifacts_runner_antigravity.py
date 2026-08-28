@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -12,8 +13,10 @@ import unittest
 import numpy as np
 
 from experiments.exp472_makima_upsampling_ablation_antigravity.artifacts_antigravity import (
+    Exp472CatalogEntryAntigravity,
     append_failure_exp472_antigravity,
     append_progress_exp472_antigravity,
+    catalog_sha256_exp472_antigravity,
     publish_manifest_exp472_antigravity,
     publish_score_shard_exp472_antigravity,
     score_shard_record_exp472_antigravity,
@@ -44,7 +47,7 @@ _DIGEST_C_ANTIGRAVITY = "c" * 64
 _DIGEST_D_ANTIGRAVITY = "d" * 64
 
 
-def _backend_antigravity(*, mps: bool = False) -> Exp472BackendDecisionAntigravity:
+def _backend_antigravity(*, mps: bool = False, logical_cpu_count: int = 2) -> Exp472BackendDecisionAntigravity:
     return Exp472BackendDecisionAntigravity(
         pytorch_available=True,
         pytorch_version="2.13.0",
@@ -56,21 +59,25 @@ def _backend_antigravity(*, mps: bool = False) -> Exp472BackendDecisionAntigravi
         mlx_metal_version="unavailable",
         mps_available=mps,
         tensor_backend="mps" if mps else "cpu",
-        logical_cpu_count=2,
-        cpu_workers=1,
+        logical_cpu_count=logical_cpu_count,
+        cpu_workers=max(1, logical_cpu_count - 1),
         inner_numerical_threads=1,
         mlx_fallback_reason=MLX_FALLBACK_REASON_ANTIGRAVITY,
     )
 
 
-def _context_antigravity(*, mps: bool = False) -> Exp472RunContextAntigravity:
+def _context_antigravity(
+    catalog: tuple[Exp472CatalogEntryAntigravity, ...] | None = None,
+    *, mps: bool = False, logical_cpu_count: int = 2,
+) -> Exp472RunContextAntigravity:
+    entries = _catalog_antigravity() if catalog is None else catalog
     return Exp472RunContextAntigravity(
         mode="smoke",
         run_root=EXP472_SMOKE_ROOT_ANTIGRAVITY,
         database_sha256=_DIGEST_A_ANTIGRAVITY,
-        catalog_sha256=_DIGEST_B_ANTIGRAVITY,
+        catalog_sha256=catalog_sha256_exp472_antigravity(entries),
         code_closure={"scoring_antigravity.py": _DIGEST_C_ANTIGRAVITY},
-        backend=_backend_antigravity(mps=mps),
+        backend=_backend_antigravity(mps=mps, logical_cpu_count=logical_cpu_count),
         config_sha256=_DIGEST_D_ANTIGRAVITY,
     )
 
@@ -82,8 +89,35 @@ def _shard_antigravity(dataset: str = "A", score: float = 0.9) -> Exp472ScoreSha
         scores=np.asarray([score], dtype=np.float64),
         alerts=frozenset({0}) if score >= 0.5 else frozenset(),
         upsampled_rows=1,
-        diagnostic={"shape": "fixture"},
+        diagnostic=_diagnostic_antigravity(dataset, "fixture"),
     )
+
+
+def _catalog_antigravity(names: tuple[str, ...] = ("A", "B", "C", "D")) -> tuple[Exp472CatalogEntryAntigravity, ...]:
+    return tuple(
+        Exp472CatalogEntryAntigravity(
+            dataset=dataset,
+            test_identity={"dataset": dataset, "test_count": 1, "indices_sha256": _DIGEST_A_ANTIGRAVITY},
+        )
+        for dataset in names
+    )
+
+
+def _diagnostic_antigravity(dataset: str, shape: str) -> dict[str, object]:
+    bare = {"dataset": dataset, "shape": shape}
+    return {
+        **bare,
+        "diagnostic_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest(),
+    }
+
+
+def _cpu_score_succeeds_antigravity(dataset: str) -> Exp472ScoreShardAntigravity:
+    shard = _shard_antigravity(dataset)
+    return replace(shard, diagnostic=_diagnostic_antigravity(dataset, f"cpu-{os.environ.get('OMP_NUM_THREADS')}"))
+
+
+def _cpu_score_raises_antigravity(dataset: str) -> Exp472ScoreShardAntigravity:
+    raise RuntimeError(f"cpu fixture failure for {dataset}")
 
 
 class Exp472ArtifactsRunnerTests(unittest.TestCase):
@@ -92,8 +126,8 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temporary = tempfile.TemporaryDirectory(prefix="exp472_task4_antigravity_")
         self.root = Path(self.temporary.name)
-        self.context = _context_antigravity()
-        self.catalog = ({"dataset": "A"}, {"dataset": "B"}, {"dataset": "C"}, {"dataset": "D"})
+        self.catalog = _catalog_antigravity()
+        self.context = _context_antigravity(self.catalog)
 
     def tearDown(self) -> None:
         self.temporary.cleanup()
@@ -133,15 +167,14 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
 
     def test_manifest_requires_verified_complete_ordered_smoke_inventory_and_no_failures(self) -> None:
         """A partial or failed lifecycle must not create a terminal manifest."""
-        smoke_catalog = tuple(
-            {"dataset": dataset} for dataset in FROZEN_EXP472_CONFIG.smoke_datasets
-        )
+        smoke_catalog = _catalog_antigravity(FROZEN_EXP472_CONFIG.smoke_datasets)
+        smoke_context = _context_antigravity(smoke_catalog)
         for entry in smoke_catalog:
-            publish_score_shard_exp472_antigravity(self.root, self.context, entry, _shard_antigravity(entry["dataset"]))
+            publish_score_shard_exp472_antigravity(self.root, smoke_context, entry, _shard_antigravity(entry.dataset))
         with self.assertRaisesRegex(ValueError, "zero failures"):
-            publish_manifest_exp472_antigravity(self.root, self.context, smoke_catalog, failures={"A"})
-        manifest = publish_manifest_exp472_antigravity(self.root, self.context, smoke_catalog)
-        verified = verify_manifest_exp472_antigravity(self.root, self.context, smoke_catalog)
+            publish_manifest_exp472_antigravity(self.root, smoke_context, smoke_catalog, failures={"A"})
+        manifest = publish_manifest_exp472_antigravity(self.root, smoke_context, smoke_catalog)
+        verified = verify_manifest_exp472_antigravity(self.root, smoke_context, smoke_catalog)
         self.assertEqual(manifest.read_bytes(), canonical_json_bytes_exp472_antigravity(verified))
         self.assertEqual(verified["dataset_order"], list(FROZEN_EXP472_CONFIG.smoke_datasets))
 
@@ -171,7 +204,7 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
                 raise RuntimeError("transient")
             return _shard_antigravity(dataset)
 
-        result = run_score_wave_exp472_antigravity(self.root, _context_antigravity(mps=True), self.catalog, score_one=score_one)
+        result = run_score_wave_exp472_antigravity(self.root, _context_antigravity(self.catalog, mps=True), self.catalog, score_one=score_one)
         self.assertEqual(result["waves"], 2)
         self.assertEqual(attempts, {"A": 1, "B": 2, "C": 1, "D": 1})
         self.assertEqual(result["failures"], ())
@@ -184,10 +217,112 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
                 raise RuntimeError("permanent")
             return _shard_antigravity(dataset)
 
-        result = run_score_wave_exp472_antigravity(self.root, _context_antigravity(mps=True), self.catalog, score_one=always_fails)
+        result = run_score_wave_exp472_antigravity(self.root, _context_antigravity(self.catalog, mps=True), self.catalog, score_one=always_fails)
         self.assertEqual(result["waves"], 2)
         self.assertEqual(result["failures"], ("B",))
         self.assertFalse((self.root / "exp472_score_manifest_antigravity.json").exists())
+
+    def test_catalog_boundary_requires_identity_and_exact_ordered_digest(self) -> None:
+        """Dataset-only, reordered, or TEST-identity drifted catalogs must not resume work."""
+        with self.assertRaisesRegex(ValueError, "test_identity"):
+            run_score_wave_exp472_antigravity(
+                self.root, self.context, ({"dataset": "A"},), score_one=_cpu_score_succeeds_antigravity
+            )
+        with self.assertRaisesRegex(ValueError, "catalog digest"):
+            run_score_wave_exp472_antigravity(
+                self.root, self.context, tuple(reversed(self.catalog)), score_one=_cpu_score_succeeds_antigravity
+            )
+        drifted = (replace(self.catalog[0], test_identity={"dataset": "A", "test_count": 2, "indices_sha256": _DIGEST_A_ANTIGRAVITY}), *self.catalog[1:])
+        with self.assertRaisesRegex(ValueError, "catalog digest"):
+            publish_manifest_exp472_antigravity(self.root, self.context, drifted)
+
+    def test_verifier_rejects_all_payload_and_test_identity_drift_after_recomputed_digest(self) -> None:
+        """A valid-looking rewritten envelope must still fail every frozen shard invariant."""
+        path = publish_score_shard_exp472_antigravity(self.root, self.context, self.catalog[0], _shard_antigravity())
+        mutations = (
+            ("schema", "other"), ("score_dtype", "float32"), ("scores", [0.1]),
+            ("alerts", []), ("diagnostic", {"shape": "drift"}),
+            ("test_identity", {"dataset": "A", "test_count": 2, "indices_sha256": _DIGEST_A_ANTIGRAVITY}),
+        )
+        original = json.loads(path.read_text())
+        for key, value in mutations:
+            with self.subTest(field=key):
+                changed = dict(original)
+                changed[key] = value
+                bare = {name: item for name, item in changed.items() if name != "shard_sha256"}
+                changed["shard_sha256"] = sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()
+                path.write_bytes(canonical_json_bytes_exp472_antigravity(changed))
+                with self.assertRaises(ValueError):
+                    verify_score_shard_exp472_antigravity(self.root, self.context, self.catalog[0])
+        path.write_bytes(canonical_json_bytes_exp472_antigravity(original))
+
+    def test_torn_existing_shard_is_rejected_without_overwrite(self) -> None:
+        """A crash-truncated create-only path must preserve evidence instead of overwriting it."""
+        shard = _shard_antigravity()
+        path = publish_score_shard_exp472_antigravity(self.root, self.context, self.catalog[0], shard)
+        path.write_bytes(b'{"schema":')
+        with self.assertRaisesRegex(ValueError, "JSON|noncanonical"):
+            publish_score_shard_exp472_antigravity(self.root, self.context, self.catalog[0], shard)
+        self.assertEqual(path.read_bytes(), b'{"schema":')
+
+    def test_second_run_skips_verified_shards_and_smoke_run_publishes_reopenable_manifest(self) -> None:
+        """Resume must score only absent shards, then produce one idempotent 23-entry authority."""
+        smoke_catalog = _catalog_antigravity(FROZEN_EXP472_CONFIG.smoke_datasets)
+        context = _context_antigravity(smoke_catalog, mps=True)
+        first = run_score_wave_exp472_antigravity(self.root, context, smoke_catalog, score_one=_cpu_score_succeeds_antigravity)
+        self.assertTrue(first["manifest_published"])
+        manifest = self.root / "exp472_score_manifest_antigravity.json"
+        original = manifest.read_bytes()
+        second = run_score_wave_exp472_antigravity(self.root, context, smoke_catalog, score_one=_cpu_score_raises_antigravity)
+        self.assertTrue(second["manifest_published"])
+        self.assertEqual(manifest.read_bytes(), original)
+        self.assertEqual(verify_manifest_exp472_antigravity(self.root, context, smoke_catalog)["dataset_order"], list(FROZEN_EXP472_CONFIG.smoke_datasets))
+        manifest.write_bytes(b"{}\n")
+        with self.assertRaisesRegex(ValueError, "different bytes"):
+            publish_manifest_exp472_antigravity(self.root, context, smoke_catalog)
+
+    def test_cpu_scheduler_requires_pickle_safe_callback_and_records_cpu_errors(self) -> None:
+        """Nested callbacks fail per coordinate; picklable workers stay bounded and serial internally."""
+        context = _context_antigravity(self.catalog, logical_cpu_count=3)
+        def unpicklable(dataset: str) -> Exp472ScoreShardAntigravity:
+            return _shard_antigravity(dataset)
+        rejected = run_score_wave_exp472_antigravity(self.root, context, self.catalog, score_one=unpicklable)
+        self.assertEqual(rejected["waves"], 2)
+        self.assertEqual(rejected["failures"], ("A", "B", "C", "D"))
+        self.assertEqual(rejected["workers"], context.backend.cpu_workers)
+        self.assertIn("pickle-safe", (self.root / "failures_antigravity.jsonl").read_text())
+        with tempfile.TemporaryDirectory(prefix="exp472_cpu_antigravity_") as other:
+            cpu_root = Path(other)
+            succeeded = run_score_wave_exp472_antigravity(cpu_root, context, self.catalog, score_one=_cpu_score_succeeds_antigravity)
+            self.assertEqual(succeeded["waves"], 2)
+            self.assertEqual(succeeded["failures"], ())
+            self.assertEqual(succeeded["workers"], context.backend.cpu_workers)
+            for entry in self.catalog:
+                self.assertEqual(verify_score_shard_exp472_antigravity(cpu_root, context, entry)["diagnostic"]["shape"], "cpu-1")
+        with tempfile.TemporaryDirectory(prefix="exp472_cpu_error_antigravity_") as other:
+            failed = run_score_wave_exp472_antigravity(Path(other), context, self.catalog, score_one=_cpu_score_raises_antigravity)
+            self.assertEqual(failed["failures"], ("A", "B", "C", "D"))
+            self.assertIn("cpu fixture failure", (Path(other) / "failures_antigravity.jsonl").read_text())
+
+    def test_status_uses_quiet_time_and_rejects_symlink_manifest(self) -> None:
+        """ETA must age through quiet time and a manifest symlink must never report complete."""
+        empty = status_exp472_antigravity(self.root, total=4, now_monotonic=50.0)
+        self.assertEqual((empty["rate_per_second"], empty["eta_seconds"]), (0.0, None))
+        append_progress_exp472_antigravity(self.root, completed=1, failed=0, remaining=3, elapsed_seconds=10.0, observed_monotonic=100.0, dataset="A", wave=1, status="completed")
+        status = status_exp472_antigravity(self.root, total=4, now_monotonic=110.0)
+        self.assertEqual(status["rate_per_second"], 0.05)
+        self.assertEqual(status["eta_seconds"], 60.0)
+        target = self.root / "not_manifest_antigravity.json"
+        target.write_text("{}\n")
+        (self.root / "exp472_score_manifest_antigravity.json").symlink_to(target)
+        self.assertFalse(status_exp472_antigravity(self.root, total=4, now_monotonic=110.0)["manifest_complete"])
+
+    def test_completed_coordinates_win_over_stale_failure_set(self) -> None:
+        """A verified completion must not be requeued merely because old failure evidence exists."""
+        self.assertEqual(
+            pending_datasets_exp472_antigravity(self.catalog, completed={"A", "C"}, failures={"A", "B"}),
+            ("B", "D"),
+        )
 
 
 if __name__ == "__main__":
