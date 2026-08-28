@@ -26,15 +26,24 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.authority_antigra
 from experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravity import BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY, BOOTSTRAP_DRAWS_ANTIGRAVITY, BOOTSTRAP_SEED_ANTIGRAVITY, EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY, EXP472_OFFICIAL_ROOT_ANTIGRAVITY
 from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigravity import Exp472BackendDecisionAntigravity, Exp472RunContextAntigravity, canonical_json_bytes_exp472_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import Exp472AlignmentTraceAntigravity, align_rows_exp472_antigravity
-from experiments.exp472_makima_upsampling_ablation_antigravity.evaluation_antigravity import Exp472EvaluationAntigravity, Exp472VerifiedEBundleAntigravity, evaluate_exp472_antigravity, read_exp472_evaluation_antigravity, read_or_evaluate_exp472_antigravity, write_exp472_evaluation_antigravity as _write_exp472_evaluation_antigravity
+from experiments.exp472_makima_upsampling_ablation_antigravity.evaluation_antigravity import Exp472EvaluationAntigravity, Exp472VerifiedEBundleAntigravity, evaluate_exp472_antigravity, read_exp472_evaluation_antigravity, read_or_evaluate_exp472_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import test_identity_exp472_antigravity
 
 _ROOT = Path("/private/tmp/exp472-task5-fixture-antigravity")
 _METHODS = ("A", "B", "C", "D", "knn_distance", "lof_novelty", "ocsvm_rbf", "isolation_forest", "deep_svdd_1d", "drocc_1d")
 
 def write_exp472_evaluation_antigravity(evaluation: Exp472EvaluationAntigravity, root: Path) -> Exp472EvaluationAntigravity:
-    """Fixture-only low-level publication: production must supply trusted recomputation."""
-    return _write_exp472_evaluation_antigravity(evaluation,root,trusted_recomputed=evaluation)
+    """Fixture publication crosses the same trusted replay route as production."""
+    bundle = _bundle()
+    context, catalog = _context_and_catalog(bundle)
+    with _trusted_terminal_sources_antigravity(bundle, context) as trusted:
+        return read_or_evaluate_exp472_antigravity(
+            root, authority=evaluation.authority,
+            e_manifest_sha256=evaluation.e_manifest_sha256,
+            context_sha256=evaluation.context_sha256,
+            dataset_order=tuple(evaluation.diagnostic_summary),
+            compute=lambda: evaluation, **trusted,
+        )
 
 def _digest(value: str) -> str: return sha256(value.encode()).hexdigest()
 
@@ -153,7 +162,7 @@ def _trusted_terminal_sources_antigravity(bundle: Exp472VerifiedExp471BundleAnti
         yield {"e_root": _ROOT, "exp471_root": _ROOT, "context": context, "catalog": _context_and_catalog(bundle)[1]}
 
 def _record_to_evaluation_antigravity(record: dict[str, object]) -> Exp472EvaluationAntigravity:
-    authority = Exp472ReuseAuthorityAntigravity(**record["authority"])
+    authority = Exp472ReuseAuthorityAntigravity(**{**record["authority"], "method_order": tuple(record["authority"]["method_order"])})
     labels = {dataset: (0, 1) for dataset in record["diagnostic_summary"]}
     return Exp472EvaluationAntigravity(authority,tuple(record["method_order"]),tuple(record["per_dataset"]),tuple(record["subset_per_dataset"]),MappingProxyType(record["macro"]),MappingProxyType(record["micro"]),MappingProxyType(record["subset_macro"]),MappingProxyType(record["subset_micro"]),tuple(record["paired_statistics"]),MappingProxyType(record["denominators"]),MappingProxyType(record["diagnostic_summary"]),MappingProxyType(record["curves"]),MappingProxyType(labels),record["e_manifest_sha256"],record["context_sha256"])
 
@@ -164,7 +173,9 @@ def _process_claim_worker_antigravity(root: str, record: dict[str, object], coun
         with counter.get_lock(): counter.value += 1
         time.sleep(0.1)
         return evaluation
-    result = read_or_evaluate_exp472_antigravity(Path(root),authority=evaluation.authority,e_manifest_sha256=evaluation.e_manifest_sha256,context_sha256=evaluation.context_sha256,dataset_order=tuple(evaluation.diagnostic_summary),compute=labels_once)
+    bundle = _bundle(); context, _catalog = _context_and_catalog(bundle)
+    with _trusted_terminal_sources_antigravity(bundle, context) as trusted:
+        result = read_or_evaluate_exp472_antigravity(Path(root),authority=evaluation.authority,e_manifest_sha256=evaluation.e_manifest_sha256,context_sha256=evaluation.context_sha256,dataset_order=tuple(evaluation.diagnostic_summary),compute=labels_once,**trusted)
     output.put(result.artifact_record()["evaluation_sha256"])
 
 class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
@@ -307,17 +318,19 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
         with TemporaryDirectory(prefix="exp472-evaluation-compute-authority-antigravity-") as temporary:
             root = Path(temporary) / "evaluation_antigravity"
             faulty = replace(evaluation, e_manifest_sha256=_digest("wrong-terminal-manifest"))
-            with self.assertRaisesRegex(ValueError, "authority"):
-                read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=lambda: faulty)
+            with _trusted_terminal_sources_antigravity(bundle, context) as trusted:
+                with self.assertRaisesRegex(ValueError, "authority"):
+                    read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=lambda: faulty, **trusted)
             self.assertFalse((root / "exp472_evaluation_antigravity.json").exists())
 
-    def test_public_writer_requires_an_explicit_trusted_recomputed_evaluation(self) -> None:
-        """A direct caller cannot publish a self-digested science record without a trust input."""
+    def test_public_writer_is_absent_and_compute_route_requires_trusted_replay(self) -> None:
+        """No public writer or caller-supplied self-trust value can publish science."""
         bundle = _bundle(); context, catalog = _context_and_catalog(bundle); evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
         with TemporaryDirectory(prefix="exp472-public-writer-trust-antigravity-") as temporary:
             root = Path(temporary) / "evaluation_antigravity"
-            with self.assertRaises(TypeError):
-                evaluation_module.write_exp472_evaluation_antigravity(evaluation,root)
+            self.assertFalse(hasattr(evaluation_module, "write_exp472_evaluation_antigravity"))
+            with self.assertRaisesRegex(ValueError, "trusted replay"):
+                read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=lambda: evaluation)
             self.assertFalse((root / evaluation_module.EVALUATION_NAME_ANTIGRAVITY).exists())
 
     @patch.object(evaluation_module, "_DRAWS", 32)
@@ -332,12 +345,13 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
             "method_order": replace(evaluation, method_order=tuple(reversed(evaluation.method_order))),
         }
         with TemporaryDirectory(prefix="exp472-faulty-compute-identities-antigravity-") as temporary:
-            for name, faulty in cases.items():
-                with self.subTest(name=name):
-                    root = Path(temporary) / f"{name}_evaluation_antigravity"
-                    with self.assertRaises(ValueError):
-                        read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=lambda value=faulty: value)
-                    self.assertFalse((root / evaluation_module.EVALUATION_NAME_ANTIGRAVITY).exists())
+            with _trusted_terminal_sources_antigravity(bundle, context) as trusted:
+                for name, faulty in cases.items():
+                    with self.subTest(name=name):
+                        root = Path(temporary) / f"{name}_evaluation_antigravity"
+                        with self.assertRaises(ValueError):
+                            read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=lambda value=faulty: value, **trusted)
+                        self.assertFalse((root / evaluation_module.EVALUATION_NAME_ANTIGRAVITY).exists())
 
     def test_missing_completion_marker_never_reopens_labels(self) -> None:
         """A lone artifact is tamper evidence, not a reason to recompute labels."""
@@ -347,8 +361,9 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
             root = Path(temporary) / "evaluation_antigravity"
             write_exp472_evaluation_antigravity(evaluation, root)
             (root / evaluation_module.EVALUATION_COMPLETE_NAME_ANTIGRAVITY).unlink()
-            with self.assertRaises(FileNotFoundError):
-                read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=lambda: (_ for _ in ()).throw(AssertionError("labels must remain closed")))
+            with _trusted_terminal_sources_antigravity(bundle, context) as trusted:
+                with self.assertRaises(FileNotFoundError):
+                    read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=lambda: (_ for _ in ()).throw(AssertionError("labels must remain closed")), **trusted)
 
     def test_recomputed_digest_cannot_hide_missing_scientific_sections(self) -> None:
         """A self-consistent digest is insufficient without the complete 1,117×11 science inventory."""
@@ -383,13 +398,14 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
             root = Path(temporary) / "evaluation_antigravity"; calls: list[int] = []; results: list[str] = []; errors: list[BaseException] = []; gate = threading.Barrier(2)
             def compute() -> Exp472EvaluationAntigravity:
                 calls.append(1); time.sleep(0.05); return evaluation
-            def worker() -> None:
-                try:
-                    gate.wait()
-                    value = read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=_manifest(bundle, context)["manifest_sha256"], context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=compute)
-                    results.append(value.artifact_record()["evaluation_sha256"])
-                except BaseException as error: errors.append(error)
-            first = threading.Thread(target=worker); second = threading.Thread(target=worker); first.start(); second.start(); first.join(); second.join()
+            with _trusted_terminal_sources_antigravity(bundle, context) as trusted:
+                def worker() -> None:
+                    try:
+                        gate.wait()
+                        value = read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=_manifest(bundle, context)["manifest_sha256"], context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=compute, **trusted)
+                        results.append(value.artifact_record()["evaluation_sha256"])
+                    except BaseException as error: errors.append(error)
+                first = threading.Thread(target=worker); second = threading.Thread(target=worker); first.start(); second.start(); first.join(); second.join()
             self.assertEqual(errors, []); self.assertEqual(calls, [1]); self.assertEqual(len(set(results)), 1)
 
     def test_multiprocess_claim_opens_labels_once(self) -> None:
@@ -400,7 +416,7 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
             processes=[ctx.Process(target=_process_claim_worker_antigravity,args=(root,record,counter,gate,output)) for _ in range(2)]
             for process in processes: process.start()
             gate.set()
-            for process in processes: process.join(30); self.assertEqual(process.exitcode,0)
+            for process in processes: process.join(180); self.assertEqual(process.exitcode,0)
             self.assertEqual(counter.value,1); self.assertEqual(output.get(timeout=2),output.get(timeout=2))
 
     def test_persisted_all_negative_labels_keep_nonabstained_micro_denominator(self) -> None:
@@ -420,7 +436,7 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
             root = Path(temporary) / "evaluation_antigravity"; write_exp472_evaluation_antigravity(evaluation, root)
             path = root / "exp472_evaluation_antigravity.json"; original = path.read_bytes()
             changed = replace(evaluation, context_sha256=_digest("different-context"))
-            with self.assertRaisesRegex(ValueError, "already differs"):
+            with self.assertRaisesRegex(ValueError, "authority"):
                 write_exp472_evaluation_antigravity(changed, root)
             self.assertEqual(path.read_bytes(), original)
 

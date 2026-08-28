@@ -1,4 +1,4 @@
-"""Path-only, one-label-read Exp472 E-versus-D evaluation."""
+"""Replay sealed Exp471/E scores plus private labels into capability-gated Exp472 evaluation."""
 from __future__ import annotations
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
@@ -125,6 +125,32 @@ class Exp472EvaluationAntigravity:
         bare={"schema":_EVALUATION_SCHEMA_ANTIGRAVITY,"authority":json.loads(canonical_json_bytes_exp472_antigravity(authority).decode("utf-8")),"method_order":list(self.method_order),"per_dataset":[dict(x) for x in self.per_dataset],"subset_per_dataset":[dict(x) for x in self.subset_per_dataset],"macro":{k:dict(v) for k,v in self.macro.items()},"micro":{k:dict(v) for k,v in self.micro.items()},"subset_macro":{k:dict(v) for k,v in self.subset_macro.items()},"subset_micro":{k:dict(v) for k,v in self.subset_micro.items()},"denominators":{k:dict(v) for k,v in self.denominators.items()},"diagnostic_summary":{k:dict(v) for k,v in self.diagnostic_summary.items()},"paired_statistics":[dict(x) for x in self.paired_statistics],"curves":{k:{**{a:b for a,b in v.items() if a!="rows"},"rows":[dict(row) for row in v["rows"]]} for k,v in self.curves.items()},"private_label_evidence_sha256":_private_label_evidence_record_antigravity(self)["private_label_evidence_sha256"],"e_manifest_sha256":self.e_manifest_sha256,"context_sha256":self.context_sha256}
         canonical_bare=json.loads(canonical_json_bytes_exp472_antigravity(bare).decode("utf-8"))
         return {**canonical_bare,"evaluation_sha256":sha256(canonical_json_bytes_exp472_antigravity(canonical_bare)).hexdigest()}
+
+_VERIFIED_PERSISTED_TOKEN_ANTIGRAVITY=object()
+
+class _VerifiedPersistedEvaluationAntigravity:
+    """Python-internal capability issued only after trusted terminal-score replay."""
+    __slots__=("_evaluation","_token")
+    def __init__(self,evaluation: Exp472EvaluationAntigravity,token: object)->None:
+        if token is not _VERIFIED_PERSISTED_TOKEN_ANTIGRAVITY or not isinstance(evaluation,Exp472EvaluationAntigravity): raise ValueError("Exp472 verified persisted evaluation capability differs")
+        self._evaluation=evaluation;self._token=token
+    def artifact_record(self)->dict[str,object]: return self._evaluation.artifact_record()
+    def __getattr__(self,name:str)->object: return getattr(self._evaluation,name)
+
+def _verified_persisted_evaluation_antigravity(evaluation: Exp472EvaluationAntigravity)->_VerifiedPersistedEvaluationAntigravity:
+    return _VerifiedPersistedEvaluationAntigravity(evaluation,_VERIFIED_PERSISTED_TOKEN_ANTIGRAVITY)
+
+def _require_verified_persisted_evaluation_antigravity(value: object) -> Exp472EvaluationAntigravity:
+    """Unwrap the non-public report capability issued by the trusted reader.
+
+    This is a Python module-boundary capability, not a replacement for an
+    external signature or WORM store.  It rejects normal public objects and
+    look-alikes; code with arbitrary access to this private module remains out
+    of scope for this in-process boundary.
+    """
+    if type(value) is not _VerifiedPersistedEvaluationAntigravity or value._token is not _VERIFIED_PERSISTED_TOKEN_ANTIGRAVITY:
+        raise ValueError("Exp472 reporting requires a trusted persisted evaluation capability")
+    return value._evaluation
 
 def evaluate_exp472_antigravity(e_root:Path,exp471_root:Path,label_loader:Callable[[tuple[str,...]],Mapping[str,Sequence[object]]], *, context: Exp472RunContextAntigravity, catalog: Sequence[Exp472CatalogEntryAntigravity])->Exp472EvaluationAntigravity:
     if not isinstance(e_root,Path) or not isinstance(exp471_root,Path) or not callable(label_loader): raise ValueError("Exp472 evaluation requires Path authorities and label loader")
@@ -407,7 +433,7 @@ def _rebuild_from_trusted_evidence_antigravity(labels: Mapping[str,np.ndarray], 
     if exp471.authority!=authority or e.path_sha256!=e_manifest_sha256 or context.sha256!=context_sha256 or exp471.dataset_order!=tuple(dataset_order): raise ValueError("Exp472 persisted evaluation trusted authority differs")
     return _evaluate_from_verified_antigravity(exp471,e,labels,context)
 
-def read_exp472_evaluation_antigravity(root: Path, *, authority: Exp472ReuseAuthorityAntigravity, e_manifest_sha256: str, context_sha256: str, dataset_order: Sequence[str], e_root: Path | None = None, exp471_root: Path | None = None, context: Exp472RunContextAntigravity | None = None, catalog: Sequence[Exp472CatalogEntryAntigravity] | None = None) -> Exp472EvaluationAntigravity:
+def read_exp472_evaluation_antigravity(root: Path, *, authority: Exp472ReuseAuthorityAntigravity, e_manifest_sha256: str, context_sha256: str, dataset_order: Sequence[str], e_root: Path | None = None, exp471_root: Path | None = None, context: Exp472RunContextAntigravity | None = None, catalog: Sequence[Exp472CatalogEntryAntigravity] | None = None) -> Exp472EvaluationAntigravity | _VerifiedPersistedEvaluationAntigravity:
     """Reopen only a canonical, authority-bound evaluation; never labels."""
     path=evaluation_path_exp472_antigravity(_safe_evaluation_root_antigravity(root,create=False))
     record=_read_evaluation_record_antigravity(path)
@@ -417,18 +443,18 @@ def read_exp472_evaluation_antigravity(root: Path, *, authority: Exp472ReuseAuth
     try:
         labels,evidence_sha256=_read_private_label_evidence_antigravity(target,authority=authority,e_manifest_sha256=e_manifest_sha256,context_sha256=context_sha256,dataset_order=dataset_order)
         if evidence_sha256!=record["private_label_evidence_sha256"]: raise ValueError("Exp472 private label evidence binding differs")
-        parsed_authority=Exp472ReuseAuthorityAntigravity(**record["authority"])
+        parsed_authority=Exp472ReuseAuthorityAntigravity(**{**record["authority"],"method_order":tuple(record["authority"]["method_order"])})
         persisted=Exp472EvaluationAntigravity(parsed_authority,tuple(record["method_order"]),tuple(record["per_dataset"]),tuple(record["subset_per_dataset"]),MappingProxyType(record["macro"]),MappingProxyType(record["micro"]),MappingProxyType(record["subset_macro"]),MappingProxyType(record["subset_micro"]),tuple(record["paired_statistics"]),MappingProxyType(record["denominators"]),MappingProxyType(record["diagnostic_summary"]),MappingProxyType(record["curves"]),labels,record["e_manifest_sha256"],record["context_sha256"])
         if any(value is not None for value in (e_root,exp471_root,context,catalog)):
             rebuilt=_rebuild_from_trusted_evidence_antigravity(labels,authority=authority,e_manifest_sha256=e_manifest_sha256,context_sha256=context_sha256,dataset_order=dataset_order,e_root=e_root,exp471_root=exp471_root,context=context,catalog=catalog)
             if rebuilt.artifact_record()!=persisted.artifact_record(): raise ValueError("Exp472 persisted evaluation science differs from trusted evidence")
+            return _verified_persisted_evaluation_antigravity(persisted)
         return persisted
     except (TypeError,ValueError) as error: raise ValueError("Exp472 persisted evaluation differs") from error
 
-def write_exp472_evaluation_antigravity(evaluation: Exp472EvaluationAntigravity, root: Path, *, trusted_recomputed: Exp472EvaluationAntigravity) -> Exp472EvaluationAntigravity:
-    """Publish only a caller-supplied independently recomputed typed evaluation."""
+def _publish_verified_evaluation_antigravity(evaluation: Exp472EvaluationAntigravity, root: Path) -> None:
+    """Private no-clobber publication; callers must have completed trusted replay."""
     if not isinstance(evaluation,Exp472EvaluationAntigravity): raise ValueError("Exp472 evaluation publication requires typed evaluation")
-    if not isinstance(trusted_recomputed,Exp472EvaluationAntigravity) or trusted_recomputed.artifact_record()!=evaluation.artifact_record(): raise ValueError("Exp472 evaluation publication trusted recomputation differs")
     record=evaluation.artifact_record()
     _validate_evaluation_record_antigravity(record,authority=evaluation.authority,e_manifest_sha256=evaluation.e_manifest_sha256,context_sha256=evaluation.context_sha256,dataset_order=tuple(evaluation.diagnostic_summary))
     target=_safe_evaluation_root_antigravity(root,create=True); path=evaluation_path_exp472_antigravity(target); payload=canonical_json_bytes_exp472_antigravity(record)
@@ -437,11 +463,12 @@ def write_exp472_evaluation_antigravity(evaluation: Exp472EvaluationAntigravity,
     _write_create_or_identical_evaluation_antigravity(_private_label_evidence_path_antigravity(target),canonical_json_bytes_exp472_antigravity(evidence),mode=0o600)
     _write_create_or_identical_evaluation_antigravity(path,payload)
     _write_create_or_identical_evaluation_antigravity(_evaluation_marker_path_antigravity(target),canonical_json_bytes_exp472_antigravity(_evaluation_marker_record_antigravity(record)))
-    return read_exp472_evaluation_antigravity(target,authority=evaluation.authority,e_manifest_sha256=evaluation.e_manifest_sha256,context_sha256=evaluation.context_sha256,dataset_order=tuple(evaluation.diagnostic_summary))
 
-def read_or_evaluate_exp472_antigravity(root: Path, *, authority: Exp472ReuseAuthorityAntigravity, e_manifest_sha256: str, context_sha256: str, dataset_order: Sequence[str], compute: Callable[[], Exp472EvaluationAntigravity], e_root: Path | None = None, exp471_root: Path | None = None, context: Exp472RunContextAntigravity | None = None, catalog: Sequence[Exp472CatalogEntryAntigravity] | None = None) -> Exp472EvaluationAntigravity:
+def read_or_evaluate_exp472_antigravity(root: Path, *, authority: Exp472ReuseAuthorityAntigravity, e_manifest_sha256: str, context_sha256: str, dataset_order: Sequence[str], compute: Callable[[], Exp472EvaluationAntigravity], e_root: Path | None = None, exp471_root: Path | None = None, context: Exp472RunContextAntigravity | None = None, catalog: Sequence[Exp472CatalogEntryAntigravity] | None = None) -> _VerifiedPersistedEvaluationAntigravity:
     """Read the sealed result, or let exactly one process compute and seal it."""
     if not callable(compute): raise ValueError("Exp472 evaluation compute differs")
+    if not all(value is not None for value in (e_root,exp471_root,context,catalog)):
+        raise ValueError("Exp472 evaluation publication requires trusted replay inputs")
     target=_safe_evaluation_root_antigravity(root,create=True)
     with _evaluation_claim_antigravity(target):
         try:
@@ -459,6 +486,7 @@ def read_or_evaluate_exp472_antigravity(root: Path, *, authority: Exp472ReuseAut
             if any(value is not None for value in (e_root,exp471_root,context,catalog)):
                 rebuilt=_rebuild_from_trusted_evidence_antigravity(_labels(evaluation.private_labels,tuple(dataset_order)),authority=authority,e_manifest_sha256=e_manifest_sha256,context_sha256=context_sha256,dataset_order=dataset_order,e_root=e_root,exp471_root=exp471_root,context=context,catalog=catalog)
                 if rebuilt.artifact_record()!=evaluation.artifact_record(): raise ValueError("Exp472 evaluation compute science differs from trusted evidence")
-            return write_exp472_evaluation_antigravity(evaluation,target,trusted_recomputed=rebuilt if any(value is not None for value in (e_root,exp471_root,context,catalog)) else evaluation)
+            _publish_verified_evaluation_antigravity(rebuilt,target)
+            return read_exp472_evaluation_antigravity(target,authority=authority,e_manifest_sha256=e_manifest_sha256,context_sha256=context_sha256,dataset_order=dataset_order,e_root=e_root,exp471_root=exp471_root,context=context,catalog=catalog)
 
-__all__=["EVALUATION_COMPLETE_NAME_ANTIGRAVITY","EVALUATION_NAME_ANTIGRAVITY","Exp472EvaluationAntigravity","Exp472VerifiedEBundleAntigravity","evaluate_exp472_antigravity","evaluation_path_exp472_antigravity","paired_e_minus_d_exp472_antigravity","read_exp472_evaluation_antigravity","read_or_evaluate_exp472_antigravity","write_exp472_evaluation_antigravity"]
+__all__=["EVALUATION_COMPLETE_NAME_ANTIGRAVITY","EVALUATION_NAME_ANTIGRAVITY","Exp472EvaluationAntigravity","Exp472VerifiedEBundleAntigravity","evaluate_exp472_antigravity","evaluation_path_exp472_antigravity","paired_e_minus_d_exp472_antigravity","read_exp472_evaluation_antigravity","read_or_evaluate_exp472_antigravity"]

@@ -25,7 +25,7 @@ $PYTHON scratch/run_exp472_makima_upsampling_ablation_antigravity.py evaluate
 $PYTHON scratch/run_exp472_makima_upsampling_ablation_antigravity.py report
 ```
 
-`verify`는 E 1,117개와 동결된 Exp471 권한을 읽기 전용으로 다시 확인합니다. `evaluate`는 공개 평가 파일과 별도로 같은 평가 루트에 `exp472_private_label_evidence_antigravity.json`을 0600 create-only 파일로 기록합니다. 이 파일은 TEST 라벨의 canonical 순서·binary vector와 Exp471/E/context 결속을 갖지만, 보고서의 15개 리프와 보고서 manifest에는 포함하지 않습니다. 재개 시에는 source label loader를 다시 열지 않고 이 비공개 증거와 검증된 Exp471/E terminal score를 이용해 전체 표·분모·ROC/PR·AP/AUROC를 재계산하여 공개 평가 파일과 정확히 비교합니다. 비공개 증거만 남은 중단은 같은 방식으로 복구합니다. `report`는 이 저장된 평가 파일과 E/Exp471 권한만 읽으며, 평가 함수·label loader·점수 생성을 호출하지 않습니다. 파일이 없거나 검증에 실패하면 15개 보고서 리프를 만들기 전에 중단합니다.
+`verify`는 E 1,117개와 동결된 Exp471 권한을 읽기 전용으로 다시 확인합니다. `evaluate`는 공개 평가 파일과 별도로 같은 평가 루트에 `exp472_private_label_evidence_antigravity.json`을 0600 create-only 파일로 기록합니다. 이 파일은 TEST 라벨의 canonical 순서·binary vector와 Exp471/E/context 결속을 갖지만, 보고서의 15개 리프와 보고서 manifest에는 포함하지 않습니다. 재개 시에는 source label loader를 다시 열지 않고 이 비공개 증거와 검증된 Exp471/E terminal score를 이용해 전체 표·분모·ROC/PR·AP/AUROC를 재계산하여 공개 평가 파일과 정확히 비교합니다. 비공개 증거만 남은 중단은 같은 방식으로 복구합니다. 공개 평가 객체나 임의로 만든 digest는 발행 또는 보고서 입력이 될 수 없습니다. `read_or_evaluate`와 trusted reader가 전체 재생 일치 후에만 Python 내부의 비공개 capability를 만들며, `report`는 그 capability만 받습니다. 이는 일반 공개 API 경계이며, 같은 프로세스에서 비공개 모듈을 임의로 조작하는 특권 코드 공격은 외부 서명 또는 WORM 저장소가 필요한 별도 위협 모델입니다. `report`는 이 저장된 평가 파일과 E/Exp471 권한만 읽으며, 평가 함수·label loader·점수 생성을 호출하지 않습니다. 파일이 없거나 검증에 실패하면 15개 보고서 리프를 만들기 전에 중단합니다.
 
 평가 파일은 경로가 존재한다고 완료로 간주하지 않습니다. `status`의
 `evaluation_present`와 `report_present`는 단순 관측값이며, 실제 완료 판단은

@@ -1,9 +1,11 @@
 """Deterministic, hash-bound Exp472 paper reporting.
 
-The report is deliberately a post-evaluation publisher: it accepts a verified
-evaluation object and never imports a scorer or a label reader.  The manifest
-binds the fifteen scientific leaves; the completion marker only binds that
-manifest, avoiding a recursive self-hash.
+The report is deliberately a post-evaluation publisher: it accepts only the
+opaque capability issued after persisted evaluation replay, and never imports a
+scorer or a label reader.  Frozen terminal scores plus private-label evidence
+therefore flow through full replay before the capability reaches the fifteen
+scientific leaves; the completion marker only binds their manifest, avoiding a
+recursive self-hash.
 """
 
 from __future__ import annotations
@@ -23,6 +25,7 @@ import zlib
 
 from .artifacts_antigravity import validate_diagnostic_exp472_antigravity
 from .contracts_antigravity import canonical_json_bytes_exp472_antigravity
+from .evaluation_antigravity import _require_verified_persisted_evaluation_antigravity
 
 
 REPORT_LEAVES_ANTIGRAVITY = (
@@ -478,7 +481,8 @@ def _manifest_record_antigravity(authority: Exp472ReportAuthorityAntigravity, wo
 
 
 def write_exp472_report_antigravity(evaluation: object, root: Path, worker_record: Mapping[str, object], *, e_manifest_sha256: str, code_map_lock_sha256: str, shape_diagnostics: Sequence[Mapping[str, object]] = ()) -> Exp472ReportAuthorityAntigravity:
-    """Publish exactly 15 leaves, then manifest, then the separate marker."""
+    """Publish exactly 15 leaves from a trusted-reader capability only."""
+    evaluation = _require_verified_persisted_evaluation_antigravity(evaluation)
     target = _safe_root_antigravity(Path(root), create=True)
     worker = _mapping_antigravity(worker_record, "backend worker provenance")
     if not {"logical_cpu_count", "cpu_workers", "tensor_backend", "mlx_fallback_reason", "pytorch_available", "pytorch_version", "scipy_available", "scipy_version", "mlx_available", "mlx_version", "mlx_metal_available", "mlx_metal_version", "mps_available", "inner_numerical_threads"}.issubset(worker):

@@ -25,7 +25,7 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.reporting_antigra
     REPORT_LEAVES_ANTIGRAVITY,
     REPORT_MANIFEST_NAME_ANTIGRAVITY,
     verify_exp472_report_antigravity,
-    write_exp472_report_antigravity,
+    write_exp472_report_antigravity as _write_exp472_report_antigravity,
 )
 from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigravity import (
     canonical_json_bytes_exp472_antigravity,
@@ -281,7 +281,41 @@ class _UnboundEvaluationAntigravity(_EvaluationAntigravity):
         return {**bare, "evaluation_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
 
 
+def _verified_report_fixture_antigravity(value: object) -> object:
+    """Make report fixtures use the production capability class, never a look-alike."""
+    if isinstance(value, evaluation_module.Exp472EvaluationAntigravity):
+        typed = value
+    else:
+        record = value.artifact_record()  # type: ignore[union-attr]
+        diagnostic_summary = record.get("diagnostic_summary", {})
+        typed = evaluation_module.Exp472EvaluationAntigravity(
+            _task5_bundle_antigravity().authority,
+            tuple(value.method_order),  # type: ignore[union-attr]
+            tuple(value.per_dataset), tuple(value.subset_per_dataset),  # type: ignore[union-attr]
+            value.macro, value.micro, value.subset_macro, value.subset_micro,  # type: ignore[union-attr]
+            tuple(value.paired_statistics), value.denominators, diagnostic_summary, value.curves,  # type: ignore[union-attr]
+            {"fixture": (0, 1)}, _SHA, _SHA,
+        )
+    return evaluation_module._verified_persisted_evaluation_antigravity(typed)
+
+
+def write_exp472_report_antigravity(value: object, *args: object, **kwargs: object) -> Exp472ReportAuthorityAntigravity:
+    """Fixture helper uses the same internal capability accepted by production."""
+    return _write_exp472_report_antigravity(_verified_report_fixture_antigravity(value), *args, **kwargs)  # type: ignore[arg-type]
+
+
 class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
+    def test_report_rejects_raw_or_fake_verified_capability(self) -> None:
+        """Only the exact reader-issued private capability reaches report publication."""
+        with TemporaryDirectory(prefix="exp472-report-capability-antigravity-") as temporary:
+            root = Path(temporary) / "report_antigravity"
+            raw = _EvaluationAntigravity()
+            with self.assertRaisesRegex(ValueError, "trusted persisted"):
+                _write_exp472_report_antigravity(raw, root, _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=_shape_diagnostics_antigravity())
+            fake = type("_VerifiedPersistedEvaluationAntigravity", (), {"artifact_record": raw.artifact_record})()
+            with self.assertRaisesRegex(ValueError, "trusted persisted"):
+                _write_exp472_report_antigravity(fake, root, _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=_shape_diagnostics_antigravity())
+
     def test_readiness_launcher_runs_from_repository_and_external_cwd(self) -> None:
         """The official direct-file launcher keeps its package import boundary."""
         self.assertTrue(_OFFICIAL_PYTHON_ANTIGRAVITY.is_file())
@@ -377,7 +411,7 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
                 return {**bare, "evaluation_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
         with TemporaryDirectory(prefix="exp472-v2-report-reject-antigravity-") as temporary:
             with self.assertRaises(ValueError):
-                write_exp472_report_antigravity(LegacyEvaluationAntigravity(), Path(temporary) / "report_antigravity", _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=_shape_diagnostics_antigravity())
+                _write_exp472_report_antigravity(LegacyEvaluationAntigravity(), Path(temporary) / "report_antigravity", _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=_shape_diagnostics_antigravity())
 
     def test_status_and_verify_accept_only_exact_mode_forms(self) -> None:
         """Smoke/full observation targets are explicit; other flags stay closed."""
@@ -879,6 +913,7 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
                 mock.patch.object(evaluation_module, "verify_exp471_reuse_exp472_antigravity", return_value=bundle),
                 mock.patch.object(evaluation_module, "verify_manifest_exp472_antigravity", return_value=manifest),
                 mock.patch.object(evaluation_module, "verify_score_shard_exp472_antigravity", side_effect=verified_shard),
+                mock.patch.object(evaluation_module, "_DRAWS", 32),
                 mock.patch(
                     "paper.equipment_anomaly_detection.label_access_paper.load_test_labels",
                     side_effect=synthetic_labels,
@@ -1024,7 +1059,7 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
             persisted = _bound_evaluation_antigravity(*diagnostics)
             object.__setattr__(persisted._base, "per_dataset", e_rows)
             object.__setattr__(persisted._base, "subset_per_dataset", e_rows)
-            with mock.patch.object(cli, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), mock.patch.object(cli, "verify_manifest_exp472_antigravity", return_value=manifest), mock.patch.object(cli, "verify_score_shard_exp472_antigravity", side_effect=shard), mock.patch.object(cli, "read_exp472_evaluation_antigravity", return_value=persisted), mock.patch.object(cli, "evaluate_exp472_antigravity", side_effect=AssertionError("report must not evaluate")) as evaluate:
+            with mock.patch.object(cli, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), mock.patch.object(cli, "verify_manifest_exp472_antigravity", return_value=manifest), mock.patch.object(cli, "verify_score_shard_exp472_antigravity", side_effect=shard), mock.patch.object(cli, "read_exp472_evaluation_antigravity", return_value=_verified_report_fixture_antigravity(persisted)), mock.patch.object(cli, "evaluate_exp472_antigravity", side_effect=AssertionError("report must not evaluate")) as evaluate:
                 self.assertEqual(main_antigravity(("report",), runtime=runtime, stdout=io.StringIO()), 0)
             evaluate.assert_not_called()
             shapes = (runtime.report_root / "exp472_shape_diagnostics_antigravity.csv").read_text(encoding="utf-8")

@@ -1334,6 +1334,11 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/evaluation_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py",
       "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
       "kind": "ast_import"
@@ -2522,10 +2527,11 @@
     {
       "callers": [
         "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/reporting_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
       ],
-      "effects": "Path-only, one-label-read Exp472 E-versus-D evaluation.",
+      "effects": "Replay sealed Exp471/E scores plus private labels into capability-gated Exp472 evaluation.",
       "module": "experiments.exp472_makima_upsampling_ablation_antigravity.evaluation_antigravity",
       "path": "experiments/exp472_makima_upsampling_ablation_antigravity/evaluation_antigravity.py",
       "tests": [
@@ -2538,7 +2544,7 @@
         "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
       ],
-      "effects": "Deterministic, hash-bound Exp472 paper reporting.\n\nThe report is deliberately a post-evaluation publisher: it accepts a verified\nevaluation object and never imports a scorer or a label reader.  The manifest\nbinds the fifteen scientific leaves; the completion marker only binds that\nmanifest, avoiding a recursive self-hash.",
+      "effects": "Deterministic, hash-bound Exp472 paper reporting.\n\nThe report is deliberately a post-evaluation publisher: it accepts only the\nopaque capability issued after persisted evaluation replay, and never imports a\nscorer or a label reader.  Frozen terminal scores plus private-label evidence\ntherefore flow through full replay before the capability reaches the fifteen\nscientific leaves; the completion marker only binds their manifest, avoiding a\nrecursive self-hash.",
       "module": "experiments.exp472_makima_upsampling_ablation_antigravity.reporting_antigravity",
       "path": "experiments/exp472_makima_upsampling_ablation_antigravity/reporting_antigravity.py",
       "tests": [

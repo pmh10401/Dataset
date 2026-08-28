@@ -191,3 +191,27 @@ checks. A faulty computed result now fails its expected authority/order checks
 before any publication write. The score-runner status no longer reports
 noncanonical evaluation/report paths; closed CLI status reports only canonical
 presence markers.
+
+Final publication-boundary ruling (a0ee23e2, a7943330, final capability
+repair): the frozen Exp471/E terminal score authority and the create-only,
+0600 private `exp472_private_label_evidence_antigravity.json` are replayed to
+rebuild every public evaluation section before a persisted evaluation is
+accepted.  The public evaluation writer was removed.  Only
+`read_or_evaluate_exp472_antigravity` may invoke the underscore-private
+no-clobber publisher after trusted replay, and the trusted reader returns an
+opaque module-private verified capability only after canonical equality.
+Reporting rejects raw v3, v2, and look-alike capabilities.  This is a Python
+internal API boundary, not a defense against a privileged process that imports
+private symbols or deletes/replaces every anchor; that stronger threat requires
+external signing/WORM storage.  Private evidence remains outside the 15 public
+leaves, report manifest, and Git.  Focused boundary tests cover raw/fake report
+rejection, public writer absence, trusted input requirement, and the synthetic
+production CLI evaluate→reopen→report flow; complete Exp472 and retained Exp450
+evidence is recorded with the final commit.
+
+Final verification: official Python full Exp472 suite passed 132/132 in
+905.242 seconds with `NUMBA_CACHE_DIR=/private/tmp/exp472_numba_cache_antigravity`
+and `PYTHONDONTWRITEBYTECODE=1`. Retained Exp450 boundary suite passed 17/17
+(six MPS-unavailable skips). Code-map regeneration/check, compileall, and
+`git diff --check` passed. The only environment notice was joblib's macOS
+physical-core probe fallback; it did not change the deterministic test result.
