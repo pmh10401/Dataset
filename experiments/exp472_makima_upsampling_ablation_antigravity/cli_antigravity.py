@@ -14,6 +14,7 @@ from functools import partial
 from hashlib import sha256
 import json
 from pathlib import Path
+import stat
 import sys
 from typing import TextIO
 
@@ -269,6 +270,15 @@ def _paths_antigravity(mode: str = "full") -> dict[str, str]:
         "progress": str(progress_root / "progress_antigravity.jsonl"),
     }
 
+def _regular_completion_marker_present_antigravity(root: Path, marker_name: str) -> bool:
+    """Observe only a real root directory and its direct regular completion leaf."""
+    try: root_details=Path(root).lstat()
+    except OSError: return False
+    if stat.S_ISLNK(root_details.st_mode) or not stat.S_ISDIR(root_details.st_mode): return False
+    try: marker=(Path(root) / marker_name).lstat()
+    except OSError: return False
+    return not stat.S_ISLNK(marker.st_mode) and stat.S_ISREG(marker.st_mode)
+
 
 def _status_antigravity(mode: str = "full") -> dict[str, object]:
     """Produce a values-only observation without creating or importing data paths."""
@@ -297,10 +307,8 @@ def _status_antigravity(mode: str = "full") -> dict[str, object]:
             # Status reports a non-authoritative unreadable log rather than
             # attempting repair or a hidden restart.
             pass
-    evaluation_path = EXP472_EVALUATION_ROOT_ANTIGRAVITY / EVALUATION_COMPLETE_NAME_ANTIGRAVITY
-    report_marker = EXP472_REPORT_ROOT_ANTIGRAVITY / ".exp472_report_complete_antigravity.json"
-    evaluation_present = evaluation_path.is_file() and not evaluation_path.is_symlink()
-    report_present = report_marker.is_file() and not report_marker.is_symlink()
+    evaluation_present = _regular_completion_marker_present_antigravity(EXP472_EVALUATION_ROOT_ANTIGRAVITY,EVALUATION_COMPLETE_NAME_ANTIGRAVITY)
+    report_present = _regular_completion_marker_present_antigravity(EXP472_REPORT_ROOT_ANTIGRAVITY,".exp472_report_complete_antigravity.json")
     return {"experiment": "Exp472", "mode": mode, "paths": _paths_antigravity(mode), "scored": completed, "failed": failed, "remaining": remaining, "eta_seconds": eta_seconds, "evaluation_present": evaluation_present, "report_present": report_present, "read_only": True}
 
 

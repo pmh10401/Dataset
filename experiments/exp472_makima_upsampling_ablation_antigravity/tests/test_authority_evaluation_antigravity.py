@@ -26,11 +26,15 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.authority_antigra
 from experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravity import BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY, BOOTSTRAP_DRAWS_ANTIGRAVITY, BOOTSTRAP_SEED_ANTIGRAVITY, EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY, EXP472_OFFICIAL_ROOT_ANTIGRAVITY
 from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigravity import Exp472BackendDecisionAntigravity, Exp472RunContextAntigravity, canonical_json_bytes_exp472_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import Exp472AlignmentTraceAntigravity, align_rows_exp472_antigravity
-from experiments.exp472_makima_upsampling_ablation_antigravity.evaluation_antigravity import Exp472EvaluationAntigravity, Exp472VerifiedEBundleAntigravity, evaluate_exp472_antigravity, read_exp472_evaluation_antigravity, read_or_evaluate_exp472_antigravity, write_exp472_evaluation_antigravity
+from experiments.exp472_makima_upsampling_ablation_antigravity.evaluation_antigravity import Exp472EvaluationAntigravity, Exp472VerifiedEBundleAntigravity, evaluate_exp472_antigravity, read_exp472_evaluation_antigravity, read_or_evaluate_exp472_antigravity, write_exp472_evaluation_antigravity as _write_exp472_evaluation_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import test_identity_exp472_antigravity
 
 _ROOT = Path("/private/tmp/exp472-task5-fixture-antigravity")
 _METHODS = ("A", "B", "C", "D", "knn_distance", "lof_novelty", "ocsvm_rbf", "isolation_forest", "deep_svdd_1d", "drocc_1d")
+
+def write_exp472_evaluation_antigravity(evaluation: Exp472EvaluationAntigravity, root: Path) -> Exp472EvaluationAntigravity:
+    """Fixture-only low-level publication: production must supply trusted recomputation."""
+    return _write_exp472_evaluation_antigravity(evaluation,root,trusted_recomputed=evaluation)
 
 def _digest(value: str) -> str: return sha256(value.encode()).hexdigest()
 
@@ -306,6 +310,15 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "authority"):
                 read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=lambda: faulty)
             self.assertFalse((root / "exp472_evaluation_antigravity.json").exists())
+
+    def test_public_writer_requires_an_explicit_trusted_recomputed_evaluation(self) -> None:
+        """A direct caller cannot publish a self-digested science record without a trust input."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle); evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
+        with TemporaryDirectory(prefix="exp472-public-writer-trust-antigravity-") as temporary:
+            root = Path(temporary) / "evaluation_antigravity"
+            with self.assertRaises(TypeError):
+                evaluation_module.write_exp472_evaluation_antigravity(evaluation,root)
+            self.assertFalse((root / evaluation_module.EVALUATION_NAME_ANTIGRAVITY).exists())
 
     @patch.object(evaluation_module, "_DRAWS", 32)
     def test_faulty_compute_cannot_publish_wrong_authority_context_dataset_or_method_order(self) -> None:

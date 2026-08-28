@@ -922,6 +922,20 @@ private evidence and existing score authorities remain intact. Simultaneous
 privileged replacement of every trust anchor is out of scope without external
 signing or WORM storage.
 
+### SDD progress ledger — private evidence replay ruling
+
+Implementation evidence is `a0ee23e2` plus the follow-up replay-boundary
+change. The accepted public evaluation/report path is v3 only: immutable
+Exp471/E terminal score authority is re-opened with the private label-evidence
+commitment and every scientific section is rebuilt before report publication.
+The private file remains outside Git and the 15 public report leaves. This
+protects accidental, corrupt, and coherent public evaluation/marker rewrites
+while the existing score authorities and 0600 create-only private evidence
+remain intact; replacing every anchor requires external signing/WORM and is
+outside this local authority model. Verification evidence: Exp472 128/128
+tests completed in 429.453 seconds; Exp450 transform/imaging boundary 17/17
+passed, with only six MPS-unavailable skips in each applicable suite.
+
 **Files:**
 - Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/evaluation_antigravity`
 - Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/report_antigravity`

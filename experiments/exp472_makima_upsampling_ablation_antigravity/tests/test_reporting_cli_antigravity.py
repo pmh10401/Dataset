@@ -222,7 +222,7 @@ class _EvaluationAntigravity:
     def artifact_record(self) -> dict[str, object]:
         diagnostic = _shape_diagnostic_antigravity("fixture")
         bare = {
-            "schema": "exp472-evaluation-antigravity.v2", "fixture": "verified",
+            "schema": "exp472-evaluation-antigravity.v3", "private_label_evidence_sha256": _SHA, "fixture": "verified",
             "diagnostic_summary": {
                 "fixture": {
                     "upsampled_rows": diagnostic["upsampled_rows"],
@@ -248,7 +248,7 @@ class _DiagnosticBoundEvaluationAntigravity:
 
     def artifact_record(self) -> dict[str, object]:
         bare = {
-            "schema": "exp472-evaluation-antigravity.v2", "fixture": "verified",
+            "schema": "exp472-evaluation-antigravity.v3", "private_label_evidence_sha256": _SHA, "fixture": "verified",
             "diagnostic_summary": self._summary,
         }
         return {**bare, "evaluation_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
@@ -277,7 +277,7 @@ class _UnboundEvaluationAntigravity(_EvaluationAntigravity):
     """Only for proving the mandatory production trace binding."""
 
     def artifact_record(self) -> dict[str, object]:
-        bare = {"schema": "exp472-evaluation-antigravity.v2", "fixture": "unbound"}
+        bare = {"schema": "exp472-evaluation-antigravity.v3", "private_label_evidence_sha256": _SHA, "fixture": "unbound"}
         return {**bare, "evaluation_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
 
 
@@ -354,6 +354,30 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
             with mock.patch.object(cli, "EXP472_OFFICIAL_ROOT_ANTIGRAVITY", official), mock.patch.object(cli, "EXP472_EVALUATION_ROOT_ANTIGRAVITY", evaluation), mock.patch.object(cli, "EXP472_REPORT_ROOT_ANTIGRAVITY", report):
                 value = cli._status_antigravity()
             self.assertFalse(value["evaluation_present"]); self.assertFalse(value["report_present"])
+
+    def test_status_rejects_symlinked_completion_roots_before_marker_lookup(self) -> None:
+        """A regular marker below a redirected root is not an observable completion."""
+        with TemporaryDirectory(prefix="exp472-status-root-symlink-antigravity-") as temporary:
+            base = Path(temporary); official = base / "official_antigravity"; official.mkdir()
+            real_evaluation = base / "real_evaluation_antigravity"; real_report = base / "real_report_antigravity"
+            real_evaluation.mkdir(); real_report.mkdir()
+            (real_evaluation / cli.EVALUATION_COMPLETE_NAME_ANTIGRAVITY).write_text("{}", encoding="utf-8")
+            (real_report / ".exp472_report_complete_antigravity.json").write_text("{}", encoding="utf-8")
+            evaluation = base / "evaluation_antigravity"; report = base / "report_antigravity"
+            evaluation.symlink_to(real_evaluation, target_is_directory=True); report.symlink_to(real_report, target_is_directory=True)
+            with mock.patch.object(cli, "EXP472_OFFICIAL_ROOT_ANTIGRAVITY", official), mock.patch.object(cli, "EXP472_EVALUATION_ROOT_ANTIGRAVITY", evaluation), mock.patch.object(cli, "EXP472_REPORT_ROOT_ANTIGRAVITY", report):
+                value = cli._status_antigravity()
+            self.assertFalse(value["evaluation_present"]); self.assertFalse(value["report_present"])
+
+    def test_report_rejects_v2_evaluation_even_when_its_digest_is_valid(self) -> None:
+        """The public publisher accepts only v3 evidence-bound evaluations."""
+        class LegacyEvaluationAntigravity:
+            def artifact_record(self) -> dict[str, object]:
+                bare = {"schema": "exp472-evaluation-antigravity.v2", "fixture": "legacy"}
+                return {**bare, "evaluation_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
+        with TemporaryDirectory(prefix="exp472-v2-report-reject-antigravity-") as temporary:
+            with self.assertRaises(ValueError):
+                write_exp472_report_antigravity(LegacyEvaluationAntigravity(), Path(temporary) / "report_antigravity", _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=_shape_diagnostics_antigravity())
 
     def test_status_and_verify_accept_only_exact_mode_forms(self) -> None:
         """Smoke/full observation targets are explicit; other flags stay closed."""

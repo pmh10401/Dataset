@@ -425,9 +425,10 @@ def read_exp472_evaluation_antigravity(root: Path, *, authority: Exp472ReuseAuth
         return persisted
     except (TypeError,ValueError) as error: raise ValueError("Exp472 persisted evaluation differs") from error
 
-def write_exp472_evaluation_antigravity(evaluation: Exp472EvaluationAntigravity, root: Path) -> Exp472EvaluationAntigravity:
-    """Create one canonical evaluation record, or reuse exactly its bytes."""
+def write_exp472_evaluation_antigravity(evaluation: Exp472EvaluationAntigravity, root: Path, *, trusted_recomputed: Exp472EvaluationAntigravity) -> Exp472EvaluationAntigravity:
+    """Publish only a caller-supplied independently recomputed typed evaluation."""
     if not isinstance(evaluation,Exp472EvaluationAntigravity): raise ValueError("Exp472 evaluation publication requires typed evaluation")
+    if not isinstance(trusted_recomputed,Exp472EvaluationAntigravity) or trusted_recomputed.artifact_record()!=evaluation.artifact_record(): raise ValueError("Exp472 evaluation publication trusted recomputation differs")
     record=evaluation.artifact_record()
     _validate_evaluation_record_antigravity(record,authority=evaluation.authority,e_manifest_sha256=evaluation.e_manifest_sha256,context_sha256=evaluation.context_sha256,dataset_order=tuple(evaluation.diagnostic_summary))
     target=_safe_evaluation_root_antigravity(root,create=True); path=evaluation_path_exp472_antigravity(target); payload=canonical_json_bytes_exp472_antigravity(record)
@@ -458,6 +459,6 @@ def read_or_evaluate_exp472_antigravity(root: Path, *, authority: Exp472ReuseAut
             if any(value is not None for value in (e_root,exp471_root,context,catalog)):
                 rebuilt=_rebuild_from_trusted_evidence_antigravity(_labels(evaluation.private_labels,tuple(dataset_order)),authority=authority,e_manifest_sha256=e_manifest_sha256,context_sha256=context_sha256,dataset_order=dataset_order,e_root=e_root,exp471_root=exp471_root,context=context,catalog=catalog)
                 if rebuilt.artifact_record()!=evaluation.artifact_record(): raise ValueError("Exp472 evaluation compute science differs from trusted evidence")
-            return write_exp472_evaluation_antigravity(evaluation,target)
+            return write_exp472_evaluation_antigravity(evaluation,target,trusted_recomputed=rebuilt if any(value is not None for value in (e_root,exp471_root,context,catalog)) else evaluation)
 
 __all__=["EVALUATION_COMPLETE_NAME_ANTIGRAVITY","EVALUATION_NAME_ANTIGRAVITY","Exp472EvaluationAntigravity","Exp472VerifiedEBundleAntigravity","evaluate_exp472_antigravity","evaluation_path_exp472_antigravity","paired_e_minus_d_exp472_antigravity","read_exp472_evaluation_antigravity","read_or_evaluate_exp472_antigravity","write_exp472_evaluation_antigravity"]

@@ -168,8 +168,9 @@ def _evaluation_record_antigravity(evaluation: object) -> Mapping[str, object]:
     if not callable(getattr(evaluation, "artifact_record", None)):
         raise ValueError("Exp472 reporting requires a verified evaluation artifact")
     record = _plain_antigravity(evaluation.artifact_record())
-    if not isinstance(record, dict) or record.get("schema") not in {"exp472-evaluation-antigravity.v2", "exp472-evaluation-antigravity.v3"}:
+    if not isinstance(record, dict) or record.get("schema") != "exp472-evaluation-antigravity.v3" or not isinstance(record.get("private_label_evidence_sha256"),str):
         raise ValueError("Exp472 evaluation artifact differs")
+    _digest_antigravity(record["private_label_evidence_sha256"], "private label evidence digest")
     digest = record.get("evaluation_sha256")
     bare = {key: value for key, value in record.items() if key != "evaluation_sha256"}
     if _digest_antigravity(digest, "evaluation digest") != sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest():
