@@ -1,12 +1,16 @@
 """Path-only, one-label-read Exp472 E-versus-D evaluation."""
 from __future__ import annotations
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from hashlib import sha256
 import json
+import math
 import os
 from pathlib import Path
 import stat
+import tempfile
+import fcntl
 from types import MappingProxyType
 import numpy as np
 from sklearn.metrics import average_precision_score, precision_recall_curve, roc_auc_score, roc_curve
@@ -17,6 +21,7 @@ from .artifacts_antigravity import Exp472CatalogEntryAntigravity, validate_diagn
 METHOD_ORDER_EXP472_ANTIGRAVITY=("A","B","C","D","E","knn_distance","lof_novelty","ocsvm_rbf","isolation_forest","deep_svdd_1d","drocc_1d")
 _DRAWS=20_000; _SEED=47220260828; _TIE=1e-12
 EVALUATION_NAME_ANTIGRAVITY="exp472_evaluation_antigravity.json"
+_EVALUATION_LOCK_NAME_ANTIGRAVITY=".exp472_evaluation_lock_antigravity"
 _EVALUATION_SCHEMA_ANTIGRAVITY="exp472-evaluation-antigravity.v2"
 
 def _vector(value: object, name: str) -> np.ndarray:
@@ -54,7 +59,7 @@ def _read_verified_e_path_antigravity(root: Path, exp471: Exp472VerifiedExp471Bu
         except (TypeError, ValueError) as error:
             raise ValueError("Exp472 E diagnostic differs") from error
         coordinates[entry.dataset]=_coordinate(shard["test_identity"]);scores[entry.dataset]=tuple(shard["scores"]);upsampled[entry.dataset]=diagnostic["upsampled_rows"];makima[entry.dataset]=diagnostic["makima_row_invocation_count"];diagnostic_sha[entry.dataset]=diagnostic["diagnostic_sha256"]
-    return Exp472VerifiedEBundleAntigravity(root,context.database_sha256,exp471.dataset_order,coordinates,scores,upsampled,makima,diagnostic_sha,sha256(canonical_json_bytes_exp472_antigravity(manifest)).hexdigest())
+    return Exp472VerifiedEBundleAntigravity(root,context.database_sha256,exp471.dataset_order,coordinates,scores,upsampled,makima,diagnostic_sha,manifest["manifest_sha256"])
 
 def paired_e_minus_d_exp472_antigravity(e_values:Sequence[object],d_values:Sequence[object],*,seed:int=_SEED)->Mapping[str,object]:
     e=_vector(e_values,"paired E"); d=_vector(d_values,"paired D")
@@ -114,7 +119,8 @@ class Exp472EvaluationAntigravity:
     def artifact_record(self)->dict[str,object]:
         authority=self.authority.__dict__ if hasattr(self.authority,"__dict__") else {name:getattr(self.authority,name) for name in self.authority.__dataclass_fields__}
         bare={"schema":_EVALUATION_SCHEMA_ANTIGRAVITY,"authority":json.loads(canonical_json_bytes_exp472_antigravity(authority).decode("utf-8")),"method_order":list(self.method_order),"per_dataset":[dict(x) for x in self.per_dataset],"subset_per_dataset":[dict(x) for x in self.subset_per_dataset],"macro":{k:dict(v) for k,v in self.macro.items()},"micro":{k:dict(v) for k,v in self.micro.items()},"subset_macro":{k:dict(v) for k,v in self.subset_macro.items()},"subset_micro":{k:dict(v) for k,v in self.subset_micro.items()},"denominators":{k:dict(v) for k,v in self.denominators.items()},"diagnostic_summary":{k:dict(v) for k,v in self.diagnostic_summary.items()},"paired_statistics":[dict(x) for x in self.paired_statistics],"curves":{k:{**{a:b for a,b in v.items() if a!="rows"},"rows":[dict(row) for row in v["rows"]]} for k,v in self.curves.items()},"e_manifest_sha256":self.e_manifest_sha256,"context_sha256":self.context_sha256}
-        return {**bare,"evaluation_sha256":sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
+        canonical_bare=json.loads(canonical_json_bytes_exp472_antigravity(bare).decode("utf-8"))
+        return {**canonical_bare,"evaluation_sha256":sha256(canonical_json_bytes_exp472_antigravity(canonical_bare)).hexdigest()}
 
 def evaluate_exp472_antigravity(e_root:Path,exp471_root:Path,label_loader:Callable[[tuple[str,...]],Mapping[str,Sequence[object]]], *, context: Exp472RunContextAntigravity, catalog: Sequence[Exp472CatalogEntryAntigravity])->Exp472EvaluationAntigravity:
     if not isinstance(e_root,Path) or not isinstance(exp471_root,Path) or not callable(label_loader): raise ValueError("Exp472 evaluation requires Path authorities and label loader")
@@ -166,11 +172,24 @@ def _read_regular_evaluation_antigravity(path: Path) -> bytes:
             chunks.append(block)
     finally: os.close(descriptor)
 
+@contextmanager
+def _evaluation_claim_antigravity(root: Path) -> Iterator[None]:
+    """Serialize the one label-opening writer; flock releases after a crash."""
+    lock=root / _EVALUATION_LOCK_NAME_ANTIGRAVITY
+    flags=os.O_CREAT|os.O_RDWR|getattr(os,"O_NOFOLLOW",0)
+    try: descriptor=os.open(lock,flags,0o600)
+    except OSError as error: raise ValueError("Exp472 evaluation lock is unsafe") from error
+    try:
+        details=os.fstat(descriptor)
+        if not stat.S_ISREG(details.st_mode) or details.st_nlink!=1: raise ValueError("Exp472 evaluation lock is unsafe")
+        fcntl.flock(descriptor,fcntl.LOCK_EX)
+        yield
+    finally:
+        try: fcntl.flock(descriptor,fcntl.LOCK_UN)
+        finally: os.close(descriptor)
+
 def _write_create_or_identical_evaluation_antigravity(path: Path, payload: bytes) -> None:
-    try: descriptor=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600)
-    except FileExistsError:
-        if _read_regular_evaluation_antigravity(path)!=payload: raise ValueError("Exp472 evaluation artifact already differs")
-        return
+    descriptor, temporary=tempfile.mkstemp(prefix=".exp472_evaluation_publish_antigravity_",dir=path.parent)
     try:
         view=memoryview(payload)
         while view:
@@ -179,9 +198,16 @@ def _write_create_or_identical_evaluation_antigravity(path: Path, payload: bytes
             view=view[written:]
         os.fsync(descriptor)
     finally: os.close(descriptor)
-    directory=os.open(path.parent,os.O_RDONLY)
-    try: os.fsync(directory)
-    finally: os.close(directory)
+    try:
+        try: os.link(temporary,path)
+        except FileExistsError:
+            if _read_regular_evaluation_antigravity(path)!=payload: raise ValueError("Exp472 evaluation artifact already differs")
+        directory=os.open(path.parent,os.O_RDONLY)
+        try: os.fsync(directory)
+        finally: os.close(directory)
+    finally:
+        try: os.unlink(temporary)
+        except FileNotFoundError: pass
     if _read_regular_evaluation_antigravity(path)!=payload: raise ValueError("Exp472 evaluation artifact changed after publication")
 
 def _digest_evaluation_antigravity(value: object, name: str) -> str:
@@ -199,6 +225,86 @@ def _read_evaluation_record_antigravity(path: Path) -> Mapping[str, object]:
     if _digest_evaluation_antigravity(record["evaluation_sha256"],"evaluation digest")!=sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest(): raise ValueError("Exp472 evaluation artifact digest differs")
     return MappingProxyType(record)
 
+def _finite_probability_antigravity(value: object) -> bool:
+    return type(value) in (int,float) and math.isfinite(float(value)) and 0.0<=float(value)<=1.0
+
+def _validate_metric_rows_antigravity(rows: object, order: tuple[str,...], methods: tuple[str,...], name: str) -> Mapping[tuple[str,str], Mapping[str,object]]:
+    if not isinstance(rows,list) or len(rows)!=len(order)*len(methods): raise ValueError(f"Exp472 persisted {name} inventory differs")
+    expected=tuple((method,dataset) for method in methods for dataset in order); found=[]; result={}
+    for row in rows:
+        if not isinstance(row,dict) or set(row)!={"method","dataset","average_precision","average_precision_exclusion","auroc","auroc_exclusion"}: raise ValueError(f"Exp472 persisted {name} row differs")
+        pair=(row["method"],row["dataset"]); found.append(pair)
+        for metric in ("average_precision","auroc"):
+            score, exclusion=row[metric],row[f"{metric}_exclusion"]
+            if score is None:
+                if exclusion not in {"typed_abstention","no_positive_test_labels","single_class_test_labels"}: raise ValueError(f"Exp472 persisted {name} exclusion differs")
+            elif not _finite_probability_antigravity(score) or exclusion is not None: raise ValueError(f"Exp472 persisted {name} metric differs")
+        result[pair]=row
+    if tuple(found)!=expected or len(result)!=len(expected): raise ValueError(f"Exp472 persisted {name} coverage differs")
+    return MappingProxyType(result)
+
+def _validate_evaluation_science_antigravity(record: Mapping[str,object], order: tuple[str,...]) -> None:
+    methods=METHOD_ORDER_EXP472_ANTIGRAVITY
+    if len(order)!=1117 or len(set(order))!=1117 or tuple(record["method_order"])!=methods: raise ValueError("Exp472 persisted evaluation inventory differs")
+    summary=record["diagnostic_summary"]
+    if not isinstance(summary,dict) or set(summary)!=set(order): raise ValueError("Exp472 persisted evaluation diagnostic inventory differs")
+    subset=[]
+    for dataset in order:
+        item=summary[dataset]
+        if not isinstance(item,dict) or set(item)!={"upsampled_rows","makima_row_invocation_count","diagnostic_sha256"} or type(item["upsampled_rows"]) is not int or item["upsampled_rows"]<0 or type(item["makima_row_invocation_count"]) is not int or item["makima_row_invocation_count"]<item["upsampled_rows"]: raise ValueError("Exp472 persisted evaluation diagnostic differs")
+        _digest_evaluation_antigravity(item["diagnostic_sha256"],"diagnostic digest")
+        if item["upsampled_rows"]>0: subset.append(dataset)
+    subset_order=tuple(subset); full=_validate_metric_rows_antigravity(record["per_dataset"],order,methods,"per_dataset"); sub=_validate_metric_rows_antigravity(record["subset_per_dataset"],subset_order,methods,"subset_per_dataset")
+    for key, rows, expected_order in (("macro",full,order),("subset_macro",sub,subset_order)):
+        table=record[key]
+        if not isinstance(table,dict) or set(table)!=set(methods): raise ValueError(f"Exp472 persisted {key} differs")
+        for method in methods:
+            value=table[method]
+            required={"average_precision","auroc","average_precision_denominator","auroc_denominator","average_precision_excluded","auroc_excluded"}
+            if not isinstance(value,dict) or set(value)!=required: raise ValueError(f"Exp472 persisted {key} row differs")
+            for metric in ("average_precision","auroc"):
+                scores=[float(rows[(method,d)][metric]) for d in expected_order if rows[(method,d)][metric] is not None]
+                if value[f"{metric}_denominator"]!=len(scores) or (value[metric] is None)!=(not scores) or (scores and (not _finite_probability_antigravity(value[metric]) or not math.isclose(float(value[metric]),float(np.mean(scores)),rel_tol=0,abs_tol=1e-12))): raise ValueError(f"Exp472 persisted {key} metric differs")
+                if value[f"{metric}_excluded"]!=len(expected_order)-len(scores): raise ValueError(f"Exp472 persisted {key} denominator differs")
+    for key, rows in (("micro",full),("subset_micro",sub)):
+        table=record[key]
+        if not isinstance(table,dict) or set(table)!=set(methods): raise ValueError(f"Exp472 persisted {key} differs")
+        for method in methods:
+            value=table[method]
+            if not isinstance(value,dict) or set(value)!={"average_precision","auroc","dataset_denominator","observation_denominator"} or type(value["dataset_denominator"]) is not int or type(value["observation_denominator"]) is not int or value["dataset_denominator"]<0 or value["observation_denominator"]<0: raise ValueError(f"Exp472 persisted {key} row differs")
+            scored=sum(rows[(method,d)]["average_precision"] is not None or rows[(method,d)]["auroc"] is not None for d in (order if key=="micro" else subset_order))
+            if value["dataset_denominator"]!=scored or any(x is not None and not _finite_probability_antigravity(x) for x in (value["average_precision"],value["auroc"])): raise ValueError(f"Exp472 persisted {key} metric differs")
+    den=record["denominators"]
+    if not isinstance(den,dict) or set(den)!={"full_population","upsampled_rows_gt_zero"} or den["full_population"]!={"dataset_count":1117,"observation_count":record["micro"]["E"]["observation_denominator"]} or not isinstance(den["upsampled_rows_gt_zero"],dict) or set(den["upsampled_rows_gt_zero"])!={"dataset_count","observation_count","dataset_order"} or den["upsampled_rows_gt_zero"]["dataset_count"]!=len(subset_order) or tuple(den["upsampled_rows_gt_zero"]["dataset_order"])!=subset_order or den["upsampled_rows_gt_zero"]["observation_count"]!=record["subset_micro"]["E"]["observation_denominator"]: raise ValueError("Exp472 persisted denominators differ")
+    pairs=record["paired_statistics"]
+    if not isinstance(pairs,list) or len(pairs)!=4: raise ValueError("Exp472 persisted paired statistics differ")
+    expected_pairs=tuple((p,m) for p in ("full","upsampled_rows_gt_zero") for m in ("average_precision","auroc"))
+    for row,(population,metric) in zip(pairs,expected_pairs,strict=True):
+        population_order=order if population=="full" else subset_order; rows=full if population=="full" else sub
+        support=tuple(d for d in population_order if rows[("E",d)][metric] is not None and rows[("D",d)][metric] is not None)
+        required={"comparison","population","metric","dataset_order","mean_delta","ci_lower","ci_upper","wins","ties","losses","seed","draw_count","percentile","tie_tolerance"}
+        if not isinstance(row,dict) or set(row)!=required or row["comparison"]!="E-D" or row["population"]!=population or row["metric"]!=metric or tuple(row["dataset_order"])!=support or any(type(row[k]) is not int or row[k]<0 for k in ("wins","ties","losses","draw_count")) or row["wins"]+row["ties"]+row["losses"]!=len(support): raise ValueError("Exp472 persisted paired statistics differs")
+        expected_stat=paired_e_minus_d_exp472_antigravity([rows[("E",dataset)][metric] for dataset in support],[rows[("D",dataset)][metric] for dataset in support]) if support else {"mean_delta":None,"ci_lower":None,"ci_upper":None,"wins":0,"ties":0,"losses":0,"seed":_SEED,"draw_count":0,"percentile":95.0,"tie_tolerance":_TIE}
+        for stat_name, expected_value in expected_stat.items():
+            actual=row[stat_name]
+            if isinstance(expected_value,float):
+                if type(actual) not in (int,float) or not math.isfinite(float(actual)) or not math.isclose(float(actual),expected_value,rel_tol=0,abs_tol=1e-12): raise ValueError("Exp472 persisted paired statistics differs")
+            elif actual!=expected_value: raise ValueError("Exp472 persisted paired statistics differs")
+    curves=record["curves"]
+    if not isinstance(curves,dict) or set(curves)!={"roc","pr"}: raise ValueError("Exp472 persisted curves differs")
+    for name,x,y,ascending in (("roc","false_positive_rate","true_positive_rate",True),("pr","recall","precision",False)):
+        table=curves[name]
+        if not isinstance(table,dict) or set(table)!={"x_name","y_name","rows"} or table["x_name"]!=x or table["y_name"]!=y or not isinstance(table["rows"],list): raise ValueError("Exp472 persisted curve schema differs")
+        grouped={m:[] for m in methods}
+        for row in table["rows"]:
+            required={"method",x,y}|({"threshold"} if name=="roc" else set())
+            if not isinstance(row,dict) or set(row)!=required or row["method"] not in grouped or not _finite_probability_antigravity(row[x]) or not _finite_probability_antigravity(row[y]) or (name=="roc" and row["threshold"] is not None and not (type(row["threshold"]) in (int,float) and math.isfinite(float(row["threshold"])) )): raise ValueError("Exp472 persisted curve row differs")
+            grouped[row["method"]].append(row)
+        if set(m for m,v in grouped.items() if v)!=set(methods): raise ValueError("Exp472 persisted curve membership differs")
+        for values in grouped.values():
+            xx=[float(row[x]) for row in values]; yy=[float(row[y]) for row in values]
+            if len(values)<2 or (name=="roc" and (any(a>b for a,b in zip(xx,xx[1:])) or any(a>b for a,b in zip(yy,yy[1:])) or (xx[0],yy[0])!=(0.0,0.0) or (xx[-1],yy[-1])!=(1.0,1.0))) or (name=="pr" and any(a<b for a,b in zip(xx,xx[1:]))): raise ValueError("Exp472 persisted curve monotonicity differs")
+
 def read_exp472_evaluation_antigravity(root: Path, *, authority: Exp472ReuseAuthorityAntigravity, e_manifest_sha256: str, context_sha256: str, dataset_order: Sequence[str]) -> Exp472EvaluationAntigravity:
     """Reopen only a canonical, authority-bound evaluation; never labels."""
     path=evaluation_path_exp472_antigravity(_safe_evaluation_root_antigravity(root,create=False))
@@ -206,15 +312,10 @@ def read_exp472_evaluation_antigravity(root: Path, *, authority: Exp472ReuseAuth
     expected_authority=json.loads(canonical_json_bytes_exp472_antigravity({name:getattr(authority,name) for name in authority.__dataclass_fields__}).decode("utf-8"))
     if record["authority"]!=expected_authority or _digest_evaluation_antigravity(record["e_manifest_sha256"],"E manifest digest")!=e_manifest_sha256 or _digest_evaluation_antigravity(record["context_sha256"],"context digest")!=context_sha256: raise ValueError("Exp472 persisted evaluation authority differs")
     order=tuple(dataset_order)
-    summary=record["diagnostic_summary"]
-    if tuple(record["method_order"])!=METHOD_ORDER_EXP472_ANTIGRAVITY or not isinstance(summary,dict) or set(summary)!=set(order): raise ValueError("Exp472 persisted evaluation inventory differs")
-    for dataset in order:
-        item=summary[dataset]
-        if not isinstance(item,dict) or set(item)!={"upsampled_rows","makima_row_invocation_count","diagnostic_sha256"} or type(item["upsampled_rows"]) is not int or item["upsampled_rows"]<0 or type(item["makima_row_invocation_count"]) is not int or item["makima_row_invocation_count"]<item["upsampled_rows"]: raise ValueError("Exp472 persisted evaluation diagnostic differs")
-        _digest_evaluation_antigravity(item["diagnostic_sha256"],"diagnostic digest")
+    _validate_evaluation_science_antigravity(record,order)
     try:
         parsed_authority=Exp472ReuseAuthorityAntigravity(**record["authority"])
-        return Exp472EvaluationAntigravity(parsed_authority,tuple(record["method_order"]),tuple(record["per_dataset"]),tuple(record["subset_per_dataset"]),MappingProxyType(record["macro"]),MappingProxyType(record["micro"]),MappingProxyType(record["subset_macro"]),MappingProxyType(record["subset_micro"]),tuple(record["paired_statistics"]),MappingProxyType(record["denominators"]),MappingProxyType(summary),MappingProxyType(record["curves"]),record["e_manifest_sha256"],record["context_sha256"])
+        return Exp472EvaluationAntigravity(parsed_authority,tuple(record["method_order"]),tuple(record["per_dataset"]),tuple(record["subset_per_dataset"]),MappingProxyType(record["macro"]),MappingProxyType(record["micro"]),MappingProxyType(record["subset_macro"]),MappingProxyType(record["subset_micro"]),tuple(record["paired_statistics"]),MappingProxyType(record["denominators"]),MappingProxyType(record["diagnostic_summary"]),MappingProxyType(record["curves"]),record["e_manifest_sha256"],record["context_sha256"])
     except (TypeError,ValueError) as error: raise ValueError("Exp472 persisted evaluation differs") from error
 
 def write_exp472_evaluation_antigravity(evaluation: Exp472EvaluationAntigravity, root: Path) -> Exp472EvaluationAntigravity:
@@ -224,4 +325,16 @@ def write_exp472_evaluation_antigravity(evaluation: Exp472EvaluationAntigravity,
     _write_create_or_identical_evaluation_antigravity(path,payload)
     return read_exp472_evaluation_antigravity(target,authority=evaluation.authority,e_manifest_sha256=evaluation.e_manifest_sha256,context_sha256=evaluation.context_sha256,dataset_order=tuple(evaluation.diagnostic_summary))
 
-__all__=["EVALUATION_NAME_ANTIGRAVITY","Exp472EvaluationAntigravity","Exp472VerifiedEBundleAntigravity","evaluate_exp472_antigravity","evaluation_path_exp472_antigravity","paired_e_minus_d_exp472_antigravity","read_exp472_evaluation_antigravity","write_exp472_evaluation_antigravity"]
+def read_or_evaluate_exp472_antigravity(root: Path, *, authority: Exp472ReuseAuthorityAntigravity, e_manifest_sha256: str, context_sha256: str, dataset_order: Sequence[str], compute: Callable[[], Exp472EvaluationAntigravity]) -> Exp472EvaluationAntigravity:
+    """Read the sealed result, or let exactly one process compute and seal it."""
+    if not callable(compute): raise ValueError("Exp472 evaluation compute differs")
+    target=_safe_evaluation_root_antigravity(root,create=True)
+    with _evaluation_claim_antigravity(target):
+        try:
+            return read_exp472_evaluation_antigravity(target,authority=authority,e_manifest_sha256=e_manifest_sha256,context_sha256=context_sha256,dataset_order=dataset_order)
+        except FileNotFoundError:
+            evaluation=compute()
+            if not isinstance(evaluation,Exp472EvaluationAntigravity): raise ValueError("Exp472 evaluation compute differs")
+            return write_exp472_evaluation_antigravity(evaluation,target)
+
+__all__=["EVALUATION_NAME_ANTIGRAVITY","Exp472EvaluationAntigravity","Exp472VerifiedEBundleAntigravity","evaluate_exp472_antigravity","evaluation_path_exp472_antigravity","paired_e_minus_d_exp472_antigravity","read_exp472_evaluation_antigravity","read_or_evaluate_exp472_antigravity","write_exp472_evaluation_antigravity"]

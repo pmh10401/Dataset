@@ -48,6 +48,7 @@ from .evaluation_antigravity import (
     evaluate_exp472_antigravity,
     evaluation_path_exp472_antigravity,
     read_exp472_evaluation_antigravity,
+    read_or_evaluate_exp472_antigravity,
     write_exp472_evaluation_antigravity,
 )
 from .reporting_antigravity import write_exp472_report_antigravity
@@ -298,8 +299,10 @@ def _status_antigravity(mode: str = "full") -> dict[str, object]:
             # attempting repair or a hidden restart.
             pass
     evaluation_path = evaluation_path_exp472_antigravity(EXP472_EVALUATION_ROOT_ANTIGRAVITY)
-    evaluation_complete = evaluation_path.is_file() and not evaluation_path.is_symlink()
-    return {"experiment": "Exp472", "mode": mode, "paths": _paths_antigravity(mode), "scored": completed, "failed": failed, "remaining": remaining, "eta_seconds": eta_seconds, "evaluation_complete": evaluation_complete, "read_only": True}
+    report_marker = EXP472_REPORT_ROOT_ANTIGRAVITY / ".exp472_report_complete_antigravity.json"
+    evaluation_present = evaluation_path.is_file() and not evaluation_path.is_symlink()
+    report_present = report_marker.is_file() and not report_marker.is_symlink()
+    return {"experiment": "Exp472", "mode": mode, "paths": _paths_antigravity(mode), "scored": completed, "failed": failed, "remaining": remaining, "eta_seconds": eta_seconds, "evaluation_present": evaluation_present, "report_present": report_present, "read_only": True}
 
 
 @dataclass(frozen=True, slots=True)
@@ -501,11 +504,11 @@ def main_antigravity(argv: Sequence[str] | None = None, *, stdout: TextIO | None
         _emit_antigravity(stream, {"experiment": "Exp472", "command": "verify", "exp471_authority": type(exp471).__name__, "e_manifest_sha256": manifest["manifest_sha256"], "read_only": True}); return 0
     if command == "evaluate":
         exp471, manifest, _shards = _verified_authorities_antigravity(typed)
-        try:
-            evaluation = read_exp472_evaluation_antigravity(typed.evaluation_root, authority=exp471.authority, e_manifest_sha256=str(manifest["manifest_sha256"]), context_sha256=typed.context.sha256, dataset_order=exp471.dataset_order)
-        except FileNotFoundError:
-            evaluation = typed.evaluate_antigravity()
-            evaluation = write_exp472_evaluation_antigravity(evaluation, typed.evaluation_root)
+        evaluation = read_or_evaluate_exp472_antigravity(
+            typed.evaluation_root, authority=exp471.authority,
+            e_manifest_sha256=str(manifest["manifest_sha256"]), context_sha256=typed.context.sha256,
+            dataset_order=exp471.dataset_order, compute=typed.evaluate_antigravity,
+        )
         _emit_antigravity(stream, {"experiment": "Exp472", "command": "evaluate", "evaluation_sha256": getattr(evaluation, "artifact_record", lambda: {})().get("evaluation_sha256")}); return 0
     # Report deliberately does not dispatch score generation.  It can only
     # consume completed, independently reopened authorities before evaluation.

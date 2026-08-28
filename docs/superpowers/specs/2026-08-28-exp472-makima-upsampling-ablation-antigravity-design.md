@@ -241,6 +241,19 @@ The actual-upsampling subset is derived only from the sealed v3 trace.
 when a slot is reached through multiple Exp450 phases. Reporting preserves both
 quantities and uses only the former for subset membership.
 
+## Superseding persisted-evaluation repair ruling
+
+The E-manifest binding is the terminal verifier's exact `manifest_sha256`, not
+a hash of a self-containing manifest JSON object. Reuse of a persisted
+evaluation requires strict validation of all 1,117 × 11 full rows, trace-derived
+subset rows, macro/micro summaries, paired statistics, denominators, curves,
+and all diagnostic summaries after canonical-byte and outer-digest validation.
+The first evaluator holds an advisory OS lock across the missing-artifact
+recheck, label read, no-clobber publication, and strict reopen. Final files are
+created by same-directory temporary-file fsync and atomic no-clobber linking;
+they are never replaced. Status therefore reports only observed presence, not
+scientific completion.
+
 Exp472 may conclude that Makima improves, degrades, or is statistically
 indistinguishable from PCHIP. Algorithmically valid numerical differences are
 accepted and reported. A confidence interval crossing zero is described as no

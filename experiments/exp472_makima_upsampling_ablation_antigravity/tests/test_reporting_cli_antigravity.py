@@ -788,7 +788,7 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
         """A names-only object cannot replace typed Task4/Task5 boundaries."""
         bundle, runtime = self._runtime_antigravity()
         manifest = {**_task5_manifest_antigravity(bundle, runtime.context), "manifest_sha256": _SHA}
-        with mock.patch.object(cli, "verify_exp471_reuse_exp472_antigravity", return_value=bundle) as exp471, mock.patch.object(cli, "verify_manifest_exp472_antigravity", return_value=manifest) as verify_manifest, mock.patch.object(cli, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: _task5_shard_antigravity(entry)) as verify_shard, mock.patch.object(cli, "read_exp472_evaluation_antigravity", side_effect=FileNotFoundError), mock.patch.object(cli, "write_exp472_evaluation_antigravity", return_value=_EvaluationAntigravity()), mock.patch.object(cli, "evaluate_exp472_antigravity", return_value=_EvaluationAntigravity()) as evaluate:
+        with mock.patch.object(cli, "verify_exp471_reuse_exp472_antigravity", return_value=bundle) as exp471, mock.patch.object(cli, "verify_manifest_exp472_antigravity", return_value=manifest) as verify_manifest, mock.patch.object(cli, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: _task5_shard_antigravity(entry)) as verify_shard, mock.patch.object(cli, "read_or_evaluate_exp472_antigravity", side_effect=lambda *_args, **kwargs: kwargs["compute"]()), mock.patch.object(cli, "evaluate_exp472_antigravity", return_value=_EvaluationAntigravity()) as evaluate:
             self.assertEqual(main_antigravity(("evaluate",), runtime=runtime, stdout=io.StringIO()), 0)
         self.assertEqual((exp471.call_count, verify_manifest.call_count, verify_shard.call_count, evaluate.call_count), (1, 1, 1117, 1))
         self.assertEqual(evaluate.call_args.kwargs, {"context": runtime.context, "catalog": runtime.catalog})
@@ -798,7 +798,7 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
         """A second evaluate must reopen the sealed artifact, not the TEST labels."""
         bundle, runtime = self._runtime_antigravity()
         manifest = {**_task5_manifest_antigravity(bundle, runtime.context), "manifest_sha256": _SHA}
-        with mock.patch.object(cli, "_verified_authorities_antigravity", return_value=(bundle, manifest, ())), mock.patch.object(cli, "read_exp472_evaluation_antigravity", return_value=_EvaluationAntigravity()) as read, mock.patch.object(cli.Exp472ControllerRuntimeAntigravity, "evaluate_antigravity", side_effect=AssertionError("labels must stay closed")) as evaluate:
+        with mock.patch.object(cli, "_verified_authorities_antigravity", return_value=(bundle, manifest, ())), mock.patch.object(cli, "read_or_evaluate_exp472_antigravity", return_value=_EvaluationAntigravity()) as read, mock.patch.object(cli.Exp472ControllerRuntimeAntigravity, "evaluate_antigravity", side_effect=AssertionError("labels must stay closed")) as evaluate:
             self.assertEqual(main_antigravity(("evaluate",), runtime=runtime, stdout=io.StringIO()), 0)
         read.assert_called_once()
         evaluate.assert_not_called()

@@ -1472,9 +1472,11 @@
     "official_label_access_count": 0,
     "reporting_evaluation_v3_authority": {
       "evaluation_artifact": "evaluation_antigravity/exp472_evaluation_antigravity.json",
-      "evaluate_behavior": "reopen first; only a missing artifact opens TEST labels once and is then create-or-identical published and reread",
+      "evaluate_behavior": "strict persisted fast path; OS-locked recheck means only one claimant can open TEST labels, then same-directory fsync plus atomic no-clobber publication and strict reread",
       "report_behavior": "reopen Exp471, E, and persisted evaluation only; fail before report leaves on any authority or dataset diagnostic mismatch",
-      "diagnostic_subset_rule": "upsampled_rows is unique trace-derived slots; makima_row_invocation_count is repeated exposure and is not a subset denominator"
+      "diagnostic_subset_rule": "upsampled_rows is unique trace-derived slots; makima_row_invocation_count is repeated exposure and is not a subset denominator",
+      "terminal_e_manifest_rule": "bind the verified terminal manifest_sha256 field exactly; never hash a manifest containing its self-digest",
+      "status_rule": "presence flags are observational only; completion requires strict authority reopen"
     },
     "next_action": "complete_verified_exp472_implementation_before_values_only_smoke"
   }

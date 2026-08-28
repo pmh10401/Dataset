@@ -27,6 +27,14 @@ $PYTHON scratch/run_exp472_makima_upsampling_ablation_antigravity.py report
 
 `verify`는 E 1,117개와 동결된 Exp471 권한을 읽기 전용으로 다시 확인합니다. `evaluate`는 먼저 `evaluation_antigravity/exp472_evaluation_antigravity.json`을 canonical bytes와 권한 digest로 다시 확인합니다. 유효한 파일이 있으면 TEST label을 다시 열지 않고 그 파일을 반환합니다. 파일이 없을 때만 두 권한 검증 뒤에 한 번 평가하고 create-or-identical 방식으로 저장한 뒤 다시 읽어 확인합니다. `report`는 이 저장된 평가 파일과 E/Exp471 권한만 읽으며, 평가 함수·label loader·점수 생성을 호출하지 않습니다. 파일이 없거나 검증에 실패하면 15개 보고서 리프를 만들기 전에 중단합니다.
 
+평가 파일은 경로가 존재한다고 완료로 간주하지 않습니다. `status`의
+`evaluation_present`와 `report_present`는 단순 관측값이며, 실제 완료 판단은
+`evaluate` 또는 `report`가 canonical bytes, digest, 1,117개 데이터셋과 11개
+기법의 표, 부분집합·곡선·진단 요약을 다시 검증한 결과로만 합니다. 동시에
+`evaluate`를 실행해도 OS 잠금 때문에 한 프로세스만 TEST label을 열 수
+있습니다. 그 프로세스는 같은 디렉터리의 임시 파일을 fsync한 뒤 원자적
+no-clobber 방식으로 최종 이름을 만들고, 기존 최종 파일을 교체하지 않습니다.
+
 예상 최종 수는 E 1,117개 shard, Exp471 재사용 11,170개 shard(10,775 scored + 395 abstained + 0 failed), 공통 support 922개입니다. 보고서는 `report_antigravity`에 15개 리프, manifest, 완료 marker 순서로 생성됩니다.
 
 설명할 수 없는 실패가 발생하면 재시작하지 마십시오. `progress_antigravity.jsonl`과 `failures_antigravity.jsonl` 및 실패 시점의 표준 출력·오류를 보존하고 원인을 먼저 검토합니다.

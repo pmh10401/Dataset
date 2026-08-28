@@ -3,8 +3,11 @@ from __future__ import annotations
 
 from dataclasses import replace
 from hashlib import sha256
+import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import threading
+import time
 from types import SimpleNamespace
 from unittest.mock import patch
 import unittest
@@ -20,7 +23,7 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.authority_antigra
 from experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravity import BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY, BOOTSTRAP_DRAWS_ANTIGRAVITY, BOOTSTRAP_SEED_ANTIGRAVITY, EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY, EXP472_OFFICIAL_ROOT_ANTIGRAVITY
 from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigravity import Exp472BackendDecisionAntigravity, Exp472RunContextAntigravity, canonical_json_bytes_exp472_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import Exp472AlignmentTraceAntigravity, align_rows_exp472_antigravity
-from experiments.exp472_makima_upsampling_ablation_antigravity.evaluation_antigravity import Exp472EvaluationAntigravity, Exp472VerifiedEBundleAntigravity, evaluate_exp472_antigravity, read_exp472_evaluation_antigravity, write_exp472_evaluation_antigravity
+from experiments.exp472_makima_upsampling_ablation_antigravity.evaluation_antigravity import Exp472EvaluationAntigravity, Exp472VerifiedEBundleAntigravity, evaluate_exp472_antigravity, read_exp472_evaluation_antigravity, read_or_evaluate_exp472_antigravity, write_exp472_evaluation_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import test_identity_exp472_antigravity
 
 _ROOT = Path("/private/tmp/exp472-task5-fixture-antigravity")
@@ -117,7 +120,7 @@ def _context_and_catalog(bundle: Exp472VerifiedExp471BundleAntigravity) -> tuple
     return context, catalog
 
 def _manifest(bundle: Exp472VerifiedExp471BundleAntigravity, context: Exp472RunContextAntigravity) -> dict[str, object]:
-    return {"database_sha256": bundle.authority.database_sha256, "catalog_sha256": context.catalog_sha256, "dataset_order": list(bundle.dataset_order), "descriptors": [{"dataset": dataset, "shard_sha256": _digest(f"E:{dataset}")} for dataset in bundle.dataset_order]}
+    return {"database_sha256": bundle.authority.database_sha256, "catalog_sha256": context.catalog_sha256, "dataset_order": list(bundle.dataset_order), "descriptors": [{"dataset": dataset, "shard_sha256": _digest(f"E:{dataset}")} for dataset in bundle.dataset_order], "manifest_sha256": _digest("terminal-manifest")}
 
 def _shard(entry: Exp472CatalogEntryAntigravity, *, upsampled: bool = True) -> dict[str, object]:
     trace = Exp472AlignmentTraceAntigravity(entry.dataset)
@@ -131,31 +134,29 @@ def _shard(entry: Exp472CatalogEntryAntigravity, *, upsampled: bool = True) -> d
     diagnostic = dict(trace.seal())
     return {"dataset": entry.dataset, "shard_sha256": _digest(f"E:{entry.dataset}"), "test_identity": dict(entry.test_identity), "scores": [0.2, 0.8], "upsampled_rows": diagnostic["upsampled_rows"], "diagnostic": diagnostic}
 
+def _complete_evaluation_antigravity(bundle: Exp472VerifiedExp471BundleAntigravity, context: Exp472RunContextAntigravity, catalog: tuple[Exp472CatalogEntryAntigravity, ...]):
+    """Produce the full 11×1,117 scientific fixture through real evaluation code."""
+    with patch.object(evaluation_module, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), patch.object(evaluation_module, "verify_manifest_exp472_antigravity", return_value=_manifest(bundle, context)), patch.object(evaluation_module, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: _shard(entry)):
+        return evaluate_exp472_antigravity(_ROOT, _ROOT, lambda order: {dataset: (0, 1) for dataset in order}, context=context, catalog=catalog)
+
 class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
+    def test_evaluation_binds_the_verified_terminal_manifest_digest(self) -> None:
+        """The manifest self-digest, not a hash of the full self-containing JSON, is authority."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle); manifest = _manifest(bundle, context)
+        with patch.object(evaluation_module, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), patch.object(evaluation_module, "verify_manifest_exp472_antigravity", return_value=manifest), patch.object(evaluation_module, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: _shard(entry)):
+            result = evaluate_exp472_antigravity(_ROOT, _ROOT, lambda order: {dataset: (0, 1) for dataset in order}, context=context, catalog=catalog)
+        self.assertEqual(result.e_manifest_sha256, manifest["manifest_sha256"])
+
     def test_evaluation_publication_reopens_only_canonical_authority_bound_bytes(self) -> None:
         """The durable evaluation is create-or-identical and independently reopenable."""
-        bundle = _bundle(); context, _catalog = _context_and_catalog(bundle)
-        summary = {
-            dataset: {
-                "upsampled_rows": 0,
-                "makima_row_invocation_count": 0,
-                "diagnostic_sha256": _digest(f"diagnostic:{dataset}"),
-            }
-            for dataset in bundle.dataset_order
-        }
-        evaluation = Exp472EvaluationAntigravity(
-            bundle.authority, ("A", "B", "C", "D", "E", *_METHODS[4:]), (), (),
-            {}, {}, {}, {}, (), {}, summary,
-            {"roc": {"x_name": "false_positive_rate", "y_name": "true_positive_rate", "rows": ()}, "pr": {"x_name": "recall", "y_name": "precision", "rows": ()}},
-            _digest("manifest"), context.sha256,
-        )
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle); evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
         with TemporaryDirectory(prefix="exp472-evaluation-publication-antigravity-") as temporary:
             root = Path(temporary) / "evaluation_antigravity"
             first = write_exp472_evaluation_antigravity(evaluation, root)
             second = write_exp472_evaluation_antigravity(evaluation, root)
             self.assertEqual(first.artifact_record(), second.artifact_record())
             reopened = read_exp472_evaluation_antigravity(
-                root, authority=bundle.authority, e_manifest_sha256=_digest("manifest"),
+                root, authority=bundle.authority, e_manifest_sha256=_manifest(bundle, context)["manifest_sha256"],
                 context_sha256=context.sha256, dataset_order=bundle.dataset_order,
             )
             self.assertEqual(reopened.artifact_record(), evaluation.artifact_record())
@@ -163,9 +164,51 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
             path.write_bytes(path.read_bytes() + b"\n")
             with self.assertRaisesRegex(ValueError, "noncanonical"):
                 read_exp472_evaluation_antigravity(
-                    root, authority=bundle.authority, e_manifest_sha256=_digest("manifest"),
+                    root, authority=bundle.authority, e_manifest_sha256=_manifest(bundle, context)["manifest_sha256"],
                     context_sha256=context.sha256, dataset_order=bundle.dataset_order,
                 )
+
+    def test_recomputed_digest_cannot_hide_missing_scientific_sections(self) -> None:
+        """A self-consistent digest is insufficient without the complete 1,117×11 science inventory."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle); evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
+        with TemporaryDirectory(prefix="exp472-evaluation-strict-antigravity-") as temporary:
+            root = Path(temporary) / "evaluation_antigravity"; write_exp472_evaluation_antigravity(evaluation, root)
+            path = root / "exp472_evaluation_antigravity.json"
+            baseline = json.loads(path.read_text(encoding="utf-8"))
+            mutations = {
+                "per_dataset": lambda record: record.__setitem__("per_dataset", []),
+                "macro": lambda record: record.__setitem__("macro", {}),
+                "micro": lambda record: record.__setitem__("micro", {}),
+                "subset": lambda record: record.__setitem__("subset_per_dataset", []),
+                "paired": lambda record: record.__setitem__("paired_statistics", []),
+                "denominators": lambda record: record.__setitem__("denominators", {}),
+                "diagnostic": lambda record: record.__setitem__("diagnostic_summary", {}),
+                "curves": lambda record: record.__setitem__("curves", {}),
+            }
+            for name, mutate in mutations.items():
+                with self.subTest(section=name):
+                    changed = json.loads(json.dumps(baseline)); mutate(changed)
+                    bare = {key: value for key, value in changed.items() if key != "evaluation_sha256"}
+                    changed["evaluation_sha256"] = sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()
+                    path.write_bytes(canonical_json_bytes_exp472_antigravity(changed))
+                    with self.assertRaises(ValueError):
+                        read_exp472_evaluation_antigravity(root, authority=bundle.authority, e_manifest_sha256=_manifest(bundle, context)["manifest_sha256"], context_sha256=context.sha256, dataset_order=bundle.dataset_order)
+
+    def test_concurrent_evaluation_opens_labels_once_and_reuses_identical_bytes(self) -> None:
+        """The process-safe claim makes one compute winner; waiters reopen its sealed result."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle); evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
+        with TemporaryDirectory(prefix="exp472-evaluation-concurrent-antigravity-") as temporary:
+            root = Path(temporary) / "evaluation_antigravity"; calls: list[int] = []; results: list[str] = []; errors: list[BaseException] = []; gate = threading.Barrier(2)
+            def compute() -> Exp472EvaluationAntigravity:
+                calls.append(1); time.sleep(0.05); return evaluation
+            def worker() -> None:
+                try:
+                    gate.wait()
+                    value = read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=_manifest(bundle, context)["manifest_sha256"], context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=compute)
+                    results.append(value.artifact_record()["evaluation_sha256"])
+                except BaseException as error: errors.append(error)
+            first = threading.Thread(target=worker); second = threading.Thread(target=worker); first.start(); second.start(); first.join(); second.join()
+            self.assertEqual(errors, []); self.assertEqual(calls, [1]); self.assertEqual(len(set(results)), 1)
 
     def test_v2_diagnostic_is_rejected_before_labels(self) -> None:
         """The retired raw-replay schema never crosses the label firewall."""

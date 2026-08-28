@@ -891,6 +891,20 @@ closed. Call-level CSV rows exist only for actual invocations; a sealed zero
 call trace contributes no placeholder row while its dataset summary remains
 authoritative.
 
+### Task 8 amendment: persisted evaluation repair
+
+The terminal E authority is exactly the verified
+`manifest_sha256` field, never a second hash of a JSON object containing that
+self-digest. A persisted evaluation is accepted only after canonical-byte,
+outer-digest, authority, full 1,117-dataset × 11-method scientific inventory,
+subset, denominator, paired-statistic, curve, and diagnostic-summary checks.
+`evaluate` takes an advisory OS claim before rechecking the artifact. Only the
+claim holder may open TEST labels; all waiters reopen the holder's verified
+record. Publication writes and fsyncs a same-directory temporary file, creates
+the final name with atomic no-clobber linking, fsyncs the directory, removes the
+temporary file, and never replaces an existing final artifact. Status exposes
+only untrusted presence flags rather than treating a pathname as completion.
+
 **Files:**
 - Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/evaluation_antigravity`
 - Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/report_antigravity`
