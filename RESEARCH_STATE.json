@@ -1,13 +1,14 @@
 {
   "schema": "autonomous-research-state.v1",
-  "updated_at": "2026-08-20T16:01:31+09:00",
+  "updated_at": "2026-08-28T10:08:31+09:00",
   "objective": "Find a clearly improved label-free anomaly detector using only the frozen local dataset.",
-  "branch": "codex/exp444-train-only-stability-precision-gate-antigravity",
-  "worktree": "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence",
+  "branch": "codex/exp472-makima-ablation-antigravity",
+  "worktree": "/Users/mac/.codex/worktrees/e1be/Time Series/.worktrees/exp472-makima-ablation-antigravity",
   "last_verified_commit": "cb46a6bcc233d0cfefe226e1c3054dfaca5081a8",
-  "active_experiment": "Exp450",
-  "active_phase": "smoke_v3_verified_ready_for_full_1117",
-  "status": "smoke_v3_verified_ready_for_full_1117",
+  "active_experiment": "Exp472",
+  "active_phase": "implementation_planned",
+  "state": "implementation_planned",
+  "status": "implementation_planned",
   "paper_r4_smoke_remediation_antigravity": {
     "status": "verified_v2_smoke_immutable_evidence_v3_absent",
     "failed_smoke_root": "/Users/mac/Documents/Dataset/paper_proposal_r4_prelaunch_smoke_antigravity_20260813",
@@ -47,11 +48,8 @@
   },
   "dataset_count": 1117,
   "active_documents": {
-    "design": "docs/superpowers/specs/2026-08-20-exp450-resampling-image-ablation-antigravity-design.md",
-    "plan": "docs/superpowers/plans/2026-08-20-exp450-resampling-image-ablation-antigravity.md",
-    "preregistration": "docs/EXP450_PREREGISTRATION_antigravity_KO.md",
-    "runbook": "docs/EXP450_RUNBOOK_antigravity_KO.md",
-    "implementation_report": "docs/EXP450_IMPLEMENTATION_REPORT_antigravity.md"
+    "design": "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md",
+    "plan": "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md"
   },
   "exp448_exp447_text_label_boundary_repair": {
     "experiment": "Exp448",
@@ -1433,5 +1431,43 @@
     "evaluation_result": "not_run",
     "report_result": "not_run",
     "next_action": "run_full_1117_then_fresh_verify_without_test_labels"
+  },
+  "exp472_makima_upsampling_ablation_antigravity": {
+    "experiment": "Exp472",
+    "status": "implementation_planned",
+    "design": "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md",
+    "plan": "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md",
+    "database_path": "/Users/mac/Documents/Dataset/univariate_ts.db",
+    "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+    "dataset_count": 1117,
+    "test_row_count": 195900,
+    "smoke_dataset_count": 23,
+    "new_condition": {
+      "condition_id": "E",
+      "downsampling": "polyphase",
+      "upsampling": "makima",
+      "image_mode": "area"
+    },
+    "control_condition": "Exp471 condition D",
+    "proposal_policy": "hard_plus_stable",
+    "score_threshold": 0.5,
+    "artifact_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828",
+    "smoke_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/smoke_antigravity",
+    "official_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/official_antigravity",
+    "evaluation_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/evaluation_antigravity",
+    "report_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/report_antigravity",
+    "exp471_reuse_root": "/Users/mac/Documents/Dataset/exp471_exp467_evaluation_recovery_antigravity_20260824",
+    "bootstrap_seed": 47220260828,
+    "bootstrap_draws": 20000,
+    "tie_tolerance": 1e-12,
+    "mps_canonical_when_available": true,
+    "mlx_assessed_but_unsuitable_for_exact_scipy_interpolation": true,
+    "smoke_started": false,
+    "official_run_started": false,
+    "evaluation_started": false,
+    "report_started": false,
+    "test_labels_opened": false,
+    "official_label_access_count": 0,
+    "next_action": "complete_verified_exp472_implementation_before_values_only_smoke"
   }
 }
