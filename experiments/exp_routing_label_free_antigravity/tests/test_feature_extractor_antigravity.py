@@ -14,11 +14,22 @@ def test_basic_features_shape_and_range() -> None:
     rng = np.random.default_rng(0)
     X = rng.standard_normal((100, 140))
     f = extract_routing_features_antigravity(X)
-    assert set(f) == {"width", "n_train", "spectral_entropy", "skewness", "kurtosis", "ref_score_var"}
+    assert set(f) == {
+        "width",
+        "n_train",
+        "spectral_entropy",
+        "skewness",
+        "kurtosis",
+        "ref_score_var",
+        "diff_std_ratio",
+        "zero_crossing_rate",
+    }
     assert f["width"] == 140 and f["n_train"] == 100
     assert 0.0 <= f["spectral_entropy"] <= 1.0
     assert abs(f["skewness"]) < 1.0
     assert abs(f["kurtosis"]) < 2.0
+    assert f["diff_std_ratio"] > 0.0
+    assert 0.0 <= f["zero_crossing_rate"] <= 1.0
 
 
 def test_periodic_signal_has_lower_entropy_than_noise() -> None:

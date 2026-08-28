@@ -1,0 +1,104 @@
+{
+  "schema": "exp478_full_1117_official_routing_codemap_v1",
+  "current_commit": "82daefaeac56ecc2391fd9457c6ded1ecf9b1787",
+  "frozen_exp477_result_sha256": "e794cc506d7579fc63e2fe96ccfebc794a330975f6a4375889419263bc877949",
+  "nodes": [
+    {
+      "id": "database_population",
+      "path": "/Users/mac/Documents/Dataset/univariate_ts.db",
+      "caller": "Exp478 runner read-only",
+      "effect": "Defines 1119 registered datasets, 1118 mapped normal-class datasets, and 1117 mapped datasets with at least two normal TRAIN rows.",
+      "tests": ["experiments/exp478_full_1117_official_routing_antigravity/tests/test_runner_antigravity.py"]
+    },
+    {
+      "id": "official_feature_router",
+      "path": "experiments/exp_routing_label_free_antigravity/conservative_policy_antigravity.py",
+      "caller": "official router and Exp478 determinism check",
+      "effect": "Returns one method from seven numeric TRAIN features using the pinned Exp477 artifact and rules.",
+      "tests": ["experiments/exp_routing_label_free_antigravity/tests/test_conservative_policy_antigravity.py"]
+    },
+    {
+      "id": "official_router",
+      "path": "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py",
+      "caller": "Exp478 full-population runner",
+      "effect": "Loads normal TRAIN rows, excludes only rows containing non-finite values when at least two clean rows remain, and returns the official method.",
+      "tests": ["experiments/exp_routing_label_free_antigravity/tests/test_official_router_antigravity.py"]
+    },
+    {
+      "id": "ragged_features",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/ragged_features_antigravity.py",
+      "caller": "official router",
+      "effect": "Computes the frozen seven TRAIN-only features after the official router excludes non-finite rows.",
+      "tests": ["experiments/exp474_conservative_fallback_routing_antigravity/tests/test_ragged_features_antigravity.py"]
+    },
+    {
+      "id": "pipeline_integration",
+      "path": "experiments/exp_routing_label_free_antigravity/pipeline_integration_antigravity.py",
+      "caller": "Exp478 full-population runner",
+      "effect": "Must return a singleton equal to the direct official route for all 1117 datasets.",
+      "tests": ["experiments/exp_routing_label_free_antigravity/tests/test_pipeline_integration_antigravity.py"]
+    },
+    {
+      "id": "frozen_score_records",
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints",
+      "caller": "Exp478 score replay read-only",
+      "effect": "Provides candidate outcomes for the 962 datasets whose AUC and ZF can be evaluated; the other 155 routed datasets do not receive performance claims.",
+      "tests": []
+    },
+    {
+      "id": "exp478_runner",
+      "path": "experiments/exp478_full_1117_official_routing_antigravity/run_antigravity.py",
+      "caller": "approved Exp478 operator",
+      "effect": "Selects the 1117 population, checks every route, replays 962 scored outcomes, checkpoints progress, and renders HTML.",
+      "tests": ["experiments/exp478_full_1117_official_routing_antigravity/tests/test_runner_antigravity.py"]
+    },
+    {
+      "id": "exp478_checkpoint",
+      "path": "experiments/exp478_full_1117_official_routing_antigravity/checkpoint_antigravity.json",
+      "caller": "Exp478 runner and dashboard",
+      "effect": "Preserves completed per-dataset route checks so progress is visible and resumable.",
+      "tests": ["experiments/exp478_full_1117_official_routing_antigravity/tests/test_runner_antigravity.py"]
+    },
+    {
+      "id": "exp478_result",
+      "path": "experiments/exp478_full_1117_official_routing_antigravity/results_antigravity.json",
+      "caller": "Exp478 dashboard and verification",
+      "effect": "Separates 1117 routing coverage from 962 score-replay performance and records both exclusions.",
+      "tests": ["experiments/exp478_full_1117_official_routing_antigravity/tests/test_runner_antigravity.py"]
+    },
+    {
+      "id": "exp478_dashboard",
+      "path": "docs/EXP478_DASHBOARD_antigravity.html",
+      "caller": "user",
+      "effect": "Shows live progress, final routing coverage, score-replay metrics, exclusions, and checked completed tasks in easy Korean.",
+      "tests": ["experiments/exp478_full_1117_official_routing_antigravity/tests/test_runner_antigravity.py"]
+    }
+  ],
+  "edges": [
+    {"from": "database_population", "to": "exp478_runner", "type": "selects"},
+    {"from": "official_feature_router", "to": "exp478_runner", "type": "checks_determinism"},
+    {"from": "ragged_features", "to": "official_router", "type": "extracts_features"},
+    {"from": "official_router", "to": "exp478_runner", "type": "routes"},
+    {"from": "pipeline_integration", "to": "exp478_runner", "type": "cross_checks"},
+    {"from": "frozen_score_records", "to": "exp478_runner", "type": "replays"},
+    {"from": "exp478_runner", "to": "exp478_checkpoint", "type": "checkpoints"},
+    {"from": "exp478_runner", "to": "exp478_result", "type": "writes"},
+    {"from": "exp478_checkpoint", "to": "exp478_dashboard", "type": "renders_progress"},
+    {"from": "exp478_result", "to": "exp478_dashboard", "type": "renders_final"}
+  ],
+  "constraints": [
+    "The routing population is exactly 1117 mapped datasets with at least two normal TRAIN rows.",
+    "CornellWhaleChallenge is excluded because it is not a normal-class-mapped dataset; Phoneme_normal_39 is excluded because it has one normal TRAIN row.",
+    "All 1117 datasets must produce one valid deterministic method and identical feature/direct/pipeline results.",
+    "For the 19 missing-value datasets, exactly 164 rows containing 983 NaN or Inf values are excluded without interpolation; finite rows and the frozen feature formulas remain unchanged.",
+    "Performance claims use only the 962 frozen score records; the remaining 155 datasets receive routing coverage claims only.",
+    "Dataset names locate database rows and identify report entries but are not policy features.",
+    "The database, official sources, Exp474 through Exp477 results, and frozen checkpoints remain read-only.",
+    "No new score source or dense tensor stage is introduced, so MLX assessment is not applicable."
+  ],
+  "official_router_sha256": "9d42dad06e92ae136a760db8771506377b3ccdca8615122ce1b0b43bca0b927c",
+  "checkpoint_sha256": "fac71c7cb25e1673a697e302015310b9f3b5348e1688d43e0f173f611614c5d2",
+  "result_sha256": "7af31a8849c00af9a3021fea60f9cedc4e0b537b0a1ac483d4f5c5f7ec0d26cc",
+  "dashboard_sha256": "43fa25b8d9360bf80d7c2afff165c8d79222d9940cd0e0614a7696a141f83b9d",
+  "future_declared_paths": []
+}

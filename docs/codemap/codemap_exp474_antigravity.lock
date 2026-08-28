@@ -1,0 +1,26 @@
+{
+  "schema": "exp474_conservative_fallback_codemap_lock_v1",
+  "current_commit": "82daefaeac56ecc2391fd9457c6ded1ecf9b1787",
+  "triplet": [
+    "docs/codemap/codemap_exp474_antigravity.html",
+    "docs/codemap/codemap_exp474_antigravity.json",
+    "docs/codemap/codemap_exp474_antigravity.lock"
+  ],
+  "represented_paths": [
+    "experiments/exp_routing_label_free_antigravity/feature_extractor_antigravity.py",
+    "experiments/exp_routing_label_free_antigravity/routing_rules_antigravity.py",
+    "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py",
+    "experiments/exp_routing_label_free_antigravity/pipeline_integration_antigravity.py",
+    "experiments/exp_routing_label_free_antigravity/checkpoints",
+    "experiments/exp474_conservative_fallback_routing_antigravity/policy_antigravity.py",
+    "experiments/exp474_conservative_fallback_routing_antigravity/ragged_features_antigravity.py",
+    "experiments/exp474_conservative_fallback_routing_antigravity/evaluation_antigravity.py",
+    "experiments/exp474_conservative_fallback_routing_antigravity/run_antigravity.py",
+    "experiments/exp474_conservative_fallback_routing_antigravity/tests/test_policy_antigravity.py",
+    "experiments/exp474_conservative_fallback_routing_antigravity/tests/test_ragged_features_antigravity.py",
+    "experiments/exp474_conservative_fallback_routing_antigravity/tests/test_evaluation_antigravity.py",
+    "experiments/exp474_conservative_fallback_routing_antigravity/train_features_antigravity.json",
+    "experiments/exp474_conservative_fallback_routing_antigravity/results_antigravity.json",
+    "docs/EXP474_DASHBOARD_antigravity.html"
+  ]
+}

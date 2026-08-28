@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp479 성능 미산출 155개 복구 구현 계획</title>
+  <style>
+    :root { color-scheme: light; --ink:#182230; --line:#d8dee8; --soft:#f5f7fa; --blue:#175cd3; --green:#08783e; --amber:#b54708; }
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 1080px; margin: 32px auto; padding: 0 20px 60px; line-height: 1.62; color: var(--ink); }
+    h1, h2, h3 { line-height: 1.25; }
+    h2 { margin-top: 34px; border-bottom: 1px solid var(--line); padding-bottom: 7px; }
+    h3 { margin-top: 26px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 22px; }
+    th, td { border: 1px solid var(--line); padding: 9px 11px; text-align: left; vertical-align: top; }
+    th { background: #eef2f7; }
+    code { background: #eef2f7; padding: 2px 5px; border-radius: 4px; }
+    pre { overflow-x: auto; background: #101828; color: #f2f4f7; padding: 14px; border-radius: 8px; line-height: 1.45; }
+    pre code { background: transparent; padding: 0; }
+    .summary { border-left: 5px solid var(--blue); background: #eff8ff; padding: 13px 16px; }
+    .pass { border-left: 5px solid var(--green); background: #f2fbf6; padding: 13px 16px; }
+    .warning { border-left: 5px solid var(--amber); background: #fff8f0; padding: 13px 16px; }
+    .task { border: 1px solid var(--line); border-radius: 10px; padding: 4px 18px 18px; margin: 20px 0; }
+    .files { background: var(--soft); padding: 10px 14px; border-radius: 7px; }
+    label { display: block; margin: 8px 0; }
+    input { margin-right: 8px; }
+    .small { color: #475467; font-size: .94rem; }
+  </style>
+</head>
+<body>
+  <h1>Exp479 성능 미산출 155개 복구 구현 계획</h1>
+  <p class="summary"><strong>목표:</strong> 길이가 서로 달라 기존 평가에서 빠진 155개 데이터셋을 Numba 선형 재표본화로 복구하고, 기존 네 방법의 성능과 공식 라우팅 결과를 계산합니다. 기존 962개 결과는 다시 계산하거나 바꾸지 않고, 마지막에 155개 결과와 합쳐 1,117개 전체 수치를 만듭니다.</p>
+  <p class="pass"><strong>현재 판단:</strong> 파생 데이터셋 안의 <code>TRAIN label=0</code>은 정상 클래스가 맞습니다. 데이터셋 이름의 <code>_normal_숫자</code>는 원본에서 어떤 라벨을 정상으로 골랐는지를 나타낼 뿐이며, Exp479 대상 선정 기준으로 사용하지 않습니다.</p>
+
+  <h2>1. 고정 범위</h2>
+  <table>
+    <tr><th>항목</th><th>고정 내용</th></tr>
+    <tr><td>대상</td><td>Exp478의 1,117개 모집단에서 기존 정상 점수 레코드 962개를 뺀 정확히 155개</td></tr>
+    <tr><td>제외</td><td><code>CornellWhaleChallenge</code>, <code>Phoneme_normal_39</code></td></tr>
+    <tr><td>TRAIN</td><td>각 파생 데이터셋 내부의 <code>label=0</code> 행만 사용</td></tr>
+    <tr><td>비유한 값</td><td>NaN 또는 Inf가 하나라도 있는 행 전체를 제외하며 값을 채우지 않음</td></tr>
+    <tr><td>목표 길이</td><td>남은 TRAIN 정상 행 길이를 정렬한 뒤 <code>lengths[(n-1)//2]</code>로 작은 쪽 중앙 길이 선택</td></tr>
+    <tr><td>길이 맞추기</td><td>Numba CPU 선형 재표본화만 사용. 별도 NumPy 보간 fallback은 만들지 않음</td></tr>
+    <tr><td>입력 표준화</td><td>재표본화 후 기존 Exp449와 같은 행별 평균 0·표준편차 1 변환</td></tr>
+    <tr><td>후보</td><td>MiniRocket, MultiRocket, Hydra, Hydra+MultiRocket의 기존 LocalGap 구현</td></tr>
+    <tr><td>난수</td><td><code>20260721</code> 하나로 고정</td></tr>
+    <tr><td>라벨 경계</td><td>TEST 라벨은 네 방법의 점수 계산이 끝난 뒤 AUC와 ZF-TP 평가에서만 사용</td></tr>
+  </table>
+  <p class="warning"><strong>범위 밖:</strong> 최다 원본 라벨 후보 674개 분석은 별도 분석입니다. 이번 155개 누락 복구 대상이나 라우팅 규칙을 데이터셋 이름으로 정하는 데 사용하지 않습니다.</p>
+
+  <h2>2. 구현 구조</h2>
+  <table>
+    <tr><th>새 파일</th><th>역할</th></tr>
+    <tr><td><code>experiments/exp479_missing_score_recovery_antigravity/config_antigravity.py</code></td><td>대상 수, 후보, seed, alpha, 경로와 소스 해시 고정</td></tr>
+    <tr><td><code>experiments/exp479_missing_score_recovery_antigravity/contracts_antigravity.py</code></td><td>전처리 결과와 데이터셋별 네 방법 결과의 불변 자료형</td></tr>
+    <tr><td><code>experiments/exp479_missing_score_recovery_antigravity/population_antigravity.py</code></td><td>1,117개에서 점수가 있는 962개를 빼 정확한 155개 계산</td></tr>
+    <tr><td><code>experiments/exp479_missing_score_recovery_antigravity/preprocessing_antigravity.py</code></td><td>읽기 전용 DB 로드, 비유한 행 제외, Numba 길이 맞춤, 행별 표준화</td></tr>
+    <tr><td><code>experiments/exp479_missing_score_recovery_antigravity/evaluation_antigravity.py</code></td><td>기존 Exp449 scorer 호출, AUC·ZF-TP 계산, 공식/기준선/oracle 비교</td></tr>
+    <tr><td><code>experiments/exp479_missing_score_recovery_antigravity/acceleration_antigravity.py</code></td><td>MLX 적용 가능성과 동일 결과·1.1배 속도 조건 기록</td></tr>
+    <tr><td><code>experiments/exp479_missing_score_recovery_antigravity/run_antigravity.py</code></td><td>재시작 가능한 실행, 원자적 저장, 155개·1,117개 집계, HTML 대시보드 갱신</td></tr>
+    <tr><td><code>scratch/run_exp479_missing_score_recovery_antigravity.py</code></td><td>검증·일부 실행·공식 실행을 분리한 명령행 진입점</td></tr>
+  </table>
+
+  <h2>3. 성능 정의</h2>
+  <ul>
+    <li><strong>AUC:</strong> TEST의 정상 <code>0</code>과 이상 <code>1</code> 라벨에 대해 <code>roc_auc_score</code>로 계산합니다.</li>
+    <li><strong>ZF-TP:</strong> TEST 정상 점수의 최댓값보다 <em>엄격히 큰</em> 이상 점수 개수입니다. 즉 거짓 양성 0개를 유지하면서 찾은 이상 개수입니다.</li>
+    <li><strong>공식 방법:</strong> 이름이 아니라 TRAIN 특징만 보는 <code>route_official_antigravity(dataset)</code> 결과를 사용합니다.</li>
+    <li><strong>기준선:</strong> 모든 데이터셋에서 <code>minirocket_local_gap</code>을 사용합니다.</li>
+    <li><strong>Oracle:</strong> 네 후보 중 AUC가 가장 높은 방법이며, 실제 운영 라우팅에는 사용하지 않습니다.</li>
+  </ul>
+  <pre><code>normal_max = float(test_scores[test_labels == 0].max())
+zf_tp = int(np.count_nonzero(test_scores[test_labels == 1] &gt; normal_max))
+auc = float(roc_auc_score(test_labels, test_scores))</code></pre>
+
+  <h2>4. 작업 순서</h2>
+
+  <section class="task">
+    <h3>Task 1 — 대상 155개와 실행 계약 고정</h3>
+    <p class="files"><strong>생성:</strong> <code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>population_antigravity.py</code>, <code>tests/test_population_antigravity.py</code>, <code>docs/EXP479_DASHBOARD_antigravity.html</code></p>
+    <ol>
+      <li>현재 <code>docs/codemap/codemap_exp479_antigravity.json</code>에서 호출자·영향 범위·테스트를 다시 확인합니다. 새 실행 모듈을 설명하지 못하므로 코드 수정 전에 Exp479 코드 맵 확장 작업을 시작합니다.</li>
+      <li>실패 테스트를 먼저 작성합니다. Exp478 모집단 1,117개, 기존 유효 점수 962개, 차집합 155개, 중복 0개, 두 제외 데이터셋 부재를 확인합니다.</li>
+      <li><code>load_checkpoint_records_antigravity</code>로 상태가 <code>ok</code>이고 네 후보 점수가 완전한 레코드만 기존 점수로 인정합니다.</li>
+      <li>155개 목록, Exp478 결과 SHA256, 23개 점수 체크포인트 SHA256, DB 식별값을 manifest에 기록합니다.</li>
+      <li>실행 전에도 볼 수 있는 HTML 대시보드를 만들고 Task 1 완료 상자만 체크합니다.</li>
+    </ol>
+    <pre><code>def select_recovery_population_antigravity(
+    connection: sqlite3.Connection,
+    checkpoint_dir: Path,
+) -&gt; tuple[str, ...]:
+    population, exclusions = select_population_antigravity(connection)
+    scored = {row["dataset"] for row in load_checkpoint_records_antigravity(checkpoint_dir)}
+    target = tuple(sorted(set(population) - scored))
+    if len(population) != 1117 or len(scored) != 962 or len(target) != 155:
+        raise ValueError("Exp479 population contract mismatch")
+    return target</code></pre>
+    <p><strong>검증:</strong></p>
+    <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest -q experiments/exp479_missing_score_recovery_antigravity/tests/test_population_antigravity.py</code></pre>
+  </section>
+
+  <section class="task">
+    <h3>Task 2 — Numba 전처리 구현</h3>
+    <p class="files"><strong>생성:</strong> <code>preprocessing_antigravity.py</code>, <code>tests/test_preprocessing_antigravity.py</code></p>
+    <ol>
+      <li>같은 길이 행은 값이 바뀌지 않는지, 홀수·짝수 길이 목록의 작은 쪽 중앙값이 맞는지, NaN/Inf 행 전체가 빠지는지 실패 테스트를 작성합니다.</li>
+      <li>TRAIN은 파생 데이터셋 내부 <code>label='0'</code>만 읽습니다. TEST 값과 TEST 라벨은 서로 다른 함수로 읽어 평가 경계를 유지합니다.</li>
+      <li><code>@numba.njit(cache=True)</code> 선형 재표본화를 구현합니다. 새 보간의 NumPy fallback은 만들지 않습니다.</li>
+      <li>재표본화 뒤 행별 평균과 표준편차로 기존 Exp449 입력과 같은 표준화를 적용하고, 0 표준편차는 명시적 오류로 남깁니다.</li>
+      <li>실제 155개 전체를 점수 계산 없이 전처리만 통과시켜 각 데이터셋의 남은 TRAIN/TEST 수와 목표 길이를 감사 JSON에 기록합니다.</li>
+    </ol>
+    <pre><code>@numba.njit(cache=True)
+def resample_row_linear_antigravity(row: np.ndarray, target_length: int) -&gt; np.ndarray:
+    if row.size == target_length:
+        return row.copy()
+    output = np.empty(target_length, dtype=np.float64)
+    if target_length == 1:
+        output[0] = row[0]
+        return output
+    scale = (row.size - 1) / (target_length - 1)
+    for index in range(target_length):
+        position = index * scale
+        left = int(position)
+        right = min(left + 1, row.size - 1)
+        weight = position - left
+        output[index] = row[left] * (1.0 - weight) + row[right] * weight
+    return output</code></pre>
+    <p><strong>검증:</strong></p>
+    <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest -q experiments/exp479_missing_score_recovery_antigravity/tests/test_preprocessing_antigravity.py</code></pre>
+  </section>
+
+  <section class="task">
+    <h3>Task 3 — 네 후보 성능 평가 구현</h3>
+    <p class="files"><strong>생성:</strong> <code>evaluation_antigravity.py</code>, <code>tests/test_evaluation_antigravity.py</code></p>
+    <ol>
+      <li>TEST 라벨을 점수 함수에 전달하면 실패하고, 점수 계산 뒤 평가 함수에만 전달할 수 있는 테스트를 작성합니다.</li>
+      <li>Exp449의 <code>score_candidate_antigravity</code>, <code>MethodCandidateAntigravity</code>, 네 표현 생성기를 그대로 재사용합니다.</li>
+      <li>seed <code>20260721</code>로 네 후보의 TRAIN OOF와 TEST LocalGap 점수를 만듭니다.</li>
+      <li>AUC와 ZF-TP를 계산하고 유한성, 두 TEST 클래스 존재, 네 후보 키의 정확한 일치를 검증합니다.</li>
+      <li>공식 방법, 항상 MiniRocket, oracle AUC를 한 데이터셋 결과에 함께 저장합니다.</li>
+    </ol>
+    <pre><code>METHODS_ANTIGRAVITY = (
+    "minirocket_local_gap",
+    "multirocket_local_gap",
+    "hydra_local_gap",
+    "hydra_multirocket_local_gap",
+)
+
+def evaluate_scores_antigravity(test_scores: np.ndarray, labels: np.ndarray) -&gt; dict[str, object]:
+    normal_max = float(test_scores[labels == 0].max())
+    return {
+        "auc": float(roc_auc_score(labels, test_scores)),
+        "zf": int(np.count_nonzero(test_scores[labels == 1] &gt; normal_max)),
+    }</code></pre>
+    <p><strong>검증:</strong></p>
+    <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest -q experiments/exp479_missing_score_recovery_antigravity/tests/test_evaluation_antigravity.py</code></pre>
+  </section>
+
+  <section class="task">
+    <h3>Task 4 — MLX 적용 여부 판정</h3>
+    <p class="files"><strong>생성:</strong> <code>acceleration_antigravity.py</code>, <code>tests/test_acceleration_antigravity.py</code>, <code>scratch/exp479_mlx_assessment_antigravity.json</code></p>
+    <ol>
+      <li>먼저 가변 길이 행의 정확한 동일 연산을 MLX로 표현할 수 있는지 확인합니다. 표현 과정이 전처리 정의를 바꾸면 즉시 <code>eligible=false</code>로 기록합니다.</li>
+      <li>가능한 경우 동일 입력·동일 seed로 Numba와 MLX를 실행해 모든 출력이 유한하고 네 후보의 alpha <code>0.005</code> 선택 인덱스가 같은지 확인합니다.</li>
+      <li>장치 전송과 동기화 시간을 포함해 정확한 전처리 단계의 속도를 비교합니다.</li>
+      <li>선택 인덱스가 하나라도 다르거나 1.1배 미만이면 Numba CPU를 공식 backend로 고정합니다.</li>
+      <li>MLX·mlx-metal 버전, 장치, 시간, parity, fallback 이유를 JSON과 대시보드에 기록합니다.</li>
+    </ol>
+    <p class="warning">이 Task는 GPU 사용을 목표로 하지 않습니다. 알고리즘을 바꾸지 않고도 정확히 같고 실제로 빠를 때만 MLX를 사용합니다. 기본 경로는 승인된 Numba CPU입니다.</p>
+    <p><strong>검증:</strong></p>
+    <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest -q experiments/exp479_missing_score_recovery_antigravity/tests/test_acceleration_antigravity.py</code></pre>
+  </section>
+
+  <section class="task">
+    <h3>Task 5 — 재시작 가능한 실행기와 소규모 실데이터 검증</h3>
+    <p class="files"><strong>생성:</strong> <code>run_antigravity.py</code>, <code>tests/test_runner_antigravity.py</code>, <code>scratch/run_exp479_missing_score_recovery_antigravity.py</code><br><strong>갱신:</strong> <code>docs/EXP479_DASHBOARD_antigravity.html</code>, <code>docs/codemap/codemap_exp479_antigravity.html</code>, <code>docs/codemap/codemap_exp479_antigravity.json</code>, <code>docs/codemap/codemap_exp479_antigravity.lock</code></p>
+    <ol>
+      <li>소스 해시가 다르면 체크포인트 재사용을 거절하고, 완성된 데이터셋만 재사용하며, 임시 파일을 원자적으로 교체하는 실패 테스트를 먼저 작성합니다.</li>
+      <li>데이터셋 하나가 끝날 때마다 체크포인트와 HTML 대시보드를 갱신합니다. 완료된 Task 체크박스만 <code>checked disabled</code>로 렌더링합니다.</li>
+      <li><code>--limit 1</code>과 <code>--limit 2</code> 실데이터 실행을 순서대로 수행해 재시작, 결정성, 네 방법 유한 성능을 확인합니다.</li>
+      <li>같은 소규모 입력을 두 번 실행해 대상 순서, 전처리 결과 해시, AUC, ZF-TP, 공식 방법이 같은지 비교합니다.</li>
+      <li>코드 맵에 새 호출 흐름과 테스트를 반영하고 lock을 다시 생성합니다.</li>
+    </ol>
+    <pre><code># 검증만 수행
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp479_missing_score_recovery_antigravity.py --validate-only
+
+# 실데이터 소규모 실행
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp479_missing_score_recovery_antigravity.py --limit 1
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp479_missing_score_recovery_antigravity.py --limit 2 --resume</code></pre>
+    <p><strong>전체 구현 검증:</strong></p>
+    <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest -q experiments/exp479_missing_score_recovery_antigravity/tests scratch/test_build_exp479_class_count_report_antigravity.py</code></pre>
+  </section>
+
+  <section class="task">
+    <h3>Task 6 — 사용자 승인 뒤 공식 155개 실행과 1,117개 통합</h3>
+    <p class="files"><strong>생성:</strong> <code>experiments/exp479_missing_score_recovery_antigravity/checkpoint_antigravity.json</code>, <code>experiments/exp479_missing_score_recovery_antigravity/results_antigravity.json</code>, <code>docs/EXP479_IMPLEMENTATION_REPORT_antigravity.html</code><br><strong>갱신:</strong> <code>docs/EXP479_DASHBOARD_antigravity.html</code></p>
+    <ol>
+      <li>Task 1~5 테스트와 소규모 검증 결과를 대시보드에 표시한 뒤, 공식 실행은 별도 사용자 승인을 받습니다.</li>
+      <li>승인 후 대상 155개만 실행합니다. 기존 962개 체크포인트와 결과 파일은 읽기만 합니다.</li>
+      <li>155개 모두 네 방법의 유한 AUC와 ZF-TP가 있는지, 공식 방법 키가 존재하는지, 실패가 0개인지 검증합니다.</li>
+      <li>155개 별도 집계와 <code>(962개 합계 + 155개 합계) / 1117</code> 방식의 전체 집계를 만듭니다. 기존 962개를 다시 학습하거나 반올림된 평균으로 합치지 않습니다.</li>
+      <li>결과 JSON을 다시 읽어 수치를 독립 재계산하고, HTML 구문과 체크박스를 검사합니다.</li>
+      <li>대시보드에서 Task 6과 전체 통과 기준을 체크하고, 고등학생도 이해할 수 있는 구현 결과 보고서를 작성합니다.</li>
+    </ol>
+    <pre><code># 별도 승인을 받은 뒤에만 실행
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp479_missing_score_recovery_antigravity.py --official --resume</code></pre>
+  </section>
+
+  <h2>5. 최종 통과 기준</h2>
+  <ul>
+    <li>대상 155개가 정확하고 중복이 없으며 두 제외 데이터셋이 없습니다.</li>
+    <li>155개 각각에 네 후보의 유한 AUC와 정수 ZF-TP가 있습니다.</li>
+    <li>공식 라우터의 선택이 네 후보 중 하나이며 데이터셋 이름의 원본 라벨 숫자를 특징으로 쓰지 않습니다.</li>
+    <li>같은 길이의 행은 Numba 재표본화 전후 값이 정확히 같습니다.</li>
+    <li>동일 입력과 seed의 반복 결과가 같습니다.</li>
+    <li>기존 962개 파일과 DB의 해시가 실행 전후 같습니다.</li>
+    <li>155개 별도 수치와 1,117개 전체 수치가 모두 재계산과 일치합니다.</li>
+    <li>대시보드의 실제 완료 단계만 체크되어 있습니다.</li>
+  </ul>
+
+  <h2>6. 진행 체크</h2>
+  <label><input type="checkbox" checked disabled> Exp479 설계 승인 완료</label>
+  <label><input type="checkbox" checked disabled> 파생 데이터셋의 정상 라벨 의미 재확인 완료</label>
+  <label><input type="checkbox" checked disabled> 구현 계획서 작성 완료</label>
+  <label><input type="checkbox" checked disabled> 구현 계획 승인</label>
+  <label><input type="checkbox" checked disabled> Task 1 — 대상과 계약 고정</label>
+  <label><input type="checkbox" checked disabled> Task 2 — Numba 전처리</label>
+  <label><input type="checkbox" checked disabled> Task 3 — 네 후보 성능 평가</label>
+  <label><input type="checkbox" checked disabled> Task 4 — MLX 적용 여부 판정</label>
+  <label><input type="checkbox" checked disabled> Task 5 — 실행기와 소규모 검증</label>
+  <label><input type="checkbox" checked disabled> Task 6 — 공식 155개 실행</label>
+  <label><input type="checkbox" checked disabled> 1,117개 통합 결과 검증</label>
+
+  <p class="small">계획 작성일: 2026-08-28 · Task 1~6 완료 및 독립 재검증 통과.</p>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp479 성능 미산출 155개 복구 설계</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 980px; margin: 32px auto; padding: 0 20px; line-height: 1.62; color: #182230; }
+    h1, h2 { line-height: 1.25; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; }
+    th, td { border: 1px solid #d8dee8; padding: 9px 11px; text-align: left; vertical-align: top; }
+    th { background: #eef2f7; }
+    code { background: #eef2f7; padding: 2px 5px; border-radius: 4px; }
+    .pass { border-left: 5px solid #08783e; background: #f2fbf6; padding: 12px 16px; }
+    .note { border-left: 5px solid #b54708; background: #fff8f0; padding: 12px 16px; }
+    label { display: block; margin: 8px 0; }
+    input { margin-right: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Exp479 성능 미산출 155개 복구 설계</h1>
+  <p class="pass"><strong>설계 방향 승인:</strong> 유한한 TRAIN 정상 행의 중앙 길이로 모든 행을 맞춘 뒤 기존 네 후보를 평가합니다.</p>
+
+  <h2>1. 왜 155개의 성능이 없었나</h2>
+  <p>이전 실행기는 TRAIN과 TEST를 합쳐 가장 자주 나타나는 길이의 행만 남겼습니다. 길이가 다양한 데이터셋에서는 이상 행이 다른 길이를 갖는 경우가 많아, 평가에 필요한 이상 행이 함께 사라졌습니다. 따라서 기존의 <code>single_class</code> 109개와 <code>insufficient</code> 26개는 원본 데이터 부족이 아니라 길이 필터의 결과였습니다.</p>
+  <table>
+    <tr><th>이전 상태</th><th>개수</th><th>확인 결과</th></tr>
+    <tr><td><code>single_class</code></td><td>109</td><td>원본 TEST에는 정상과 이상이 모두 존재합니다.</td></tr>
+    <tr><td><code>insufficient</code></td><td>26</td><td>원본 행은 충분하지만 길이 필터 뒤에 표본이 부족해졌습니다.</td></tr>
+    <tr><td><code>non_finite</code></td><td>20</td><td>NaN 또는 Inf가 있는 행을 제외하면 평가 조건을 만족합니다.</td></tr>
+  </table>
+  <p>Exp478에서 모집단에서 제외한 <code>CornellWhaleChallenge</code>와 <code>Phoneme_normal_39</code>는 Exp479 대상에 넣지 않습니다. 최종 대상은 정확히 155개입니다.</p>
+
+  <h2>2. 고정 전처리 규칙</h2>
+  <ol>
+    <li>TRAIN에서는 정상 행(<code>label=0</code>)만 모델 학습에 사용합니다.</li>
+    <li>NaN 또는 Inf가 하나라도 포함된 행은 행 전체를 제외하며 값을 채우지 않습니다.</li>
+    <li>남은 TRAIN 정상 행 길이의 중앙값을 목표 길이로 정합니다. 짝수 개라 중앙값이 두 길이 사이에 있으면 작은 쪽 길이를 사용합니다.</li>
+    <li>모든 유한한 TRAIN·TEST 행을 목표 길이로 선형 재표본화합니다. 이 계산은 Numba로 구현합니다.</li>
+    <li>이미 목표 길이와 같은 행은 복사만 하며 값이 바뀌지 않아야 합니다.</li>
+    <li>TEST 라벨은 AUC와 ZF-TP 계산에만 사용하며 전처리, 특징 생성, 라우팅에는 사용하지 않습니다.</li>
+  </ol>
+
+  <h2>3. 평가 방법</h2>
+  <p>기존 962개와 같은 seed <code>20260721</code>, LocalGap 정의, AUC 정의, ZF-TP 정의를 유지합니다.</p>
+  <table>
+    <tr><th>후보</th><th>역할</th></tr>
+    <tr><td><code>minirocket_local_gap</code></td><td>보수적 기준선이자 공식 라우터의 기본 복귀 방법</td></tr>
+    <tr><td><code>multirocket_local_gap</code></td><td>MultiRocket 후보</td></tr>
+    <tr><td><code>hydra_local_gap</code></td><td>Hydra 후보</td></tr>
+    <tr><td><code>hydra_multirocket_local_gap</code></td><td>두 표현을 합친 후보</td></tr>
+  </table>
+  <p>각 데이터셋에서 공식 라우터가 선택한 후보, 항상 MiniRocket, 데이터셋별 최적 후보를 함께 비교합니다. 155개 결과는 별도 집계하고, 기존 962개 고정 결과와 결합한 1,117개 운영 집계도 만듭니다.</p>
+  <p class="note"><strong>해석 제한:</strong> 155개 중 다수는 TEST 이상 표본이 1~2개뿐이므로 개별 AUC 변동이 큽니다. 155개 집계는 누락 집중군 평가이며, 새로운 가족에 대한 독립 일반화 수치로 부르지 않습니다.</p>
+
+  <h2>4. 실행 구조</h2>
+  <ul>
+    <li>Exp478 결과와 기존 23개 점수 체크포인트에서 정확한 155개 대상 목록을 계산합니다.</li>
+    <li>데이터셋별 결과를 원자적으로 체크포인트에 저장하여 중단 후 이어서 실행할 수 있게 합니다.</li>
+    <li>HTML 대시보드에는 완료 수, 성공·실패 수, 예상이 아닌 실제 성능, 실패 데이터셋을 계속 갱신합니다.</li>
+    <li>소스 해시가 달라지면 이전 Exp479 체크포인트를 재사용하지 않습니다.</li>
+    <li>기존 962개 점수, Exp474~Exp478 결과와 원본 데이터베이스는 수정하지 않습니다.</li>
+  </ul>
+
+  <h2>5. 가속 정책</h2>
+  <p>새 전처리 코드는 Numba CPU를 기본으로 합니다. 기존 Aeon MiniRocket, MultiRocket, Hydra 구현은 비교 가능성을 위해 그대로 사용합니다. 공식 실행 전 MLX가 같은 결과를 내고 실제 단계에서 1.1배 이상 빠른지 확인합니다. 후보 선택이 달라지거나 속도 기준을 넘지 못하면 Numba CPU를 유지합니다.</p>
+
+  <h2>6. 통과 기준</h2>
+  <ul>
+    <li>대상 목록이 정확히 155개이며 중복이 없습니다.</li>
+    <li>155개 모두 네 후보의 유한한 AUC와 ZF-TP를 산출합니다.</li>
+    <li>각 데이터셋의 공식 선택 방법이 네 후보 점수 안에 존재합니다.</li>
+    <li>동일 입력과 seed의 반복 결과가 같습니다.</li>
+    <li>동일 길이 입력에서 새 전처리는 값과 길이를 바꾸지 않습니다.</li>
+    <li>기존 962개와 신규 155개를 혼동하지 않고 별도·통합 수치를 모두 기록합니다.</li>
+    <li>대시보드의 완료된 단계는 모두 체크합니다.</li>
+  </ul>
+
+  <h2>7. 진행 체크</h2>
+  <label><input type="checkbox" checked disabled> 155개 미산출 원인 감사 완료</label>
+  <label><input type="checkbox" checked disabled> 155개 모두 복구 가능한 데이터 조건 확인</label>
+  <label><input type="checkbox" checked disabled> TRAIN 중앙 길이 방식 선택</label>
+  <label><input type="checkbox" checked disabled> Exp479 설계 방향 승인</label>
+  <label><input type="checkbox" checked disabled> 구현 계획서 작성 완료</label>
+  <label><input type="checkbox" checked disabled> 구현 계획 승인</label>
+  <label><input type="checkbox" checked disabled> Numba 전처리와 평가 실행기 구현</label>
+  <label><input type="checkbox" checked disabled> 155개 공식 평가 완료</label>
+  <label><input type="checkbox" checked disabled> 1,117개 통합 결과와 대시보드 검증</label>
+</body>
+</html>

@@ -1,0 +1,7138 @@
+{
+  "schema": "exp479_checkpoint_v1",
+  "mode": "official",
+  "source_fingerprint": "5523d9e7cc6a50c1c1e0f1d3306410dce7e32815e2fa5f0d7af0ffe35ef04e9a",
+  "population_sha256": "ce85b1626061c50b6ee92e57948442bc565b84c08c219dff7f2b45a40e453065",
+  "rows": [
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteX_normal_1",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9540816326530612,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9642857142857143,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9744897959183674,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9540816326530612,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9540816326530612,
+        "zf": 0
+      },
+      "oracle_auc": 1.0,
+      "target_length": 130,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 11.039069291000487
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteX_normal_10",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.989795918367347,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9846938775510203,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 2
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9897959183673469,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.989795918367347,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.989795918367347,
+        "zf": 1
+      },
+      "oracle_auc": 0.9999999999999999,
+      "target_length": 105,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 8.00121908300207
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteX_normal_2",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9744897959183673,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.923469387755102,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9540816326530612,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9744897959183673,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9744897959183673,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 159,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 10.013612832990475
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteX_normal_3",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9897959183673469,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9897959183673469,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 2
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 2
+      },
+      "oracle_auc": 1.0,
+      "target_length": 96,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 7.373679167008959
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteX_normal_4",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9846938775510204,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9897959183673469,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 2
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 2
+      },
+      "oracle_auc": 1.0,
+      "target_length": 80,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.872586832992965
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteX_normal_5",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9540816326530612,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9387755102040817,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9642857142857143,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9591836734693878,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9540816326530612,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9540816326530612,
+        "zf": 0
+      },
+      "oracle_auc": 0.9642857142857143,
+      "target_length": 87,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 7.243183750018943
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteX_normal_6",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9642857142857143,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9438775510204082,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9693877551020409,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9489795918367347,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9642857142857143,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9642857142857143,
+        "zf": 0
+      },
+      "oracle_auc": 0.9693877551020409,
+      "target_length": 75,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.91060279100202
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteX_normal_7",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9846938775510204,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.5,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.5051020408163265,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9846938775510204,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9846938775510204,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 137,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 9.242339334014105
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteX_normal_8",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 2
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9693877551020409,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9846938775510203,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9897959183673469,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9999999999999999,
+        "zf": 2
+      },
+      "baseline": {
+        "auc": 0.9999999999999999,
+        "zf": 2
+      },
+      "oracle_auc": 0.9999999999999999,
+      "target_length": 138,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 9.444541833014227
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteX_normal_9",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9897959183673469,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9183673469387755,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.989795918367347,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9795918367346939,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9795918367346939,
+        "zf": 1
+      },
+      "oracle_auc": 0.989795918367347,
+      "target_length": 101,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 8.088489167013904
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteY_normal_1",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9948979591836734,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9540816326530612,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9846938775510203,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9540816326530613,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9948979591836734,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9948979591836734,
+        "zf": 1
+      },
+      "oracle_auc": 0.9948979591836734,
+      "target_length": 125,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 9.32863858298515
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteY_normal_10",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9948979591836735,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.979591836734694,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "oracle_auc": 0.9948979591836735,
+      "target_length": 101,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 8.190395959012676
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteY_normal_2",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9948979591836735,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 2
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 2
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9948979591836735,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9948979591836735,
+        "zf": 1
+      },
+      "oracle_auc": 0.9999999999999999,
+      "target_length": 148,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 9.79846754198661
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteY_normal_4",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9540816326530612,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9744897959183673,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9489795918367347,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9795918367346939,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9795918367346939,
+        "zf": 1
+      },
+      "oracle_auc": 0.9795918367346939,
+      "target_length": 82,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 7.6547079579904675
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteY_normal_5",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9948979591836735,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9897959183673469,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9744897959183674,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9897959183673469,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9948979591836735,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9948979591836735,
+        "zf": 1
+      },
+      "oracle_auc": 0.9948979591836735,
+      "target_length": 78,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 7.001780291000614
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteY_normal_6",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9846938775510203,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9540816326530612,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9693877551020408,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9540816326530612,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9846938775510203,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9846938775510203,
+        "zf": 0
+      },
+      "oracle_auc": 0.9846938775510203,
+      "target_length": 72,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.777519791998202
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteY_normal_7",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9948979591836735,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.5051020408163265,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9744897959183674,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.6683673469387755,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9948979591836735,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9948979591836735,
+        "zf": 1
+      },
+      "oracle_auc": 0.9948979591836735,
+      "target_length": 139,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 9.889738333993591
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteY_normal_8",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9948979591836735,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9693877551020409,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9948979591836734,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9948979591836735,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9948979591836735,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9948979591836735,
+        "zf": 1
+      },
+      "oracle_auc": 0.9948979591836735,
+      "target_length": 138,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 15.818554333003704
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteY_normal_9",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9846938775510203,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "hydra_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 2
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9846938775510203,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9846938775510203,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 80,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 11.685756833001506
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteZ_normal_1",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9438775510204082,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.923469387755102,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9285714285714286,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9234693877551021,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9438775510204082,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9438775510204082,
+        "zf": 0
+      },
+      "oracle_auc": 0.9438775510204082,
+      "target_length": 131,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 17.709960083011538
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteZ_normal_10",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9336734693877551,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.923469387755102,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9744897959183674,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9336734693877551,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9336734693877551,
+        "zf": 1
+      },
+      "oracle_auc": 0.9744897959183674,
+      "target_length": 96,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 9.68337695801165
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteZ_normal_2",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.989795918367347,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9948979591836735,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9183673469387755,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.989795918367347,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.989795918367347,
+        "zf": 1
+      },
+      "oracle_auc": 0.9948979591836735,
+      "target_length": 167,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 11.312935666996054
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteZ_normal_3",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9846938775510204,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.8724489795918368,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.8928571428571429,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9846938775510204,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9846938775510204,
+        "zf": 0
+      },
+      "oracle_auc": 1.0,
+      "target_length": 96,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 7.461785082996357
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteZ_normal_4",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9693877551020409,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9489795918367347,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9744897959183675,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9693877551020409,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9693877551020409,
+        "zf": 1
+      },
+      "oracle_auc": 0.9795918367346939,
+      "target_length": 79,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.991447000007611
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteZ_normal_5",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "hydra_local_gap": {
+          "auc": 0.9948979591836734,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9948979591836735,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 2
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 2
+      },
+      "oracle_auc": 1.0,
+      "target_length": 71,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.630067791993497
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteZ_normal_6",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9948979591836734,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9948979591836734,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9948979591836735,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9948979591836734,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9948979591836734,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9948979591836734,
+        "zf": 1
+      },
+      "oracle_auc": 0.9948979591836735,
+      "target_length": 97,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 7.407243374997051
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteZ_normal_7",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9948979591836734,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.989795918367347,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9948979591836734,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9897959183673469,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9948979591836734,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9948979591836734,
+        "zf": 1
+      },
+      "oracle_auc": 0.9948979591836734,
+      "target_length": 135,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 9.173866833996726
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteZ_normal_8",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "multirocket_local_gap": {
+          "auc": 0.989795918367347,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9948979591836735,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9948979591836735,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 2
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 2
+      },
+      "oracle_auc": 1.0,
+      "target_length": 139,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 9.235420542012434
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteZ_normal_9",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9744897959183674,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9948979591836734,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9897959183673469,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 2
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 2
+      },
+      "oracle_auc": 1.0,
+      "target_length": 102,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 7.766050083009759
+    },
+    {
+      "status": "ok",
+      "dataset": "DodgerLoopDay_normal_1",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 288,
+      "retained_train_rows": 18,
+      "retained_test_rows": 47,
+      "excluded_train_rows": 1,
+      "excluded_test_rows": 3,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.871609499998158
+    },
+    {
+      "status": "ok",
+      "dataset": "DodgerLoopDay_normal_2",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 288,
+      "retained_train_rows": 15,
+      "retained_test_rows": 46,
+      "excluded_train_rows": 1,
+      "excluded_test_rows": 4,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 7.581304583989549
+    },
+    {
+      "status": "ok",
+      "dataset": "DodgerLoopDay_normal_4",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 288,
+      "retained_train_rows": 15,
+      "retained_test_rows": 44,
+      "excluded_train_rows": 2,
+      "excluded_test_rows": 6,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.666603082994698
+    },
+    {
+      "status": "ok",
+      "dataset": "DodgerLoopDay_normal_5",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 288,
+      "retained_train_rows": 15,
+      "retained_test_rows": 38,
+      "excluded_train_rows": 4,
+      "excluded_test_rows": 12,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.2073433750192635
+    },
+    {
+      "status": "ok",
+      "dataset": "DodgerLoopDay_normal_6",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9777777777777777,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 288,
+      "retained_train_rows": 18,
+      "retained_test_rows": 46,
+      "excluded_train_rows": 2,
+      "excluded_test_rows": 4,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.81948099998408
+    },
+    {
+      "status": "ok",
+      "dataset": "DodgerLoopDay_normal_7",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 288,
+      "retained_train_rows": 16,
+      "retained_test_rows": 45,
+      "excluded_train_rows": 1,
+      "excluded_test_rows": 5,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.61505799999577
+    },
+    {
+      "status": "ok",
+      "dataset": "DodgerLoopGame_normal_1",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9782608695652174,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9347826086956522,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9565217391304348,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9782608695652174,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9782608695652174,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9782608695652174,
+        "zf": 0
+      },
+      "oracle_auc": 0.9782608695652174,
+      "target_length": 288,
+      "retained_train_rows": 58,
+      "retained_test_rows": 47,
+      "excluded_train_rows": 7,
+      "excluded_test_rows": 3,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 11.637500499986345
+    },
+    {
+      "status": "ok",
+      "dataset": "DodgerLoopGame_normal_2",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9772727272727273,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 288,
+      "retained_train_rows": 55,
+      "retained_test_rows": 45,
+      "excluded_train_rows": 5,
+      "excluded_test_rows": 5,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 11.14418608302367
+    },
+    {
+      "status": "ok",
+      "dataset": "DodgerLoopWeekend_normal_1",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 2
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 2
+      },
+      "oracle_auc": 1.0,
+      "target_length": 288,
+      "retained_train_rows": 81,
+      "retained_test_rows": 85,
+      "excluded_train_rows": 8,
+      "excluded_test_rows": 15,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 15.63744166700053
+    },
+    {
+      "status": "ok",
+      "dataset": "DodgerLoopWeekend_normal_2",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 288,
+      "retained_train_rows": 35,
+      "retained_test_rows": 48,
+      "excluded_train_rows": 1,
+      "excluded_test_rows": 2,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 9.091726167011075
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_10",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.979591836734694,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.979591836734694,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.979591836734694,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.979591836734694,
+        "zf": 0
+      },
+      "oracle_auc": 1.0,
+      "target_length": 119,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.299383083998691
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_11",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 179,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.957807708997279
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_12",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 179,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.909168792015407
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_13",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9387755102040816,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 179,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.938012208003784
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_14",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 173,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.894974875001935
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_15",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9591836734693877,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9591836734693877,
+        "zf": 0
+      },
+      "oracle_auc": 1.0,
+      "target_length": 178,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.935716040985426
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_16",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.979591836734694,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9387755102040816,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 173,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.868552959000226
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_17",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "oracle_auc": 0.9795918367346939,
+      "target_length": 239,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.147534124989761
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_18",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 88,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.151172957994277
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_19",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 357,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.030014042014955
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_2",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 180,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.881796083005611
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_20",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9999999999999999,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9999999999999999,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 118,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.292372916999739
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_21",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 115,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.333896790980361
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_22",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9999999999999999,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9999999999999999,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 287,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.701225332973991
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_23",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 228,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.0611968750017695
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_24",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 89,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.212346625019563
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_25",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 178,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.832074292004108
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_26",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 238,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.150036624982022
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_3",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 90,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.216806625016034
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_6",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 119,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.355549333005911
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_7",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 120,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.294906791008543
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_8",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 180,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.878309291001642
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD1_normal_9",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 88,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.173881208000239
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_10",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 119,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.317414958000882
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_11",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9591836734693878,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 170,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.8602203330083285
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_12",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9999999999999999,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9999999999999999,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 179,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.920241874991916
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_13",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 179,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.84528633300215
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_14",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 173,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.0719488330069
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_15",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.979591836734694,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.979591836734694,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 173,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.057204790995456
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_16",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 173,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.102069874992594
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_17",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 231,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.222213375003776
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_18",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.979591836734694,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 88,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.28280191597878
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_19",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9387755102040816,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 341,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.085478624998359
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_20",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 115,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.382011750014499
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_21",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 115,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.403936666989466
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_22",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 288,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.757213541015517
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_23",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9591836734693878,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9999999999999999,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9999999999999999,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 239,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.264602709008614
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_24",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "oracle_auc": 1.0,
+      "target_length": 87,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.252380749996519
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_25",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 178,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.143572166998638
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_26",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 231,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.296730500005651
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_3",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 90,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.273196124995593
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_4",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 90,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.234846374980407
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_5",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.8979591836734694,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9591836734693877,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9591836734693877,
+        "zf": 0
+      },
+      "oracle_auc": 0.9795918367346939,
+      "target_length": 171,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.811277625005459
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_6",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 117,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.289610625011846
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_7",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 114,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.260704374988563
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_8",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 180,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.886923083016882
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD2_normal_9",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 88,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.254668957990361
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_1",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.979591836734694,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 172,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.9820568340073805
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_10",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 119,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.4266082090034615
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_11",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 178,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.556855750008253
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_12",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 179,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.075336666981457
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_14",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 173,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.848406999983126
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_15",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9387755102040816,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9387755102040817,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9591836734693878,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9591836734693877,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9591836734693877,
+        "zf": 0
+      },
+      "oracle_auc": 0.9591836734693878,
+      "target_length": 172,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.8231283749919385
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_16",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 179,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.879764250013977
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_17",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.979591836734694,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 239,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.1095369159884285
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_18",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 87,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.1406683750101365
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_19",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 357,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.060839374986244
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_20",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.8775510204081634,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.8775510204081634,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.8775510204081634,
+        "zf": 0
+      },
+      "oracle_auc": 1.0,
+      "target_length": 118,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.331470708013512
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_21",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 115,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.282185124990065
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_22",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 297,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.82649212499382
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_23",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.979591836734694,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.979591836734694,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.979591836734694,
+        "zf": 0
+      },
+      "oracle_auc": 0.979591836734694,
+      "target_length": 228,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.085201000008965
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_24",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "oracle_auc": 1.0,
+      "target_length": 87,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.143381207977654
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_25",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9591836734693878,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.979591836734694,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9591836734693877,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9591836734693877,
+        "zf": 0
+      },
+      "oracle_auc": 0.979591836734694,
+      "target_length": 178,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.865030334010953
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_26",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "oracle_auc": 0.9795918367346939,
+      "target_length": 231,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.125165959005244
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_3",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9591836734693878,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9591836734693878,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 90,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.16223720801645
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_4",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9591836734693878,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9387755102040817,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9387755102040816,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9591836734693877,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9591836734693877,
+        "zf": 0
+      },
+      "oracle_auc": 0.9591836734693878,
+      "target_length": 90,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.161579833016731
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_5",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 173,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.904344082984608
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_6",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.979591836734694,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 117,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.282158332993276
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_7",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9387755102040816,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9387755102040816,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9387755102040817,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9387755102040816,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9387755102040816,
+        "zf": 0
+      },
+      "oracle_auc": 0.9591836734693877,
+      "target_length": 120,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.326971957983915
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_8",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9591836734693878,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "oracle_auc": 0.9795918367346939,
+      "target_length": 180,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.947952541988343
+    },
+    {
+      "status": "ok",
+      "dataset": "GestureMidAirD3_normal_9",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "oracle_auc": 1.0,
+      "target_length": 88,
+      "retained_train_rows": 10,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.156474874995183
+    },
+    {
+      "status": "ok",
+      "dataset": "GesturePebbleZ1_normal_1",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "oracle_auc": 0.9795918367346939,
+      "target_length": 190,
+      "retained_train_rows": 39,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.907837833015947
+    },
+    {
+      "status": "ok",
+      "dataset": "GesturePebbleZ1_normal_2",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.12244897959183676,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.8163265306122449,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 175,
+      "retained_train_rows": 36,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.5484858749841806
+    },
+    {
+      "status": "ok",
+      "dataset": "GesturePebbleZ1_normal_4",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9183673469387756,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9591836734693878,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 165,
+      "retained_train_rows": 42,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.717354499996873
+    },
+    {
+      "status": "ok",
+      "dataset": "GesturePebbleZ1_normal_5",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9591836734693878,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 300,
+      "retained_train_rows": 41,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 9.190120917017339
+    },
+    {
+      "status": "ok",
+      "dataset": "GesturePebbleZ1_normal_6",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 300,
+      "retained_train_rows": 40,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 8.995731584000168
+    },
+    {
+      "status": "ok",
+      "dataset": "GesturePebbleZ2_normal_1",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.979591836734694,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "oracle_auc": 0.979591836734694,
+      "target_length": 185,
+      "retained_train_rows": 39,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.816212584002642
+    },
+    {
+      "status": "ok",
+      "dataset": "GesturePebbleZ2_normal_2",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 175,
+      "retained_train_rows": 36,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.432415040995693
+    },
+    {
+      "status": "ok",
+      "dataset": "GesturePebbleZ2_normal_3",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 170,
+      "retained_train_rows": 43,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.8686839590081945
+    },
+    {
+      "status": "ok",
+      "dataset": "GesturePebbleZ2_normal_4",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 170,
+      "retained_train_rows": 42,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.8004738749878015
+    },
+    {
+      "status": "ok",
+      "dataset": "GesturePebbleZ2_normal_5",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 305,
+      "retained_train_rows": 41,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 9.208619458018802
+    },
+    {
+      "status": "ok",
+      "dataset": "GesturePebbleZ2_normal_6",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 310,
+      "retained_train_rows": 40,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 9.172874582989607
+    },
+    {
+      "status": "ok",
+      "dataset": "MelbournePedestrian_normal_1",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9978991596638656,
+          "zf": 4
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9966386554621849,
+          "zf": 4
+        },
+        "hydra_local_gap": {
+          "auc": 0.9974789915966387,
+          "zf": 4
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9974789915966386,
+          "zf": 5
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9978991596638656,
+        "zf": 4
+      },
+      "baseline": {
+        "auc": 0.9978991596638656,
+        "zf": 4
+      },
+      "oracle_auc": 0.9978991596638656,
+      "target_length": 24,
+      "retained_train_rows": 291,
+      "retained_test_rows": 347,
+      "excluded_train_rows": 1,
+      "excluded_test_rows": 3,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 2048,
+        "hydra_multirocket_local_gap": 10112
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 7.420857167016948
+    },
+    {
+      "status": "ok",
+      "dataset": "MelbournePedestrian_normal_10",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9960899315738025,
+          "zf": 2
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9819159335288368,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9956011730205278,
+          "zf": 4
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9882697947214076,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9960899315738025,
+        "zf": 2
+      },
+      "baseline": {
+        "auc": 0.9960899315738025,
+        "zf": 2
+      },
+      "oracle_auc": 0.9960899315738025,
+      "target_length": 24,
+      "retained_train_rows": 292,
+      "retained_test_rows": 347,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 3,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 2048,
+        "hydra_multirocket_local_gap": 10112
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 7.528589333000127
+    },
+    {
+      "status": "ok",
+      "dataset": "MelbournePedestrian_normal_2",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9970059880239521,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9940119760479043,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9950099800399201,
+          "zf": 4
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9955089820359281,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9970059880239521,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9970059880239521,
+        "zf": 1
+      },
+      "oracle_auc": 0.9970059880239521,
+      "target_length": 24,
+      "retained_train_rows": 285,
+      "retained_test_rows": 340,
+      "excluded_train_rows": 7,
+      "excluded_test_rows": 10,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 2048,
+        "hydra_multirocket_local_gap": 10112
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 7.585111624997808
+    },
+    {
+      "status": "ok",
+      "dataset": "MelbournePedestrian_normal_3",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9525302283922974,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9207344379758172,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9202866099417825,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9449171518137035,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9525302283922974,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9525302283922974,
+        "zf": 0
+      },
+      "oracle_auc": 0.9525302283922974,
+      "target_length": 24,
+      "retained_train_rows": 275,
+      "retained_test_rows": 326,
+      "excluded_train_rows": 17,
+      "excluded_test_rows": 24,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 2048,
+        "hydra_multirocket_local_gap": 10112
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 9.778223875007825
+    },
+    {
+      "status": "ok",
+      "dataset": "MelbournePedestrian_normal_4",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9987468671679198,
+          "zf": 5
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9903926482873852,
+          "zf": 4
+        },
+        "hydra_local_gap": {
+          "auc": 0.9987468671679198,
+          "zf": 4
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9908103592314119,
+          "zf": 4
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9987468671679198,
+        "zf": 5
+      },
+      "baseline": {
+        "auc": 0.9987468671679198,
+        "zf": 5
+      },
+      "oracle_auc": 0.9987468671679198,
+      "target_length": 24,
+      "retained_train_rows": 290,
+      "retained_test_rows": 349,
+      "excluded_train_rows": 2,
+      "excluded_test_rows": 1,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 2048,
+        "hydra_multirocket_local_gap": 10112
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 8.266541791992495
+    },
+    {
+      "status": "ok",
+      "dataset": "MelbournePedestrian_normal_5",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9970674486803519,
+          "zf": 4
+        },
+        "multirocket_local_gap": {
+          "auc": 0.996648512777545,
+          "zf": 3
+        },
+        "hydra_local_gap": {
+          "auc": 0.9958106409719313,
+          "zf": 3
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9958106409719313,
+          "zf": 3
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9970674486803519,
+        "zf": 4
+      },
+      "baseline": {
+        "auc": 0.9970674486803519,
+        "zf": 4
+      },
+      "oracle_auc": 0.9970674486803519,
+      "target_length": 24,
+      "retained_train_rows": 290,
+      "retained_test_rows": 348,
+      "excluded_train_rows": 2,
+      "excluded_test_rows": 2,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 2048,
+        "hydra_multirocket_local_gap": 10112
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 8.413357415993232
+    },
+    {
+      "status": "ok",
+      "dataset": "MelbournePedestrian_normal_6",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9556886227544911,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.967065868263473,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9532934131736527,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9526946107784431,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9556886227544911,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9556886227544911,
+        "zf": 1
+      },
+      "oracle_auc": 0.967065868263473,
+      "target_length": 24,
+      "retained_train_rows": 288,
+      "retained_test_rows": 339,
+      "excluded_train_rows": 4,
+      "excluded_test_rows": 11,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 2048,
+        "hydra_multirocket_local_gap": 10112
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 8.556520415993873
+    },
+    {
+      "status": "ok",
+      "dataset": "MelbournePedestrian_normal_7",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 6
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 6
+        },
+        "hydra_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 6
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 6
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 6
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 6
+      },
+      "oracle_auc": 1.0,
+      "target_length": 24,
+      "retained_train_rows": 290,
+      "retained_test_rows": 347,
+      "excluded_train_rows": 2,
+      "excluded_test_rows": 3,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 2048,
+        "hydra_multirocket_local_gap": 10112
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 8.16521362500498
+    },
+    {
+      "status": "ok",
+      "dataset": "MelbournePedestrian_normal_8",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9734555984555984,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.97007722007722,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9575289575289575,
+          "zf": 2
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9618725868725869,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9734555984555984,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9734555984555984,
+        "zf": 1
+      },
+      "oracle_auc": 0.9734555984555984,
+      "target_length": 24,
+      "retained_train_rows": 242,
+      "retained_test_rows": 303,
+      "excluded_train_rows": 37,
+      "excluded_test_rows": 47,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 2048,
+        "hydra_multirocket_local_gap": 10112
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 7.338074792001862
+    },
+    {
+      "status": "ok",
+      "dataset": "MelbournePedestrian_normal_9",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9571078431372549,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9669117647058824,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.957720588235294,
+          "zf": 2
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9822303921568627,
+          "zf": 2
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9571078431372549,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9571078431372549,
+        "zf": 0
+      },
+      "oracle_auc": 0.9822303921568627,
+      "target_length": 24,
+      "retained_train_rows": 231,
+      "retained_test_rows": 278,
+      "excluded_train_rows": 60,
+      "excluded_test_rows": 72,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 2048,
+        "hydra_multirocket_local_gap": 10112
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 7.086731541989138
+    },
+    {
+      "status": "ok",
+      "dataset": "PLAID_normal_0",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "oracle_auc": 1.0,
+      "target_length": 427,
+      "retained_train_rows": 52,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 12.702867999993032
+    },
+    {
+      "status": "ok",
+      "dataset": "PLAID_normal_10",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9387755102040816,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9591836734693877,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9591836734693877,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9591836734693877,
+        "zf": 0
+      },
+      "oracle_auc": 0.9591836734693877,
+      "target_length": 467,
+      "retained_train_rows": 20,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 8.653663208009675
+    },
+    {
+      "status": "ok",
+      "dataset": "PLAID_normal_3",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.7959183673469388,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.8571428571428572,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.8571428571428572,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9183673469387755,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.7959183673469388,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.7959183673469388,
+        "zf": 0
+      },
+      "oracle_auc": 0.9183673469387755,
+      "target_length": 300,
+      "retained_train_rows": 30,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 7.552455042023212
+    },
+    {
+      "status": "ok",
+      "dataset": "PLAID_normal_8",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 2
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 2
+      },
+      "oracle_auc": 1.0,
+      "target_length": 444,
+      "retained_train_rows": 111,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 24.779042291018413
+    },
+    {
+      "status": "ok",
+      "dataset": "PickupGestureWiimoteZ_normal_1",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 324,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 6.0828023749927524
+    },
+    {
+      "status": "ok",
+      "dataset": "PickupGestureWiimoteZ_normal_10",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 125,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.30018179200124
+    },
+    {
+      "status": "ok",
+      "dataset": "PickupGestureWiimoteZ_normal_2",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 159,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.775545209005941
+    },
+    {
+      "status": "ok",
+      "dataset": "PickupGestureWiimoteZ_normal_3",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 86,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.212139417009894
+    },
+    {
+      "status": "ok",
+      "dataset": "PickupGestureWiimoteZ_normal_4",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.979591836734694,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "oracle_auc": 1.0,
+      "target_length": 146,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.725221457978478
+    },
+    {
+      "status": "ok",
+      "dataset": "PickupGestureWiimoteZ_normal_5",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 94,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.1586040839902125
+    },
+    {
+      "status": "ok",
+      "dataset": "PickupGestureWiimoteZ_normal_6",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 130,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.654864083015127
+    },
+    {
+      "status": "ok",
+      "dataset": "PickupGestureWiimoteZ_normal_7",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 75,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.151398209010949
+    },
+    {
+      "status": "ok",
+      "dataset": "PickupGestureWiimoteZ_normal_8",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 38,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 3072,
+        "hydra_multirocket_local_gap": 11136
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 3.6800863329845015
+    },
+    {
+      "status": "ok",
+      "dataset": "PickupGestureWiimoteZ_normal_9",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 200,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.060974708001595
+    },
+    {
+      "status": "ok",
+      "dataset": "ShakeGestureWiimoteZ_normal_1",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 279,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.725455708976369
+    },
+    {
+      "status": "ok",
+      "dataset": "ShakeGestureWiimoteZ_normal_10",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 103,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.18516904200078
+    },
+    {
+      "status": "ok",
+      "dataset": "ShakeGestureWiimoteZ_normal_2",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9999999999999999,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9999999999999999,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 227,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.099027250020299
+    },
+    {
+      "status": "ok",
+      "dataset": "ShakeGestureWiimoteZ_normal_3",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 140,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.711502541991649
+    },
+    {
+      "status": "ok",
+      "dataset": "ShakeGestureWiimoteZ_normal_4",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 202,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.96662887497223
+    },
+    {
+      "status": "ok",
+      "dataset": "ShakeGestureWiimoteZ_normal_5",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 45,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 3072,
+        "hydra_multirocket_local_gap": 11136
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 3.650519750022795
+    },
+    {
+      "status": "ok",
+      "dataset": "ShakeGestureWiimoteZ_normal_6",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 284,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 6144,
+        "hydra_multirocket_local_gap": 14208
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.658005667006364
+    },
+    {
+      "status": "ok",
+      "dataset": "ShakeGestureWiimoteZ_normal_7",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9999999999999999,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.9999999999999999,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 92,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.151555249991361
+    },
+    {
+      "status": "ok",
+      "dataset": "ShakeGestureWiimoteZ_normal_8",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9795918367346939,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9795918367346939,
+        "zf": 0
+      },
+      "oracle_auc": 1.0,
+      "target_length": 72,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 4.083136458997615
+    },
+    {
+      "status": "ok",
+      "dataset": "ShakeGestureWiimoteZ_normal_9",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 1.0,
+          "zf": 1
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 1.0,
+        "zf": 1
+      },
+      "oracle_auc": 1.0,
+      "target_length": 237,
+      "retained_train_rows": 8,
+      "retained_test_rows": 50,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 5.160018124995986
+    }
+  ]
+}
