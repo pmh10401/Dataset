@@ -1,7 +1,7 @@
 {
   "artifact_sha256": {
-    "docs/codemap/codemap_exp472_antigravity.html": "e14a1fbbdbb7342ad0b3b9af996fa02442d423b29730ba4aca0a7968f575554d",
-    "docs/codemap/codemap_exp472_antigravity.json": "a81a8189d2ea16a18c437007ed524816e582a2e8d108bab5a33a9b13a8c78c3d"
+    "docs/codemap/codemap_exp472_antigravity.html": "ebbd013844a2ebc61f6b3a5b704408edcb0f8234a2caa53d3db4065e0d213673",
+    "docs/codemap/codemap_exp472_antigravity.json": "9b25775e8a1b46be71c78354dd0c5dbc9e4c7504a73e4d52b45156f0b310775f"
   },
   "fingerprint_algorithm": "sha256",
   "governance_fingerprint_evidence": {
@@ -23,14 +23,14 @@
     "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py": "eeab3f731f80ad9f262f6f4d49b4255008bbcb55ff8a5bbc12e985fab93e2d96",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py": "a3f2c3688dd36c41adc61f7cf098f21cadb328290c9b1a4b2248dbf4beb524bf",
     "experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py": "48a8ee2796cad2b912c24312c5123a722af7ffce96c6ac243fbea0f76ee500df",
-    "experiments/exp472_makima_upsampling_ablation_antigravity/authority_antigravity.py": "4153494b6b6bbdbf7985581144920125186d41232982f6955acdf66ed251b517",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/authority_antigravity.py": "3764cd4ac3da6baffc285dd82e2626aa2c3d882a7c12371e06e3fb762306bd06",
     "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py": "d7d84b5ef78d66b1b12a06d43eb8a7d8b33fafb8848d5bf678b3181cb385e5f6",
     "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py": "eaf2acc726d4a372903094684278e7c54e9e9f0e8338da6d73aa68148f6213c2",
-    "experiments/exp472_makima_upsampling_ablation_antigravity/evaluation_antigravity.py": "bf2cf7fc9a9db310a54005ef9a188a81c01ba14878304c1ed19b4854b20a9e0e",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/evaluation_antigravity.py": "41aa9a788078d85edb0b2954c0ac4f8336b49ea2b977f6e634252937bbbe63d8",
     "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py": "07a3f39fe73d4e1e97e917ae81ad0a785ee0f0f45163c68fbadcbafab1f17069",
     "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py": "15c513a440055b56a5d37ef039109909104920b99aecc5c94550bd690e86f5d2",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py": "9e2578d8177f8cc5f5476d30a33700ea645ecbfbeacf4d7851e8749368701a32",
-    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py": "4afda081d8299053d4c9d78e165a0ef586d820bc7a178d46d3108bee4a124136",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py": "3b91bb050a6a606dbfee3cbc389d5ed90d3b0aa238e3b4fadda94c95a5eb975e",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py": "8342bed3a33631b2a02fbeeb3fbd63f92863d9e62c07ce18a2c9792ac9f7d8a8",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py": "557a633babdf914291168bca73259a9a1c5e74f3532b1c2b3d0fa2b507aabf30",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py": "f3ed497485be6c67626f56ee8dd2228e743d69c1c9821f394e675855bc8bd19a",
