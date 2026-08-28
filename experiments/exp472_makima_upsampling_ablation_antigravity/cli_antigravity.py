@@ -51,6 +51,7 @@ from .scoring_antigravity import (
     compose_final_score_exp472_antigravity,
     score_dataset_condition_e_exp472_antigravity,
 )
+from .transforms_antigravity import Exp472AlignmentTraceAntigravity
 
 
 _COMMANDS_ANTIGRAVITY = ("readiness", "smoke", "run", "status", "verify", "evaluate", "report")
@@ -59,8 +60,9 @@ _COMMANDS_ANTIGRAVITY = ("readiness", "smoke", "run", "status", "verify", "evalu
 def _score_one_from_raw_antigravity(raw_by_dataset: Mapping[str, object], backend: object, dataset: str) -> object:
     """Pickle-safe CPU worker entry for the frozen, label-free condition E."""
     values = raw_by_dataset[dataset]
-    result = score_dataset_condition_e_exp472_antigravity(values, backend)
-    return compose_final_score_exp472_antigravity(values, result, backend)
+    trace = Exp472AlignmentTraceAntigravity(values.dataset)
+    result = score_dataset_condition_e_exp472_antigravity(values, backend, alignment_trace=trace)
+    return compose_final_score_exp472_antigravity(values, result, backend, alignment_trace=trace)
 
 
 def _adapt_captured_raw_dataset_exp472_antigravity(
@@ -146,6 +148,8 @@ def _code_closure_antigravity() -> Mapping[str, str]:
         "experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+        "docs/codemap/codemap_exp472_antigravity.lock",
     )
     return {name: sha256((root / name).read_bytes()).hexdigest() for name in names}
 

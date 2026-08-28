@@ -56,6 +56,17 @@ def _nonfinite_raw_fixture_antigravity() -> RawDataset:
 
 
 class Exp472TransformTests(unittest.TestCase):
+    def test_actual_alignment_trace_seals_observed_makima_slots(self) -> None:
+        """Trace evidence must derive from one successful aligner exposure, not raw replay."""
+        trace = transforms.Exp472AlignmentTraceAntigravity("fixture")
+        rows = (np.asarray([0.0, 2.0, 0.0], dtype=np.float32), np.asarray([1.0], dtype=np.float32))
+        output = transforms.align_rows_exp472_antigravity(rows, 7)
+        trace.observe(rows, 7, output, "hard_sources", "TRAIN")
+        diagnostic = trace.seal()
+        self.assertEqual(diagnostic["schema"], "exp472-shape-diagnostic-antigravity.v3")
+        self.assertEqual((diagnostic["invocation_count"], diagnostic["row_invocation_count"], diagnostic["makima_row_invocation_count"], diagnostic["upsampled_rows"]), (1, 2, 1, 1))
+        self.assertEqual(diagnostic["invocations"][0]["source_tag"], "hard_sources")
+        self.assertEqual(diagnostic["invocations"][0]["phase_tag"], "TRAIN")
     def test_makima_is_used_only_for_true_upsampling(self) -> None:
         """Routing equal or shorter targets to Makima would change frozen D parity."""
         row = np.asarray([0.0, 1.0, -0.5, 2.0], dtype=np.float32)

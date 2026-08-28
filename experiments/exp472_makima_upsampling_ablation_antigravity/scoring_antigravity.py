@@ -30,6 +30,7 @@ from .contracts_antigravity import (
 )
 from .transforms_antigravity import (
     align_rows_exp472_antigravity,
+    Exp472AlignmentTraceAntigravity,
     count_upsampled_rows_exp472_antigravity,
     dataset_shape_diagnostic_exp472_antigravity,
     test_identity_exp472_antigravity,
@@ -39,6 +40,8 @@ from .transforms_antigravity import (
 def score_dataset_condition_e_exp472_antigravity(
     values: RawDataset,
     backend: Exp472BackendDecisionAntigravity,
+    *,
+    alignment_trace: Exp472AlignmentTraceAntigravity | None = None,
 ) -> Exp450DatasetConditionResult:
     """Score one raw dataset with E's Makima-only alignment substitution."""
     return score_dataset_condition_with_alignment_exp450_antigravity(
@@ -46,6 +49,7 @@ def score_dataset_condition_e_exp472_antigravity(
         CONDITION_E_ANTIGRAVITY,
         backend,
         align_rows_override=align_rows_exp472_antigravity,
+        alignment_observer=None if alignment_trace is None else alignment_trace.observe,
     )
 
 
@@ -53,6 +57,8 @@ def compose_final_score_exp472_antigravity(
     values: RawDataset,
     result: Exp450DatasetConditionResult,
     backend: Exp472BackendDecisionAntigravity,
+    *,
+    alignment_trace: Exp472AlignmentTraceAntigravity | None = None,
 ) -> Exp472ScoreShardAntigravity:
     """Apply the frozen hard-plus-stable policy to one label-free E result."""
     del backend
@@ -73,8 +79,8 @@ def compose_final_score_exp472_antigravity(
         test_identity=test_identity_exp472_antigravity(values),
         scores=scores,
         alerts=policy.alerts[values.dataset],
-        upsampled_rows=count_upsampled_rows_exp472_antigravity(values),
-        diagnostic=dataset_shape_diagnostic_exp472_antigravity(values),
+        upsampled_rows=(int(alignment_trace.seal()["upsampled_rows"]) if alignment_trace is not None else count_upsampled_rows_exp472_antigravity(values)),
+        diagnostic=(alignment_trace.seal() if alignment_trace is not None else dataset_shape_diagnostic_exp472_antigravity(values)),
     )
 
 

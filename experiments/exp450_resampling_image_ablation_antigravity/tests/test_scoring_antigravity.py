@@ -74,6 +74,18 @@ def _pickle_digest(value: object) -> str:
 
 
 class Exp450DatasetScoringTests(unittest.TestCase):
+    def test_alignment_observer_receives_actual_selected_output_without_replacing_it(self) -> None:
+        """Observer is passive and sees exactly the returned selected alignment."""
+        rows = (np.asarray([0.0, 1.0], dtype=np.float32),)
+        seen: list[tuple[object, ...]] = []
+        output = scoring_antigravity._align_rows_selected_antigravity(
+            rows, 4, CONDITION_D, None,
+            alignment_observer=lambda actual_rows, target, actual_output, source, phase: seen.append((actual_rows, target, actual_output, source, phase)),
+            source_tag="hard_sources", phase_tag="TRAIN",
+        )
+        self.assertEqual(len(seen), 1)
+        self.assertIs(seen[0][2], output)
+        self.assertEqual(seen[0][3:], ("hard_sources", "TRAIN"))
     def test_public_a_to_d_results_match_pre_refactor_canonical_bytes(self) -> None:
         """Changing default alignment routing must break the frozen A--D bytes."""
         values = _raw_fixture()
