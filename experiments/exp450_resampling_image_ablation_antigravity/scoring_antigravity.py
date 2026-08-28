@@ -8,6 +8,8 @@ construction with the approved factor pair.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
+
 import numpy as np
 
 from paper.equipment_anomaly_detection.calibration_paper import upper_tail_pvalues
@@ -84,6 +86,23 @@ from .imaging_antigravity import imaging_score_pair_exp450_antigravity
 from .transforms_antigravity import align_rows_exp450_antigravity
 
 
+AlignmentRowsAntigravity = Callable[[Sequence[np.ndarray], int], np.ndarray]
+
+
+def _align_rows_selected_antigravity(
+    rows: Sequence[np.ndarray],
+    target_len: int,
+    condition: Exp450Condition,
+    align_rows_override: AlignmentRowsAntigravity | None,
+) -> np.ndarray:
+    """Select the frozen Exp450 alignment unless an isolated caller supplies one."""
+    if align_rows_override is None:
+        return align_rows_exp450_antigravity(
+            rows, target_len, mode=condition.length_mode
+        )
+    return np.asarray(align_rows_override(rows, target_len), dtype=np.float32)
+
+
 def _historical_pair_exp450_antigravity(
     name: str,
     fit: np.ndarray,
@@ -158,6 +177,8 @@ def score_hard_sources_exp450_antigravity(
     values: RawDataset,
     condition: Exp450Condition,
     backend: Exp450BackendDecision,
+    *,
+    align_rows_override: AlignmentRowsAntigravity | None = None,
 ) -> HardSourceBundle:
     """Score six frozen Hard sources with the approved Exp450 factor pair."""
     if condition.condition_id == "A":
@@ -181,11 +202,17 @@ def score_hard_sources_exp450_antigravity(
             },
         )
     metadata = source_metadata_paper(values)
-    train = align_rows_exp450_antigravity(
-        values.train_rows, metadata.train_target_len, mode=condition.length_mode
+    train = _align_rows_selected_antigravity(
+        values.train_rows,
+        metadata.train_target_len,
+        condition,
+        align_rows_override,
     )
-    test = align_rows_exp450_antigravity(
-        values.test_rows, metadata.train_target_len, mode=condition.length_mode
+    test = _align_rows_selected_antigravity(
+        values.test_rows,
+        metadata.train_target_len,
+        condition,
+        align_rows_override,
     )
     results = {}
     for name in RAW_PRIMARY_SOURCES:
@@ -221,6 +248,8 @@ def score_minirocket_exp450_antigravity(
     values: RawDataset,
     condition: Exp450Condition,
     backend: Exp450BackendDecision,
+    *,
+    align_rows_override: AlignmentRowsAntigravity | None = None,
 ) -> MiniRocketResult:
     """Score frozen MiniROCKET confirmations with only Exp450 alignment changed."""
     del backend
@@ -240,10 +269,14 @@ def score_minirocket_exp450_antigravity(
         values.test_rows, dataset=values.dataset, split="TEST"
     )
     train = z_normalize_paper(
-        align_rows_exp450_antigravity(train_rows, target, mode=condition.length_mode)
+        _align_rows_selected_antigravity(
+            train_rows, target, condition, align_rows_override
+        )
     )
     test = z_normalize_paper(
-        align_rows_exp450_antigravity(test_rows, target, mode=condition.length_mode)
+        _align_rows_selected_antigravity(
+            test_rows, target, condition, align_rows_override
+        )
     )
     by_kernel: dict[int, MiniRocketKernelResult] = {}
     for requested, expected in ((1024, 1008), (4096, 4032)):
@@ -356,6 +389,8 @@ def build_legacy_route_evidence_exp450_antigravity(
     values: RawDataset,
     condition: Exp450Condition,
     backend: Exp450BackendDecision,
+    *,
+    align_rows_override: AlignmentRowsAntigravity | None = None,
 ) -> LegacyRouteEvidence:
     """Build frozen route evidence while applying only the approved factors."""
     if condition.condition_id == "A":
@@ -377,17 +412,17 @@ def build_legacy_route_evidence_exp450_antigravity(
     transductive_target = min(
         max(8, int(round(float(np.median(all_lengths))))), 2048
     )
-    exp40_train = align_rows_exp450_antigravity(
-        train_work, exp40_target, mode=condition.length_mode
+    exp40_train = _align_rows_selected_antigravity(
+        train_work, exp40_target, condition, align_rows_override
     )
-    exp40_test = align_rows_exp450_antigravity(
-        test_work, exp40_target, mode=condition.length_mode
+    exp40_test = _align_rows_selected_antigravity(
+        test_work, exp40_target, condition, align_rows_override
     )
-    route_train = align_rows_exp450_antigravity(
-        train_work, transductive_target, mode=condition.length_mode
+    route_train = _align_rows_selected_antigravity(
+        train_work, transductive_target, condition, align_rows_override
     )
-    route_test = align_rows_exp450_antigravity(
-        test_work, transductive_target, mode=condition.length_mode
+    route_test = _align_rows_selected_antigravity(
+        test_work, transductive_target, condition, align_rows_override
     )
     primary = {
         "rocket_exp40": _fullfit_primary_exp450_antigravity(
@@ -437,6 +472,8 @@ def replay_hard_route_exp450_antigravity(
     mini: MiniRocketResult,
     condition: Exp450Condition,
     backend: Exp450BackendDecision,
+    *,
+    align_rows_override: AlignmentRowsAntigravity | None = None,
 ) -> HardRouteResult:
     """Replay the exact frozen selectors over condition-local score evidence."""
     if condition.condition_id == "A":
@@ -444,7 +481,10 @@ def replay_hard_route_exp450_antigravity(
     if len(values.train_rows) < 2 or not values.test_rows:
         return empty_hard_route_result_paper(len(values.test_rows))
     evidence = build_legacy_route_evidence_exp450_antigravity(
-        values, condition, backend
+        values,
+        condition,
+        backend,
+        align_rows_override=align_rows_override,
     )
     exp74d, exp89, exp90, exp93 = replay_exp74d_89_90_93(evidence)
     exp137 = replay_exp133_134_135_137(exp93, evidence.confirmation_blocks)
@@ -483,17 +523,43 @@ def score_dataset_condition_exp450_antigravity(
     backend: Exp450BackendDecision,
 ) -> Exp450DatasetConditionResult:
     """Produce one typed, values-only result for one dataset and condition."""
+    return score_dataset_condition_with_alignment_exp450_antigravity(
+        values, condition, backend, align_rows_override=None
+    )
+
+
+def score_dataset_condition_with_alignment_exp450_antigravity(
+    values: RawDataset,
+    condition: Exp450Condition,
+    backend: Exp450BackendDecision,
+    *,
+    align_rows_override: AlignmentRowsAntigravity | None,
+) -> Exp450DatasetConditionResult:
+    """Produce one condition result with an optional isolated row aligner."""
     if condition.condition_id == "A":
         sources = score_hard_sources(values)
         mini = score_minirocket_confirmations(values)
         route = replay_hard_route(values, sources, mini)
     else:
-        sources = score_hard_sources_exp450_antigravity(values, condition, backend)
+        sources = score_hard_sources_exp450_antigravity(
+            values,
+            condition,
+            backend,
+            align_rows_override=align_rows_override,
+        )
         mini = score_minirocket_confirmations_exp450_antigravity(
-            values, condition, backend
+            values,
+            condition,
+            backend,
+            align_rows_override=align_rows_override,
         )
         route = replay_hard_route_exp450_antigravity(
-            values, sources, mini, condition, backend
+            values,
+            sources,
+            mini,
+            condition,
+            backend,
+            align_rows_override=align_rows_override,
         )
     return Exp450DatasetConditionResult(values.dataset, condition.condition_id, sources, route)
 
@@ -502,6 +568,7 @@ __all__ = [
     "build_legacy_route_evidence_exp450_antigravity",
     "replay_hard_route_exp450_antigravity",
     "score_dataset_condition_exp450_antigravity",
+    "score_dataset_condition_with_alignment_exp450_antigravity",
     "score_hard_sources_exp450_antigravity",
     "score_minirocket_exp450_antigravity",
 ]

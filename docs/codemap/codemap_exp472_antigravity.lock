@@ -1,7 +1,7 @@
 {
   "artifact_sha256": {
-    "docs/codemap/codemap_exp472_antigravity.html": "fde88c0a2f589301d3dfdc7f2b1a9165b2375af0cf64d63bd02c7a4ef30a2a90",
-    "docs/codemap/codemap_exp472_antigravity.json": "69f87681aa7ce147a61b8a3f196ee433ea77b6f1b6684e2a8a8faddf44d39e0a"
+    "docs/codemap/codemap_exp472_antigravity.html": "d345eeb7142e5de992c2ce76bc64a48cb0db259deefcabd107eacb28cd9971fe",
+    "docs/codemap/codemap_exp472_antigravity.json": "fc386fda484bd54c32376a27a78c707f2daf7e534d178890ef17271ce2849f5c"
   },
   "fingerprint_algorithm": "sha256",
   "governance_fingerprint_evidence": {
@@ -15,7 +15,7 @@
     "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md": "f3986a3b2cf2684b0bb5dcfc5f57a26bd28b8e3cd206b1296241467b672e2560",
     "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py": "07504fd0787fb73bda308766847f77dfce0818486d766b17e2e7fa69b1356af6",
     "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py": "184b4b00527582655707f5adc0035faedc8433f9498c2622ccb3d17d4dc9940e",
-    "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py": "d0bee36153348f79a49cee7a34384ce503b4ff7248cb64cde576b9cff1f1cd70",
+    "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py": "e264eec29049dddbb90f316d14fda959503f41223fac8094e1e6eba74ef7de1f",
     "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py": "28b5fcf731fc7ed31546939bbbaa932e38770f3f6e77864fc353328ddaf059c7",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py": "e66bac1d1ae956d97e3bc161a55098e1ad134c4219bea87f279572541ca531d9",
     "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py": "718152e4671cc8a358a8b1323fc0581c304551b0148d82f7f631e4cc33739e31",
@@ -24,7 +24,9 @@
     "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py": "a3f2c3688dd36c41adc61f7cf098f21cadb328290c9b1a4b2248dbf4beb524bf",
     "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py": "d7d84b5ef78d66b1b12a06d43eb8a7d8b33fafb8848d5bf678b3181cb385e5f6",
     "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py": "eaf2acc726d4a372903094684278e7c54e9e9f0e8338da6d73aa68148f6213c2",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py": "15c513a440055b56a5d37ef039109909104920b99aecc5c94550bd690e86f5d2",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py": "8342bed3a33631b2a02fbeeb3fbd63f92863d9e62c07ce18a2c9792ac9f7d8a8",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py": "4a6883787cc92d821ee8f7245fc96ca39f921d428e5678f5219c686817efff11",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py": "f3ed497485be6c67626f56ee8dd2228e743d69c1c9821f394e675855bc8bd19a",
     "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py": "d1b4f28fe147291dd13700869efe6d27687eeb99b6c20f0b042dab411fd775f1",
     "paper/equipment_anomaly_detection/data_paper.py": "da6d2e208f7293f782d3bac8fd6c10a32456d6e51c48ce7528f34ef4aa328207",
@@ -45,7 +47,9 @@
     "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
     "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
     "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py",
     "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py",
     "paper/equipment_anomaly_detection/data_paper.py",
