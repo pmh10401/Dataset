@@ -22,6 +22,7 @@ from pathlib import Path, PurePosixPath
 import stat
 import struct
 import zlib
+from types import SimpleNamespace
 
 from .artifacts_antigravity import validate_diagnostic_exp472_antigravity
 from .contracts_antigravity import canonical_json_bytes_exp472_antigravity
@@ -482,7 +483,11 @@ def _manifest_record_antigravity(authority: Exp472ReportAuthorityAntigravity, wo
 
 def write_exp472_report_antigravity(evaluation: object, root: Path, worker_record: Mapping[str, object], *, e_manifest_sha256: str, code_map_lock_sha256: str, shape_diagnostics: Sequence[Mapping[str, object]] = ()) -> Exp472ReportAuthorityAntigravity:
     """Publish exactly 15 leaves from a trusted-reader capability only."""
-    evaluation = _require_verified_persisted_evaluation_antigravity(evaluation)
+    record = _require_verified_persisted_evaluation_antigravity(evaluation)
+    if record["e_manifest_sha256"] != e_manifest_sha256: raise ValueError("Exp472 report E manifest differs")
+    authority_record=record["authority"]
+    authority=SimpleNamespace(**authority_record, __dataclass_fields__={name:None for name in authority_record})
+    evaluation=SimpleNamespace(**{name:record[name] for name in ("method_order","per_dataset","subset_per_dataset","macro","micro","subset_macro","subset_micro","paired_statistics","denominators","diagnostic_summary","curves")},authority=authority,artifact_record=lambda:dict(record))
     target = _safe_root_antigravity(Path(root), create=True)
     worker = _mapping_antigravity(worker_record, "backend worker provenance")
     if not {"logical_cpu_count", "cpu_workers", "tensor_backend", "mlx_fallback_reason", "pytorch_available", "pytorch_version", "scipy_available", "scipy_version", "mlx_available", "mlx_version", "mlx_metal_available", "mlx_metal_version", "mps_available", "inner_numerical_threads"}.issubset(worker):

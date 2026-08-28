@@ -215,3 +215,8 @@ and `PYTHONDONTWRITEBYTECODE=1`. Retained Exp450 boundary suite passed 17/17
 (six MPS-unavailable skips). Code-map regeneration/check, compileall, and
 `git diff --check` passed. The only environment notice was joblib's macOS
 physical-core probe fallback; it did not change the deterministic test result.
+
+Capability immutability ruling: the report capability retains only canonical
+evaluation-record bytes and bound digests, never an evaluation object or its
+nested mappings. Report publication revalidates the byte snapshot and builds a
+fresh local report view; a mismatched E-manifest digest stops before any leaf.
