@@ -4,11 +4,13 @@ from __future__ import annotations
 from dataclasses import replace
 from hashlib import sha256
 import json
+import multiprocessing
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import threading
 import time
 from types import SimpleNamespace
+from types import MappingProxyType
 from unittest.mock import patch
 import unittest
 import numpy as np
@@ -139,6 +141,20 @@ def _complete_evaluation_antigravity(bundle: Exp472VerifiedExp471BundleAntigravi
     with patch.object(evaluation_module, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), patch.object(evaluation_module, "verify_manifest_exp472_antigravity", return_value=_manifest(bundle, context)), patch.object(evaluation_module, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: _shard(entry)):
         return evaluate_exp472_antigravity(_ROOT, _ROOT, lambda order: {dataset: (0, 1) for dataset in order}, context=context, catalog=catalog)
 
+def _record_to_evaluation_antigravity(record: dict[str, object]) -> Exp472EvaluationAntigravity:
+    authority = Exp472ReuseAuthorityAntigravity(**record["authority"])
+    return Exp472EvaluationAntigravity(authority,tuple(record["method_order"]),tuple(record["per_dataset"]),tuple(record["subset_per_dataset"]),MappingProxyType(record["macro"]),MappingProxyType(record["micro"]),MappingProxyType(record["subset_macro"]),MappingProxyType(record["subset_micro"]),tuple(record["paired_statistics"]),MappingProxyType(record["denominators"]),MappingProxyType(record["diagnostic_summary"]),MappingProxyType(record["curves"]),record["e_manifest_sha256"],record["context_sha256"])
+
+def _process_claim_worker_antigravity(root: str, record: dict[str, object], counter: object, gate: object, output: object) -> None:
+    gate.wait()
+    evaluation = _record_to_evaluation_antigravity(record)
+    def labels_once() -> Exp472EvaluationAntigravity:
+        with counter.get_lock(): counter.value += 1
+        time.sleep(0.1)
+        return evaluation
+    result = read_or_evaluate_exp472_antigravity(Path(root),authority=evaluation.authority,e_manifest_sha256=evaluation.e_manifest_sha256,context_sha256=evaluation.context_sha256,dataset_order=tuple(evaluation.diagnostic_summary),compute=labels_once)
+    output.put(result.artifact_record()["evaluation_sha256"])
+
 class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
     def test_evaluation_binds_the_verified_terminal_manifest_digest(self) -> None:
         """The manifest self-digest, not a hash of the full self-containing JSON, is authority."""
@@ -209,6 +225,17 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
                 except BaseException as error: errors.append(error)
             first = threading.Thread(target=worker); second = threading.Thread(target=worker); first.start(); second.start(); first.join(); second.join()
             self.assertEqual(errors, []); self.assertEqual(calls, [1]); self.assertEqual(len(set(results)), 1)
+
+    def test_multiprocess_claim_opens_labels_once(self) -> None:
+        """Two spawned processes race the real filesystem claim, with one label compute globally."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle); record = _complete_evaluation_antigravity(bundle, context, catalog).artifact_record()
+        with TemporaryDirectory(prefix="exp472-process-claim-antigravity-") as temporary:
+            ctx=multiprocessing.get_context("spawn"); counter=ctx.Value("i",0); gate=ctx.Event(); output=ctx.Queue(); root=str(Path(temporary) / "evaluation_antigravity")
+            processes=[ctx.Process(target=_process_claim_worker_antigravity,args=(root,record,counter,gate,output)) for _ in range(2)]
+            for process in processes: process.start()
+            gate.set()
+            for process in processes: process.join(30); self.assertEqual(process.exitcode,0)
+            self.assertEqual(counter.value,1); self.assertEqual(output.get(timeout=2),output.get(timeout=2))
 
     def test_persisted_all_negative_labels_keep_nonabstained_micro_denominator(self) -> None:
         """Single-class rows have excluded metrics but still count as scored observations."""
