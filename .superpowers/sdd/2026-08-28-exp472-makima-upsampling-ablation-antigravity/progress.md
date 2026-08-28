@@ -141,3 +141,22 @@ requires observed phase/source calls to equal the gate-derived expected plan,
 and performs strict complete diagnostic validation before CPU IPC typed-shard
 reconstruction. Reporting/evaluation parser migration to consume this v3
 evidence remains the next sequential task.
+
+Task 8 v3 reporting/evaluation migration: evaluation independently reopens the
+terminal E manifest and every shard, then invokes the public v3 diagnostic
+validator again before the label loader. Its digest binds per-dataset unique
+`upsampled_rows`, repeated `makima_row_invocation_count`, and trace digest.
+Reporting accepts the same strict v3 trace only, writes one diagnostic CSV row
+per actual alignment invocation with call-specific target/evidence, and
+publishes a denominator row plus Korean/runbook explanation that distinguishes
+unique slots from repeated exposures. Retired v2/raw-replay inputs are rejected
+before labels or report completion.
+
+Migration verification: reporting/CLI 31/31; authority/evaluation 13/13
+(split because the two 1,117-dataset / 20,000-bootstrap tests each complete
+within the command watchdog on their own); transforms/artifacts/config 47/47;
+scoring 12/12 split around the expensive composition fixture. The retained Exp450
+actual-observer plan and public A--D canonical-byte tests both pass. Code-map
+check, JSON parsing, compileall, and diff whitespace checks pass. No smoke,
+official result root, database, labels outside temporary fixtures, or process
+was started or changed by this migration.

@@ -862,6 +862,17 @@ IPC validates the complete primitive v3 diagnostic before typed shard
 reconstruction; booleans and floats are invalid for ordinal and extrema/count
 fields.  Composition remains fail-closed when no trace is supplied.
 
+### Task 8 amendment: v3 report/evaluation consumption
+
+Evaluation and reporting accept only `exp472-shape-diagnostic-antigravity.v3`
+through the public strict validator. They reject v2/raw replay before opening
+labels or publishing leaves. The diagnostic leaf is call-level: every actual
+invocation records phase/source, its own target length, routes, Makima indices,
+and input/output evidence. `upsampled_rows` is the unique verified
+`(TRAIN|TEST,row_index)` slot count used for subset membership;
+`makima_row_invocation_count` is separately published as repeated exposure
+count.
+
 **Files:**
 - Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/evaluation_antigravity`
 - Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/report_antigravity`

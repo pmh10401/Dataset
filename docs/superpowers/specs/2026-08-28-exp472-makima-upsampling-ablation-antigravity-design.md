@@ -219,6 +219,12 @@ different result.  Input evidence describes the ragged collection as
 `[row_count]` with true cumulative boundaries; output evidence is actual
 little-endian `<f4`, C-contiguous `[row_count, target_len]` data.
 
+The actual-upsampling subset is derived only from the sealed v3 trace.
+`upsampled_rows` counts unique `(TRAIN|TEST, row_index)` slots, whereas
+`makima_row_invocation_count` counts every Makima exposure and can be larger
+when a slot is reached through multiple Exp450 phases. Reporting preserves both
+quantities and uses only the former for subset membership.
+
 Exp472 may conclude that Makima improves, degrades, or is statistically
 indistinguishable from PCHIP. Algorithmically valid numerical differences are
 accepted and reported. A confidence interval crossing zero is described as no

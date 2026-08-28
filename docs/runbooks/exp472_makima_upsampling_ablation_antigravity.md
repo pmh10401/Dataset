@@ -34,3 +34,9 @@ $PYTHON scratch/run_exp472_makima_upsampling_ablation_antigravity.py report
 ## actual-trace v3 확인
 
 E shard는 이름만 같은 입력을 재사용할 수 없습니다. 각 shard의 sealed trace는 Exp450가 실제로 반환한 결과와 label-free raw 입력의 결정적 digest에 결속됩니다. trace가 계획된 phase/source 호출을 하나라도 빠뜨리거나, 점수·observer가 예외를 내거나, `<f4` C-order 출력 증거가 아니면 shard를 만들지 않습니다. v2/raw-replay trace는 검증 대상이 아닙니다.
+
+## v3 진단 표와 부분집합의 의미
+
+`exp472_shape_diagnostics_antigravity.csv`의 한 행은 데이터셋 전체 요약이 아니라 Exp450가 실제로 수행한 한 번의 정렬 호출입니다. 따라서 각 행에는 `phase_tag`, `source_tag`, 그 호출의 `target_len`, 행 수, Makima 행 인덱스, 입력·출력 증거가 함께 기록됩니다.
+
+`upsampled_rows`는 검증된 trace에서 중복을 제거한 실제 `(TRAIN|TEST, row_index)` 슬롯 수입니다. 평가의 `upsampled_rows_gt_zero` 부분집합은 이 수가 0보다 큰 데이터셋으로만 만들며, 라벨이나 성능 지표로 대상을 고르지 않습니다. 반면 `makima_row_invocation_count`는 같은 슬롯이 서로 다른 경로에서 다시 Makima를 거친 경우도 모두 세는 호출 노출 횟수입니다. 두 수는 목적이 다르므로 논문 표와 해석에서 서로 바꾸어 쓰면 안 됩니다.

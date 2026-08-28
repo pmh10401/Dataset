@@ -19,6 +19,7 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.artifacts_antigra
 from experiments.exp472_makima_upsampling_ablation_antigravity.authority_antigravity import Exp472ReuseAuthorityAntigravity, Exp472VerifiedExp471BundleAntigravity, verify_exp471_reuse_exp472_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravity import BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY, BOOTSTRAP_DRAWS_ANTIGRAVITY, BOOTSTRAP_SEED_ANTIGRAVITY, EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY, EXP472_OFFICIAL_ROOT_ANTIGRAVITY
 from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigravity import Exp472BackendDecisionAntigravity, Exp472RunContextAntigravity, canonical_json_bytes_exp472_antigravity
+from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import Exp472AlignmentTraceAntigravity, align_rows_exp472_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.evaluation_antigravity import Exp472VerifiedEBundleAntigravity, evaluate_exp472_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import test_identity_exp472_antigravity
 
@@ -119,7 +120,16 @@ def _manifest(bundle: Exp472VerifiedExp471BundleAntigravity, context: Exp472RunC
     return {"database_sha256": bundle.authority.database_sha256, "catalog_sha256": context.catalog_sha256, "dataset_order": list(bundle.dataset_order), "descriptors": [{"dataset": dataset, "shard_sha256": _digest(f"E:{dataset}")} for dataset in bundle.dataset_order]}
 
 def _shard(entry: Exp472CatalogEntryAntigravity, *, upsampled: bool = True) -> dict[str, object]:
-    return {"dataset": entry.dataset, "shard_sha256": _digest(f"E:{entry.dataset}"), "test_identity": dict(entry.test_identity), "scores": [0.2, 0.8], "upsampled_rows": 1 if upsampled else 0}
+    trace = Exp472AlignmentTraceAntigravity(entry.dataset)
+    if upsampled:
+        row = np.asarray((0.0, 1.0, 0.0), dtype="<f4")
+        trace.begin_scoring((("hard_sources", "TRAIN"),))
+        trace.observe((row,), 7, align_rows_exp472_antigravity((row,), 7), "hard_sources", "TRAIN")
+    else:
+        trace.begin_scoring(())
+    trace.mark_score_completed(_digest("raw"), _digest("result"))
+    diagnostic = dict(trace.seal())
+    return {"dataset": entry.dataset, "shard_sha256": _digest(f"E:{entry.dataset}"), "test_identity": dict(entry.test_identity), "scores": [0.2, 0.8], "upsampled_rows": diagnostic["upsampled_rows"], "diagnostic": diagnostic}
 
 class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
     def test_catalog_projection_matches_exp472_raw_test_identity(self) -> None:
@@ -220,10 +230,33 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "bad shard"): evaluate_exp472_antigravity(_ROOT, _ROOT, labels, context=context, catalog=catalog)
         self.assertEqual(calls, [])
 
+    def test_v3_diagnostic_tamper_with_recomputed_outer_digest_blocks_labels(self) -> None:
+        """Evaluation must independently revalidate v3 trace evidence before labels."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle); calls: list[object] = []
+        def tampered(entry: Exp472CatalogEntryAntigravity) -> dict[str, object]:
+            value = _shard(entry)
+            changed = dict(value["diagnostic"])
+            invocation = dict(changed["invocations"][0])
+            invocation["makima_row_indices"] = []
+            invocation["makima_rows"] = 0
+            invocation["invocation_sha256"] = sha256(canonical_json_bytes_exp472_antigravity({key: item for key, item in invocation.items() if key != "invocation_sha256"})).hexdigest()
+            changed["invocations"] = [invocation]
+            changed["makima_row_invocation_count"] = 0
+            changed["upsampled_rows"] = 0
+            aggregate = {name: changed[name] for name in ("invocation_count", "row_invocation_count", "makima_row_invocation_count", "upsampled_rows")}
+            changed["invocation_aggregate_sha256"] = sha256(canonical_json_bytes_exp472_antigravity(aggregate)).hexdigest()
+            changed["diagnostic_sha256"] = sha256(canonical_json_bytes_exp472_antigravity({key: item for key, item in changed.items() if key != "diagnostic_sha256"})).hexdigest()
+            return {**value, "upsampled_rows": 0, "diagnostic": changed}
+        with patch.object(evaluation_module, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), patch.object(evaluation_module, "verify_manifest_exp472_antigravity", return_value=_manifest(bundle, context)), patch.object(evaluation_module, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: tampered(entry) if entry.dataset == bundle.dataset_order[0] else _shard(entry)):
+            with self.assertRaisesRegex(ValueError, "diagnostic"):
+                evaluate_exp472_antigravity(_ROOT, _ROOT, lambda _order: calls.append(_order) or {}, context=context, catalog=catalog)
+        self.assertEqual(calls, [])
+
     def test_verified_e_bundle_freezes_scores_and_coordinates(self) -> None:
         """Mutating caller-owned E maps after verification must not alter bound evidence."""
         bundle = _bundle(); coordinates = {dataset: dict(value) for dataset, value in bundle.coordinates.items()}; scores = {dataset: (0.2, 0.8) for dataset in bundle.dataset_order}; upsampled = {dataset: 1 for dataset in bundle.dataset_order}
-        evidence = Exp472VerifiedEBundleAntigravity(_ROOT, bundle.authority.database_sha256, bundle.dataset_order, coordinates, scores, upsampled, _digest("E immutable"))
+        makima = {dataset: 1 for dataset in bundle.dataset_order}; diagnostic_sha = {dataset: _digest(f"diagnostic:{dataset}") for dataset in bundle.dataset_order}
+        evidence = Exp472VerifiedEBundleAntigravity(_ROOT, bundle.authority.database_sha256, bundle.dataset_order, coordinates, scores, upsampled, makima, diagnostic_sha, _digest("E immutable"))
         coordinates[bundle.dataset_order[0]]["indices"] = (9, 10); scores[bundle.dataset_order[0]] = (9.0, 10.0); upsampled[bundle.dataset_order[0]] = 0
         self.assertEqual(evidence.scores[bundle.dataset_order[0]], (0.2, 0.8)); self.assertEqual(evidence.upsampled_rows[bundle.dataset_order[0]], 1)
         with self.assertRaises(TypeError): evidence.scores[bundle.dataset_order[0]] = (9.0, 10.0)
@@ -238,11 +271,13 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
         self.assertEqual(len(result.subset_per_dataset), 1116 * len(result.method_order))
         self.assertEqual(result.subset_micro["E"]["dataset_denominator"], 1116)
         self.assertEqual(result.denominators["upsampled_rows_gt_zero"]["observation_count"], 2232)
+        self.assertEqual(result.diagnostic_summary[bundle.dataset_order[0]]["upsampled_rows"], 0)
+        self.assertEqual(result.diagnostic_summary[bundle.dataset_order[1]]["makima_row_invocation_count"], 1)
         first_e = next(row for row in result.per_dataset if row["method"] == "E" and row["dataset"] == bundle.dataset_order[0])
         self.assertEqual((first_e["average_precision"], first_e["auroc"]), (1.0, 1.0))
         self.assertEqual({item["population"] for item in result.paired_statistics}, {"full", "upsampled_rows_gt_zero"})
         for paired in result.paired_statistics: self.assertEqual((paired["seed"], paired["draw_count"], paired["percentile"], paired["tie_tolerance"]), (BOOTSTRAP_SEED_ANTIGRAVITY, BOOTSTRAP_DRAWS_ANTIGRAVITY, BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY * 100, 1e-12))
-        record = result.artifact_record(); self.assertEqual(record["schema"], "exp472-evaluation-antigravity.v1"); self.assertEqual(record["evaluation_sha256"], sha256(canonical_json_bytes_exp472_antigravity({key: value for key, value in record.items() if key != "evaluation_sha256"})).hexdigest()); self.assertNotEqual(record["evaluation_sha256"], replace(result, method_order=("changed",)).artifact_record()["evaluation_sha256"])
+        record = result.artifact_record(); self.assertEqual(record["schema"], "exp472-evaluation-antigravity.v2"); self.assertEqual(record["evaluation_sha256"], sha256(canonical_json_bytes_exp472_antigravity({key: value for key, value in record.items() if key != "evaluation_sha256"})).hexdigest()); self.assertNotEqual(record["evaluation_sha256"], replace(result, method_order=("changed",)).artifact_record()["evaluation_sha256"])
 
     def test_evaluation_digest_covers_every_scientific_section(self) -> None:
         """Omitting any scientific table from the digest would permit an unbound Task6 report."""
@@ -253,7 +288,7 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
         changes = (
             replace(result, per_dataset=result.per_dataset[1:]), replace(result, macro={}), replace(result, micro={}),
             replace(result, subset_per_dataset=result.subset_per_dataset[1:]), replace(result, subset_macro={}), replace(result, subset_micro={}),
-            replace(result, denominators={}), replace(result, paired_statistics=()),
+            replace(result, denominators={}), replace(result, diagnostic_summary={}), replace(result, paired_statistics=()),
             replace(result, curves={"roc": {"x_name": "false_positive_rate", "y_name": "true_positive_rate", "rows": ()}, "pr": result.curves["pr"]}),
             replace(result, curves={"roc": result.curves["roc"], "pr": {"x_name": "recall", "y_name": "precision", "rows": ()}}),
         )

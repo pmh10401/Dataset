@@ -116,6 +116,19 @@ def _shape_diagnostics_antigravity() -> tuple[dict[str, object], ...]:
     return (_shape_diagnostic_antigravity("fixture"),)
 
 
+def _trace_diagnostic_antigravity(
+    dataset: str,
+    calls: tuple[tuple[str, str, np.ndarray, int], ...],
+) -> dict[str, object]:
+    """Create a sealed actual-call trace; never revive the retired v2 fixture."""
+    trace = Exp472AlignmentTraceAntigravity(dataset)
+    trace.begin_scoring(tuple((phase, source) for phase, source, _row, _target in calls))
+    for phase, source, row, target in calls:
+        trace.observe((row,), target, align_rows_exp472_antigravity((row,), target), phase, source)
+    trace.mark_score_completed(_SHA, _SHA)
+    return dict(trace.seal())
+
+
 @dataclass(frozen=True)
 class _AuthorityAntigravity:
     exp471_source_authority_sha256: str = _SHA
@@ -203,7 +216,25 @@ class _EvaluationAntigravity:
         })
 
     def artifact_record(self) -> dict[str, object]:
-        bare = {"schema": "exp472-evaluation-antigravity.v1", "fixture": "verified"}
+        bare = {"schema": "exp472-evaluation-antigravity.v2", "fixture": "verified"}
+        return {**bare, "evaluation_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
+
+
+class _DiagnosticBoundEvaluationAntigravity:
+    """A reporting fixture whose evaluation digest binds the trace summary."""
+
+    def __init__(self, base: _EvaluationAntigravity, summary: dict[str, dict[str, object]]) -> None:
+        self._base = base
+        self._summary = summary
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._base, name)
+
+    def artifact_record(self) -> dict[str, object]:
+        bare = {
+            "schema": "exp472-evaluation-antigravity.v2", "fixture": "verified",
+            "diagnostic_summary": self._summary,
+        }
         return {**bare, "evaluation_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
 
 
@@ -496,6 +527,10 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
             self.assertEqual(audit.count("upsampled_rows_gt_zero,"), 12)
             self.assertIn("full_population,E,,,100,100,1017,1017", audit)
             self.assertIn("upsampled_rows_gt_zero,E,,,3,2,1,2", audit)
+            self.assertIn("verified_trace,E,1", audit)
+            summary = (root / "exp472_paper_summary_ko_antigravity.md").read_text(encoding="utf-8")
+            self.assertIn("고유 슬롯", summary)
+            self.assertIn("호출 노출 횟수", summary)
 
     def test_direct_report_rejects_empty_or_duplicate_shape_diagnostics(self) -> None:
         """A paper publisher cannot silently replace verified E diagnostics."""
@@ -506,89 +541,92 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "shape diagnostics"):
                 write_exp472_report_antigravity(_EvaluationAntigravity(), root, _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=_shape_diagnostics_antigravity() * 2)
 
-    def test_direct_report_flattens_authentic_nested_shape_diagnostic(self) -> None:
-        """All nested Task3 train/test evidence survives canonical CSV export."""
+    def test_direct_report_flattens_actual_v3_invocations_with_call_targets(self) -> None:
+        """The report preserves target length and source/phase for every real call."""
+        row = np.asarray((0.0, 1.0, 0.0), dtype="<f4")
+        diagnostic = _trace_diagnostic_antigravity(
+            "fixture", (("hard_sources", "TRAIN", row, 7), ("hard_sources", "TEST", row, 9)),
+        )
         with TemporaryDirectory(prefix="exp472-nested-shape-antigravity-") as temporary:
             root = Path(temporary) / "report_antigravity"
             write_exp472_report_antigravity(
                 _EvaluationAntigravity(), root, _worker_antigravity(),
                 e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA,
-                shape_diagnostics=_shape_diagnostics_antigravity(),
+                shape_diagnostics=(diagnostic,),
             )
             text = (root / "exp472_shape_diagnostics_antigravity.csv").read_text(encoding="utf-8")
-            self.assertIn("alignment_status", text)
-            self.assertIn("aligned_row_count", text)
-            self.assertIn("train_rows_sha256", text)
-            self.assertIn("test_rows_sha256", text)
-            self.assertIn(_shape_diagnostics_antigravity()[0]["diagnostic_sha256"], text)
+            self.assertIn("phase_tag", text)
+            self.assertIn("source_tag", text)
+            self.assertIn("makima_row_invocation_count", text)
+            self.assertIn(",7,1,0,0,0,1,", text)
+            self.assertIn(",9,1,0,0,0,1,", text)
+            self.assertIn(diagnostic["diagnostic_sha256"], text)
 
-    def test_direct_report_distinguishes_completed_zero_from_nonfinite_not_invoked(self) -> None:
-        """A zero-upsample completed dataset cannot be conflated with a nonfinite abstention."""
-        diagnostic = _shape_diagnostics_antigravity()[0]
-        nonfinite_bare = {
-            **diagnostic,
-            "dataset": "fixture",
-            "alignment_status": "not_invoked",
-            "alignment_reason": "nonfinite_input",
-            "aligned_row_count": 0,
-            "upsampled_rows": 0,
-            "train": {**diagnostic["train"], "aligned_row_count": 0, "upsampled_rows": 0, "overshoot": 0.0, "undershoot": 0.0, "source_extrema": 0, "output_extrema": 0, "added_extrema": 0, "rows_sha256": sha256(canonical_json_bytes_exp472_antigravity([])).hexdigest()},
-            "test": {**diagnostic["test"], "aligned_row_count": 0, "upsampled_rows": 0, "overshoot": 0.0, "undershoot": 0.0, "source_extrema": 0, "output_extrema": 0, "added_extrema": 0, "rows_sha256": sha256(canonical_json_bytes_exp472_antigravity([])).hexdigest()},
-        }
-        nonfinite_bare.pop("diagnostic_sha256")
-        nonfinite = {
-            **nonfinite_bare,
-            "diagnostic_sha256": sha256(canonical_json_bytes_exp472_antigravity(nonfinite_bare)).hexdigest(),
-        }
-        with TemporaryDirectory(prefix="exp472-not-invoked-shape-antigravity-") as temporary:
+    def test_direct_report_preserves_repeated_makima_exposures_separately_from_unique_slots(self) -> None:
+        """Two calls may expose one TRAIN row twice; they are distinct denominators."""
+        row = np.asarray((0.0, 1.0, 0.0), dtype="<f4")
+        diagnostic = _trace_diagnostic_antigravity(
+            "fixture", (("hard_sources", "TRAIN", row, 7), ("minirocket", "TRAIN", row, 7)),
+        )
+        self.assertEqual((diagnostic["makima_row_invocation_count"], diagnostic["upsampled_rows"]), (2, 1))
+        with TemporaryDirectory(prefix="exp472-repeated-trace-antigravity-") as temporary:
             root = Path(temporary) / "report_antigravity"
             write_exp472_report_antigravity(
                 _EvaluationAntigravity(), root, _worker_antigravity(),
                 e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA,
-                shape_diagnostics=(nonfinite,),
+                shape_diagnostics=(diagnostic,),
             )
             text = (root / "exp472_shape_diagnostics_antigravity.csv").read_text(encoding="utf-8")
-            self.assertIn("not_invoked,nonfinite_input", text)
+            self.assertIn(",2,2,2,1,", text)
 
-    def test_direct_report_rejects_nested_shape_tamper_schema_duplicate_and_missing_before_completion(self) -> None:
-        """Nested E evidence is authenticated before any report completion marker."""
+    def test_direct_report_accepts_sealed_v3_zero_upsample_trace_and_rejects_v2(self) -> None:
+        """A completed zero-upsample trace is valid; retired v2 is never report input."""
+        zero = _trace_diagnostic_antigravity("fixture", ())
+        legacy = {
+            "schema": "exp472-shape-diagnostic-antigravity.v2", "dataset": "fixture",
+            "target_len": 4, "row_count": 0, "aligned_row_count": 0, "upsampled_rows": 0,
+            "alignment_status": "completed", "alignment_reason": None,
+            "train": {}, "test": {},
+        }
+        legacy["diagnostic_sha256"] = sha256(canonical_json_bytes_exp472_antigravity(legacy)).hexdigest()
+        with TemporaryDirectory(prefix="exp472-zero-trace-antigravity-") as temporary:
+            root = Path(temporary) / "report_antigravity"
+            write_exp472_report_antigravity(_EvaluationAntigravity(), root, _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=(zero,))
+            self.assertIn(",0,0,0,0,", (root / "exp472_shape_diagnostics_antigravity.csv").read_text(encoding="utf-8"))
+        with TemporaryDirectory(prefix="exp472-v2-rejected-antigravity-") as temporary:
+            with self.assertRaisesRegex(ValueError, "shape diagnostics"):
+                write_exp472_report_antigravity(_EvaluationAntigravity(), Path(temporary) / "report_antigravity", _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=(legacy,))
+
+    def test_direct_report_rejects_v3_tamper_even_when_outer_digests_are_recomputed(self) -> None:
+        """Outer digest recomputation cannot hide an invalid actual-call route."""
         diagnostic = _shape_diagnostics_antigravity()[0]
-        altered_train = {**diagnostic["train"], "overshoot": 0.25}
-        tampered = {**diagnostic, "train": altered_train}
-        bad_schema_bare = {**diagnostic, "schema": "wrong-shape-schema-antigravity.v1"}
-        bad_schema_bare.pop("diagnostic_sha256")
-        bad_schema = {
-            **bad_schema_bare,
-            "diagnostic_sha256": sha256(canonical_json_bytes_exp472_antigravity(bad_schema_bare)).hexdigest(),
-        }
-        bad_nested_bare = {
-            **diagnostic,
-            "train": {
-                key: value for key, value in diagnostic["train"].items()
-                if key != "overshoot"
-            },
-        }
-        bad_nested_bare.pop("diagnostic_sha256")
-        bad_nested = {
-            **bad_nested_bare,
-            "diagnostic_sha256": sha256(canonical_json_bytes_exp472_antigravity(bad_nested_bare)).hexdigest(),
-        }
-        for name, shapes in (
-            ("tamper", (tampered,)),
-            ("schema", (bad_schema,)),
-            ("nested-schema", (bad_nested,)),
-            ("duplicate", (diagnostic, diagnostic)),
-            ("missing", ()),
-        ):
-            with self.subTest(name=name), TemporaryDirectory(prefix=f"exp472-shape-{name}-antigravity-") as temporary:
-                root = Path(temporary) / "report_antigravity"
-                with self.assertRaisesRegex(ValueError, "shape diagnostics"):
-                    write_exp472_report_antigravity(
-                        _EvaluationAntigravity(), root, _worker_antigravity(),
-                        e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA,
-                        shape_diagnostics=shapes,
-                    )
-                self.assertFalse((root / ".exp472_report_complete_antigravity.json").exists())
+        changed = dict(diagnostic)
+        invocation = dict(changed["invocations"][0])
+        invocation["makima_row_indices"] = [0]
+        invocation["makima_rows"] = 1
+        invocation["invocation_sha256"] = sha256(canonical_json_bytes_exp472_antigravity({key: value for key, value in invocation.items() if key != "invocation_sha256"})).hexdigest()
+        changed["invocations"] = [invocation, *changed["invocations"][1:]]
+        changed["makima_row_invocation_count"] = 1
+        changed["upsampled_rows"] = 1
+        aggregate = {name: changed[name] for name in ("invocation_count", "row_invocation_count", "makima_row_invocation_count", "upsampled_rows")}
+        changed["invocation_aggregate_sha256"] = sha256(canonical_json_bytes_exp472_antigravity(aggregate)).hexdigest()
+        changed["diagnostic_sha256"] = sha256(canonical_json_bytes_exp472_antigravity({key: value for key, value in changed.items() if key != "diagnostic_sha256"})).hexdigest()
+        with TemporaryDirectory(prefix="exp472-v3-tamper-antigravity-") as temporary:
+            root = Path(temporary) / "report_antigravity"
+            with self.assertRaisesRegex(ValueError, "shape diagnostics"):
+                write_exp472_report_antigravity(_EvaluationAntigravity(), root, _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=(changed,))
+            self.assertFalse((root / ".exp472_report_complete_antigravity.json").exists())
+
+    def test_report_rejects_trace_that_differs_from_evaluation_digest_summary(self) -> None:
+        """The report cannot pair a valid but foreign v3 trace with evaluation evidence."""
+        diagnostic = _shape_diagnostics_antigravity()[0]
+        evaluation = _DiagnosticBoundEvaluationAntigravity(
+            _EvaluationAntigravity(),
+            {"fixture": {"upsampled_rows": 1, "makima_row_invocation_count": 1, "diagnostic_sha256": _SHA}},
+        )
+        with TemporaryDirectory(prefix="exp472-diagnostic-binding-antigravity-") as temporary:
+            with self.assertRaisesRegex(ValueError, "evaluation diagnostic"):
+                write_exp472_report_antigravity(evaluation, Path(temporary) / "report_antigravity", _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=(diagnostic,))
 
     def test_report_is_byte_identical_and_detects_leaf_manifest_and_marker_tampering(self) -> None:
         with TemporaryDirectory(prefix="exp472-report-antigravity-") as temporary:
@@ -720,8 +758,9 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
                 self.assertEqual(main_antigravity(("report",), runtime=runtime, stdout=io.StringIO()), 0)
             self.assertEqual(evaluate.call_count, 1)
             shapes = (runtime.report_root / "exp472_shape_diagnostics_antigravity.csv").read_text(encoding="utf-8")
-            self.assertEqual(len(shapes.splitlines()), 1118)
-            self.assertIn("train_rows_sha256", shapes)
+            self.assertEqual(len(shapes.splitlines()), 1 + 2 * 1117)
+            self.assertIn("input_evidence", shapes)
+            self.assertIn("phase_tag", shapes)
             self.assertIn(_shape_diagnostic_antigravity(runtime.catalog[0].dataset)["diagnostic_sha256"], shapes)
 
     def test_report_authority_failure_opens_no_real_label_module_or_scorer(self) -> None:
