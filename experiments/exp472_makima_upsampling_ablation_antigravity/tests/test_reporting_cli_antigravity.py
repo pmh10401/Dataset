@@ -67,6 +67,29 @@ _METHODS = (
 )
 
 
+@dataclass(frozen=True, slots=True)
+class _CapturedRawDatasetAntigravity:
+    """A separately-loaded Exp467 RawDataset class for boundary tests."""
+
+    dataset: str
+    metadata_length: int
+    train_indices: tuple[int, ...]
+    train_blobs: tuple[bytes, ...]
+    train_rows: tuple[np.ndarray, ...]
+    test_indices: tuple[int, ...]
+    test_blobs: tuple[bytes, ...]
+    test_rows: tuple[np.ndarray, ...]
+
+
+def _captured_raw_antigravity(dataset: str = "fixture") -> _CapturedRawDatasetAntigravity:
+    train = np.asarray((0.0, 1.0, 0.5, 1.5), dtype="<f4")
+    test = np.asarray((1.0, 0.0, 1.0, 0.0), dtype="<f4")
+    return _CapturedRawDatasetAntigravity(
+        dataset, 4, (0,), (train.tobytes(),), (train,), (0,),
+        (test.tobytes(),), (test,),
+    )
+
+
 def _worker_antigravity() -> dict[str, object]:
     return {"logical_cpu_count": 8, "cpu_workers": 7, "inner_numerical_threads": 1,
             "tensor_backend": "mps", "mlx_fallback_reason": "fixed", "pytorch_available": True,
@@ -243,13 +266,98 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
             finally:
                 if prior is not None: sys.modules[module_name] = prior
 
+    def test_status_and_verify_accept_only_exact_mode_forms(self) -> None:
+        """Smoke/full observation targets are explicit; other flags stay closed."""
+        smoke = Path("/private/tmp/exp472-smoke-status-antigravity")
+        full = Path("/private/tmp/exp472-full-status-antigravity")
+        with mock.patch.object(cli, "EXP472_SMOKE_ROOT_ANTIGRAVITY", smoke), mock.patch.object(
+            cli, "EXP472_OFFICIAL_ROOT_ANTIGRAVITY", full
+        ):
+            output = io.StringIO()
+            self.assertEqual(main_antigravity(("status", "--mode", "smoke"), stdout=output), 0)
+        value = json.loads(output.getvalue())
+        self.assertEqual(value["mode"], "smoke")
+        self.assertEqual(value["paths"]["progress"], str(smoke / "progress_antigravity.jsonl"))
+        for arguments in (
+            ("status", "--mode", "other"),
+            ("status", "--mode", "smoke", "extra"),
+            ("status", "--root", "/tmp"),
+            ("verify", "--mode", "/tmp"),
+            ("run", "--mode", "full"),
+        ):
+            with self.subTest(arguments=arguments):
+                with self.assertRaisesRegex(ValueError, "command"):
+                    main_antigravity(arguments, stdout=io.StringIO())
+
+    def test_verify_mode_builds_the_requested_typed_runtime(self) -> None:
+        """Verification reopens the selected smoke/full authority, never a path override."""
+        bundle = _task5_bundle_antigravity()
+        smoke_context, smoke_catalog = _task5_context_catalog_antigravity(bundle)
+        smoke_context = Exp472RunContextAntigravity(
+            "smoke", cli.EXP472_SMOKE_ROOT_ANTIGRAVITY,
+            smoke_context.database_sha256,
+            cli.catalog_sha256_exp472_antigravity(smoke_catalog[:23]),
+            smoke_context.code_closure, smoke_context.backend, smoke_context.config_sha256,
+        )
+        runtime = cli.Exp472ControllerRuntimeAntigravity(
+            smoke_context, smoke_catalog[:23], EXP471_REUSE_ROOT_ANTIGRAVITY, _SHA,
+        )
+        with mock.patch.object(cli, "_build_runtime_antigravity", return_value=runtime) as build, mock.patch.object(
+            cli, "_verified_authorities_antigravity", return_value=(object(), {"manifest_sha256": _SHA}, ())
+        ):
+            self.assertEqual(main_antigravity(("verify", "--mode", "smoke"), stdout=io.StringIO()), 0)
+        build.assert_called_once_with("smoke")
+
+    def test_captured_raw_adapter_reconstructs_current_contract_without_copying(self) -> None:
+        """A verified Exp467 class instance crosses into current scoring as current RawDataset."""
+        captured = _captured_raw_antigravity()
+        current = cli._adapt_captured_raw_dataset_exp472_antigravity(
+            captured, _CapturedRawDatasetAntigravity, "fixture"
+        )
+        self.assertIs(type(current), RawDataset)
+        self.assertEqual(current, RawDataset(
+            captured.dataset, captured.metadata_length, captured.train_indices,
+            captured.train_blobs, captured.train_rows, captured.test_indices,
+            captured.test_blobs, captured.test_rows,
+        ))
+        self.assertIs(current.train_indices, captured.train_indices)
+        self.assertIs(current.train_blobs, captured.train_blobs)
+        self.assertIs(current.train_rows, captured.train_rows)
+        self.assertIs(current.test_indices, captured.test_indices)
+        self.assertIs(current.test_blobs, captured.test_blobs)
+        self.assertIs(current.test_rows, captured.test_rows)
+        self.assertIs(current.train_rows[0], captured.train_rows[0])
+        self.assertEqual(current.test_blobs[0], captured.test_rows[0].tobytes())
+
+    def test_captured_raw_adapter_rejects_wrong_type_dataset_and_schema(self) -> None:
+        captured = _captured_raw_antigravity()
+        with self.assertRaisesRegex(ValueError, "captured raw dataset"):
+            cli._adapt_captured_raw_dataset_exp472_antigravity(
+                RawDataset("fixture", 4, (0,), (b"x",), (np.zeros(1, dtype="<f4"),), (0,), (b"y",), (np.zeros(1, dtype="<f4"),)),
+                _CapturedRawDatasetAntigravity, "fixture",
+            )
+        with self.assertRaisesRegex(ValueError, "dataset"):
+            cli._adapt_captured_raw_dataset_exp472_antigravity(
+                captured, _CapturedRawDatasetAntigravity, "other"
+            )
+        malformed = _CapturedRawDatasetAntigravity(
+            "fixture", 4, (0,), (b"wrong",), captured.train_rows,
+            captured.test_indices, captured.test_blobs, captured.test_rows,
+        )
+        with self.assertRaisesRegex(ValueError, "schema"):
+            cli._adapt_captured_raw_dataset_exp472_antigravity(
+                malformed, _CapturedRawDatasetAntigravity, "fixture"
+            )
+
     def test_run_e_uses_pinned_exp467_repository_for_values_only(self) -> None:
         """Exp472 scores with current code but obtains values from frozen Exp467 bytes."""
         _bundle, runtime = self._runtime_antigravity()
         session = mock.Mock(catalog={"database": {}})
         api = mock.Mock(database_config_antigravity=mock.Mock(
-            database_path=FROZEN_EXP472_CONFIG.database_path
-        ))
+            database_path=FROZEN_EXP472_CONFIG.database_path,
+        ), raw_dataset_type_antigravity=_CapturedRawDatasetAntigravity)
+        def load_captured(_session, _database, dataset, **_kwargs):
+            return _captured_raw_antigravity(dataset)
         with mock.patch.object(
             exp471_source, "open_exp467_source_session_antigravity", return_value=session
         ) as open_session, mock.patch.object(
@@ -257,7 +365,7 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
         ), mock.patch.object(
             exp471_source, "_bind_captured_values_database_antigravity", return_value=object()
         ), mock.patch.object(
-            exp471_source, "_load_captured_dataset_values_antigravity", return_value=object()
+            exp471_source, "_load_captured_dataset_values_antigravity", side_effect=load_captured
         ), mock.patch.object(
             cli, "run_score_wave_exp472_antigravity", return_value={"completed": (), "failures": ()}
         ) as run_score_wave:
@@ -265,6 +373,31 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
         self.assertEqual(open_session.call_args.args[0], EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY)
         self.assertEqual(run_score_wave.call_args.args[:3], (runtime.context.run_root, runtime.context, runtime.catalog))
         self.assertIs(run_score_wave.call_args.kwargs["score_one"].func, cli._score_one_from_raw_antigravity)
+
+    def test_run_e_adapts_each_verified_captured_raw_dataset_before_current_scoring(self) -> None:
+        _bundle, runtime = self._runtime_antigravity()
+        session = mock.Mock(catalog={"database": {}})
+        api = mock.Mock(
+            database_config_antigravity=mock.Mock(database_path=FROZEN_EXP472_CONFIG.database_path),
+            raw_dataset_type_antigravity=_CapturedRawDatasetAntigravity,
+        )
+        observed: list[RawDataset] = []
+
+        def capture_score(score_one):
+            score_one(runtime.catalog[0].dataset)
+            return {"completed": (), "failures": ()}
+
+        with mock.patch.object(exp471_source, "open_exp467_source_session_antigravity", return_value=session), mock.patch.object(
+            exp471_source, "_require_captured_values_api_antigravity", return_value=api
+        ), mock.patch.object(exp471_source, "_bind_captured_values_database_antigravity", return_value=object()), mock.patch.object(
+            exp471_source, "_load_captured_dataset_values_antigravity", side_effect=lambda _session, _database, dataset, **_kwargs: _captured_raw_antigravity(dataset)
+        ), mock.patch.object(cli, "_score_one_from_raw_antigravity", side_effect=lambda raw, _backend, dataset: observed.append(raw[dataset])), mock.patch.object(
+            cli, "run_score_wave_exp472_antigravity", side_effect=lambda _root, _context, _catalog, *, score_one: capture_score(score_one)
+        ):
+            self.assertEqual(runtime.run_e_antigravity(), {"completed": (), "failures": ()})
+        self.assertEqual(len(observed), 1)
+        self.assertIs(type(observed[0]), RawDataset)
+        self.assertEqual(observed[0].dataset, runtime.catalog[0].dataset)
 
     def test_evaluate_refuses_incomplete_runtime_before_labels(self) -> None:
         with self.assertRaisesRegex(ValueError, "typed controller"):

@@ -17,6 +17,10 @@ from pathlib import Path
 import sys
 from typing import TextIO
 
+import numpy as np
+
+from paper.equipment_anomaly_detection.contracts_paper import RawDataset
+
 from .config_antigravity import (
     EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY,
     EXP471_REUSE_ROOT_ANTIGRAVITY,
@@ -57,6 +61,73 @@ def _score_one_from_raw_antigravity(raw_by_dataset: Mapping[str, object], backen
     values = raw_by_dataset[dataset]
     result = score_dataset_condition_e_exp472_antigravity(values, backend)
     return compose_final_score_exp472_antigravity(values, result, backend)
+
+
+def _adapt_captured_raw_dataset_exp472_antigravity(
+    values: object, captured_raw_dataset_type: object, expected_dataset: object,
+) -> RawDataset:
+    """Reissue verified Exp467 values under the current scorer's exact contract.
+
+    The captured source graph deliberately has its own ``RawDataset`` class.
+    Its instances must never bypass the current scorer's ``isinstance``
+    boundary.  This adapter validates the complete value-only representation
+    and then retains every tuple, blob, row array, and index by identity.
+    """
+    if (
+        type(captured_raw_dataset_type) is not type
+        or type(values) is not captured_raw_dataset_type
+    ):
+        raise ValueError("Exp472 captured raw dataset type differs")
+    if type(expected_dataset) is not str or not expected_dataset:
+        raise ValueError("Exp472 captured raw dataset expectation differs")
+    fields = (
+        "dataset", "metadata_length", "train_indices", "train_blobs",
+        "train_rows", "test_indices", "test_blobs", "test_rows",
+    )
+    try:
+        (
+            dataset, metadata_length, train_indices, train_blobs, train_rows,
+            test_indices, test_blobs, test_rows,
+        ) = tuple(getattr(values, field) for field in fields)
+    except AttributeError as error:
+        raise ValueError("Exp472 captured raw dataset schema differs") from error
+    if (
+        type(dataset) is not str
+        or dataset != expected_dataset
+        or type(metadata_length) is not int
+        or metadata_length <= 0
+    ):
+        raise ValueError("Exp472 captured raw dataset identity differs")
+    for indices, blobs, rows in (
+        (train_indices, train_blobs, train_rows),
+        (test_indices, test_blobs, test_rows),
+    ):
+        if (
+            type(indices) is not tuple
+            or type(blobs) is not tuple
+            or type(rows) is not tuple
+            or len(indices) != len(blobs)
+            or len(blobs) != len(rows)
+            or indices != tuple(range(len(indices)))
+        ):
+            raise ValueError("Exp472 captured raw dataset schema differs")
+        for index, blob, row in zip(indices, blobs, rows, strict=True):
+            if (
+                type(index) is not int
+                or type(blob) is not bytes
+                or not blob
+                or len(blob) % np.dtype("<f4").itemsize
+                or type(row) is not np.ndarray
+                or row.dtype != np.dtype("<f4")
+                or row.ndim != 1
+                or not row.size
+                or row.tobytes() != blob
+            ):
+                raise ValueError("Exp472 captured raw dataset schema differs")
+    return RawDataset(
+        dataset, metadata_length, train_indices, train_blobs, train_rows,
+        test_indices, test_blobs, test_rows,
+    )
 
 
 def _code_map_lock_sha256_antigravity() -> str:
@@ -151,20 +222,34 @@ def _emit_antigravity(stream: TextIO, value: object) -> None:
     stream.flush()
 
 
-def _paths_antigravity() -> dict[str, str]:
+def _paths_antigravity(mode: str = "full") -> dict[str, str]:
+    if mode not in {"smoke", "full"}:
+        raise ValueError("Exp472 status mode differs")
+    progress_root = (
+        EXP472_SMOKE_ROOT_ANTIGRAVITY
+        if mode == "smoke"
+        else EXP472_OFFICIAL_ROOT_ANTIGRAVITY
+    )
     return {
         "root": str(EXP472_ROOT_ANTIGRAVITY),
         "smoke": str(EXP472_SMOKE_ROOT_ANTIGRAVITY),
         "official": str(EXP472_OFFICIAL_ROOT_ANTIGRAVITY),
         "evaluation": str(EXP472_EVALUATION_ROOT_ANTIGRAVITY),
         "report": str(EXP472_REPORT_ROOT_ANTIGRAVITY),
-        "progress": str(EXP472_OFFICIAL_ROOT_ANTIGRAVITY / "progress_antigravity.jsonl"),
+        "progress": str(progress_root / "progress_antigravity.jsonl"),
     }
 
 
-def _status_antigravity() -> dict[str, object]:
+def _status_antigravity(mode: str = "full") -> dict[str, object]:
     """Produce a values-only observation without creating or importing data paths."""
-    progress = EXP472_OFFICIAL_ROOT_ANTIGRAVITY / "progress_antigravity.jsonl"
+    if mode not in {"smoke", "full"}:
+        raise ValueError("Exp472 status mode differs")
+    progress_root = (
+        EXP472_SMOKE_ROOT_ANTIGRAVITY
+        if mode == "smoke"
+        else EXP472_OFFICIAL_ROOT_ANTIGRAVITY
+    )
+    progress = progress_root / "progress_antigravity.jsonl"
     completed = failed = remaining = None
     eta_seconds = None
     if progress.is_file() and not progress.is_symlink():
@@ -182,7 +267,7 @@ def _status_antigravity() -> dict[str, object]:
             # Status reports a non-authoritative unreadable log rather than
             # attempting repair or a hidden restart.
             pass
-    return {"experiment": "Exp472", "paths": _paths_antigravity(), "scored": completed, "failed": failed, "remaining": remaining, "eta_seconds": eta_seconds, "read_only": True}
+    return {"experiment": "Exp472", "mode": mode, "paths": _paths_antigravity(mode), "scored": completed, "failed": failed, "remaining": remaining, "eta_seconds": eta_seconds, "read_only": True}
 
 
 @dataclass(frozen=True, slots=True)
@@ -265,18 +350,35 @@ class Exp472ControllerRuntimeAntigravity:
         api = _require_captured_values_api_antigravity(session)
         paper = api.database_config_antigravity
         binding = _bind_captured_values_database_antigravity(session, Path(paper.database_path), config=paper, verified_catalog_database=session.catalog["database"])
-        raw = {entry.dataset: _load_captured_dataset_values_antigravity(session, Path(paper.database_path), entry.dataset, preverified_database=binding) for entry in self.catalog}
+        raw = {
+            entry.dataset: _adapt_captured_raw_dataset_exp472_antigravity(
+                _load_captured_dataset_values_antigravity(
+                    session, Path(paper.database_path), entry.dataset,
+                    preverified_database=binding,
+                ),
+                api.raw_dataset_type_antigravity,
+                entry.dataset,
+            )
+            for entry in self.catalog
+        }
         score_one = partial(_score_one_from_raw_antigravity, raw, self.context.backend)
         return run_score_wave_exp472_antigravity(self.context.run_root, self.context, self.catalog, score_one=score_one)
 
 
 def _runtime_antigravity(
-    runtime: object | None, *, for_scoring: bool = False,
+    runtime: object | None, *, mode: str = "full", for_scoring: bool = False,
+    enforce_mode: bool = False,
 ) -> Exp472ControllerRuntimeAntigravity:
+    if mode not in {"smoke", "full"}:
+        raise ValueError("Exp472 runtime mode differs")
     if runtime is None:
-        return _build_runtime_antigravity("full", for_scoring=for_scoring)
+        if for_scoring:
+            return _build_runtime_antigravity(mode, for_scoring=True)
+        return _build_runtime_antigravity(mode)
     if not isinstance(runtime, Exp472ControllerRuntimeAntigravity):
         raise ValueError("Exp472 command requires a typed controller runtime; completion flags are not authority")
+    if enforce_mode and runtime.context.mode != mode:
+        raise ValueError("Exp472 command runtime mode differs")
     return runtime
 
 
@@ -314,15 +416,31 @@ def _readiness_antigravity() -> dict[str, object]:
     return {"experiment": "Exp472", "database_sha256": FROZEN_EXP472_CONFIG.database_sha256, "dataset_count": 1117, "test_row_count": 195900, "paths": _paths_antigravity(), "backend": backend, "labels_opened": False}
 
 
+def _parse_command_antigravity(
+    arguments: tuple[str, ...],
+) -> tuple[str, str]:
+    """Accept the fixed command grammar and no path or parameter overrides."""
+    if len(arguments) == 1 and arguments[0] in _COMMANDS_ANTIGRAVITY:
+        return arguments[0], "full"
+    if (
+        len(arguments) == 3
+        and arguments[0] in {"status", "verify"}
+        and arguments[1] == "--mode"
+        and arguments[2] in {"smoke", "full"}
+    ):
+        return arguments[0], arguments[2]
+    raise ValueError(
+        "Exp472 command must be one closed command, or status/verify --mode smoke|full"
+    )
+
+
 def main_antigravity(argv: Sequence[str] | None = None, *, stdout: TextIO | None = None, runtime: Exp472ControllerRuntimeAntigravity | None = None) -> int:
     """Run exactly one closed command; no root/parameter override is accepted."""
     arguments = tuple(sys.argv[1:] if argv is None else argv)
-    if len(arguments) != 1 or arguments[0] not in _COMMANDS_ANTIGRAVITY:
-        raise ValueError("Exp472 command must be one of readiness, smoke, run, status, verify, evaluate, report")
     stream = sys.stdout if stdout is None else stdout
-    command = arguments[0]
+    command, mode = _parse_command_antigravity(arguments)
     if command == "status":
-        _emit_antigravity(stream, _status_antigravity()); return 0
+        _emit_antigravity(stream, _status_antigravity(mode)); return 0
     if command == "readiness":
         _emit_antigravity(stream, _readiness_antigravity()); return 0
     if command == "smoke":
@@ -337,7 +455,9 @@ def main_antigravity(argv: Sequence[str] | None = None, *, stdout: TextIO | None
             raise ValueError("Exp472 run requires the frozen full E context")
         result = typed_run.run_e_antigravity()
         _emit_antigravity(stream, {"experiment": "Exp472", "command": "run", "result": result}); return 0
-    typed = _runtime_antigravity(runtime)
+    typed = _runtime_antigravity(
+        runtime, mode=mode, enforce_mode=(command == "verify"),
+    )
     if command in {"evaluate", "report"} and typed.context.mode != "full":
         raise ValueError("Exp472 evaluation and report require the frozen full E context")
     if command == "verify":
