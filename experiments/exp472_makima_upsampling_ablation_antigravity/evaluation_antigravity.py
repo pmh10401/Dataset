@@ -216,8 +216,14 @@ def _digest_evaluation_antigravity(value: object, name: str) -> str:
 
 def _read_evaluation_record_antigravity(path: Path) -> Mapping[str, object]:
     raw=_read_regular_evaluation_antigravity(path)
-    try: record=json.loads(raw.decode("utf-8"))
-    except (UnicodeDecodeError,json.JSONDecodeError) as error: raise ValueError("Exp472 evaluation artifact is invalid") from error
+    def reject_duplicates(pairs: list[tuple[str, object]]) -> dict[str, object]:
+        result: dict[str, object]={}
+        for key, value in pairs:
+            if key in result: raise ValueError("Exp472 evaluation artifact has duplicate JSON keys")
+            result[key]=value
+        return result
+    try: record=json.loads(raw.decode("utf-8"),object_pairs_hook=reject_duplicates)
+    except (UnicodeDecodeError,json.JSONDecodeError,ValueError) as error: raise ValueError("Exp472 evaluation artifact is invalid") from error
     if not isinstance(record,dict) or raw!=canonical_json_bytes_exp472_antigravity(record): raise ValueError("Exp472 evaluation artifact is noncanonical")
     expected={"schema","authority","method_order","per_dataset","subset_per_dataset","macro","micro","subset_macro","subset_micro","paired_statistics","denominators","diagnostic_summary","curves","e_manifest_sha256","context_sha256","evaluation_sha256"}
     if set(record)!=expected or record.get("schema")!=_EVALUATION_SCHEMA_ANTIGRAVITY: raise ValueError("Exp472 evaluation artifact schema differs")

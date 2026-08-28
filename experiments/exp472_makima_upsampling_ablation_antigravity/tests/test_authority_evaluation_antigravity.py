@@ -220,6 +220,17 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
             reopened = write_exp472_evaluation_antigravity(evaluation, Path(temporary) / "evaluation_antigravity")
         self.assertEqual(reopened.micro["E"]["dataset_denominator"], 1117)
 
+    def test_differing_evaluation_payload_never_replaces_existing_final(self) -> None:
+        """No-clobber publication preserves the first sealed authority byte-for-byte."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle); evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
+        with TemporaryDirectory(prefix="exp472-no-clobber-antigravity-") as temporary:
+            root = Path(temporary) / "evaluation_antigravity"; write_exp472_evaluation_antigravity(evaluation, root)
+            path = root / "exp472_evaluation_antigravity.json"; original = path.read_bytes()
+            changed = replace(evaluation, context_sha256=_digest("different-context"))
+            with self.assertRaisesRegex(ValueError, "already differs"):
+                write_exp472_evaluation_antigravity(changed, root)
+            self.assertEqual(path.read_bytes(), original)
+
     def test_v2_diagnostic_is_rejected_before_labels(self) -> None:
         """The retired raw-replay schema never crosses the label firewall."""
         bundle = _bundle(); context, catalog = _context_and_catalog(bundle); calls: list[object] = []
