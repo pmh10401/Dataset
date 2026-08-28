@@ -10,6 +10,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from hashlib import sha256
 import json
+import os
 from pathlib import Path
 import re
 import stat
@@ -19,6 +20,10 @@ from .contracts_antigravity import canonical_json_bytes_exp472_antigravity
 
 _SHA = re.compile(r"^[0-9a-f]{64}$")
 _METHODS = ("A", "B", "C", "D", "knn_distance", "lof_novelty", "ocsvm_rbf", "isolation_forest", "deep_svdd_1d", "drocc_1d")
+_REPORT_MARKER = ".exp471_report_complete_antigravity.json"
+_REPORT_ARTIFACT_MAP = "artifact_sha256_antigravity.json"
+_TYPED_REPORT_ROOT = "exp471_typed_report_artifacts_antigravity"
+_TYPED_REPORT_MANIFEST = "exp471_typed_report_manifest_antigravity.json"
 
 def _digest(value: object, name: str) -> str:
     if type(value) is not str or _SHA.fullmatch(value) is None: raise ValueError(f"Exp472 {name} digest differs")
@@ -81,14 +86,138 @@ class Exp472VerifiedExp471BundleAntigravity:
         _digest(self.path_sha256, "path")
         object.__setattr__(self, "coordinates", coords)
 
-def _canonical_leaf(path: Path, expected_digest_field: str) -> Mapping[str, object]:
-    details = path.lstat()
-    if stat.S_ISLNK(details.st_mode) or not stat.S_ISREG(details.st_mode): raise ValueError("Exp472 frozen leaf is unsafe")
-    raw = path.read_bytes(); value = json.loads(raw.decode("utf-8"))
-    if not isinstance(value, dict) or raw != canonical_json_bytes_exp472_antigravity(value): raise ValueError("Exp472 frozen leaf is noncanonical")
-    digest = value.get(expected_digest_field); bare = {k:v for k,v in value.items() if k != expected_digest_field}
-    if _digest(digest, expected_digest_field) != sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest(): raise ValueError("Exp472 frozen leaf digest differs")
-    return MappingProxyType(value)
+def _safe_relative_report_path(value: object) -> str:
+    if type(value) is not str or not value or "\\" in value or "\x00" in value:
+        raise ValueError("Exp472 frozen report path is unsafe")
+    parts = value.split("/")
+    if any(part in {"", ".", ".."} for part in parts):
+        raise ValueError("Exp472 frozen report path is unsafe")
+    return value
+
+def _safe_report_directory(root: Path) -> None:
+    details = root.lstat()
+    if stat.S_ISLNK(details.st_mode) or not stat.S_ISDIR(details.st_mode):
+        raise ValueError("Exp472 frozen report directory is unsafe")
+
+def _regular_report_leaf_bytes(root: Path, relative: object) -> bytes:
+    """Read one report leaf through no-symlink, regular-file path components."""
+    safe = _safe_relative_report_path(relative)
+    _safe_report_directory(root)
+    parent = root
+    for component in safe.split("/")[:-1]:
+        parent = parent / component
+        _safe_report_directory(parent)
+    path = root.joinpath(*safe.split("/"))
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as error:
+        raise ValueError("Exp472 frozen report leaf is unsafe") from error
+    try:
+        opened, linked = os.fstat(descriptor), path.lstat()
+        if (not stat.S_ISREG(opened.st_mode) or not stat.S_ISREG(linked.st_mode)
+                or opened.st_dev != linked.st_dev or opened.st_ino != linked.st_ino
+                or opened.st_nlink != 1):
+            raise ValueError("Exp472 frozen report leaf is unsafe")
+        chunks: list[bytes] = []
+        while True:
+            block = os.read(descriptor, 1 << 20)
+            if not block:
+                return b"".join(chunks)
+            chunks.append(block)
+    finally:
+        os.close(descriptor)
+
+def _canonical_report_json(root: Path, relative: object) -> tuple[Mapping[str, object], bytes]:
+    from experiments.exp471_exp467_evaluation_recovery_antigravity.contracts_antigravity import canonical_json_bytes_exp471_antigravity
+    raw = _regular_report_leaf_bytes(root, relative)
+    try:
+        value = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise ValueError("Exp472 frozen report JSON is malformed") from error
+    if not isinstance(value, dict) or raw != canonical_json_bytes_exp471_antigravity(value):
+        raise ValueError("Exp472 frozen report JSON is noncanonical")
+    return MappingProxyType(value), raw
+
+def _report_leaf_names(root: Path) -> tuple[str, ...]:
+    _safe_report_directory(root)
+    names: list[str] = []
+    for directory, subdirectories, files in os.walk(root, followlinks=False):
+        directory_path = Path(directory)
+        _safe_report_directory(directory_path)
+        for name in subdirectories:
+            _safe_report_directory(directory_path / name)
+        for name in files:
+            relative = (directory_path / name).relative_to(root).as_posix()
+            _regular_report_leaf_bytes(root, relative)
+            names.append(relative)
+    if len(names) != len(set(names)):
+        raise ValueError("Exp472 frozen report leaf inventory differs")
+    return tuple(sorted(names))
+
+def _verified_exp471_report_digest_antigravity(
+    root: Path, *, source_authority_sha256: str, cache_manifest_sha256: str,
+    evaluation_sha256: str,
+) -> str:
+    """Verify Exp471's published marker -> artifact-map -> typed-manifest chain."""
+    report_root = root / "report_antigravity"
+    marker, _ = _canonical_report_json(report_root, _REPORT_MARKER)
+    required_marker = {
+        "schema", "source_authority_sha256", "cache_manifest_sha256", "evaluation_sha256",
+        "report_file_sha256", "report_manifest_sha256", "artifact_map",
+    }
+    if (set(marker) != required_marker or marker.get("schema") != "exp471-report-publication-antigravity.v2"
+            or marker.get("artifact_map") != _REPORT_ARTIFACT_MAP
+            or marker.get("source_authority_sha256") != source_authority_sha256
+            or marker.get("cache_manifest_sha256") != cache_manifest_sha256
+            or marker.get("evaluation_sha256") != evaluation_sha256
+            or not isinstance(marker.get("report_file_sha256"), Mapping)):
+        raise ValueError("Exp472 Exp471 report complete marker differs")
+    expected_files = dict(marker["report_file_sha256"])
+    for relative, digest in expected_files.items():
+        _safe_relative_report_path(relative); _digest(digest, "report leaf")
+    artifact_map, artifact_map_raw = _canonical_report_json(report_root, _REPORT_ARTIFACT_MAP)
+    if (set(artifact_map) != {"schema", "self_excluded", "files"}
+            or artifact_map.get("schema") != "exp471-report-artifact-map-antigravity.v2"
+            or artifact_map.get("self_excluded") != _REPORT_ARTIFACT_MAP
+            or not isinstance(artifact_map.get("files"), Mapping)
+            or dict(artifact_map["files"]) != expected_files
+            or sha256(artifact_map_raw).hexdigest() != _digest(marker.get("report_manifest_sha256"), "report manifest")):
+        raise ValueError("Exp472 Exp471 report artifact map digest differs")
+    expected_names = set(expected_files) | {_REPORT_MARKER, _REPORT_ARTIFACT_MAP}
+    if set(_report_leaf_names(report_root)) != expected_names:
+        raise ValueError("Exp472 Exp471 report leaf inventory differs")
+    for relative, expected in expected_files.items():
+        if sha256(_regular_report_leaf_bytes(report_root, relative)).hexdigest() != expected:
+            raise ValueError("Exp472 Exp471 report leaf digest differs")
+    typed_relative = f"{_TYPED_REPORT_ROOT}/{_TYPED_REPORT_MANIFEST}"
+    if typed_relative not in expected_files:
+        raise ValueError("Exp472 Exp471 typed report manifest is absent")
+    typed_manifest, _ = _canonical_report_json(report_root, typed_relative)
+    if (set(typed_manifest) != {"schema", "files"}
+            or typed_manifest.get("schema") != "exp471-typed-report-manifest-antigravity.v1"
+            or not isinstance(typed_manifest.get("files"), Mapping)):
+        raise ValueError("Exp472 Exp471 typed report manifest differs")
+    typed_files = dict(typed_manifest["files"])
+    expected_typed_files = {
+        relative.removeprefix(f"{_TYPED_REPORT_ROOT}/"): digest
+        for relative, digest in expected_files.items()
+        if relative.startswith(f"{_TYPED_REPORT_ROOT}/") and relative != typed_relative
+    }
+    if typed_files != expected_typed_files:
+        raise ValueError("Exp472 Exp471 typed report manifest differs")
+    for relative, digest in typed_files.items():
+        _safe_relative_report_path(relative); _digest(digest, "typed report leaf")
+    return _digest(marker["report_manifest_sha256"], "report manifest")
+
+def _canonical_evaluation_leaf(root: Path) -> Mapping[str, object]:
+    from experiments.exp471_exp467_evaluation_recovery_antigravity.contracts_antigravity import canonical_json_bytes_exp471_antigravity
+    value, _ = _canonical_report_json(root, "evaluation_antigravity/evaluation_antigravity.json")
+    digest = value.get("evaluation_sha256")
+    bare = {key: item for key, item in value.items() if key != "evaluation_sha256"}
+    if _digest(digest, "evaluation") != sha256(canonical_json_bytes_exp471_antigravity(bare)).hexdigest():
+        raise ValueError("Exp472 frozen evaluation digest differs")
+    return value
 
 def _read_verified_exp471_path_antigravity(root: Path) -> Exp472VerifiedExp471BundleAntigravity:
     """Production reader: public Exp471 source/cache/shard APIs plus local JSON leaf checks."""
@@ -101,9 +230,9 @@ def _read_verified_exp471_path_antigravity(root: Path) -> Exp472VerifiedExp471Bu
     source_authority = source.read_source_authority_antigravity(root, repository, EXP467_SOURCE_ROOT_ANTIGRAVITY)
     if session.authority != source_authority or not isinstance(session.catalog, Mapping): raise ValueError("Exp472 Exp471 source session differs")
     manifest = cache.read_cache_manifest_antigravity(root / "score_cache_antigravity")
-    evaluation = _canonical_leaf(root / "evaluation_antigravity" / "evaluation_antigravity.json", "evaluation_sha256")
-    report = _canonical_leaf(root / "report_antigravity" / "exp471_typed_report_manifest_antigravity.json", "report_manifest_sha256")
-    if evaluation.get("source_authority_sha256") != source_authority.authority_sha256 or evaluation.get("cache_manifest_sha256") != manifest.manifest_sha256 or report.get("evaluation_sha256") != evaluation["evaluation_sha256"]: raise ValueError("Exp472 Exp471 digest chain differs")
+    evaluation = _canonical_evaluation_leaf(root)
+    if evaluation.get("source_authority_sha256") != source_authority.authority_sha256 or evaluation.get("cache_manifest_sha256") != manifest.manifest_sha256: raise ValueError("Exp472 Exp471 evaluation digest chain differs")
+    report_manifest_sha256 = _verified_exp471_report_digest_antigravity(root, source_authority_sha256=source_authority.authority_sha256, cache_manifest_sha256=manifest.manifest_sha256, evaluation_sha256=str(evaluation["evaluation_sha256"]))
     catalog_rows = session.catalog.get("datasets")
     if not isinstance(catalog_rows, (tuple, list)) or len(catalog_rows) != 1117: raise ValueError("Exp472 Exp471 catalog differs")
     catalog_coordinates = {row.get("dataset"): _project_catalog_test_identity_antigravity(row.get("test")) for row in catalog_rows if isinstance(row, Mapping)}
@@ -119,7 +248,7 @@ def _read_verified_exp471_path_antigravity(root: Path) -> Exp472VerifiedExp471Bu
             statuses[method][dataset] = shard.status; scores[method][dataset] = tuple(shard.raw_scores) if shard.status == "scored" else None
     order = tuple(manifest.dataset_order); coordinate_sha = _coordinate_digest(order, coordinates)
     common = sum(all(statuses[m][d] == "scored" for m in _METHODS) for d in order)
-    authority = Exp472ReuseAuthorityAntigravity(source_authority.authority_sha256, manifest.manifest_sha256, str(evaluation["evaluation_sha256"]), str(report["report_manifest_sha256"]), source_authority.database_sha256, coordinate_sha, tuple(manifest.method_order), manifest.total_shards, manifest.scored_shards, manifest.abstained_shards, manifest.failed_shards, len(order), common)
+    authority = Exp472ReuseAuthorityAntigravity(source_authority.authority_sha256, manifest.manifest_sha256, str(evaluation["evaluation_sha256"]), report_manifest_sha256, source_authority.database_sha256, coordinate_sha, tuple(manifest.method_order), manifest.total_shards, manifest.scored_shards, manifest.abstained_shards, manifest.failed_shards, len(order), common)
     return Exp472VerifiedExp471BundleAntigravity(root, authority, order, coordinates, scores, statuses, sha256(root.as_posix().encode() + bytes.fromhex(coordinate_sha)).hexdigest())
 
 def verify_exp471_reuse_exp472_antigravity(root: Path) -> Exp472VerifiedExp471BundleAntigravity:

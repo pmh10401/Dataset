@@ -27,10 +27,70 @@ _METHODS = ("A", "B", "C", "D", "knn_distance", "lof_novelty", "ocsvm_rbf", "iso
 
 def _digest(value: str) -> str: return sha256(value.encode()).hexdigest()
 
-def _canonical_leaf_document(bare: dict[str, object], digest_field: str) -> bytes:
-    """Build a hand-checked canonical Exp471 leaf with its own digest."""
+def _canonical_digest_document(bare: dict[str, object], digest_field: str) -> bytes:
+    """Build a hand-checked canonical Exp471 document with a self digest."""
     value = {**bare, digest_field: sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
     return canonical_json_bytes_exp472_antigravity(value)
+
+_TYPED_ROOT = "exp471_typed_report_artifacts_antigravity"
+_TYPED_MANIFEST = "exp471_typed_report_manifest_antigravity.json"
+_TYPED_LEAVES = (
+    "exp471_coverage_antigravity.csv", "exp471_coverage_antigravity.json",
+    "exp471_full_population_decisions_antigravity.csv", "exp471_full_population_decisions_antigravity.json",
+    "exp471_scored_support_metrics_antigravity.csv", "exp471_scored_support_metrics_antigravity.json",
+    "exp471_common_support_metrics_antigravity.csv", "exp471_common_support_metrics_antigravity.json",
+    "exp471_scored_support_curves_antigravity.svg", "exp471_scored_support_curves_antigravity.png",
+    "exp471_common_support_curves_antigravity.svg", "exp471_common_support_curves_antigravity.png",
+    "exp471_paper_report_antigravity.html",
+)
+
+def _write_production_shaped_exp471_tree(root: Path, source_authority: object, manifest: object) -> tuple[Path, Path, Path]:
+    """Write the frozen Exp471 report's marker -> map -> typed-manifest shape."""
+    evaluation = {
+        "source_authority_sha256": source_authority.authority_sha256,
+        "cache_manifest_sha256": manifest.manifest_sha256,
+    }
+    evaluation_path = root / "evaluation_antigravity" / "evaluation_antigravity.json"
+    evaluation_path.parent.mkdir()
+    evaluation_path.write_bytes(_canonical_digest_document(evaluation, "evaluation_sha256"))
+
+    report_root = root / "report_antigravity"
+    typed_root = report_root / _TYPED_ROOT
+    typed_root.mkdir(parents=True)
+    typed_files: dict[str, bytes] = {
+        name: f"fixture typed leaf: {name}\n".encode("utf-8") for name in _TYPED_LEAVES
+    }
+    typed_manifest_path = typed_root / _TYPED_MANIFEST
+    typed_files[_TYPED_MANIFEST] = canonical_json_bytes_exp472_antigravity({
+        "schema": "exp471-typed-report-manifest-antigravity.v1",
+        "files": {name: sha256(payload).hexdigest() for name, payload in sorted(typed_files.items())},
+    })
+    for name, payload in typed_files.items():
+        (typed_root / name).write_bytes(payload)
+    report_files = {
+        "exp471_report_provenance_antigravity.json": sha256(b'{"fixture":"provenance"}').hexdigest(),
+        **{f"{_TYPED_ROOT}/{name}": sha256(payload).hexdigest() for name, payload in typed_files.items()},
+    }
+    (report_root / "exp471_report_provenance_antigravity.json").write_bytes(b'{"fixture":"provenance"}')
+    artifact_map_path = report_root / "artifact_sha256_antigravity.json"
+    artifact_map = {
+        "schema": "exp471-report-artifact-map-antigravity.v2",
+        "self_excluded": "artifact_sha256_antigravity.json",
+        "files": dict(sorted(report_files.items())),
+    }
+    artifact_map_path.write_bytes(canonical_json_bytes_exp472_antigravity(artifact_map))
+    marker = {
+        "schema": "exp471-report-publication-antigravity.v2",
+        "source_authority_sha256": source_authority.authority_sha256,
+        "cache_manifest_sha256": manifest.manifest_sha256,
+        "evaluation_sha256": sha256(canonical_json_bytes_exp472_antigravity(evaluation)).hexdigest(),
+        "report_file_sha256": dict(sorted(report_files.items())),
+        "report_manifest_sha256": sha256(artifact_map_path.read_bytes()).hexdigest(),
+        "artifact_map": "artifact_sha256_antigravity.json",
+    }
+    marker_path = report_root / ".exp471_report_complete_antigravity.json"
+    marker_path.write_bytes(canonical_json_bytes_exp472_antigravity(marker))
+    return evaluation_path, artifact_map_path, typed_manifest_path
 
 def _identity(dataset: str, index: int) -> dict[str, object]:
     bare = {"dataset": dataset, "series_length": 2, "split": "TEST", "indices": [2 * index, 2 * index + 1], "values_blob_sha256": [_digest(f"{dataset}:blob:0"), _digest(f"{dataset}:blob:1")]}
@@ -75,7 +135,7 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
         with self.assertRaises(ValueError): Exp472VerifiedExp471BundleAntigravity(_ROOT, _bundle().authority, ("small",), {}, {}, {}, _digest("path"))
 
     def test_exp471_path_adapter_reads_public_source_catalog(self) -> None:
-        """A real canonical Exp471 leaf chain must bind the public source/cache reads."""
+        """The frozen marker -> artifact-map -> typed-manifest chain must bind reads."""
         bundle = _bundle(); source_authority = SimpleNamespace(authority_sha256=bundle.authority.exp471_source_authority_sha256, database_sha256=bundle.authority.database_sha256)
         catalog_rows = [{"dataset": dataset, "test": {**dict(bundle.coordinates[dataset]), "dataset_id": index}} for index, dataset in enumerate(bundle.dataset_order)]
         session = SimpleNamespace(authority=source_authority, catalog={"datasets": catalog_rows})
@@ -85,16 +145,11 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
             return SimpleNamespace(test_count=coordinate["count"], test_indices=coordinate["indices"], status=status, raw_scores=() if status == "abstained" else bundle.scores[method][dataset])
         with TemporaryDirectory(prefix="exp472-task5-exp471-antigravity-") as temporary:
             root = Path(temporary)
-            evaluation = {"source_authority_sha256": source_authority.authority_sha256, "cache_manifest_sha256": manifest.manifest_sha256}
-            evaluation_bytes = _canonical_leaf_document(evaluation, "evaluation_sha256")
-            (root / "evaluation_antigravity").mkdir()
-            (root / "evaluation_antigravity" / "evaluation_antigravity.json").write_bytes(evaluation_bytes)
-            report = {"evaluation_sha256": sha256(canonical_json_bytes_exp472_antigravity(evaluation)).hexdigest()}
-            (root / "report_antigravity").mkdir()
-            (root / "report_antigravity" / "exp471_typed_report_manifest_antigravity.json").write_bytes(_canonical_leaf_document(report, "report_manifest_sha256"))
+            evaluation_path, artifact_map_path, typed_manifest_path = _write_production_shaped_exp471_tree(root, source_authority, manifest)
+            expected_report_digest = sha256(artifact_map_path.read_bytes()).hexdigest()
             with patch.object(exp471_source, "open_exp467_source_session_antigravity", return_value=session) as open_session, patch.object(exp471_source, "read_source_authority_antigravity", return_value=source_authority) as read_source, patch.object(exp471_cache, "read_cache_manifest_antigravity", return_value=manifest), patch.object(exp471_cache, "read_score_shard_antigravity", side_effect=shard):
                 verified = verify_exp471_reuse_exp472_antigravity(root)
-        self.assertEqual(verified.coordinates, bundle.coordinates); self.assertEqual(verified.authority.exp471_evaluation_sha256, sha256(canonical_json_bytes_exp472_antigravity(evaluation)).hexdigest()); self.assertEqual(verified.authority.exp471_report_manifest_sha256, sha256(canonical_json_bytes_exp472_antigravity(report)).hexdigest()); self.assertEqual(open_session.call_args.args[0], Path(authority_module.__file__).resolve().parents[2]); self.assertEqual(read_source.call_args.args[0], root)
+        self.assertEqual(verified.coordinates, bundle.coordinates); self.assertEqual(verified.authority.exp471_evaluation_sha256, sha256(canonical_json_bytes_exp472_antigravity({"source_authority_sha256": source_authority.authority_sha256, "cache_manifest_sha256": manifest.manifest_sha256})).hexdigest()); self.assertEqual(verified.authority.exp471_report_manifest_sha256, expected_report_digest); self.assertEqual(open_session.call_args.args[0], Path(authority_module.__file__).resolve().parents[2]); self.assertEqual(read_source.call_args.args[0], root)
 
     def test_exp471_path_adapter_rejects_symlinked_evaluation_leaf(self) -> None:
         """A symlinked Exp471 evaluation leaf must fail before any shard or label work."""
@@ -108,6 +163,35 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
             with patch.object(exp471_source, "open_exp467_source_session_antigravity", return_value=session), patch.object(exp471_source, "read_source_authority_antigravity", return_value=source_authority), patch.object(exp471_cache, "read_cache_manifest_antigravity", return_value=manifest):
                 with self.assertRaisesRegex(ValueError, "unsafe"):
                     verify_exp471_reuse_exp472_antigravity(root)
+
+    def test_exp471_path_adapter_rejects_symlinked_typed_manifest_before_shards(self) -> None:
+        """A symlinked typed manifest must not cross the report authority boundary."""
+        bundle = _bundle(); source_authority = SimpleNamespace(authority_sha256=bundle.authority.exp471_source_authority_sha256, database_sha256=bundle.authority.database_sha256)
+        catalog_rows = [{"dataset": dataset, "test": {**dict(bundle.coordinates[dataset]), "dataset_id": index}} for index, dataset in enumerate(bundle.dataset_order)]
+        session = SimpleNamespace(authority=source_authority, catalog={"datasets": catalog_rows})
+        manifest = SimpleNamespace(manifest_sha256=bundle.authority.exp471_cache_manifest_sha256, dataset_order=bundle.dataset_order, method_order=_METHODS, total_shards=11170, scored_shards=10775, abstained_shards=395, failed_shards=0)
+        with TemporaryDirectory(prefix="exp472-task5-exp471-antigravity-") as temporary:
+            root = Path(temporary); _evaluation_path, _artifact_map_path, typed_manifest_path = _write_production_shaped_exp471_tree(root, source_authority, manifest)
+            target = root / "typed-manifest-target-antigravity.json"; target.write_bytes(typed_manifest_path.read_bytes())
+            typed_manifest_path.unlink(); typed_manifest_path.symlink_to(target)
+            with patch.object(exp471_source, "open_exp467_source_session_antigravity", return_value=session), patch.object(exp471_source, "read_source_authority_antigravity", return_value=source_authority), patch.object(exp471_cache, "read_cache_manifest_antigravity", return_value=manifest), patch.object(exp471_cache, "read_score_shard_antigravity", side_effect=AssertionError("report authority must fail before shards")):
+                with self.assertRaisesRegex(ValueError, "unsafe"):
+                    verify_exp471_reuse_exp472_antigravity(root)
+
+    def test_exp471_path_adapter_rejects_production_report_chain_tampering_before_shards(self) -> None:
+        """Marker/map/typed-manifest corruption must fail before any shard or label route."""
+        bundle = _bundle(); source_authority = SimpleNamespace(authority_sha256=bundle.authority.exp471_source_authority_sha256, database_sha256=bundle.authority.database_sha256)
+        catalog_rows = [{"dataset": dataset, "test": {**dict(bundle.coordinates[dataset]), "dataset_id": index}} for index, dataset in enumerate(bundle.dataset_order)]
+        session = SimpleNamespace(authority=source_authority, catalog={"datasets": catalog_rows})
+        manifest = SimpleNamespace(manifest_sha256=bundle.authority.exp471_cache_manifest_sha256, dataset_order=bundle.dataset_order, method_order=_METHODS, total_shards=11170, scored_shards=10775, abstained_shards=395, failed_shards=0)
+        for target_name in ("evaluation", "artifact_map", "typed_manifest"):
+            with self.subTest(target=target_name), TemporaryDirectory(prefix="exp472-task5-exp471-antigravity-") as temporary:
+                root = Path(temporary); evaluation_path, artifact_map_path, typed_manifest_path = _write_production_shaped_exp471_tree(root, source_authority, manifest)
+                target = {"evaluation": evaluation_path, "artifact_map": artifact_map_path, "typed_manifest": typed_manifest_path}[target_name]
+                target.write_bytes(target.read_bytes() + b"\n")
+                with patch.object(exp471_source, "open_exp467_source_session_antigravity", return_value=session), patch.object(exp471_source, "read_source_authority_antigravity", return_value=source_authority), patch.object(exp471_cache, "read_cache_manifest_antigravity", return_value=manifest), patch.object(exp471_cache, "read_score_shard_antigravity", side_effect=AssertionError("report authority must fail before shards")):
+                    with self.assertRaisesRegex(ValueError, "noncanonical|digest"):
+                        verify_exp471_reuse_exp472_antigravity(root)
 
     def test_exp471_public_reader_failure_blocks_e_and_labels(self) -> None:
         """A failed real Exp471 authority read must not invoke E verification or labels."""
