@@ -35,14 +35,14 @@
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py": "9e2578d8177f8cc5f5476d30a33700ea645ecbfbeacf4d7851e8749368701a32",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py": "061c2883ba0e6f7ec64b078b1b41742075c876370c6dc306190aec80b3d8bc59",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py": "8342bed3a33631b2a02fbeeb3fbd63f92863d9e62c07ce18a2c9792ac9f7d8a8",
-    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py": "01ffd306b538a1b780d816180191034025ca365e7c9d3cc5019c0a087cfdf13b",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py": "6e43af52004b01b9ee6c1990eb24103dabcca1fc56b0e64f4a3bc28d31a32d51",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py": "557a633babdf914291168bca73259a9a1c5e74f3532b1c2b3d0fa2b507aabf30",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py": "f3ed497485be6c67626f56ee8dd2228e743d69c1c9821f394e675855bc8bd19a",
     "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py": "d1b4f28fe147291dd13700869efe6d27687eeb99b6c20f0b042dab411fd775f1",
     "paper/equipment_anomaly_detection/data_paper.py": "da6d2e208f7293f782d3bac8fd6c10a32456d6e51c48ce7528f34ef4aa328207",
     "paper/equipment_anomaly_detection/label_access_paper.py": "566984e5132857f9c2563e8c473612266f8f750fad4029e6654b5f216764448f",
     "scratch/generate_exp472_codemap_antigravity.py": "cca8531e25c2ec3d14f7bf577debd0e382e216b845f09fe0ac99b0921a96299f",
-    "scratch/run_exp472_makima_upsampling_ablation_antigravity.py": "3df8d34830273197585221ae787420957dd2abcbdf8795863fb296043ac1c66e"
+    "scratch/run_exp472_makima_upsampling_ablation_antigravity.py": "9d4605d314fb46ea53c18811275b273d4fb31c1cebe5bb1f2ebc762e7916972d"
   },
   "scanned_scope": [
     "docs/runbooks/exp472_makima_upsampling_ablation_antigravity.md",

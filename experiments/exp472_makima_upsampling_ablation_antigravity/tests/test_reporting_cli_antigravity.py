@@ -7,7 +7,9 @@ from hashlib import sha256
 import io
 import json
 import numpy as np
+import os
 from pathlib import Path
+import subprocess
 import sys
 from tempfile import TemporaryDirectory
 import unittest
@@ -49,6 +51,13 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.tests.test_author
 
 
 _SHA = sha256(b"exp472-report-fixture-antigravity").hexdigest()
+_REPOSITORY_ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[3]
+_OFFICIAL_PYTHON_ANTIGRAVITY = Path(
+    "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python"
+)
+_LAUNCHER_RELATIVE_ANTIGRAVITY = (
+    "scratch/run_exp472_makima_upsampling_ablation_antigravity.py"
+)
 _METHODS = (
     "A", "B", "C", "D", "E", "knn_distance", "lof_novelty",
     "ocsvm_rbf", "isolation_forest", "deep_svdd_1d", "drocc_1d",
@@ -170,6 +179,39 @@ class _EvaluationAntigravity:
 
 
 class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
+    def test_readiness_launcher_runs_from_repository_and_external_cwd(self) -> None:
+        """The official direct-file launcher keeps its package import boundary."""
+        self.assertTrue(_OFFICIAL_PYTHON_ANTIGRAVITY.is_file())
+        clean_environment = {
+            key: value for key, value in os.environ.items() if key != "PYTHONPATH"
+        }
+        launcher_cases = (
+            (_REPOSITORY_ROOT_ANTIGRAVITY, _LAUNCHER_RELATIVE_ANTIGRAVITY),
+            (Path("/private/tmp"), str(
+                _REPOSITORY_ROOT_ANTIGRAVITY / _LAUNCHER_RELATIVE_ANTIGRAVITY
+            )),
+        )
+        for working_directory, launcher in launcher_cases:
+            with self.subTest(cwd=working_directory, launcher=launcher):
+                completed = subprocess.run(
+                    (
+                        str(_OFFICIAL_PYTHON_ANTIGRAVITY),
+                        launcher,
+                        "readiness",
+                    ),
+                    cwd=working_directory,
+                    env=clean_environment,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                    check=False,
+                )
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+                value = json.loads(completed.stdout)
+                self.assertEqual(value["experiment"], "Exp472")
+                self.assertEqual(value["dataset_count"], 1117)
+                self.assertFalse(value["labels_opened"])
+
     def _runtime_antigravity(self, report_root: Path | None = None):
         bundle = _task5_bundle_antigravity(); context, catalog = _task5_context_catalog_antigravity(bundle)
         return bundle, cli.Exp472ControllerRuntimeAntigravity(context, catalog, EXP471_REUSE_ROOT_ANTIGRAVITY, _SHA, report_root or Path("/private/tmp/exp472-report-runtime-antigravity"))
