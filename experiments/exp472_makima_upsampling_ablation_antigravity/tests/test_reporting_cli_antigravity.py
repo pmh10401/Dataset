@@ -343,6 +343,18 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
             finally:
                 if prior is not None: sys.modules[module_name] = prior
 
+    def test_status_uses_only_regular_canonical_completion_markers(self) -> None:
+        """Presence flags never treat redirected evaluation/report markers as completion."""
+        with TemporaryDirectory(prefix="exp472-status-markers-antigravity-") as temporary:
+            base = Path(temporary); official = base / "official_antigravity"; official.mkdir()
+            evaluation = base / "evaluation_antigravity"; report = base / "report_antigravity"; evaluation.mkdir(); report.mkdir()
+            target = base / "marker-target-antigravity.json"; target.write_text("{}", encoding="utf-8")
+            (evaluation / cli.EVALUATION_COMPLETE_NAME_ANTIGRAVITY).symlink_to(target)
+            (report / ".exp472_report_complete_antigravity.json").symlink_to(target)
+            with mock.patch.object(cli, "EXP472_OFFICIAL_ROOT_ANTIGRAVITY", official), mock.patch.object(cli, "EXP472_EVALUATION_ROOT_ANTIGRAVITY", evaluation), mock.patch.object(cli, "EXP472_REPORT_ROOT_ANTIGRAVITY", report):
+                value = cli._status_antigravity()
+            self.assertFalse(value["evaluation_present"]); self.assertFalse(value["report_present"])
+
     def test_status_and_verify_accept_only_exact_mode_forms(self) -> None:
         """Smoke/full observation targets are explicit; other flags stay closed."""
         smoke = Path("/private/tmp/exp472-smoke-status-antigravity")

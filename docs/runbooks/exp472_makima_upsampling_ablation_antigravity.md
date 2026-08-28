@@ -25,7 +25,7 @@ $PYTHON scratch/run_exp472_makima_upsampling_ablation_antigravity.py evaluate
 $PYTHON scratch/run_exp472_makima_upsampling_ablation_antigravity.py report
 ```
 
-`verify`는 E 1,117개와 동결된 Exp471 권한을 읽기 전용으로 다시 확인합니다. `evaluate`는 먼저 `evaluation_antigravity/exp472_evaluation_antigravity.json`을 canonical bytes와 권한 digest로 다시 확인합니다. 유효한 파일이 있으면 TEST label을 다시 열지 않고 그 파일을 반환합니다. 파일이 없을 때만 두 권한 검증 뒤에 한 번 평가하고 create-or-identical 방식으로 저장한 뒤 다시 읽어 확인합니다. `report`는 이 저장된 평가 파일과 E/Exp471 권한만 읽으며, 평가 함수·label loader·점수 생성을 호출하지 않습니다. 파일이 없거나 검증에 실패하면 15개 보고서 리프를 만들기 전에 중단합니다.
+`verify`는 E 1,117개와 동결된 Exp471 권한을 읽기 전용으로 다시 확인합니다. `evaluate`는 공개 평가 파일과 별도로 같은 평가 루트에 `exp472_private_label_evidence_antigravity.json`을 0600 create-only 파일로 기록합니다. 이 파일은 TEST 라벨의 canonical 순서·binary vector와 Exp471/E/context 결속을 갖지만, 보고서의 15개 리프와 보고서 manifest에는 포함하지 않습니다. 재개 시에는 source label loader를 다시 열지 않고 이 비공개 증거와 검증된 Exp471/E terminal score를 이용해 전체 표·분모·ROC/PR·AP/AUROC를 재계산하여 공개 평가 파일과 정확히 비교합니다. 비공개 증거만 남은 중단은 같은 방식으로 복구합니다. `report`는 이 저장된 평가 파일과 E/Exp471 권한만 읽으며, 평가 함수·label loader·점수 생성을 호출하지 않습니다. 파일이 없거나 검증에 실패하면 15개 보고서 리프를 만들기 전에 중단합니다.
 
 평가 파일은 경로가 존재한다고 완료로 간주하지 않습니다. `status`의
 `evaluation_present`와 `report_present`는 단순 관측값이며, 실제 완료 판단은
@@ -33,7 +33,7 @@ $PYTHON scratch/run_exp472_makima_upsampling_ablation_antigravity.py report
 기법의 표, 부분집합·곡선·진단 요약을 다시 검증한 결과로만 합니다. 동시에
 `evaluate`를 실행해도 OS 잠금 때문에 한 프로세스만 TEST label을 열 수
 있습니다. 그 프로세스는 같은 디렉터리의 임시 파일을 fsync한 뒤 원자적
-no-clobber 방식으로 최종 이름을 만들고, 기존 최종 파일을 교체하지 않습니다.
+no-clobber 방식으로 최종 이름을 만들고, 기존 최종 파일을 교체하지 않습니다. 이 결속은 비공개 label evidence와 기존 Exp471/E terminal authority가 보존된다는 운영 경계에서 공개 평가 파일의 손상·일관된 재작성까지 탐지합니다. 모든 권한 파일을 삭제하거나 권한 있는 공격자가 비공개 evidence까지 교체하는 경우는 외부 서명 또는 WORM 저장소가 필요한 별도 위협 모델입니다.
 
 예상 최종 수는 E 1,117개 shard, Exp471 재사용 11,170개 shard(10,775 scored + 395 abstained + 0 failed), 공통 support 922개입니다. 보고서는 `report_antigravity`에 15개 리프, manifest, 완료 marker 순서로 생성됩니다.
 

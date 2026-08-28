@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from contextlib import contextmanager
 from hashlib import sha256
 import json
 import multiprocessing
@@ -141,9 +142,16 @@ def _complete_evaluation_antigravity(bundle: Exp472VerifiedExp471BundleAntigravi
     with patch.object(evaluation_module, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), patch.object(evaluation_module, "verify_manifest_exp472_antigravity", return_value=_manifest(bundle, context)), patch.object(evaluation_module, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: _shard(entry)):
         return evaluate_exp472_antigravity(_ROOT, _ROOT, lambda order: {dataset: (0, 1) for dataset in order}, context=context, catalog=catalog)
 
+@contextmanager
+def _trusted_terminal_sources_antigravity(bundle: Exp472VerifiedExp471BundleAntigravity, context: Exp472RunContextAntigravity):
+    """Inject only the synthetic terminal authorities; public reader code stays real."""
+    with patch.object(evaluation_module, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), patch.object(evaluation_module, "verify_manifest_exp472_antigravity", return_value=_manifest(bundle, context)), patch.object(evaluation_module, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: _shard(entry)):
+        yield {"e_root": _ROOT, "exp471_root": _ROOT, "context": context, "catalog": _context_and_catalog(bundle)[1]}
+
 def _record_to_evaluation_antigravity(record: dict[str, object]) -> Exp472EvaluationAntigravity:
     authority = Exp472ReuseAuthorityAntigravity(**record["authority"])
-    return Exp472EvaluationAntigravity(authority,tuple(record["method_order"]),tuple(record["per_dataset"]),tuple(record["subset_per_dataset"]),MappingProxyType(record["macro"]),MappingProxyType(record["micro"]),MappingProxyType(record["subset_macro"]),MappingProxyType(record["subset_micro"]),tuple(record["paired_statistics"]),MappingProxyType(record["denominators"]),MappingProxyType(record["diagnostic_summary"]),MappingProxyType(record["curves"]),record["e_manifest_sha256"],record["context_sha256"])
+    labels = {dataset: (0, 1) for dataset in record["diagnostic_summary"]}
+    return Exp472EvaluationAntigravity(authority,tuple(record["method_order"]),tuple(record["per_dataset"]),tuple(record["subset_per_dataset"]),MappingProxyType(record["macro"]),MappingProxyType(record["micro"]),MappingProxyType(record["subset_macro"]),MappingProxyType(record["subset_micro"]),tuple(record["paired_statistics"]),MappingProxyType(record["denominators"]),MappingProxyType(record["diagnostic_summary"]),MappingProxyType(record["curves"]),MappingProxyType(labels),record["e_manifest_sha256"],record["context_sha256"])
 
 def _process_claim_worker_antigravity(root: str, record: dict[str, object], counter: object, gate: object, output: object) -> None:
     gate.wait()
@@ -183,6 +191,68 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
                     root, authority=bundle.authority, e_manifest_sha256=_manifest(bundle, context)["manifest_sha256"],
                     context_sha256=context.sha256, dataset_order=bundle.dataset_order,
                 )
+
+    def test_private_label_evidence_is_create_only_and_not_public_evaluation_science(self) -> None:
+        """A restrictive private label commitment anchors the otherwise public science."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle)
+        evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
+        with TemporaryDirectory(prefix="exp472-private-label-evidence-antigravity-") as temporary:
+            root = Path(temporary) / "evaluation_antigravity"
+            write_exp472_evaluation_antigravity(evaluation, root)
+            evidence = root / evaluation_module.PRIVATE_LABEL_EVIDENCE_NAME_ANTIGRAVITY
+            self.assertTrue(evidence.is_file())
+            self.assertEqual(evidence.stat().st_mode & 0o777, 0o600)
+            record = json.loads((root / evaluation_module.EVALUATION_NAME_ANTIGRAVITY).read_text(encoding="utf-8"))
+            self.assertIn("private_label_evidence_sha256", record)
+            self.assertNotIn("labels", record)
+            self.assertNotIn(evidence.name, record)
+
+    @patch.object(evaluation_module, "_DRAWS", 32)
+    def test_trusted_reopen_rejects_coherent_public_micro_and_roc_rewrite(self) -> None:
+        """A self-digested public rewrite cannot override private labels plus terminal scores."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle); evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
+        with TemporaryDirectory(prefix="exp472-coherent-public-tamper-antigravity-") as temporary:
+            root = Path(temporary) / "evaluation_antigravity"; write_exp472_evaluation_antigravity(evaluation, root)
+            path = root / evaluation_module.EVALUATION_NAME_ANTIGRAVITY
+            changed = json.loads(path.read_text(encoding="utf-8"))
+            changed["micro"]["A"]["observation_denominator"] = 1
+            changed["denominators"]["full_population"]["observation_count"] = 1
+            e_rows = [row for row in changed["curves"]["roc"]["rows"] if row["method"] == "E"]
+            e_rows[1]["true_positive_rate"] = 0.75
+            changed["micro"]["E"]["auroc"] = 0.875
+            bare = {key: value for key, value in changed.items() if key != "evaluation_sha256"}
+            changed["evaluation_sha256"] = sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()
+            path.write_bytes(canonical_json_bytes_exp472_antigravity(changed))
+            (root / evaluation_module.EVALUATION_COMPLETE_NAME_ANTIGRAVITY).write_bytes(canonical_json_bytes_exp472_antigravity(evaluation_module._evaluation_marker_record_antigravity(changed)))
+            with _trusted_terminal_sources_antigravity(bundle, context) as trusted:
+                with self.assertRaises(ValueError):
+                    read_exp472_evaluation_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order, **trusted)
+
+    @patch.object(evaluation_module, "_DRAWS", 32)
+    def test_private_label_evidence_only_resumes_without_label_loader(self) -> None:
+        """A crash after the private commitment reuses it without reopening source labels."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle); evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
+        with TemporaryDirectory(prefix="exp472-private-evidence-resume-antigravity-") as temporary:
+            root = Path(temporary) / "evaluation_antigravity"; write_exp472_evaluation_antigravity(evaluation, root)
+            (root / evaluation_module.EVALUATION_NAME_ANTIGRAVITY).unlink()
+            (root / evaluation_module.EVALUATION_COMPLETE_NAME_ANTIGRAVITY).unlink()
+            with _trusted_terminal_sources_antigravity(bundle, context) as trusted:
+                reopened = read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=lambda: (_ for _ in ()).throw(AssertionError("labels must stay closed")), **trusted)
+            self.assertEqual(reopened.artifact_record(), evaluation.artifact_record())
+
+    @patch.object(evaluation_module, "_DRAWS", 32)
+    def test_private_label_evidence_replacement_is_rejected(self) -> None:
+        """Changing the private commitment cannot be hidden by its self digest alone."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle); evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
+        with TemporaryDirectory(prefix="exp472-private-evidence-tamper-antigravity-") as temporary:
+            root = Path(temporary) / "evaluation_antigravity"; write_exp472_evaluation_antigravity(evaluation, root)
+            path = root / evaluation_module.PRIVATE_LABEL_EVIDENCE_NAME_ANTIGRAVITY; changed = json.loads(path.read_text(encoding="utf-8"))
+            changed["labels"][0]["values"] = [1, 0]
+            bare = {key: value for key, value in changed.items() if key != "private_label_evidence_sha256"}
+            changed["private_label_evidence_sha256"] = sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()
+            path.write_bytes(canonical_json_bytes_exp472_antigravity(changed))
+            with self.assertRaises(ValueError):
+                read_exp472_evaluation_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order)
 
     def test_persisted_reader_rejects_duplicate_keys_and_symlinked_evaluation(self) -> None:
         """Neither an ambiguous JSON object nor a redirected sealed result is authority."""
@@ -236,6 +306,25 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "authority"):
                 read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=lambda: faulty)
             self.assertFalse((root / "exp472_evaluation_antigravity.json").exists())
+
+    @patch.object(evaluation_module, "_DRAWS", 32)
+    def test_faulty_compute_cannot_publish_wrong_authority_context_dataset_or_method_order(self) -> None:
+        """All caller terminal identities are checked before any durable evaluation write."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle); evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
+        wrong_authority = replace(evaluation.authority, database_sha256=_digest("wrong-db"))
+        cases = {
+            "authority": replace(evaluation, authority=wrong_authority),
+            "context": replace(evaluation, context_sha256=_digest("wrong-context")),
+            "dataset_order": replace(evaluation, per_dataset=tuple(reversed(evaluation.per_dataset))),
+            "method_order": replace(evaluation, method_order=tuple(reversed(evaluation.method_order))),
+        }
+        with TemporaryDirectory(prefix="exp472-faulty-compute-identities-antigravity-") as temporary:
+            for name, faulty in cases.items():
+                with self.subTest(name=name):
+                    root = Path(temporary) / f"{name}_evaluation_antigravity"
+                    with self.assertRaises(ValueError):
+                        read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=lambda value=faulty: value)
+                    self.assertFalse((root / evaluation_module.EVALUATION_NAME_ANTIGRAVITY).exists())
 
     def test_missing_completion_marker_never_reopens_labels(self) -> None:
         """A lone artifact is tamper evidence, not a reason to recompute labels."""
@@ -483,7 +572,7 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
         self.assertEqual((first_e["average_precision"], first_e["auroc"]), (1.0, 1.0))
         self.assertEqual({item["population"] for item in result.paired_statistics}, {"full", "upsampled_rows_gt_zero"})
         for paired in result.paired_statistics: self.assertEqual((paired["seed"], paired["draw_count"], paired["percentile"], paired["tie_tolerance"]), (BOOTSTRAP_SEED_ANTIGRAVITY, BOOTSTRAP_DRAWS_ANTIGRAVITY, BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY * 100, 1e-12))
-        record = result.artifact_record(); self.assertEqual(record["schema"], "exp472-evaluation-antigravity.v2"); self.assertEqual(record["evaluation_sha256"], sha256(canonical_json_bytes_exp472_antigravity({key: value for key, value in record.items() if key != "evaluation_sha256"})).hexdigest()); self.assertNotEqual(record["evaluation_sha256"], replace(result, method_order=("changed",)).artifact_record()["evaluation_sha256"])
+        record = result.artifact_record(); self.assertEqual(record["schema"], "exp472-evaluation-antigravity.v3"); self.assertEqual(record["evaluation_sha256"], sha256(canonical_json_bytes_exp472_antigravity({key: value for key, value in record.items() if key != "evaluation_sha256"})).hexdigest()); self.assertNotEqual(record["evaluation_sha256"], replace(result, method_order=("changed",)).artifact_record()["evaluation_sha256"])
 
     def test_evaluation_digest_covers_every_scientific_section(self) -> None:
         """Omitting any scientific table from the digest would permit an unbound Task6 report."""

@@ -905,6 +905,23 @@ the final name with atomic no-clobber linking, fsyncs the directory, removes the
 temporary file, and never replaces an existing final artifact. Status exposes
 only untrusted presence flags rather than treating a pathname as completion.
 
+### Task 8 amendment: private label-evidence replay anchor
+
+The public evaluation artifact is schema v3 and binds the digest of the private,
+0600, create-only `exp472_private_label_evidence_antigravity.json` file. The
+private evidence is canonical JSON with duplicate-key and symlink rejection; it
+contains only ordered binary TEST-label vectors plus exact Exp471 authority, E
+terminal-manifest, context, and dataset-order bindings. It is excluded from the
+15 public report leaves, report manifest, and Git-tracked sources. Production
+reopen verifies Exp471 and every E shard again, reconstructs all scores, loads
+the private evidence without the source label loader, and canonical-compares the
+entire recomputed scientific evaluation. A crash after private evidence but
+before public evaluation resumes from that evidence without reopening labels.
+This detects accidental, corrupt, or coherent public-result rewrites while the
+private evidence and existing score authorities remain intact. Simultaneous
+privileged replacement of every trust anchor is out of scope without external
+signing or WORM storage.
+
 **Files:**
 - Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/evaluation_antigravity`
 - Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/report_antigravity`

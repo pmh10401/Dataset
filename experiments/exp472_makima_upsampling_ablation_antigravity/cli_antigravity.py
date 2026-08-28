@@ -507,12 +507,14 @@ def main_antigravity(argv: Sequence[str] | None = None, *, stdout: TextIO | None
             typed.evaluation_root, authority=exp471.authority,
             e_manifest_sha256=str(manifest["manifest_sha256"]), context_sha256=typed.context.sha256,
             dataset_order=exp471.dataset_order, compute=typed.evaluate_antigravity,
+            e_root=typed.context.run_root, exp471_root=typed.exp471_root,
+            context=typed.context, catalog=typed.catalog,
         )
         _emit_antigravity(stream, {"experiment": "Exp472", "command": "evaluate", "evaluation_sha256": getattr(evaluation, "artifact_record", lambda: {})().get("evaluation_sha256")}); return 0
     # Report deliberately does not dispatch score generation.  It can only
     # consume completed, independently reopened authorities before evaluation.
     exp471, manifest, shards = _verified_authorities_antigravity(typed)
-    evaluation = read_exp472_evaluation_antigravity(typed.evaluation_root, authority=exp471.authority, e_manifest_sha256=str(manifest["manifest_sha256"]), context_sha256=typed.context.sha256, dataset_order=exp471.dataset_order)
+    evaluation = read_exp472_evaluation_antigravity(typed.evaluation_root, authority=exp471.authority, e_manifest_sha256=str(manifest["manifest_sha256"]), context_sha256=typed.context.sha256, dataset_order=exp471.dataset_order, e_root=typed.context.run_root, exp471_root=typed.exp471_root, context=typed.context, catalog=typed.catalog)
     # Preserve Task3's full aggregate diagnostic exactly; the reporter binds
     # its nested train/test evidence and does not invent flat substitutes.
     shape = tuple(dict(shard["diagnostic"]) for shard in shards)
