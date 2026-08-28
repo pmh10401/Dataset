@@ -220,3 +220,8 @@ Capability immutability ruling: the report capability retains only canonical
 evaluation-record bytes and bound digests, never an evaluation object or its
 nested mappings. Report publication revalidates the byte snapshot and builds a
 fresh local report view; a mismatched E-manifest digest stops before any leaf.
+
+Immutable-capability verification (80b176dc follow-up): full official Python
+Exp472 passed 132/132 in 860.511 seconds after the capability stopped exposing
+evaluation fields; the affected denominator assertion now reads its canonical
+snapshot via `artifact_record()`. No full-suite errors remained.

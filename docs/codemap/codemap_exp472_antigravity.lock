@@ -11,7 +11,7 @@
     "plan_sha256": "052bf68cd03abaa228e4600edd26a254675f12afdf3b4a35e23e249a3619f7a5"
   },
   "module_fingerprints": {
-    ".superpowers/sdd/2026-08-28-exp472-makima-upsampling-ablation-antigravity/progress.md": "f5b01f4a6fd9c7bb92133601ccd728f787d0b37ef0b80436bd7c6180ff314ffb",
+    ".superpowers/sdd/2026-08-28-exp472-makima-upsampling-ablation-antigravity/progress.md": "247a24461bddb54d232d2b760c89639c0ec7b1a316f3413354ab726dbeabecc5",
     "docs/runbooks/exp472_makima_upsampling_ablation_antigravity.md": "81828d4a3621bf0d313002dbaaa6b75c72a75481dc1b07b006a8e594551982e5",
     "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md": "052bf68cd03abaa228e4600edd26a254675f12afdf3b4a35e23e249a3619f7a5",
     "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md": "dc9d0d8f6716eb44e3ddf58a011c2a83740c3b2fb31aa475da93843c7f3040d0",
@@ -36,7 +36,7 @@
     "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py": "37413d1e6b3bcf3344f5371b77503f48c4e1cbb1ed2d6ceaf36fcd3359f97bf4",
     "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py": "2988bb4dd0a02e376f09705a4b4967f4b9266a2c15f2c240af7dec6517f39438",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py": "e77935484f0ab783c0df24dfa4bea24a5d30a598bdb395845d7dbd7f87086cb5",
-    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py": "d1b944beaa047ba019be01947f82f41d665b0c6b17202487b652b0963802808f",
+    "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py": "b6ef88ef5da6c9900f843872498cc17a162ea5a8e2a4b4a67eadd47a21439e48",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py": "9c1822c7c47c491074cbaecc5f4b8df540d17235526e1548ff44394ba003d3d9",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py": "20cd87f0d8774fdd417a1565f3e0faed4dbdea709622d36440fb709548a42b23",
     "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py": "5097229c9534760b205696046df6130761903af4112be4cd030cec76b85f8db9",

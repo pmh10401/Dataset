@@ -427,7 +427,7 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
         self.assertEqual(evaluation.micro["E"]["dataset_denominator"], 1117)
         with TemporaryDirectory(prefix="exp472-single-class-antigravity-") as temporary:
             reopened = write_exp472_evaluation_antigravity(evaluation, Path(temporary) / "evaluation_antigravity")
-        self.assertEqual(reopened.micro["E"]["dataset_denominator"], 1117)
+        self.assertEqual(reopened.artifact_record()["micro"]["E"]["dataset_denominator"], 1117)
 
     def test_differing_evaluation_payload_never_replaces_existing_final(self) -> None:
         """No-clobber publication preserves the first sealed authority byte-for-byte."""
