@@ -644,8 +644,8 @@ def status_exp472_antigravity(root: Path, *, total: int = 1117, now_monotonic: f
         "schema": "exp472-score-status-antigravity.v1", "completed": completed, "failed": failed,
         "remaining": remaining, "total": total, "rate_per_second": rate, "eta_seconds": eta,
         "manifest_complete": _regular_file_exists_antigravity(safe_root / _MANIFEST_FILENAME_ANTIGRAVITY),
-        "evaluation_complete": _regular_file_exists_antigravity(safe_root / "exp472_evaluation_antigravity.json"),
-        "report_complete": _regular_file_exists_antigravity(safe_root / "exp472_report_antigravity.json"),
+        "evaluation_present": _regular_file_exists_antigravity(safe_root / "exp472_evaluation_antigravity.json"),
+        "report_present": _regular_file_exists_antigravity(safe_root / "exp472_report_antigravity.json"),
         "latest_progress": latest,
     }
 

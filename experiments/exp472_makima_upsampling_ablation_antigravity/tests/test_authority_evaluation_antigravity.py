@@ -210,6 +210,16 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
             first = threading.Thread(target=worker); second = threading.Thread(target=worker); first.start(); second.start(); first.join(); second.join()
             self.assertEqual(errors, []); self.assertEqual(calls, [1]); self.assertEqual(len(set(results)), 1)
 
+    def test_persisted_all_negative_labels_keep_nonabstained_micro_denominator(self) -> None:
+        """Single-class rows have excluded metrics but still count as scored observations."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle)
+        with patch.object(evaluation_module, "verify_exp471_reuse_exp472_antigravity", return_value=bundle), patch.object(evaluation_module, "verify_manifest_exp472_antigravity", return_value=_manifest(bundle, context)), patch.object(evaluation_module, "verify_score_shard_exp472_antigravity", side_effect=lambda _root, _context, entry: _shard(entry)):
+            evaluation = evaluate_exp472_antigravity(_ROOT, _ROOT, lambda order: {dataset: (0, 0) for dataset in order}, context=context, catalog=catalog)
+        self.assertEqual(evaluation.micro["E"]["dataset_denominator"], 1117)
+        with TemporaryDirectory(prefix="exp472-single-class-antigravity-") as temporary:
+            reopened = write_exp472_evaluation_antigravity(evaluation, Path(temporary) / "evaluation_antigravity")
+        self.assertEqual(reopened.micro["E"]["dataset_denominator"], 1117)
+
     def test_v2_diagnostic_is_rejected_before_labels(self) -> None:
         """The retired raw-replay schema never crosses the label firewall."""
         bundle = _bundle(); context, catalog = _context_and_catalog(bundle); calls: list[object] = []

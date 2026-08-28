@@ -272,7 +272,7 @@ def _validate_evaluation_science_antigravity(record: Mapping[str,object], order:
         for method in methods:
             value=table[method]
             if not isinstance(value,dict) or set(value)!={"average_precision","auroc","dataset_denominator","observation_denominator"} or type(value["dataset_denominator"]) is not int or type(value["observation_denominator"]) is not int or value["dataset_denominator"]<0 or value["observation_denominator"]<0: raise ValueError(f"Exp472 persisted {key} row differs")
-            scored=sum(rows[(method,d)]["average_precision"] is not None or rows[(method,d)]["auroc"] is not None for d in (order if key=="micro" else subset_order))
+            scored=sum(rows[(method,d)]["average_precision_exclusion"] != "typed_abstention" for d in (order if key=="micro" else subset_order))
             if value["dataset_denominator"]!=scored or any(x is not None and not _finite_probability_antigravity(x) for x in (value["average_precision"],value["auroc"])): raise ValueError(f"Exp472 persisted {key} metric differs")
     den=record["denominators"]
     if not isinstance(den,dict) or set(den)!={"full_population","upsampled_rows_gt_zero"} or den["full_population"]!={"dataset_count":1117,"observation_count":record["micro"]["E"]["observation_denominator"]} or not isinstance(den["upsampled_rows_gt_zero"],dict) or set(den["upsampled_rows_gt_zero"])!={"dataset_count","observation_count","dataset_order"} or den["upsampled_rows_gt_zero"]["dataset_count"]!=len(subset_order) or tuple(den["upsampled_rows_gt_zero"]["dataset_order"])!=subset_order or den["upsampled_rows_gt_zero"]["observation_count"]!=record["subset_micro"]["E"]["observation_denominator"]: raise ValueError("Exp472 persisted denominators differ")
@@ -300,8 +300,10 @@ def _validate_evaluation_science_antigravity(record: Mapping[str,object], order:
             required={"method",x,y}|({"threshold"} if name=="roc" else set())
             if not isinstance(row,dict) or set(row)!=required or row["method"] not in grouped or not _finite_probability_antigravity(row[x]) or not _finite_probability_antigravity(row[y]) or (name=="roc" and row["threshold"] is not None and not (type(row["threshold"]) in (int,float) and math.isfinite(float(row["threshold"])) )): raise ValueError("Exp472 persisted curve row differs")
             grouped[row["method"]].append(row)
-        if set(m for m,v in grouped.items() if v)!=set(methods): raise ValueError("Exp472 persisted curve membership differs")
-        for values in grouped.values():
+        expected_curve_methods={method for method in methods if record["micro"][method]["average_precision"] is not None and record["micro"][method]["auroc"] is not None}
+        if set(method for method, values in grouped.items() if values)!=expected_curve_methods: raise ValueError("Exp472 persisted curve membership differs")
+        for method, values in grouped.items():
+            if not values: continue
             xx=[float(row[x]) for row in values]; yy=[float(row[y]) for row in values]
             if len(values)<2 or (name=="roc" and (any(a>b for a,b in zip(xx,xx[1:])) or any(a>b for a,b in zip(yy,yy[1:])) or (xx[0],yy[0])!=(0.0,0.0) or (xx[-1],yy[-1])!=(1.0,1.0))) or (name=="pr" and any(a<b for a,b in zip(xx,xx[1:]))): raise ValueError("Exp472 persisted curve monotonicity differs")
 
