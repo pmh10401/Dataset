@@ -316,6 +316,19 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "trusted persisted"):
                 _write_exp472_report_antigravity(fake, root, _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=_shape_diagnostics_antigravity())
 
+    def test_capability_snapshot_hash_and_manifest_mismatch_fail_before_leaves(self) -> None:
+        """The immutable snapshot has an independent byte hash and bound E manifest."""
+        capability = _verified_report_fixture_antigravity(_EvaluationAntigravity())
+        with TemporaryDirectory(prefix="exp472-capability-snapshot-antigravity-") as temporary:
+            root = Path(temporary) / "report_antigravity"
+            with self.assertRaisesRegex(ValueError, "E manifest"):
+                _write_exp472_report_antigravity(capability, root, _worker_antigravity(), e_manifest_sha256="0" * 64, code_map_lock_sha256=_SHA, shape_diagnostics=_shape_diagnostics_antigravity())
+            self.assertFalse(root.exists())
+            object.__setattr__(capability, "_record_bytes", b"{}")
+            with self.assertRaisesRegex(ValueError, "capability differs"):
+                _write_exp472_report_antigravity(capability, root, _worker_antigravity(), e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA, shape_diagnostics=_shape_diagnostics_antigravity())
+            self.assertFalse(root.exists())
+
     def test_readiness_launcher_runs_from_repository_and_external_cwd(self) -> None:
         """The official direct-file launcher keeps its package import boundary."""
         self.assertTrue(_OFFICIAL_PYTHON_ANTIGRAVITY.is_file())

@@ -130,11 +130,11 @@ _VERIFIED_PERSISTED_TOKEN_ANTIGRAVITY=object()
 
 class _VerifiedPersistedEvaluationAntigravity:
     """Python-internal capability issued only after trusted terminal-score replay."""
-    __slots__=("_record_bytes","_evaluation_sha256","_authority_sha256","_context_sha256","_private_label_evidence_sha256","_e_manifest_sha256","_token","_sealed")
+    __slots__=("_record_bytes","_record_bytes_sha256","_evaluation_sha256","_authority_sha256","_context_sha256","_private_label_evidence_sha256","_e_manifest_sha256","_token","_sealed")
     def __init__(self,evaluation: Exp472EvaluationAntigravity,token: object)->None:
         if token is not _VERIFIED_PERSISTED_TOKEN_ANTIGRAVITY or not isinstance(evaluation,Exp472EvaluationAntigravity): raise ValueError("Exp472 verified persisted evaluation capability differs")
         record=evaluation.artifact_record(); payload=canonical_json_bytes_exp472_antigravity(record)
-        object.__setattr__(self,"_record_bytes",payload);object.__setattr__(self,"_evaluation_sha256",record["evaluation_sha256"]);object.__setattr__(self,"_authority_sha256",sha256(canonical_json_bytes_exp472_antigravity(record["authority"])).hexdigest());object.__setattr__(self,"_context_sha256",record["context_sha256"]);object.__setattr__(self,"_private_label_evidence_sha256",record["private_label_evidence_sha256"]);object.__setattr__(self,"_e_manifest_sha256",record["e_manifest_sha256"]);object.__setattr__(self,"_token",token);object.__setattr__(self,"_sealed",True)
+        object.__setattr__(self,"_record_bytes",payload);object.__setattr__(self,"_record_bytes_sha256",sha256(payload).hexdigest());object.__setattr__(self,"_evaluation_sha256",record["evaluation_sha256"]);object.__setattr__(self,"_authority_sha256",sha256(canonical_json_bytes_exp472_antigravity(record["authority"])).hexdigest());object.__setattr__(self,"_context_sha256",record["context_sha256"]);object.__setattr__(self,"_private_label_evidence_sha256",record["private_label_evidence_sha256"]);object.__setattr__(self,"_e_manifest_sha256",record["e_manifest_sha256"]);object.__setattr__(self,"_token",token);object.__setattr__(self,"_sealed",True)
     def __setattr__(self,name: str,value: object)->None: raise AttributeError("Exp472 verified persisted evaluation capability is immutable")
     def artifact_record(self)->dict[str,object]: return json.loads(self._record_bytes.decode("utf-8"))
 
@@ -151,6 +151,7 @@ def _require_verified_persisted_evaluation_antigravity(value: object) -> Mapping
     """
     if type(value) is not _VerifiedPersistedEvaluationAntigravity or value._token is not _VERIFIED_PERSISTED_TOKEN_ANTIGRAVITY:
         raise ValueError("Exp472 reporting requires a trusted persisted evaluation capability")
+    if sha256(value._record_bytes).hexdigest()!=value._record_bytes_sha256: raise ValueError("Exp472 verified persisted evaluation capability differs")
     try: record=json.loads(value._record_bytes.decode("utf-8"))
     except (AttributeError,UnicodeDecodeError,json.JSONDecodeError) as error: raise ValueError("Exp472 verified persisted evaluation capability differs") from error
     if canonical_json_bytes_exp472_antigravity(record)!=value._record_bytes or record.get("evaluation_sha256")!=value._evaluation_sha256 or _digest_evaluation_antigravity(value._evaluation_sha256,"evaluation digest")!=sha256(canonical_json_bytes_exp472_antigravity({key:item for key,item in record.items() if key!="evaluation_sha256"})).hexdigest() or record.get("e_manifest_sha256")!=value._e_manifest_sha256 or record.get("context_sha256")!=value._context_sha256 or record.get("private_label_evidence_sha256")!=value._private_label_evidence_sha256 or sha256(canonical_json_bytes_exp472_antigravity(record.get("authority"))).hexdigest()!=value._authority_sha256: raise ValueError("Exp472 verified persisted evaluation capability differs")

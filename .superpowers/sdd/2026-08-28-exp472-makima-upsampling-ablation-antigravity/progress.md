@@ -225,3 +225,13 @@ Immutable-capability verification (80b176dc follow-up): full official Python
 Exp472 passed 132/132 in 860.511 seconds after the capability stopped exposing
 evaluation fields; the affected denominator assertion now reads its canonical
 snapshot via `artifact_record()`. No full-suite errors remained.
+
+Independent snapshot-hash ruling: capability now binds SHA-256 of its complete
+canonical record bytes separately from the evaluation self-digest. Report
+checks that hash before parsing, then checks the self-digest and all issuance
+digests; E-manifest mismatch and snapshot replacement fail before root/leaf
+creation.
+
+Independent-hash verification: official Python Exp472 passed 133/133 in
+853.236 seconds; retained Exp450 passed 17/17 (six MPS-unavailable skips).
+Code-map regeneration/check, compileall, and diff whitespace checks passed.
