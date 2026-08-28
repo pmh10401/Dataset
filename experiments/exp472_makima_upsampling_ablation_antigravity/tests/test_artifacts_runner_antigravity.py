@@ -154,6 +154,39 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "identity|digest"):
             verify_score_shard_exp472_antigravity(self.root, self.context, self.catalog[0])
 
+    def test_shard_roundtrip_preserves_nested_json_identity_and_rejects_tampering(self) -> None:
+        """JSON lists reconstructed as immutable tuples are canonically equivalent, not unequal."""
+        identity = {
+            "dataset": "A",
+            "test_count": 1,
+            "indices": [0],
+            "nested": {"blobs": ["a" * 64, "b" * 64]},
+        }
+        entry = Exp472CatalogEntryAntigravity("A", identity)
+        context = _context_antigravity((entry,))
+        shard = Exp472ScoreShardAntigravity(
+            dataset="A",
+            test_identity={
+                "dataset": "A",
+                "test_count": 1,
+                "indices": (0,),
+                "nested": {"blobs": ("a" * 64, "b" * 64)},
+            },
+            scores=np.asarray([0.9], dtype=np.float64),
+            alerts=frozenset({0}),
+            upsampled_rows=0,
+            diagnostic=_diagnostic_antigravity("A", "nested"),
+        )
+        path = publish_score_shard_exp472_antigravity(self.root, context, entry, shard)
+        self.assertEqual(verify_score_shard_exp472_antigravity(self.root, context, entry)["test_identity"], identity)
+        changed = json.loads(path.read_text())
+        changed["test_identity"]["nested"]["blobs"][1] = "c" * 64
+        bare = {key: value for key, value in changed.items() if key != "shard_sha256"}
+        changed["shard_sha256"] = sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()
+        path.write_bytes(canonical_json_bytes_exp472_antigravity(changed))
+        with self.assertRaisesRegex(ValueError, "TEST identity"):
+            verify_score_shard_exp472_antigravity(self.root, context, entry)
+
     def test_score_record_binds_context_closure_condition_and_float64_payload(self) -> None:
         """Omitting a provenance binding or changing a score digest must fail verification."""
         record = score_shard_record_exp472_antigravity(self.context, _shard_antigravity())

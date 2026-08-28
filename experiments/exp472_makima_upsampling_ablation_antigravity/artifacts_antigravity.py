@@ -256,7 +256,9 @@ def _verify_shard_record_antigravity(
     bare = {key: value for key, value in record.items() if key != "shard_sha256"}
     if record["shard_sha256"] != sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest():
         raise ValueError("Exp472 score shard digest differs")
-    if score_shard_record_exp472_antigravity(context, reconstructed) != dict(record):
+    if canonical_json_bytes_exp472_antigravity(
+        score_shard_record_exp472_antigravity(context, reconstructed)
+    ) != canonical_json_bytes_exp472_antigravity(dict(record)):
         raise ValueError("Exp472 score shard canonical payload differs")
     return dict(record)
 

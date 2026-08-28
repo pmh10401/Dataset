@@ -14,6 +14,9 @@ import scipy.signal
 from paper.equipment_anomaly_detection.contracts_paper import RawDataset
 
 
+_SHAPE_SCHEMA_ANTIGRAVITY = "exp472-shape-diagnostic-antigravity.v2"
+
+
 def _canonical_json_bytes_exp472_antigravity(value: object) -> bytes:
     return (
         json.dumps(
@@ -126,7 +129,7 @@ def _validated_raw_exp472_antigravity(values: RawDataset) -> RawDataset:
         or type(values.metadata_length) is not int
         or values.metadata_length <= 0
     ):
-        raise ValueError("Exp472 requires a finite label-free raw dataset")
+        raise ValueError("Exp472 requires a valid label-free raw dataset")
     for indices, blobs, rows in (
         (values.train_indices, values.train_blobs, values.train_rows),
         (values.test_indices, values.test_blobs, values.test_rows),
@@ -139,16 +142,40 @@ def _validated_raw_exp472_antigravity(values: RawDataset) -> RawDataset:
             raise ValueError("Exp472 raw dataset identity differs")
         for blob, row in zip(blobs, rows, strict=True):
             array = np.asarray(row)
-            normalized = _finite_row_exp472_antigravity(row)
             if (
                 not isinstance(blob, bytes)
                 or array.dtype != np.dtype("<f4")
                 or array.ndim != 1
-                or array.shape != normalized.shape
+                or array.size == 0
                 or array.tobytes() != blob
             ):
                 raise ValueError("Exp472 raw dataset identity differs")
     return values
+
+
+def _has_only_finite_rows_exp472_antigravity(raw: RawDataset) -> bool:
+    """Mirror Exp450's dataset-wide abstention gate without invoking alignment."""
+    return all(
+        np.isfinite(np.asarray(row, dtype=np.float32)).all()
+        for row in (*raw.train_rows, *raw.test_rows)
+    )
+
+
+def _empty_shape_split_exp472_antigravity(row_count: int) -> Mapping[str, object]:
+    """Record an uninvoked split while retaining its raw cardinality."""
+    if type(row_count) is not int or row_count < 0:
+        raise ValueError("Exp472 shape row count differs")
+    return {
+        "row_count": row_count,
+        "aligned_row_count": 0,
+        "upsampled_rows": 0,
+        "overshoot": 0.0,
+        "undershoot": 0.0,
+        "source_extrema": 0,
+        "output_extrema": 0,
+        "added_extrema": 0,
+        "rows_sha256": sha256(_canonical_json_bytes_exp472_antigravity([])).hexdigest(),
+    }
 
 
 def _split_shape_diagnostic_exp472_antigravity(
@@ -159,18 +186,10 @@ def _split_shape_diagnostic_exp472_antigravity(
         output = resample_series_exp472_antigravity(row, target_len)
         diagnostics.append(shape_diagnostic_exp472_antigravity(row, output))
     if not diagnostics:
-        return {
-            "row_count": 0,
-            "upsampled_rows": 0,
-            "overshoot": 0.0,
-            "undershoot": 0.0,
-            "source_extrema": 0,
-            "output_extrema": 0,
-            "added_extrema": 0,
-            "rows_sha256": sha256(_canonical_json_bytes_exp472_antigravity([])).hexdigest(),
-        }
+        return _empty_shape_split_exp472_antigravity(0)
     return {
         "row_count": len(diagnostics),
+        "aligned_row_count": len(diagnostics),
         "upsampled_rows": sum(1 for row in rows if 1 < np.asarray(row).size < target_len),
         "overshoot": float(sum(float(item["overshoot"]) for item in diagnostics)),
         "undershoot": float(sum(float(item["undershoot"]) for item in diagnostics)),
@@ -186,6 +205,8 @@ def _split_shape_diagnostic_exp472_antigravity(
 def count_upsampled_rows_exp472_antigravity(values: RawDataset) -> int:
     """Count only rows for which condition E actually invokes Makima."""
     raw = _validated_raw_exp472_antigravity(values)
+    if not _has_only_finite_rows_exp472_antigravity(raw):
+        return 0
     return sum(
         1
         for row in (*raw.train_rows, *raw.test_rows)
@@ -196,16 +217,26 @@ def count_upsampled_rows_exp472_antigravity(values: RawDataset) -> int:
 def dataset_shape_diagnostic_exp472_antigravity(values: RawDataset) -> Mapping[str, object]:
     """Aggregate all train/test shape diagnostics without reading labels."""
     raw = _validated_raw_exp472_antigravity(values)
-    train = _split_shape_diagnostic_exp472_antigravity(
-        raw.train_rows, raw.metadata_length
-    )
-    test = _split_shape_diagnostic_exp472_antigravity(raw.test_rows, raw.metadata_length)
+    finite = _has_only_finite_rows_exp472_antigravity(raw)
+    if finite:
+        train = _split_shape_diagnostic_exp472_antigravity(
+            raw.train_rows, raw.metadata_length
+        )
+        test = _split_shape_diagnostic_exp472_antigravity(raw.test_rows, raw.metadata_length)
+        alignment_status, alignment_reason = "completed", None
+    else:
+        train = _empty_shape_split_exp472_antigravity(len(raw.train_rows))
+        test = _empty_shape_split_exp472_antigravity(len(raw.test_rows))
+        alignment_status, alignment_reason = "not_invoked", "nonfinite_input"
     bare = {
-        "schema": "exp472-shape-diagnostic-antigravity.v1",
+        "schema": _SHAPE_SCHEMA_ANTIGRAVITY,
         "dataset": raw.dataset,
         "target_len": raw.metadata_length,
         "row_count": int(train["row_count"]) + int(test["row_count"]),
+        "aligned_row_count": int(train["aligned_row_count"]) + int(test["aligned_row_count"]),
         "upsampled_rows": int(train["upsampled_rows"]) + int(test["upsampled_rows"]),
+        "alignment_status": alignment_status,
+        "alignment_reason": alignment_reason,
         "train": train,
         "test": test,
     }

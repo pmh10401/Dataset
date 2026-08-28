@@ -39,6 +39,22 @@ def _raw_fixture_antigravity() -> RawDataset:
     )
 
 
+def _nonfinite_raw_fixture_antigravity() -> RawDataset:
+    """Return an identity-valid dataset that Exp450 abstains before alignment."""
+    train = (np.asarray([0.0, np.nan, 1.0], dtype=np.float32),)
+    test = (np.asarray([2.0], dtype=np.float32),)
+    return RawDataset(
+        dataset="nonfinite_fixture",
+        metadata_length=6,
+        train_indices=(0,),
+        train_blobs=tuple(row.astype("<f4").tobytes() for row in train),
+        train_rows=train,
+        test_indices=(0,),
+        test_blobs=tuple(row.astype("<f4").tobytes() for row in test),
+        test_rows=test,
+    )
+
+
 class Exp472TransformTests(unittest.TestCase):
     def test_makima_is_used_only_for_true_upsampling(self) -> None:
         """Routing equal or shorter targets to Makima would change frozen D parity."""
@@ -132,6 +148,33 @@ class Exp472TransformTests(unittest.TestCase):
         self.assertEqual(diagnostic["upsampled_rows"], 1)
         self.assertEqual(diagnostic["row_count"], 3)
         self.assertEqual(len(diagnostic["diagnostic_sha256"]), 64)
+
+    def test_nonfinite_dataset_records_not_invoked_shape_evidence_without_resampling(self) -> None:
+        """Exp450's dataset-wide nonfinite abstention must never enter Makima diagnostics."""
+        values = _nonfinite_raw_fixture_antigravity()
+        with patch.object(
+            transforms.scipy.interpolate,
+            "Akima1DInterpolator",
+            wraps=scipy.interpolate.Akima1DInterpolator,
+        ) as makima:
+            diagnostic = transforms.dataset_shape_diagnostic_exp472_antigravity(values)
+            count = transforms.count_upsampled_rows_exp472_antigravity(values)
+        self.assertEqual(makima.call_count, 0)
+        self.assertEqual(count, 0)
+        self.assertEqual(diagnostic["schema"], "exp472-shape-diagnostic-antigravity.v2")
+        self.assertEqual(diagnostic["alignment_status"], "not_invoked")
+        self.assertEqual(diagnostic["alignment_reason"], "nonfinite_input")
+        self.assertEqual((diagnostic["row_count"], diagnostic["aligned_row_count"], diagnostic["upsampled_rows"]), (2, 0, 0))
+        self.assertEqual(diagnostic["train"]["row_count"], 1)
+        self.assertEqual(diagnostic["train"]["aligned_row_count"], 0)
+        self.assertEqual(diagnostic["train"]["upsampled_rows"], 0)
+        self.assertEqual(diagnostic["train"]["overshoot"], 0.0)
+        self.assertEqual(diagnostic["train"]["added_extrema"], 0)
+        self.assertEqual(diagnostic["test"]["row_count"], 1)
+        self.assertEqual(diagnostic["test"]["aligned_row_count"], 0)
+        self.assertEqual(len(diagnostic["diagnostic_sha256"]), 64)
+        with self.assertRaisesRegex(ValueError, "finite nonempty input"):
+            transforms.resample_series_exp472_antigravity(values.train_rows[0], 6)
 
     def test_test_identity_is_deterministic_and_binds_test_values_only(self) -> None:
         """A test identity that omits blob order cannot bind a score vector safely."""

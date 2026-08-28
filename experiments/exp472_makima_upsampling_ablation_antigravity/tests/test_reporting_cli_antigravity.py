@@ -514,9 +514,39 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
                 shape_diagnostics=_shape_diagnostics_antigravity(),
             )
             text = (root / "exp472_shape_diagnostics_antigravity.csv").read_text(encoding="utf-8")
+            self.assertIn("alignment_status", text)
+            self.assertIn("aligned_row_count", text)
             self.assertIn("train_rows_sha256", text)
             self.assertIn("test_rows_sha256", text)
             self.assertIn(_shape_diagnostics_antigravity()[0]["diagnostic_sha256"], text)
+
+    def test_direct_report_distinguishes_completed_zero_from_nonfinite_not_invoked(self) -> None:
+        """A zero-upsample completed dataset cannot be conflated with a nonfinite abstention."""
+        diagnostic = _shape_diagnostics_antigravity()[0]
+        nonfinite_bare = {
+            **diagnostic,
+            "dataset": "fixture",
+            "alignment_status": "not_invoked",
+            "alignment_reason": "nonfinite_input",
+            "aligned_row_count": 0,
+            "upsampled_rows": 0,
+            "train": {**diagnostic["train"], "aligned_row_count": 0, "upsampled_rows": 0, "overshoot": 0.0, "undershoot": 0.0, "source_extrema": 0, "output_extrema": 0, "added_extrema": 0, "rows_sha256": sha256(canonical_json_bytes_exp472_antigravity([])).hexdigest()},
+            "test": {**diagnostic["test"], "aligned_row_count": 0, "upsampled_rows": 0, "overshoot": 0.0, "undershoot": 0.0, "source_extrema": 0, "output_extrema": 0, "added_extrema": 0, "rows_sha256": sha256(canonical_json_bytes_exp472_antigravity([])).hexdigest()},
+        }
+        nonfinite_bare.pop("diagnostic_sha256")
+        nonfinite = {
+            **nonfinite_bare,
+            "diagnostic_sha256": sha256(canonical_json_bytes_exp472_antigravity(nonfinite_bare)).hexdigest(),
+        }
+        with TemporaryDirectory(prefix="exp472-not-invoked-shape-antigravity-") as temporary:
+            root = Path(temporary) / "report_antigravity"
+            write_exp472_report_antigravity(
+                _EvaluationAntigravity(), root, _worker_antigravity(),
+                e_manifest_sha256=_SHA, code_map_lock_sha256=_SHA,
+                shape_diagnostics=(nonfinite,),
+            )
+            text = (root / "exp472_shape_diagnostics_antigravity.csv").read_text(encoding="utf-8")
+            self.assertIn("not_invoked,nonfinite_input", text)
 
     def test_direct_report_rejects_nested_shape_tamper_schema_duplicate_and_missing_before_completion(self) -> None:
         """Nested E evidence is authenticated before any report completion marker."""

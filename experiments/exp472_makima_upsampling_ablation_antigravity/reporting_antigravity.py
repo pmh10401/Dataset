@@ -46,13 +46,14 @@ REPORT_COMPLETE_NAME_ANTIGRAVITY = ".exp472_report_complete_antigravity.json"
 _REPORT_SCHEMA_ANTIGRAVITY = "exp472-report-publication-antigravity.v1"
 _MANIFEST_SCHEMA_ANTIGRAVITY = "exp472-report-manifest-antigravity.v1"
 _COMPLETE_SCHEMA_ANTIGRAVITY = "exp472-report-complete-antigravity.v1"
-_SHAPE_SCHEMA_ANTIGRAVITY = "exp472-shape-diagnostic-antigravity.v1"
+_SHAPE_SCHEMA_ANTIGRAVITY = "exp472-shape-diagnostic-antigravity.v2"
 _SHAPE_SPLIT_FIELDS_ANTIGRAVITY = (
-    "row_count", "upsampled_rows", "overshoot", "undershoot",
+    "row_count", "aligned_row_count", "upsampled_rows", "overshoot", "undershoot",
     "source_extrema", "output_extrema", "added_extrema", "rows_sha256",
 )
 _SHAPE_CSV_FIELDS_ANTIGRAVITY = (
-    "dataset", "schema", "target_len", "row_count", "upsampled_rows",
+    "dataset", "schema", "target_len", "row_count", "aligned_row_count", "upsampled_rows",
+    "alignment_status", "alignment_reason",
     *(f"train_{field}" for field in _SHAPE_SPLIT_FIELDS_ANTIGRAVITY),
     *(f"test_{field}" for field in _SHAPE_SPLIT_FIELDS_ANTIGRAVITY),
     "diagnostic_sha256",
@@ -213,7 +214,8 @@ def _shape_csv_rows_antigravity(
     if len(set(expected_datasets)) != len(expected_datasets):
         raise ValueError("Exp472 shape diagnostics differ")
     expected = {
-        "schema", "dataset", "target_len", "row_count", "upsampled_rows",
+        "schema", "dataset", "target_len", "row_count", "aligned_row_count", "upsampled_rows",
+        "alignment_status", "alignment_reason",
         "train", "test", "diagnostic_sha256",
     }
     split_fields = set(_SHAPE_SPLIT_FIELDS_ANTIGRAVITY)
@@ -225,12 +227,19 @@ def _shape_csv_rows_antigravity(
         digest = row.get("diagnostic_sha256")
         if _digest_antigravity(digest, "shape diagnostic") != sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest():
             raise ValueError("Exp472 shape diagnostics differ")
-        if type(row.get("target_len")) is not int or row["target_len"] <= 0 or type(row.get("row_count")) is not int or row["row_count"] < 0 or type(row.get("upsampled_rows")) is not int or row["upsampled_rows"] < 0:
+        if (type(row.get("target_len")) is not int or row["target_len"] <= 0
+                or any(type(row.get(name)) is not int or row[name] < 0 for name in ("row_count", "aligned_row_count", "upsampled_rows"))):
+            raise ValueError("Exp472 shape diagnostics differ")
+        if row["alignment_status"] not in {"completed", "not_invoked"}:
+            raise ValueError("Exp472 shape diagnostics differ")
+        if ((row["alignment_status"] == "completed" and row["alignment_reason"] is not None)
+                or (row["alignment_status"] == "not_invoked" and row["alignment_reason"] != "nonfinite_input")):
             raise ValueError("Exp472 shape diagnostics differ")
         output: dict[str, object] = {
             "dataset": dataset, "schema": row["schema"],
             "target_len": row["target_len"], "row_count": row["row_count"],
-            "upsampled_rows": row["upsampled_rows"],
+            "aligned_row_count": row["aligned_row_count"], "upsampled_rows": row["upsampled_rows"],
+            "alignment_status": row["alignment_status"], "alignment_reason": row["alignment_reason"],
             "diagnostic_sha256": digest,
         }
         splits: list[Mapping[str, object]] = []
@@ -238,7 +247,7 @@ def _shape_csv_rows_antigravity(
             split = row.get(name)
             if not isinstance(split, Mapping) or set(split) != split_fields:
                 raise ValueError("Exp472 shape diagnostics differ")
-            if any(type(split.get(field)) is not int or split[field] < 0 for field in ("row_count", "upsampled_rows", "source_extrema", "output_extrema", "added_extrema")):
+            if any(type(split.get(field)) is not int or split[field] < 0 for field in ("row_count", "aligned_row_count", "upsampled_rows", "source_extrema", "output_extrema", "added_extrema")):
                 raise ValueError("Exp472 shape diagnostics differ")
             if any(type(split.get(field)) not in (int, float) or not math.isfinite(float(split[field])) or float(split[field]) < 0.0 for field in ("overshoot", "undershoot")):
                 raise ValueError("Exp472 shape diagnostics differ")
@@ -246,8 +255,22 @@ def _shape_csv_rows_antigravity(
             splits.append(split)
             for field in _SHAPE_SPLIT_FIELDS_ANTIGRAVITY:
                 output[f"{name}_{field}"] = split[field]
-        if row["row_count"] != sum(int(split["row_count"]) for split in splits) or row["upsampled_rows"] != sum(int(split["upsampled_rows"]) for split in splits):
+        if (row["row_count"] != sum(int(split["row_count"]) for split in splits)
+                or row["aligned_row_count"] != sum(int(split["aligned_row_count"]) for split in splits)
+                or row["upsampled_rows"] != sum(int(split["upsampled_rows"]) for split in splits)):
             raise ValueError("Exp472 shape diagnostics differ")
+        if row["alignment_status"] == "completed":
+            if row["aligned_row_count"] != row["row_count"] or any(split["aligned_row_count"] != split["row_count"] for split in splits):
+                raise ValueError("Exp472 shape diagnostics differ")
+        else:
+            empty_rows_sha256 = sha256(canonical_json_bytes_exp472_antigravity([])).hexdigest()
+            if (row["aligned_row_count"] != 0 or row["upsampled_rows"] != 0
+                    or any(split["aligned_row_count"] != 0 or split["upsampled_rows"] != 0
+                           or split["overshoot"] != 0.0 or split["undershoot"] != 0.0
+                           or split["source_extrema"] != 0 or split["output_extrema"] != 0
+                           or split["added_extrema"] != 0 or split["rows_sha256"] != empty_rows_sha256
+                           for split in splits)):
+                raise ValueError("Exp472 shape diagnostics differ")
         flattened.append(output)
     return tuple(flattened)
 
