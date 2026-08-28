@@ -34,11 +34,14 @@ _PLAN_PATH_ANTIGRAVITY = (
     "docs/superpowers/plans/"
     "2026-08-28-exp472-makima-upsampling-ablation-antigravity.md"
 )
+_RUNBOOK_PATH_ANTIGRAVITY = "docs/runbooks/exp472_makima_upsampling_ablation_antigravity.md"
 _RETAINED_PATHS_ANTIGRAVITY = (
     _DESIGN_PATH_ANTIGRAVITY,
     _PLAN_PATH_ANTIGRAVITY,
+    _RUNBOOK_PATH_ANTIGRAVITY,
     "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
     "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
+    "experiments/exp450_resampling_image_ablation_antigravity/artifacts_antigravity.py",
     "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
     "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
     "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
@@ -53,6 +56,10 @@ _RETAINED_PATHS_ANTIGRAVITY = (
     "paper/equipment_anomaly_detection/sources_paper/rocket_paper.py",
     "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
     "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/multirocket_hydra_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/imaging_paper.py",
+    "paper/equipment_anomaly_detection/sources_paper/knn_paper.py",
+    "paper/equipment_anomaly_detection/calibration_paper.py",
     "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
     "paper/equipment_anomaly_detection/routing_paper.py",
     "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",

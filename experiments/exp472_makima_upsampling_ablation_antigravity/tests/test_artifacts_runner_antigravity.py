@@ -137,7 +137,10 @@ def _diagnostic_antigravity(dataset: str, shape: str) -> dict[str, object]:
     }
     bare = {
         "schema": "exp472-shape-diagnostic-antigravity.v3", "dataset": dataset,
-        "trace_state": "sealed", "alignment_status": "completed", **aggregate,
+        "trace_state": "sealed", "alignment_status": "completed",
+        "input_identity_sha256": _DIGEST_C_ANTIGRAVITY,
+        "result_sha256": _DIGEST_D_ANTIGRAVITY,
+        **aggregate,
         "invocations": [invocation],
         "invocation_order_sha256": sha256(canonical_json_bytes_exp472_antigravity([("hard_sources", "TRAIN")])).hexdigest(),
         "invocation_aggregate_sha256": sha256(canonical_json_bytes_exp472_antigravity(aggregate)).hexdigest(),
@@ -331,7 +334,7 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
         trace.begin_scoring((("hard_sources", "TRAIN"), ("hard_sources", "TEST")))
         trace.observe(rows, 3, output, "hard_sources", "TRAIN")
         trace.observe(rows, 3, output, "hard_sources", "TEST")
-        trace.mark_score_completed()
+        trace.mark_score_completed(_DIGEST_C_ANTIGRAVITY, _DIGEST_D_ANTIGRAVITY)
         shard = replace(
             _shard_antigravity(), upsampled_rows=2, diagnostic=trace.seal()
         )
@@ -341,6 +344,8 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
         original = json.loads(path.read_text())
         mutations = (
             ("ordinal", 2),
+            ("ordinal", False),
+            ("ordinal", 0.0),
             ("source_tag", "TRAIN"),
             ("upsampled_rows", 0),
         )

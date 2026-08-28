@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 from pathlib import Path
 import unittest
@@ -135,6 +136,25 @@ class Exp472ScoringTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "sealed alignment trace"):
             scoring.compose_final_score_exp472_antigravity(
                 RAW_FIXTURE, object(), BACKEND_CPU
+            )
+
+    def test_compose_rejects_a_trace_bound_to_other_raw_input_or_result(self) -> None:
+        """Dataset-name equality cannot substitute for exact raw/result identity."""
+        trace = Exp472AlignmentTraceAntigravity(RAW_FIXTURE.dataset)
+        result = scoring.score_dataset_condition_e_exp472_antigravity(
+            RAW_FIXTURE, BACKEND_CPU, alignment_trace=trace,
+        )
+        trace.seal()
+        changed = RAW_FIXTURE.train_rows[0].copy()
+        changed[0] += np.float32(0.25)
+        other_raw = replace(
+            RAW_FIXTURE,
+            train_rows=(changed, *RAW_FIXTURE.train_rows[1:]),
+            train_blobs=(changed.tobytes(), *RAW_FIXTURE.train_blobs[1:]),
+        )
+        with self.assertRaisesRegex(ValueError, "score identity differs"):
+            scoring.compose_final_score_exp472_antigravity(
+                other_raw, result, BACKEND_CPU, alignment_trace=trace,
             )
     def test_e_routes_all_alignment_through_exp472_and_keeps_area_images(self) -> None:
         """Falling back to Exp450 alignment or linear images changes E factors."""

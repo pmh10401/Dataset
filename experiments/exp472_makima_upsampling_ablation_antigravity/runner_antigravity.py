@@ -18,6 +18,7 @@ from .artifacts_antigravity import (
     catalog_sha256_exp472_antigravity,
     publish_manifest_exp472_antigravity,
     publish_score_shard_exp472_antigravity,
+    validate_diagnostic_exp472_antigravity,
     verify_score_shard_exp472_antigravity,
 )
 from .contracts_antigravity import (
@@ -90,6 +91,12 @@ def _score_packet_to_shard_antigravity(packet: object) -> Exp472ScoreShardAntigr
         "dataset", "test_identity", "scores", "alerts", "upsampled_rows", "diagnostic",
     }:
         raise ValueError("Exp472 CPU score packet differs")
+    if type(packet["dataset"]) is not str or not packet["dataset"]:
+        raise ValueError("Exp472 CPU score packet differs")
+    validate_diagnostic_exp472_antigravity(
+        packet["diagnostic"], dataset=packet["dataset"],
+        upsampled_rows=packet["upsampled_rows"],
+    )
     import numpy as np
     return Exp472ScoreShardAntigravity(
         dataset=packet["dataset"], test_identity=packet["test_identity"],

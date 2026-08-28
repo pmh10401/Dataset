@@ -205,6 +205,20 @@ Before reporting:
 
 ## Interpretation Rule
 
+## Superseding actual-trace v3 ruling
+
+The retired v2/raw-replay aggregate is not admissible evidence.  Before any
+Exp450 alignment callback, the scorer supplies its exact shared-gate plan to a
+passive Exp472 observer.  A trace progresses only `open -> scoring(plan) ->
+score_completed -> sealed`; observer or scoring failures poison it.  Sealing
+requires the observed phase/source sequence to equal the plan exactly, then
+binds a label-free deterministic RawDataset identity and the canonical bytes
+digest of the exact returned Exp450 result.  Composition recomputes both
+identities and rejects a matching dataset name with different raw rows or a
+different result.  Input evidence describes the ragged collection as
+`[row_count]` with true cumulative boundaries; output evidence is actual
+little-endian `<f4`, C-contiguous `[row_count, target_len]` data.
+
 Exp472 may conclude that Makima improves, degrades, or is statistically
 indistinguishable from PCHIP. Algorithmically valid numerical differences are
 accepted and reported. A confidence interval crossing zero is described as no

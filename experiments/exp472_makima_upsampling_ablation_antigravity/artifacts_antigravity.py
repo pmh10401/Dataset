@@ -236,6 +236,7 @@ def _validate_diagnostic_antigravity(
     required = {
         "schema", "dataset", "trace_state", "alignment_status", "invocation_count",
         "row_invocation_count", "makima_row_invocation_count", "upsampled_rows",
+        "input_identity_sha256", "result_sha256",
         "invocations", "invocation_order_sha256", "invocation_aggregate_sha256",
         "diagnostic_sha256",
     }
@@ -250,6 +251,8 @@ def _validate_diagnostic_antigravity(
             "invocation_count", "row_invocation_count", "makima_row_invocation_count", "upsampled_rows",
         ))
         or not _validate_digest_antigravity(value.get("diagnostic_sha256"))
+        or not _validate_digest_antigravity(value.get("input_identity_sha256"))
+        or not _validate_digest_antigravity(value.get("result_sha256"))
         or not _validate_digest_antigravity(value.get("invocation_order_sha256"))
         or not _validate_digest_antigravity(value.get("invocation_aggregate_sha256"))
         or (upsampled_rows is not None and value["upsampled_rows"] != upsampled_rows)
@@ -276,7 +279,9 @@ def _validate_diagnostic_antigravity(
         target_len, row_count = record["target_len"], record["row_count"]
         pair = (record["phase_tag"], record["source_tag"])
         if (
-            record["ordinal"] != ordinal or not _is_count_antigravity(target_len) or target_len == 0
+            not _is_count_antigravity(record["ordinal"])
+            or record["ordinal"] != ordinal
+            or not _is_count_antigravity(target_len) or target_len == 0
             or not _is_count_antigravity(row_count) or pair not in _TRACE_ORDER_ANTIGRAVITY
             or _TRACE_ORDER_ANTIGRAVITY.index(pair) <= previous
             or not _validate_digest_antigravity(record["input_sha256"])
@@ -334,6 +339,15 @@ def _validate_diagnostic_antigravity(
         or value["invocation_aggregate_sha256"] != sha256(canonical_json_bytes_exp472_antigravity(aggregate)).hexdigest()
     ):
         _diagnostic_error_antigravity()
+
+
+def validate_diagnostic_exp472_antigravity(
+    value: object, *, dataset: str | None = None, upsampled_rows: int | None = None,
+) -> None:
+    """Validate a primitive v3 diagnostic before IPC reconstructs its typed shard."""
+    _validate_diagnostic_antigravity(
+        value, dataset=dataset, upsampled_rows=upsampled_rows,
+    )
 
 
 def score_shard_record_exp472_antigravity(
@@ -642,5 +656,6 @@ __all__ = [
     "catalog_sha256_exp472_antigravity",
     "publish_manifest_exp472_antigravity", "publish_score_shard_exp472_antigravity",
     "score_shard_record_exp472_antigravity", "status_exp472_antigravity",
+    "validate_diagnostic_exp472_antigravity",
     "verify_manifest_exp472_antigravity", "verify_score_shard_exp472_antigravity",
 ]

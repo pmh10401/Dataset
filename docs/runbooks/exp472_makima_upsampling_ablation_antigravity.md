@@ -30,3 +30,7 @@ $PYTHON scratch/run_exp472_makima_upsampling_ablation_antigravity.py report
 예상 최종 수는 E 1,117개 shard, Exp471 재사용 11,170개 shard(10,775 scored + 395 abstained + 0 failed), 공통 support 922개입니다. 보고서는 `report_antigravity`에 15개 리프, manifest, 완료 marker 순서로 생성됩니다.
 
 설명할 수 없는 실패가 발생하면 재시작하지 마십시오. `progress_antigravity.jsonl`과 `failures_antigravity.jsonl` 및 실패 시점의 표준 출력·오류를 보존하고 원인을 먼저 검토합니다.
+
+## actual-trace v3 확인
+
+E shard는 이름만 같은 입력을 재사용할 수 없습니다. 각 shard의 sealed trace는 Exp450가 실제로 반환한 결과와 label-free raw 입력의 결정적 digest에 결속됩니다. trace가 계획된 phase/source 호출을 하나라도 빠뜨리거나, 점수·observer가 예외를 내거나, `<f4` C-order 출력 증거가 아니면 shard를 만들지 않습니다. v2/raw-replay trace는 검증 대상이 아닙니다.

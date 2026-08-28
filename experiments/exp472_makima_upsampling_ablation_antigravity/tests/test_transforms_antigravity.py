@@ -63,7 +63,7 @@ class Exp472TransformTests(unittest.TestCase):
         output = transforms.align_rows_exp472_antigravity(rows, 7)
         trace.begin_scoring((("hard_sources", "TRAIN"),))
         trace.observe(rows, 7, output, "hard_sources", "TRAIN")
-        trace.mark_score_completed()
+        trace.mark_score_completed("a" * 64, "b" * 64)
         diagnostic = trace.seal()
         self.assertEqual(diagnostic["schema"], "exp472-shape-diagnostic-antigravity.v3")
         self.assertEqual((diagnostic["invocation_count"], diagnostic["row_invocation_count"], diagnostic["makima_row_invocation_count"], diagnostic["upsampled_rows"]), (1, 2, 1, 1))
@@ -85,9 +85,9 @@ class Exp472TransformTests(unittest.TestCase):
         trace.observe(rows, 4, output, "hard_sources", "TRAIN")
         with self.assertRaisesRegex(ValueError, "trace is not sealed"):
             trace.sealed_diagnostic()
-        trace.mark_score_completed()
+        trace.mark_score_completed("a" * 64, "b" * 64)
         trace.seal()
-        with self.assertRaisesRegex(ValueError, "trace is not open"):
+        with self.assertRaisesRegex(ValueError, "score is not completed"):
             trace.seal()
         with self.assertRaisesRegex(ValueError, "trace is not scoring"):
             trace.observe(rows, 4, output, "hard_sources", "TEST")
@@ -116,7 +116,7 @@ class Exp472TransformTests(unittest.TestCase):
         trace.begin_scoring((("hard_sources", "TRAIN"), ("hard_sources", "TEST")))
         trace.observe(rows, 3, output, "hard_sources", "TRAIN")
         with self.assertRaisesRegex(ValueError, "trace calls differ"):
-            trace.mark_score_completed()
+            trace.mark_score_completed("a" * 64, "b" * 64)
         with self.assertRaisesRegex(ValueError, "trace is poisoned"):
             trace.seal()
 
@@ -126,7 +126,7 @@ class Exp472TransformTests(unittest.TestCase):
         trace.begin_scoring(())
         with self.assertRaisesRegex(ValueError, "score is incomplete"):
             trace.seal()
-        trace.mark_score_completed()
+        trace.mark_score_completed("a" * 64, "b" * 64)
         self.assertEqual(trace.seal()["invocation_count"], 0)
     def test_makima_is_used_only_for_true_upsampling(self) -> None:
         """Routing equal or shorter targets to Makima would change frozen D parity."""

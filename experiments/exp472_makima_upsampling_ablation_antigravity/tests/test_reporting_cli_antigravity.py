@@ -108,7 +108,7 @@ def _shape_diagnostic_antigravity(dataset: str) -> dict[str, object]:
     trace.begin_scoring((("hard_sources", "TRAIN"), ("hard_sources", "TEST")))
     trace.observe((train,), 4, align_rows_exp472_antigravity((train,), 4), "hard_sources", "TRAIN")
     trace.observe((test,), 4, align_rows_exp472_antigravity((test,), 4), "hard_sources", "TEST")
-    trace.mark_score_completed()
+    trace.mark_score_completed(_SHA, _SHA)
     return dict(trace.seal())
 
 

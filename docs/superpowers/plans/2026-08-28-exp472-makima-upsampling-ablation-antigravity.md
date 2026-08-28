@@ -851,6 +851,17 @@ Expected: all ordered dataset and TEST identities match; all scores are finite `
 
 ### Task 10: Evaluate Once, Publish the Report, and Verify Final Authority
 
+### Task 8 amendment: actual-trace v3 closure
+
+This amendment supersedes v2/raw-replay trace guidance without deleting its
+history.  The Exp450 shared gate predicates emit an ordered `(phase_tag,
+source_tag)` plan before observer calls.  Exp472 must observe that exact plan,
+poison failures, record completion only after the exact scorer returns, and
+bind the sealed trace to deterministic raw-input and canonical-result digests.
+IPC validates the complete primitive v3 diagnostic before typed shard
+reconstruction; booleans and floats are invalid for ordinal and extrema/count
+fields.  Composition remains fail-closed when no trace is supplied.
+
 **Files:**
 - Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/evaluation_antigravity`
 - Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/report_antigravity`

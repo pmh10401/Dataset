@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from hashlib import sha256
+
 import numpy as np
 
 from paper.equipment_anomaly_detection.contracts_paper import RawDataset
@@ -19,6 +21,9 @@ from paper.equipment_anomaly_detection.sources_paper.stability_paper import (
 from experiments.exp450_resampling_image_ablation_antigravity.contracts_antigravity import (
     Exp450DatasetConditionResult,
 )
+from experiments.exp450_resampling_image_ablation_antigravity.artifacts_antigravity import (
+    canonical_result_bytes_antigravity,
+)
 from experiments.exp450_resampling_image_ablation_antigravity.scoring_antigravity import (
     score_dataset_condition_with_alignment_exp450_antigravity,
 )
@@ -27,7 +32,26 @@ from .config_antigravity import CONDITION_E_ANTIGRAVITY
 from .contracts_antigravity import (
     Exp472BackendDecisionAntigravity,
     Exp472ScoreShardAntigravity,
+    canonical_json_bytes_exp472_antigravity,
 )
+
+
+def _raw_identity_sha256_exp472_antigravity(values: RawDataset) -> str:
+    """Bind the trace to the supplied raw boundary without retaining labels."""
+    return sha256(canonical_json_bytes_exp472_antigravity({
+        "dataset": values.dataset,
+        "metadata_length": values.metadata_length,
+        "train": [
+            {"index": index, "blob_sha256": sha256(blob).hexdigest()}
+            for index, blob in zip(values.train_indices, values.train_blobs, strict=True)
+        ],
+        "test": [
+            {"index": index, "blob_sha256": sha256(blob).hexdigest()}
+            for index, blob in zip(values.test_indices, values.test_blobs, strict=True)
+        ],
+    })).hexdigest()
+
+
 from .transforms_antigravity import (
     align_rows_exp472_antigravity,
     Exp472AlignmentTraceAntigravity,
@@ -56,7 +80,10 @@ def score_dataset_condition_e_exp472_antigravity(
             alignment_trace.poison()
         raise
     if alignment_trace is not None:
-        alignment_trace.mark_score_completed()
+        alignment_trace.mark_score_completed(
+            _raw_identity_sha256_exp472_antigravity(values),
+            sha256(canonical_result_bytes_antigravity(result)).hexdigest(),
+        )
     return result
 
 
@@ -74,6 +101,8 @@ def compose_final_score_exp472_antigravity(
     diagnostic = alignment_trace.sealed_diagnostic()
     if diagnostic["dataset"] != values.dataset:
         raise ValueError("Exp472 alignment trace dataset differs")
+    if diagnostic["input_identity_sha256"] != _raw_identity_sha256_exp472_antigravity(values) or diagnostic["result_sha256"] != sha256(canonical_result_bytes_antigravity(result)).hexdigest():
+        raise ValueError("Exp472 alignment trace score identity differs")
     raw = {values.dataset: values}
     sources = {values.dataset: result.sources}
     routes = {values.dataset: result.route}

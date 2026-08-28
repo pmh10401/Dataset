@@ -111,6 +111,8 @@ class Exp472AlignmentTraceAntigravity:
     _state: str = field(default="open", init=False)
     _diagnostic: Mapping[str, object] | None = field(default=None, init=False)
     _expected: tuple[tuple[str, str], ...] | None = field(default=None, init=False)
+    _input_identity_sha256: str | None = field(default=None, init=False)
+    _result_sha256: str | None = field(default=None, init=False)
 
     def __post_init__(self) -> None:
         if type(self.dataset) is not str or not self.dataset:
@@ -189,7 +191,12 @@ class Exp472AlignmentTraceAntigravity:
                 raise ValueError("Exp472 trace target differs")
             materialized = tuple(self._actual_input_row_antigravity(row) for row in rows)
             array = np.asarray(output)
-            if array.dtype != np.dtype("float32") or array.shape != (len(materialized), target_len) or not np.isfinite(array).all():
+            if (
+                array.dtype != np.dtype("<f4")
+                or not array.flags.c_contiguous
+                or array.shape != (len(materialized), target_len)
+                or not np.isfinite(array).all()
+            ):
                 raise ValueError("Exp472 trace output differs")
             output_rows = tuple(array[index] for index in range(array.shape[0]))
             input_evidence = self._row_evidence_antigravity(materialized, (len(materialized),))
@@ -202,7 +209,7 @@ class Exp472AlignmentTraceAntigravity:
             self.poison()
             raise
 
-    def mark_score_completed(self) -> None:
+    def mark_score_completed(self, input_identity_sha256: str, result_sha256: str) -> None:
         """Close the observer boundary only after the exact Exp450 score returns."""
         self._require_scoring_antigravity()
         observed = tuple(
@@ -212,6 +219,15 @@ class Exp472AlignmentTraceAntigravity:
         if observed != self._expected:
             self.poison()
             raise ValueError("Exp472 trace calls differ")
+        if any(
+            type(value) is not str or len(value) != 64
+            or any(character not in "0123456789abcdef" for character in value)
+            for value in (input_identity_sha256, result_sha256)
+        ):
+            self.poison()
+            raise ValueError("Exp472 trace score identity differs")
+        self._input_identity_sha256 = input_identity_sha256
+        self._result_sha256 = result_sha256
         self._state = "score_completed"
 
     def seal(self) -> Mapping[str, object]:
@@ -220,11 +236,14 @@ class Exp472AlignmentTraceAntigravity:
         if self._state == "scoring":
             raise ValueError("Exp472 trace score is incomplete")
         if self._state != "score_completed":
-            raise ValueError("Exp472 trace is not open")
+            raise ValueError("Exp472 trace score is not completed")
+        if self._input_identity_sha256 is None or self._result_sha256 is None:
+            self.poison()
+            raise ValueError("Exp472 trace score identity differs")
         records = tuple(self._records)
         slots = {(r["source_tag"], index) for r in records for index in r["makima_row_indices"]}
         aggregate = {"invocation_count": len(records), "row_invocation_count": sum(int(r["row_count"]) for r in records), "makima_row_invocation_count": sum(int(r["makima_rows"]) for r in records), "upsampled_rows": len(slots)}
-        bare = {"schema": "exp472-shape-diagnostic-antigravity.v3", "dataset": self.dataset, "trace_state": "sealed", "alignment_status": "completed", **aggregate, "invocations": records, "invocation_order_sha256": sha256(_canonical_json_bytes_exp472_antigravity([(r["phase_tag"], r["source_tag"]) for r in records])).hexdigest(), "invocation_aggregate_sha256": sha256(_canonical_json_bytes_exp472_antigravity(aggregate)).hexdigest()}
+        bare = {"schema": "exp472-shape-diagnostic-antigravity.v3", "dataset": self.dataset, "trace_state": "sealed", "alignment_status": "completed", "input_identity_sha256": self._input_identity_sha256, "result_sha256": self._result_sha256, **aggregate, "invocations": records, "invocation_order_sha256": sha256(_canonical_json_bytes_exp472_antigravity([(r["phase_tag"], r["source_tag"]) for r in records])).hexdigest(), "invocation_aggregate_sha256": sha256(_canonical_json_bytes_exp472_antigravity(aggregate)).hexdigest()}
         self._state = "sealed"
         self._diagnostic = {**bare, "diagnostic_sha256": sha256(_canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
         return self._diagnostic
