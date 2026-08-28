@@ -159,7 +159,7 @@ and are never silently discarded.
 
 Implementation occurs on branch `codex/exp472-makima-ablation-antigravity` in
 the isolated worktree
-`/Users/mac/Documents/Time Series/.worktrees/exp472-makima-ablation-antigravity`.
+`/Users/mac/.codex/worktrees/e1be/Time Series/.worktrees/exp472-makima-ablation-antigravity`.
 
 Before the first scientific source edit, create and verify the complete Exp472
 triplet:
