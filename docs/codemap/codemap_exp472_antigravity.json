@@ -217,12 +217,27 @@
     },
     {
       "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
       "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
       "kind": "ast_import"
     },
     {
       "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
       "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -243,6 +258,26 @@
     {
       "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py",
       "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -549,21 +584,38 @@
     },
     {
       "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py"
+      ],
+      "effects": "Durable, create-only condition-E score artifacts for Exp472.",
+      "module": "experiments.exp472_makima_upsampling_ablation_antigravity.artifacts_antigravity",
+      "path": "experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py",
+      "tests": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
         "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py"
       ],
       "effects": "Frozen Exp472 population, roots, scoring identity, and backend policy.",
       "module": "experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravity",
       "path": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
       "tests": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py"
       ]
     },
     {
       "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py"
       ],
@@ -571,8 +623,20 @@
       "module": "experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigravity",
       "path": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
       "tests": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py"
+      ],
+      "effects": "Bounded two-wave scheduling for label-free Exp472 condition-E scores.",
+      "module": "experiments.exp472_makima_upsampling_ablation_antigravity.runner_antigravity",
+      "path": "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
+      "tests": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py"
       ]
     },
     {
@@ -585,6 +649,13 @@
       "tests": [
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py"
       ]
+    },
+    {
+      "callers": [],
+      "effects": "Lifecycle contracts for durable, label-free Exp472 score execution.",
+      "module": "experiments.exp472_makima_upsampling_ablation_antigravity.tests.test_artifacts_runner_antigravity",
+      "path": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
+      "tests": []
     },
     {
       "callers": [],
@@ -685,10 +756,10 @@
       "plan_sha256": "692f8e40dd30e62a2947706d25cc5af58752cb3fc5f32494e744d7bce27d3db2"
     },
     "namespace": "experiments/exp472_makima_upsampling_ablation_antigravity",
-    "node_count": 21,
-    "production_node_count": 4,
+    "node_count": 24,
+    "production_node_count": 6,
     "retained_boundary_node_count": 13,
-    "test_node_count": 3,
+    "test_node_count": 4,
     "version": "exp472"
   },
   "unknowns": []
