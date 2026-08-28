@@ -91,6 +91,38 @@ AlignmentRowsAntigravity = Callable[[Sequence[np.ndarray], int], np.ndarray]
 # the callback's positional interface unambiguous while preserving the frozen
 # two-argument aligner callable.
 AlignmentObserverAntigravity = Callable[[Sequence[np.ndarray], int, np.ndarray, str, str], None]
+AlignmentPlanCallbackAntigravity = Callable[[tuple[tuple[str, str], ...]], None]
+
+
+def _hard_alignment_enabled_exp450_antigravity(values: RawDataset) -> bool:
+    return len(values.train_rows) >= 5 and has_only_finite_values_paper(values)
+
+
+def _minirocket_alignment_enabled_exp450_antigravity(values: RawDataset) -> bool:
+    return len(values.train_rows) >= MINIMUM_TRAIN_PAPER
+
+
+def _legacy_alignment_enabled_exp450_antigravity(values: RawDataset) -> bool:
+    return len(values.train_rows) >= 2 and bool(values.test_rows)
+
+
+def expected_alignment_plan_exp450_antigravity(
+    values: RawDataset, condition: Exp450Condition,
+) -> tuple[tuple[str, str], ...]:
+    """Return the exact shared-gate plan before Exp450 can invoke alignment."""
+    if condition.condition_id == "A":
+        return ()
+    plan: list[tuple[str, str]] = []
+    if _hard_alignment_enabled_exp450_antigravity(values):
+        plan.extend((("hard_sources", "TRAIN"), ("hard_sources", "TEST")))
+    if _minirocket_alignment_enabled_exp450_antigravity(values):
+        plan.extend((("minirocket", "TRAIN"), ("minirocket", "TEST")))
+    if _legacy_alignment_enabled_exp450_antigravity(values):
+        plan.extend(
+            (("legacy_exp40", "TRAIN"), ("legacy_exp40", "TEST"),
+             ("legacy_route", "TRAIN"), ("legacy_route", "TEST"))
+        )
+    return tuple(plan)
 
 
 def _align_rows_selected_antigravity(
@@ -100,8 +132,8 @@ def _align_rows_selected_antigravity(
     align_rows_override: AlignmentRowsAntigravity | None,
     *,
     alignment_observer: AlignmentObserverAntigravity | None = None,
-    phase_tag: str = "hard_sources",
-    source_tag: str = "TRAIN",
+    phase_tag: str | None = None,
+    source_tag: str | None = None,
 ) -> np.ndarray:
     """Select the frozen Exp450 alignment unless an isolated caller supplies one."""
     if align_rows_override is None:
@@ -111,6 +143,11 @@ def _align_rows_selected_antigravity(
     else:
         output = np.asarray(align_rows_override(rows, target_len), dtype=np.float32)
     if alignment_observer is not None:
+        if (
+            phase_tag not in {"hard_sources", "minirocket", "legacy_exp40", "legacy_route"}
+            or source_tag not in {"TRAIN", "TEST"}
+        ):
+            raise ValueError("Exp450 alignment observer tags are required")
         alignment_observer(rows, target_len, output, phase_tag, source_tag)
     return output
 
@@ -206,7 +243,7 @@ def score_hard_sources_exp450_antigravity(
                 for name in EXPECTED_HARD_SOURCES
             },
         )
-    if not has_only_finite_values_paper(values):
+    if not _hard_alignment_enabled_exp450_antigravity(values):
         return HardSourceBundle(
             EXPECTED_HARD_SOURCES,
             {
@@ -271,7 +308,7 @@ def score_minirocket_exp450_antigravity(
     del backend
     if condition.condition_id == "A":
         return score_minirocket_confirmations(values)
-    if len(values.train_rows) < MINIMUM_TRAIN_PAPER:
+    if not _minirocket_alignment_enabled_exp450_antigravity(values):
         empty = {
             requested: MiniRocketKernelResult(requested, dimension, {}, frozenset())
             for requested, dimension in ((1024, 1008), (4096, 4032))
@@ -416,7 +453,7 @@ def build_legacy_route_evidence_exp450_antigravity(
         )
 
         return build_legacy_route_evidence(values)
-    if len(values.train_rows) < 2 or not values.test_rows:
+    if not _legacy_alignment_enabled_exp450_antigravity(values):
         raise ValueError("legacy full-fit route requires at least two TRAIN and one TEST row")
     train_work = _repair_rows_for_legacy_fullfit_paper(
         values.train_rows, dataset=values.dataset, split="TRAIN"
@@ -554,6 +591,7 @@ def score_dataset_condition_with_alignment_exp450_antigravity(
     *,
     align_rows_override: AlignmentRowsAntigravity | None,
     alignment_observer: AlignmentObserverAntigravity | None = None,
+    alignment_plan_callback: AlignmentPlanCallbackAntigravity | None = None,
 ) -> Exp450DatasetConditionResult:
     """Produce one condition result with an optional isolated row aligner."""
     if condition.condition_id == "A":
@@ -561,6 +599,8 @@ def score_dataset_condition_with_alignment_exp450_antigravity(
         mini = score_minirocket_confirmations(values)
         route = replay_hard_route(values, sources, mini)
     else:
+        if alignment_plan_callback is not None:
+            alignment_plan_callback(expected_alignment_plan_exp450_antigravity(values, condition))
         sources = score_hard_sources_exp450_antigravity(
             values,
             condition,
@@ -589,6 +629,7 @@ def score_dataset_condition_with_alignment_exp450_antigravity(
 
 __all__ = [
     "build_legacy_route_evidence_exp450_antigravity",
+    "expected_alignment_plan_exp450_antigravity",
     "replay_hard_route_exp450_antigravity",
     "score_dataset_condition_exp450_antigravity",
     "score_dataset_condition_with_alignment_exp450_antigravity",

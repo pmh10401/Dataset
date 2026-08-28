@@ -42,13 +42,22 @@ def score_dataset_condition_e_exp472_antigravity(
     alignment_trace: Exp472AlignmentTraceAntigravity | None = None,
 ) -> Exp450DatasetConditionResult:
     """Score one raw dataset with E's Makima-only alignment substitution."""
-    return score_dataset_condition_with_alignment_exp450_antigravity(
-        values,
-        CONDITION_E_ANTIGRAVITY,
-        backend,
-        align_rows_override=align_rows_exp472_antigravity,
-        alignment_observer=None if alignment_trace is None else alignment_trace.observe,
-    )
+    try:
+        result = score_dataset_condition_with_alignment_exp450_antigravity(
+            values,
+            CONDITION_E_ANTIGRAVITY,
+            backend,
+            align_rows_override=align_rows_exp472_antigravity,
+            alignment_observer=None if alignment_trace is None else alignment_trace.observe,
+            alignment_plan_callback=None if alignment_trace is None else alignment_trace.begin_scoring,
+        )
+    except Exception:
+        if alignment_trace is not None:
+            alignment_trace.poison()
+        raise
+    if alignment_trace is not None:
+        alignment_trace.mark_score_completed()
+    return result
 
 
 def compose_final_score_exp472_antigravity(

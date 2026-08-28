@@ -150,6 +150,17 @@ def _code_closure_antigravity() -> Mapping[str, str]:
         "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
         "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+        "paper/equipment_anomaly_detection/contracts_paper.py",
+        "paper/equipment_anomaly_detection/hard_route_paper.py",
+        "paper/equipment_anomaly_detection/routing_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/rocket_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
         "docs/codemap/codemap_exp472_antigravity.lock",
     )
     return {name: sha256((root / name).read_bytes()).hexdigest() for name in names}

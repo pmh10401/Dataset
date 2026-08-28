@@ -110,6 +110,7 @@ class Exp472AlignmentTraceAntigravity:
     _records: list[dict[str, object]] = field(default_factory=list)
     _state: str = field(default="open", init=False)
     _diagnostic: Mapping[str, object] | None = field(default=None, init=False)
+    _expected: tuple[tuple[str, str], ...] | None = field(default=None, init=False)
 
     def __post_init__(self) -> None:
         if type(self.dataset) is not str or not self.dataset:
@@ -121,15 +122,48 @@ class Exp472AlignmentTraceAntigravity:
         if self._state != "open":
             raise ValueError("Exp472 trace is not open")
 
+    def begin_scoring(self, expected: Sequence[tuple[str, str]]) -> None:
+        """Accept Exp450's exact gate-derived plan before it can call an aligner."""
+        self._require_open_antigravity()
+        plan = tuple(expected)
+        if any(
+            type(pair) is not tuple or len(pair) != 2
+            or pair not in _TRACE_ORDER_ANTIGRAVITY
+            for pair in plan
+        ) or any(
+            _TRACE_ORDER_ANTIGRAVITY.index(plan[index])
+            >= _TRACE_ORDER_ANTIGRAVITY.index(plan[index + 1])
+            for index in range(len(plan) - 1)
+        ):
+            self._state = "poisoned"
+            raise ValueError("Exp472 trace plan differs")
+        self._expected = plan
+        self._state = "scoring"
+
+    def poison(self) -> None:
+        """Make any failed score invocation permanently non-publishable."""
+        if self._state != "sealed":
+            self._state = "poisoned"
+
+    def _require_scoring_antigravity(self) -> None:
+        if self._state == "poisoned":
+            raise ValueError("Exp472 trace is poisoned")
+        if self._state != "scoring":
+            raise ValueError("Exp472 trace is not scoring")
+
     @staticmethod
     def _row_evidence_antigravity(
         rows: Sequence[np.ndarray],
         shape: Sequence[int],
     ) -> dict[str, object]:
+        offsets = [0]
+        for row in rows:
+            offsets.append(offsets[-1] + int(row.size))
         return {
-            "dtype": "float32",
+            "dtype": "<f4",
+            "order": "C",
             "shape": list(shape),
-            "row_boundaries": [int(row.size) for row in rows],
+            "row_boundaries": offsets,
             "row_bytes_sha256": [sha256(row.tobytes()).hexdigest() for row in rows],
         }
 
@@ -137,15 +171,15 @@ class Exp472AlignmentTraceAntigravity:
     def _actual_input_row_antigravity(value: object) -> np.ndarray:
         row = np.asarray(value)
         if (
-            row.dtype != np.dtype("float32") or row.ndim != 1
-            or row.size == 0 or not np.isfinite(row).all()
+            row.dtype != np.dtype("<f4") or row.ndim != 1
+            or not row.flags.c_contiguous or row.size == 0 or not np.isfinite(row).all()
         ):
             raise ValueError("Exp472 trace input differs")
         return row
 
     def observe(self, rows: Sequence[np.ndarray], target_len: int, output: np.ndarray, phase_tag: str, source_tag: str) -> None:
         """Passively bind exactly one already-computed Exp450 alignment result."""
-        self._require_open_antigravity()
+        self._require_scoring_antigravity()
         try:
             if (phase_tag, source_tag) not in _TRACE_ORDER_ANTIGRAVITY:
                 raise ValueError("Exp472 trace tag differs")
@@ -165,11 +199,28 @@ class Exp472AlignmentTraceAntigravity:
             bare = {"ordinal": len(self._records), "phase_tag": phase_tag, "source_tag": source_tag, "target_len": target_len, "row_count": len(materialized), "input_evidence": input_evidence, "input_sha256": sha256(_canonical_json_bytes_exp472_antigravity(input_evidence)).hexdigest(), "output_evidence": output_evidence, "output_sha256": sha256(_canonical_json_bytes_exp472_antigravity(output_evidence)).hexdigest(), "singleton_rows": sum(row.size == 1 for row in materialized), "equal_rows": sum(row.size == target_len for row in materialized), "polyphase_downsample_rows": sum(row.size > target_len for row in materialized), "makima_rows": len(makima_pairs), "makima_row_indices": [index for index, _item in makima_pairs], "overshoot": float(sum(item["overshoot"] for _index, item in makima_pairs)), "undershoot": float(sum(item["undershoot"] for _index, item in makima_pairs)), "source_extrema": sum(item["source_extrema"] for _index, item in makima_pairs), "output_extrema": sum(item["output_extrema"] for _index, item in makima_pairs), "added_extrema": sum(item["added_extrema"] for _index, item in makima_pairs)}
             self._records.append({**bare, "invocation_sha256": sha256(_canonical_json_bytes_exp472_antigravity(bare)).hexdigest()})
         except Exception:
-            self._state = "poisoned"
+            self.poison()
             raise
 
+    def mark_score_completed(self) -> None:
+        """Close the observer boundary only after the exact Exp450 score returns."""
+        self._require_scoring_antigravity()
+        observed = tuple(
+            (record["phase_tag"], record["source_tag"])
+            for record in self._records
+        )
+        if observed != self._expected:
+            self.poison()
+            raise ValueError("Exp472 trace calls differ")
+        self._state = "score_completed"
+
     def seal(self) -> Mapping[str, object]:
-        self._require_open_antigravity()
+        if self._state == "poisoned":
+            raise ValueError("Exp472 trace is poisoned")
+        if self._state == "scoring":
+            raise ValueError("Exp472 trace score is incomplete")
+        if self._state != "score_completed":
+            raise ValueError("Exp472 trace is not open")
         records = tuple(self._records)
         slots = {(r["source_tag"], index) for r in records for index in r["makima_row_indices"]}
         aggregate = {"invocation_count": len(records), "row_invocation_count": sum(int(r["row_count"]) for r in records), "makima_row_invocation_count": sum(int(r["makima_rows"]) for r in records), "upsampled_rows": len(slots)}

@@ -61,16 +61,19 @@ class Exp472TransformTests(unittest.TestCase):
         trace = transforms.Exp472AlignmentTraceAntigravity("fixture")
         rows = (np.asarray([0.0, 2.0, 0.0], dtype=np.float32), np.asarray([1.0], dtype=np.float32))
         output = transforms.align_rows_exp472_antigravity(rows, 7)
+        trace.begin_scoring((("hard_sources", "TRAIN"),))
         trace.observe(rows, 7, output, "hard_sources", "TRAIN")
+        trace.mark_score_completed()
         diagnostic = trace.seal()
         self.assertEqual(diagnostic["schema"], "exp472-shape-diagnostic-antigravity.v3")
         self.assertEqual((diagnostic["invocation_count"], diagnostic["row_invocation_count"], diagnostic["makima_row_invocation_count"], diagnostic["upsampled_rows"]), (1, 2, 1, 1))
         self.assertEqual(diagnostic["invocations"][0]["phase_tag"], "hard_sources")
         self.assertEqual(diagnostic["invocations"][0]["source_tag"], "TRAIN")
         invocation = diagnostic["invocations"][0]
-        self.assertEqual(invocation["input_evidence"]["dtype"], "float32")
+        self.assertEqual(invocation["input_evidence"]["dtype"], "<f4")
+        self.assertEqual(invocation["input_evidence"]["order"], "C")
         self.assertEqual(invocation["input_evidence"]["shape"], [2])
-        self.assertEqual(invocation["input_evidence"]["row_boundaries"], [3, 1])
+        self.assertEqual(invocation["input_evidence"]["row_boundaries"], [0, 3, 4])
         self.assertEqual(invocation["output_evidence"]["shape"], [2, 7])
 
     def test_trace_is_one_shot_and_poisoned_after_an_invalid_observation(self) -> None:
@@ -78,16 +81,19 @@ class Exp472TransformTests(unittest.TestCase):
         trace = transforms.Exp472AlignmentTraceAntigravity("fixture")
         rows = (np.asarray([0.0, 1.0], dtype=np.float32),)
         output = transforms.align_rows_exp472_antigravity(rows, 4)
+        trace.begin_scoring((("hard_sources", "TRAIN"),))
         trace.observe(rows, 4, output, "hard_sources", "TRAIN")
         with self.assertRaisesRegex(ValueError, "trace is not sealed"):
             trace.sealed_diagnostic()
+        trace.mark_score_completed()
         trace.seal()
         with self.assertRaisesRegex(ValueError, "trace is not open"):
             trace.seal()
-        with self.assertRaisesRegex(ValueError, "trace is not open"):
+        with self.assertRaisesRegex(ValueError, "trace is not scoring"):
             trace.observe(rows, 4, output, "hard_sources", "TEST")
 
         poisoned = transforms.Exp472AlignmentTraceAntigravity("fixture")
+        poisoned.begin_scoring((("hard_sources", "TRAIN"),))
         with self.assertRaisesRegex(ValueError, "trace output differs"):
             poisoned.observe(rows, 4, np.zeros((1, 3), dtype=np.float32), "hard_sources", "TRAIN")
         with self.assertRaisesRegex(ValueError, "trace is poisoned"):
@@ -98,8 +104,30 @@ class Exp472TransformTests(unittest.TestCase):
         trace = transforms.Exp472AlignmentTraceAntigravity("fixture")
         rows = (np.asarray([0.0, 1.0], dtype=np.float64),)
         output = np.asarray([[0.0, 0.5, 1.0]], dtype=np.float32)
+        trace.begin_scoring((("hard_sources", "TRAIN"),))
         with self.assertRaisesRegex(ValueError, "trace input differs"):
             trace.observe(rows, 3, output, "hard_sources", "TRAIN")
+
+    def test_trace_requires_the_complete_exp450_plan_before_sealing(self) -> None:
+        """An omitted expected callback must fail even when order remains plausible."""
+        trace = transforms.Exp472AlignmentTraceAntigravity("fixture")
+        rows = (np.asarray([0.0, 1.0], dtype=np.float32),)
+        output = transforms.align_rows_exp472_antigravity(rows, 3)
+        trace.begin_scoring((("hard_sources", "TRAIN"), ("hard_sources", "TEST")))
+        trace.observe(rows, 3, output, "hard_sources", "TRAIN")
+        with self.assertRaisesRegex(ValueError, "trace calls differ"):
+            trace.mark_score_completed()
+        with self.assertRaisesRegex(ValueError, "trace is poisoned"):
+            trace.seal()
+
+    def test_empty_expected_plan_can_seal_only_after_successful_score(self) -> None:
+        """Gate-suppressed scoring may seal an empty trace, but never while open."""
+        trace = transforms.Exp472AlignmentTraceAntigravity("fixture")
+        trace.begin_scoring(())
+        with self.assertRaisesRegex(ValueError, "score is incomplete"):
+            trace.seal()
+        trace.mark_score_completed()
+        self.assertEqual(trace.seal()["invocation_count"], 0)
     def test_makima_is_used_only_for_true_upsampling(self) -> None:
         """Routing equal or shorter targets to Makima would change frozen D parity."""
         row = np.asarray([0.0, 1.0, -0.5, 2.0], dtype=np.float32)

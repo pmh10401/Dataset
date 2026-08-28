@@ -207,24 +207,26 @@ def _validate_evidence_antigravity(
     value: object, row_count: int, target_len: int, *, output: bool,
 ) -> tuple[int, ...]:
     if not isinstance(value, Mapping) or set(value) != {
-        "dtype", "shape", "row_boundaries", "row_bytes_sha256"
+        "dtype", "order", "shape", "row_boundaries", "row_bytes_sha256"
     }:
         _diagnostic_error_antigravity()
     shape, boundaries, digests = (
         value["shape"], value["row_boundaries"], value["row_bytes_sha256"]
     )
     if (
-        value["dtype"] != "float32" or not isinstance(shape, (list, tuple))
+        value["dtype"] != "<f4" or value["order"] != "C" or not isinstance(shape, (list, tuple))
         or list(shape) != ([row_count, target_len] if output else [row_count])
         or not isinstance(boundaries, (list, tuple))
         or not isinstance(digests, (list, tuple))
-        or len(boundaries) != row_count or len(digests) != row_count
-        or any(type(length) is not int or length <= 0 for length in boundaries)
+        or len(boundaries) != row_count + 1 or len(digests) != row_count
+        or boundaries[0] != 0
+        or any(type(offset) is not int or offset < 0 for offset in boundaries)
+        or any(right <= left for left, right in zip(boundaries, boundaries[1:]))
         or any(not _validate_digest_antigravity(digest) for digest in digests)
-        or (output and tuple(boundaries) != (target_len,) * row_count)
+        or (output and tuple(boundaries) != tuple(index * target_len for index in range(row_count + 1)))
     ):
         _diagnostic_error_antigravity()
-    return tuple(boundaries)
+    return tuple(right - left for left, right in zip(boundaries, boundaries[1:]))
 
 
 def _validate_diagnostic_antigravity(
@@ -311,9 +313,12 @@ def _validate_diagnostic_antigravity(
             or any(type(item) is not int for item in makima_indices)
         ):
             _diagnostic_error_antigravity()
-        for name in ("overshoot", "undershoot", "source_extrema", "output_extrema", "added_extrema"):
+        for name in ("overshoot", "undershoot"):
             item = record[name]
             if type(item) not in (int, float) or not math.isfinite(float(item)) or item < 0:
+                _diagnostic_error_antigravity()
+        for name in ("source_extrema", "output_extrema", "added_extrema"):
+            if not _is_count_antigravity(record[name]):
                 _diagnostic_error_antigravity()
         slots.update((record["source_tag"], index) for index in makima_indices)
         expected_order.append(pair)

@@ -105,8 +105,10 @@ def _shape_diagnostic_antigravity(dataset: str) -> dict[str, object]:
     train = np.asarray([0.0, 1.0, 0.5, 1.5], dtype="<f4")
     test = np.asarray([1.0, 0.0, 1.0, 0.0], dtype="<f4")
     trace = Exp472AlignmentTraceAntigravity(dataset)
+    trace.begin_scoring((("hard_sources", "TRAIN"), ("hard_sources", "TEST")))
     trace.observe((train,), 4, align_rows_exp472_antigravity((train,), 4), "hard_sources", "TRAIN")
     trace.observe((test,), 4, align_rows_exp472_antigravity((test,), 4), "hard_sources", "TEST")
+    trace.mark_score_completed()
     return dict(trace.seal())
 
 

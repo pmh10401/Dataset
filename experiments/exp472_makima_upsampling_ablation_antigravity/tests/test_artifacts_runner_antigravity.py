@@ -110,11 +110,11 @@ def _catalog_antigravity(names: tuple[str, ...] = ("A", "B", "C", "D")) -> tuple
 def _diagnostic_antigravity(dataset: str, shape: str) -> dict[str, object]:
     del shape
     input_evidence = {
-        "dtype": "float32", "shape": [1], "row_boundaries": [2],
+        "dtype": "<f4", "order": "C", "shape": [1], "row_boundaries": [0, 2],
         "row_bytes_sha256": [_DIGEST_A_ANTIGRAVITY],
     }
     output_evidence = {
-        "dtype": "float32", "shape": [1, 3], "row_boundaries": [3],
+        "dtype": "<f4", "order": "C", "shape": [1, 3], "row_boundaries": [0, 3],
         "row_bytes_sha256": [_DIGEST_B_ANTIGRAVITY],
     }
     invocation = {
@@ -328,8 +328,10 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
         rows = (np.asarray([0.0, 1.0], dtype=np.float32),)
         trace = Exp472AlignmentTraceAntigravity("A")
         output = align_rows_exp472_antigravity(rows, 3)
+        trace.begin_scoring((("hard_sources", "TRAIN"), ("hard_sources", "TEST")))
         trace.observe(rows, 3, output, "hard_sources", "TRAIN")
         trace.observe(rows, 3, output, "hard_sources", "TEST")
+        trace.mark_score_completed()
         shard = replace(
             _shard_antigravity(), upsampled_rows=2, diagnostic=trace.seal()
         )
