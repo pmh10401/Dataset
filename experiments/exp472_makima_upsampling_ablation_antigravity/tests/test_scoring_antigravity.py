@@ -156,6 +156,82 @@ class Exp472ScoringTests(unittest.TestCase):
             scoring.compose_final_score_exp472_antigravity(
                 other_raw, result, BACKEND_CPU, alignment_trace=trace,
             )
+
+    def test_compose_rejects_changed_rows_even_when_the_blobs_are_unchanged(self) -> None:
+        """The live RawDataset rows, rather than a stale blob mirror, bind E."""
+        trace = Exp472AlignmentTraceAntigravity(RAW_FIXTURE.dataset)
+        result = scoring.score_dataset_condition_e_exp472_antigravity(
+            RAW_FIXTURE, BACKEND_CPU, alignment_trace=trace,
+        )
+        trace.seal()
+        changed = RAW_FIXTURE.train_rows[0].copy()
+        changed[0] += np.float32(0.125)
+        rows_only = replace(
+            RAW_FIXTURE, train_rows=(changed, *RAW_FIXTURE.train_rows[1:]),
+        )
+        with self.assertRaisesRegex(ValueError, "score identity differs"):
+            scoring.compose_final_score_exp472_antigravity(
+                rows_only, result, BACKEND_CPU, alignment_trace=trace,
+            )
+
+    def test_compose_rejects_a_different_result_for_the_same_raw_input(self) -> None:
+        """A sealed trace cannot be paired with a later or substituted Exp450 result."""
+        trace = Exp472AlignmentTraceAntigravity(RAW_FIXTURE.dataset)
+        result = scoring.score_dataset_condition_e_exp472_antigravity(
+            RAW_FIXTURE, BACKEND_CPU, alignment_trace=trace,
+        )
+        trace.seal()
+        with self.assertRaisesRegex(ValueError, "score identity differs"):
+            scoring.compose_final_score_exp472_antigravity(
+                RAW_FIXTURE, replace(result, condition_id="D"), BACKEND_CPU,
+                alignment_trace=trace,
+            )
+
+    def test_real_legacy_makima_repeats_invocations_but_deduplicates_logical_slots(self) -> None:
+        """Two legacy phases revisit split rows without inflating physical row slots."""
+        values = _mixed_length_fixture("exp472_legacy_repeated_fixture")
+        trace = Exp472AlignmentTraceAntigravity(values.dataset)
+        scoring.score_dataset_condition_e_exp472_antigravity(
+            values, BACKEND_CPU, alignment_trace=trace,
+        )
+        diagnostic = trace.seal()
+        legacy = [
+            item for item in diagnostic["invocations"]
+            if item["phase_tag"] in {"legacy_exp40", "legacy_route"}
+        ]
+        self.assertEqual(len(legacy), 4)
+        self.assertGreater(
+            diagnostic["makima_row_invocation_count"], diagnostic["upsampled_rows"],
+        )
+        self.assertEqual(
+            diagnostic["upsampled_rows"],
+            len(values.train_rows) + len(values.test_rows),
+        )
+
+    def test_real_scorer_observer_exception_poisons_the_trace_and_prevents_seal(self) -> None:
+        """The production score wrapper treats passive observer failure as terminal."""
+        trace = Exp472AlignmentTraceAntigravity(RAW_FIXTURE.dataset)
+        with patch.object(trace, "observe", side_effect=RuntimeError("observer boom")):
+            with self.assertRaisesRegex(RuntimeError, "observer boom"):
+                scoring.score_dataset_condition_e_exp472_antigravity(
+                    RAW_FIXTURE, BACKEND_CPU, alignment_trace=trace,
+                )
+        with self.assertRaisesRegex(ValueError, "trace is poisoned"):
+            trace.seal()
+
+    def test_scorer_exception_before_any_callback_also_poisons_the_trace(self) -> None:
+        """Even an early Exp450 failure leaves no publishable empty trace."""
+        trace = Exp472AlignmentTraceAntigravity(RAW_FIXTURE.dataset)
+        with patch.object(
+            scoring, "score_dataset_condition_with_alignment_exp450_antigravity",
+            side_effect=RuntimeError("scorer boom"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "scorer boom"):
+                scoring.score_dataset_condition_e_exp472_antigravity(
+                    RAW_FIXTURE, BACKEND_CPU, alignment_trace=trace,
+                )
+        with self.assertRaisesRegex(ValueError, "trace is poisoned"):
+            trace.seal()
     def test_e_routes_all_alignment_through_exp472_and_keeps_area_images(self) -> None:
         """Falling back to Exp450 alignment or linear images changes E factors."""
         with (

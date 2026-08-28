@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -38,6 +39,9 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigra
 from experiments.exp472_makima_upsampling_ablation_antigravity.runner_antigravity import (
     pending_datasets_exp472_antigravity,
     run_score_wave_exp472_antigravity,
+)
+from experiments.exp472_makima_upsampling_ablation_antigravity import (
+    runner_antigravity as runner_module,
 )
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import (
     Exp472AlignmentTraceAntigravity,
@@ -366,6 +370,31 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "diagnostic|upsampled"):
                     verify_score_shard_exp472_antigravity(self.root, self.context, self.catalog[0])
         path.write_bytes(canonical_json_bytes_exp472_antigravity(original))
+
+    def test_cpu_packet_rejects_recomputed_bool_ordinal_before_typed_construction(self) -> None:
+        """IPC must authenticate primitive v3 evidence before the shard constructor runs."""
+        diagnostic = _diagnostic_antigravity("A", "packet")
+        diagnostic["invocations"][0]["ordinal"] = False
+        invocation = diagnostic["invocations"][0]
+        invocation["invocation_sha256"] = sha256(
+            canonical_json_bytes_exp472_antigravity(
+                {key: item for key, item in invocation.items() if key != "invocation_sha256"}
+            )
+        ).hexdigest()
+        diagnostic["diagnostic_sha256"] = sha256(
+            canonical_json_bytes_exp472_antigravity(
+                {key: item for key, item in diagnostic.items() if key != "diagnostic_sha256"}
+            )
+        ).hexdigest()
+        packet = {
+            "dataset": "A", "test_identity": {"dataset": "A", "test_count": 1, "indices_sha256": _DIGEST_A_ANTIGRAVITY},
+            "scores": [0.9], "alerts": [0], "upsampled_rows": 1,
+            "diagnostic": diagnostic,
+        }
+        with patch.object(runner_module, "Exp472ScoreShardAntigravity") as constructor:
+            with self.assertRaisesRegex(ValueError, "diagnostic differs"):
+                runner_module._score_packet_to_shard_antigravity(packet)
+        constructor.assert_not_called()
 
     def test_torn_existing_shard_is_rejected_without_overwrite(self) -> None:
         """A crash-truncated create-only path must preserve evidence instead of overwriting it."""

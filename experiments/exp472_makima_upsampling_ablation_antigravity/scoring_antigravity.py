@@ -38,17 +38,30 @@ from .contracts_antigravity import (
 
 def _raw_identity_sha256_exp472_antigravity(values: RawDataset) -> str:
     """Bind the trace to the supplied raw boundary without retaining labels."""
+    def rows_identity(indices: object, blobs: object, rows: object) -> list[dict[str, object]]:
+        if not isinstance(indices, tuple) or not isinstance(blobs, tuple) or not isinstance(rows, tuple):
+            raise ValueError("Exp472 raw dataset identity differs")
+        if len(indices) != len(blobs) or len(blobs) != len(rows):
+            raise ValueError("Exp472 raw dataset identity differs")
+        materialized: list[dict[str, object]] = []
+        for index, blob, row in zip(indices, blobs, rows, strict=True):
+            if type(index) is not int or type(blob) is not bytes or type(row) is not np.ndarray:
+                raise ValueError("Exp472 raw dataset identity differs")
+            materialized.append({
+                "index": index,
+                "blob_sha256": sha256(blob).hexdigest(),
+                "row_dtype": row.dtype.str,
+                "row_shape": list(row.shape),
+                "row_order": "C" if row.flags.c_contiguous else "non-C",
+                "row_bytes_sha256": sha256(row.tobytes(order="C")).hexdigest(),
+            })
+        return materialized
+
     return sha256(canonical_json_bytes_exp472_antigravity({
         "dataset": values.dataset,
         "metadata_length": values.metadata_length,
-        "train": [
-            {"index": index, "blob_sha256": sha256(blob).hexdigest()}
-            for index, blob in zip(values.train_indices, values.train_blobs, strict=True)
-        ],
-        "test": [
-            {"index": index, "blob_sha256": sha256(blob).hexdigest()}
-            for index, blob in zip(values.test_indices, values.test_blobs, strict=True)
-        ],
+        "train": rows_identity(values.train_indices, values.train_blobs, values.train_rows),
+        "test": rows_identity(values.test_indices, values.test_blobs, values.test_rows),
     })).hexdigest()
 
 

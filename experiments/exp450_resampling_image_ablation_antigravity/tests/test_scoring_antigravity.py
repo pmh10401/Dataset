@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from hashlib import sha256
 from pathlib import Path
 import pickle
@@ -86,6 +87,87 @@ class Exp450DatasetScoringTests(unittest.TestCase):
         self.assertEqual(len(seen), 1)
         self.assertIs(seen[0][2], output)
         self.assertEqual(seen[0][3:], ("hard_sources", "TRAIN"))
+
+    def test_real_condition_d_plan_precedes_and_exactly_matches_actual_observers(self) -> None:
+        """The passive callback sees every real shared-gate alignment in plan order."""
+        values = _raw_fixture()
+        events: list[object] = []
+        align = lambda rows, target: scoring_antigravity.align_rows_exp450_antigravity(
+            rows, target, mode=CONDITION_D.length_mode,
+        )
+        result = scoring_antigravity.score_dataset_condition_with_alignment_exp450_antigravity(
+            values,
+            CONDITION_D,
+            BACKEND_CPU,
+            align_rows_override=align,
+            alignment_plan_callback=lambda plan: events.append(("plan", plan)),
+            alignment_observer=lambda rows, target, output, phase, source: events.append(
+                ("observe", phase, source, len(rows), target, output.shape)
+            ),
+        )
+        unobserved = scoring_antigravity.score_dataset_condition_with_alignment_exp450_antigravity(
+            values, CONDITION_D, BACKEND_CPU,
+            align_rows_override=align,
+        )
+        expected = scoring_antigravity.expected_alignment_plan_exp450_antigravity(values, CONDITION_D)
+        self.assertEqual(events[0], ("plan", expected))
+        self.assertEqual(tuple((item[1], item[2]) for item in events[1:]), expected)
+        self.assertEqual(
+            canonical_result_bytes_antigravity(result),
+            canonical_result_bytes_antigravity(unobserved),
+        )
+
+    def test_real_nonfinite_train_omits_hard_but_observes_repaired_later_alignments(self) -> None:
+        """The actual shared gates skip Hard while MiniROCKET and legacy repair rows."""
+        values = _raw_fixture()
+        nonfinite = values.train_rows[0].copy()
+        nonfinite[0] = np.nan
+        values = replace(
+            values,
+            train_rows=(nonfinite, *values.train_rows[1:]),
+            train_blobs=(nonfinite.tobytes(), *values.train_blobs[1:]),
+        )
+        observed: list[tuple[str, str, np.ndarray]] = []
+        result = scoring_antigravity.score_dataset_condition_with_alignment_exp450_antigravity(
+            values, CONDITION_D, BACKEND_CPU,
+            align_rows_override=lambda rows, target: scoring_antigravity.align_rows_exp450_antigravity(
+                rows, target, mode=CONDITION_D.length_mode,
+            ),
+            alignment_observer=lambda rows, target, output, phase, source: observed.append(
+                (phase, source, output)
+            ),
+        )
+        expected = scoring_antigravity.expected_alignment_plan_exp450_antigravity(values, CONDITION_D)
+        self.assertEqual(tuple((phase, source) for phase, source, _output in observed), expected)
+        self.assertNotIn(("hard_sources", "TRAIN"), expected)
+        self.assertTrue(any(phase == "minirocket" for phase, _source, _output in observed))
+        self.assertTrue(any(phase.startswith("legacy_") for phase, _source, _output in observed))
+        self.assertTrue(all(np.isfinite(output).all() for _phase, _source, output in observed))
+        self.assertEqual(result.dataset, values.dataset)
+
+    def test_real_three_train_rows_observe_only_the_shared_legacy_subsequence(self) -> None:
+        """The 2--4 TRAIN gate uses the same planner and actual scorer branch."""
+        full = _raw_fixture()
+        values = replace(
+            full,
+            train_indices=full.train_indices[:3],
+            train_blobs=full.train_blobs[:3],
+            train_rows=full.train_rows[:3],
+        )
+        observed: list[tuple[str, str]] = []
+        scoring_antigravity.score_dataset_condition_with_alignment_exp450_antigravity(
+            values, CONDITION_D, BACKEND_CPU,
+            align_rows_override=lambda rows, target: scoring_antigravity.align_rows_exp450_antigravity(
+                rows, target, mode=CONDITION_D.length_mode,
+            ),
+            alignment_observer=lambda rows, target, output, phase, source: observed.append((phase, source)),
+        )
+        expected = scoring_antigravity.expected_alignment_plan_exp450_antigravity(values, CONDITION_D)
+        self.assertEqual(expected, (
+            ("legacy_exp40", "TRAIN"), ("legacy_exp40", "TEST"),
+            ("legacy_route", "TRAIN"), ("legacy_route", "TEST"),
+        ))
+        self.assertEqual(tuple(observed), expected)
     def test_public_a_to_d_results_match_pre_refactor_canonical_bytes(self) -> None:
         """Changing default alignment routing must break the frozen A--D bytes."""
         values = _raw_fixture()

@@ -108,6 +108,21 @@ class Exp472TransformTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "trace input differs"):
             trace.observe(rows, 3, output, "hard_sources", "TRAIN")
 
+    def test_trace_rejects_non_c_output_before_claiming_c_order_evidence(self) -> None:
+        """A Fortran-layout output must not be described as C-order evidence."""
+        trace = transforms.Exp472AlignmentTraceAntigravity("fixture")
+        rows = (
+            np.asarray([0.0, 1.0], dtype="<f4"),
+            np.asarray([1.0, 2.0], dtype="<f4"),
+        )
+        output = np.asfortranarray(
+            np.asarray([[0.0, 0.5, 1.0], [1.0, 1.5, 2.0]], dtype="<f4")
+        )
+        self.assertFalse(output.flags.c_contiguous)
+        trace.begin_scoring((("hard_sources", "TRAIN"),))
+        with self.assertRaisesRegex(ValueError, "trace output differs"):
+            trace.observe(rows, 3, output, "hard_sources", "TRAIN")
+
     def test_trace_requires_the_complete_exp450_plan_before_sealing(self) -> None:
         """An omitted expected callback must fail even when order remains plausible."""
         trace = transforms.Exp472AlignmentTraceAntigravity("fixture")
