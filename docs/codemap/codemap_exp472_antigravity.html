@@ -239,6 +239,21 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/reporting_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
       "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
       "kind": "ast_import"
@@ -261,6 +276,11 @@
     {
       "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
       "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/reporting_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -361,6 +381,21 @@
     {
       "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
       "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/reporting_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
       "kind": "ast_import"
     },
     {
@@ -472,6 +507,11 @@
       "callee": "paper/equipment_anomaly_detection/data_paper.py",
       "caller": "scratch/run_exp467_numba_calibration_resume_antigravity.py",
       "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "caller": "scratch/run_exp472_makima_upsampling_ablation_antigravity.py",
+      "kind": "ast_import"
     }
   ],
   "flows": [
@@ -495,6 +535,13 @@
     }
   ],
   "nodes": [
+    {
+      "callers": [],
+      "effects": "Governance document: Exp472 Makima 업샘플링 보조 실험 실행 안내",
+      "module": "docs/runbooks/exp472_makima_upsampling_ablation_antigravity.md",
+      "path": "docs/runbooks/exp472_makima_upsampling_ablation_antigravity.md",
+      "tests": []
+    },
     {
       "callers": [],
       "effects": "Governance document: Exp472 Makima Upsampling Ablation Implementation Plan",
@@ -690,6 +737,19 @@
     },
     {
       "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+        "scratch/run_exp472_makima_upsampling_ablation_antigravity.py"
+      ],
+      "effects": "Closed, parameter-free Exp472 command surface.\n\nRuntime construction remains deliberately outside the command parser.  The\nscientific scorer and TEST-label loader are injected only by the controller\nafter its independent authority gates, so read-only commands cannot discover\nor open them by accident.",
+      "module": "experiments.exp472_makima_upsampling_ablation_antigravity.cli_antigravity",
+      "path": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "tests": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
@@ -709,13 +769,16 @@
       "callers": [
         "experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/authority_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/evaluation_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/reporting_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py"
       ],
       "effects": "Frozen, label-free Exp472 configuration and score artifact contracts.",
@@ -725,6 +788,7 @@
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py"
       ]
     },
@@ -737,6 +801,18 @@
       "path": "experiments/exp472_makima_upsampling_ablation_antigravity/evaluation_antigravity.py",
       "tests": [
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
+      ],
+      "effects": "Deterministic, hash-bound Exp472 paper reporting.\n\nThe report is deliberately a post-evaluation publisher: it accepts a verified\nevaluation object and never imports a scorer or a label reader.  The manifest\nbinds the fifteen scientific leaves; the completion marker only binds that\nmanifest, avoiding a recursive self-hash.",
+      "module": "experiments.exp472_makima_upsampling_ablation_antigravity.reporting_antigravity",
+      "path": "experiments/exp472_makima_upsampling_ablation_antigravity/reporting_antigravity.py",
+      "tests": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
       ]
     },
     {
@@ -780,6 +856,13 @@
       "effects": "Behavior tests for the frozen Exp472 identity and artifact contracts.",
       "module": "experiments.exp472_makima_upsampling_ablation_antigravity.tests.test_config_contracts_antigravity",
       "path": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Closed report publication and command-boundary tests for Exp472.",
+      "module": "experiments.exp472_makima_upsampling_ablation_antigravity.tests.test_reporting_cli_antigravity",
+      "path": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
       "tests": []
     },
     {
@@ -862,6 +945,13 @@
       "module": "scratch.generate_exp472_codemap_antigravity",
       "path": "scratch/generate_exp472_codemap_antigravity.py",
       "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Fixed launcher for the isolated Exp472 Makima ablation.",
+      "module": "scratch.run_exp472_makima_upsampling_ablation_antigravity",
+      "path": "scratch/run_exp472_makima_upsampling_ablation_antigravity.py",
+      "tests": []
     }
   ],
   "schema": "exp472-codemap.v1",
@@ -876,10 +966,10 @@
       "plan_sha256": "692f8e40dd30e62a2947706d25cc5af58752cb3fc5f32494e744d7bce27d3db2"
     },
     "namespace": "experiments/exp472_makima_upsampling_ablation_antigravity",
-    "node_count": 27,
-    "production_node_count": 8,
+    "node_count": 32,
+    "production_node_count": 10,
     "retained_boundary_node_count": 13,
-    "test_node_count": 5,
+    "test_node_count": 6,
     "version": "exp472"
   },
   "unknowns": []
