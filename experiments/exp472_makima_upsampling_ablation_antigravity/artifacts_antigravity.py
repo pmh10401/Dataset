@@ -215,7 +215,7 @@ def _validate_evidence_antigravity(
     )
     if (
         value["dtype"] != "float32" or not isinstance(shape, (list, tuple))
-        or list(shape) != [row_count, target_len]
+        or list(shape) != ([row_count, target_len] if output else [row_count])
         or not isinstance(boundaries, (list, tuple))
         or not isinstance(digests, (list, tuple))
         or len(boundaries) != row_count or len(digests) != row_count
@@ -272,7 +272,7 @@ def _validate_diagnostic_antigravity(
         if not isinstance(record, Mapping) or set(record) != record_required:
             _diagnostic_error_antigravity()
         target_len, row_count = record["target_len"], record["row_count"]
-        pair = (record["source_tag"], record["phase_tag"])
+        pair = (record["phase_tag"], record["source_tag"])
         if (
             record["ordinal"] != ordinal or not _is_count_antigravity(target_len) or target_len == 0
             or not _is_count_antigravity(row_count) or pair not in _TRACE_ORDER_ANTIGRAVITY

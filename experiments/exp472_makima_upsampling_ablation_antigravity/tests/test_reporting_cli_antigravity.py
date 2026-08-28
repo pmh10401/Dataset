@@ -42,7 +42,8 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigra
     Exp472ScoreShardAntigravity,
 )
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import (
-    dataset_shape_diagnostic_exp472_antigravity,
+    Exp472AlignmentTraceAntigravity,
+    align_rows_exp472_antigravity,
 )
 from paper.equipment_anomaly_detection.contracts_paper import RawDataset
 from experiments.exp472_makima_upsampling_ablation_antigravity.tests.test_authority_evaluation_antigravity import (
@@ -100,14 +101,13 @@ def _worker_antigravity() -> dict[str, object]:
 
 
 def _shape_diagnostic_antigravity(dataset: str) -> dict[str, object]:
-    """Use Task3's actual nested aggregate, never a report-only fixture."""
+    """Build a sealed v3 trace instead of replaying the retired v2 aggregate."""
     train = np.asarray([0.0, 1.0, 0.5, 1.5], dtype="<f4")
     test = np.asarray([1.0, 0.0, 1.0, 0.0], dtype="<f4")
-    raw = RawDataset(
-        dataset, 4, (0,), (train.tobytes(),), (train,), (1,),
-        (test.tobytes(),), (test,),
-    )
-    return dict(dataset_shape_diagnostic_exp472_antigravity(raw))
+    trace = Exp472AlignmentTraceAntigravity(dataset)
+    trace.observe((train,), 4, align_rows_exp472_antigravity((train,), 4), "hard_sources", "TRAIN")
+    trace.observe((test,), 4, align_rows_exp472_antigravity((test,), 4), "hard_sources", "TEST")
+    return dict(trace.seal())
 
 
 def _shape_diagnostics_antigravity() -> tuple[dict[str, object], ...]:
@@ -662,11 +662,10 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
                     {"experiments/exp472_scored_context_antigravity.py": _SHA},
                     backend, cli._config_sha256_antigravity(),
                 )
-                bare = {"dataset": catalog[0].dataset, "shape": "scored"}
-                diagnostic = {**bare, "diagnostic_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
+                diagnostic = _shape_diagnostic_antigravity(catalog[0].dataset)
                 shard = Exp472ScoreShardAntigravity(
                     catalog[0].dataset, catalog[0].test_identity,
-                    np.asarray([0.2, 0.8], dtype=np.float64), frozenset({1}), 1,
+                    np.asarray([0.2, 0.8], dtype=np.float64), frozenset({1}), diagnostic["upsampled_rows"],
                     diagnostic,
                 )
                 record = score_shard_record_exp472_antigravity(context, shard)

@@ -7,6 +7,7 @@ from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from dataclasses import dataclass
 import os
 import pickle
+import json
 from pathlib import Path
 from time import monotonic
 
@@ -19,7 +20,11 @@ from .artifacts_antigravity import (
     publish_score_shard_exp472_antigravity,
     verify_score_shard_exp472_antigravity,
 )
-from .contracts_antigravity import Exp472RunContextAntigravity, Exp472ScoreShardAntigravity
+from .contracts_antigravity import (
+    Exp472RunContextAntigravity,
+    Exp472ScoreShardAntigravity,
+    canonical_json_bytes_exp472_antigravity,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,10 +73,15 @@ def _invoke_score_antigravity(
     shard = score_one(dataset)
     if not isinstance(shard, Exp472ScoreShardAntigravity) or shard.dataset != dataset:
         raise ValueError("Exp472 scorer result identity differs")
+    # ``Exp472ScoreShardAntigravity`` freezes nested diagnostic dictionaries.
+    # Convert both nested values through canonical JSON before IPC; a shallow
+    # dict copy leaves MappingProxyType values unpickleable on spawn workers.
     return {
-        "dataset": shard.dataset, "test_identity": dict(shard.test_identity),
+        "dataset": shard.dataset,
+        "test_identity": json.loads(canonical_json_bytes_exp472_antigravity(shard.test_identity)),
         "scores": shard.scores.tolist(), "alerts": sorted(shard.alerts),
-        "upsampled_rows": shard.upsampled_rows, "diagnostic": dict(shard.diagnostic),
+        "upsampled_rows": shard.upsampled_rows,
+        "diagnostic": json.loads(canonical_json_bytes_exp472_antigravity(shard.diagnostic)),
     }
 
 

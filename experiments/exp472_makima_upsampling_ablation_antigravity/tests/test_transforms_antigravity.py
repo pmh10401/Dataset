@@ -65,11 +65,11 @@ class Exp472TransformTests(unittest.TestCase):
         diagnostic = trace.seal()
         self.assertEqual(diagnostic["schema"], "exp472-shape-diagnostic-antigravity.v3")
         self.assertEqual((diagnostic["invocation_count"], diagnostic["row_invocation_count"], diagnostic["makima_row_invocation_count"], diagnostic["upsampled_rows"]), (1, 2, 1, 1))
-        self.assertEqual(diagnostic["invocations"][0]["source_tag"], "hard_sources")
-        self.assertEqual(diagnostic["invocations"][0]["phase_tag"], "TRAIN")
+        self.assertEqual(diagnostic["invocations"][0]["phase_tag"], "hard_sources")
+        self.assertEqual(diagnostic["invocations"][0]["source_tag"], "TRAIN")
         invocation = diagnostic["invocations"][0]
         self.assertEqual(invocation["input_evidence"]["dtype"], "float32")
-        self.assertEqual(invocation["input_evidence"]["shape"], [2, 7])
+        self.assertEqual(invocation["input_evidence"]["shape"], [2])
         self.assertEqual(invocation["input_evidence"]["row_boundaries"], [3, 1])
         self.assertEqual(invocation["output_evidence"]["shape"], [2, 7])
 

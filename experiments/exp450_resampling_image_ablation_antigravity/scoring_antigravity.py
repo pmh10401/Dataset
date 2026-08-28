@@ -87,6 +87,9 @@ from .transforms_antigravity import align_rows_exp450_antigravity
 
 
 AlignmentRowsAntigravity = Callable[[Sequence[np.ndarray], int], np.ndarray]
+# Observer tags are deliberately phase first, then split source.  This keeps
+# the callback's positional interface unambiguous while preserving the frozen
+# two-argument aligner callable.
 AlignmentObserverAntigravity = Callable[[Sequence[np.ndarray], int, np.ndarray, str, str], None]
 
 
@@ -97,8 +100,8 @@ def _align_rows_selected_antigravity(
     align_rows_override: AlignmentRowsAntigravity | None,
     *,
     alignment_observer: AlignmentObserverAntigravity | None = None,
-    source_tag: str = "hard_sources",
-    phase_tag: str = "TRAIN",
+    phase_tag: str = "hard_sources",
+    source_tag: str = "TRAIN",
 ) -> np.ndarray:
     """Select the frozen Exp450 alignment unless an isolated caller supplies one."""
     if align_rows_override is None:
@@ -108,7 +111,7 @@ def _align_rows_selected_antigravity(
     else:
         output = np.asarray(align_rows_override(rows, target_len), dtype=np.float32)
     if alignment_observer is not None:
-        alignment_observer(rows, target_len, output, source_tag, phase_tag)
+        alignment_observer(rows, target_len, output, phase_tag, source_tag)
     return output
 
 
@@ -217,14 +220,14 @@ def score_hard_sources_exp450_antigravity(
         metadata.train_target_len,
         condition,
         align_rows_override,
-        alignment_observer=alignment_observer, source_tag="hard_sources", phase_tag="TRAIN",
+        alignment_observer=alignment_observer, phase_tag="hard_sources", source_tag="TRAIN",
     )
     test = _align_rows_selected_antigravity(
         values.test_rows,
         metadata.train_target_len,
         condition,
         align_rows_override,
-        alignment_observer=alignment_observer, source_tag="hard_sources", phase_tag="TEST",
+        alignment_observer=alignment_observer, phase_tag="hard_sources", source_tag="TEST",
     )
     results = {}
     for name in RAW_PRIMARY_SOURCES:
@@ -283,12 +286,12 @@ def score_minirocket_exp450_antigravity(
     )
     train = z_normalize_paper(
         _align_rows_selected_antigravity(
-            train_rows, target, condition, align_rows_override, alignment_observer=alignment_observer, source_tag="minirocket", phase_tag="TRAIN"
+            train_rows, target, condition, align_rows_override, alignment_observer=alignment_observer, phase_tag="minirocket", source_tag="TRAIN"
         )
     )
     test = z_normalize_paper(
         _align_rows_selected_antigravity(
-            test_rows, target, condition, align_rows_override, alignment_observer=alignment_observer, source_tag="minirocket", phase_tag="TEST"
+            test_rows, target, condition, align_rows_override, alignment_observer=alignment_observer, phase_tag="minirocket", source_tag="TEST"
         )
     )
     by_kernel: dict[int, MiniRocketKernelResult] = {}
@@ -427,16 +430,16 @@ def build_legacy_route_evidence_exp450_antigravity(
         max(8, int(round(float(np.median(all_lengths))))), 2048
     )
     exp40_train = _align_rows_selected_antigravity(
-        train_work, exp40_target, condition, align_rows_override, alignment_observer=alignment_observer, source_tag="legacy_exp40", phase_tag="TRAIN"
+        train_work, exp40_target, condition, align_rows_override, alignment_observer=alignment_observer, phase_tag="legacy_exp40", source_tag="TRAIN"
     )
     exp40_test = _align_rows_selected_antigravity(
-        test_work, exp40_target, condition, align_rows_override, alignment_observer=alignment_observer, source_tag="legacy_exp40", phase_tag="TEST"
+        test_work, exp40_target, condition, align_rows_override, alignment_observer=alignment_observer, phase_tag="legacy_exp40", source_tag="TEST"
     )
     route_train = _align_rows_selected_antigravity(
-        train_work, transductive_target, condition, align_rows_override, alignment_observer=alignment_observer, source_tag="legacy_route", phase_tag="TRAIN"
+        train_work, transductive_target, condition, align_rows_override, alignment_observer=alignment_observer, phase_tag="legacy_route", source_tag="TRAIN"
     )
     route_test = _align_rows_selected_antigravity(
-        test_work, transductive_target, condition, align_rows_override, alignment_observer=alignment_observer, source_tag="legacy_route", phase_tag="TEST"
+        test_work, transductive_target, condition, align_rows_override, alignment_observer=alignment_observer, phase_tag="legacy_route", source_tag="TEST"
     )
     primary = {
         "rocket_exp40": _fullfit_primary_exp450_antigravity(

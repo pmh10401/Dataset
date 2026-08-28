@@ -110,7 +110,7 @@ def _catalog_antigravity(names: tuple[str, ...] = ("A", "B", "C", "D")) -> tuple
 def _diagnostic_antigravity(dataset: str, shape: str) -> dict[str, object]:
     del shape
     input_evidence = {
-        "dtype": "float32", "shape": [1, 3], "row_boundaries": [2],
+        "dtype": "float32", "shape": [1], "row_boundaries": [2],
         "row_bytes_sha256": [_DIGEST_A_ANTIGRAVITY],
     }
     output_evidence = {
@@ -118,7 +118,7 @@ def _diagnostic_antigravity(dataset: str, shape: str) -> dict[str, object]:
         "row_bytes_sha256": [_DIGEST_B_ANTIGRAVITY],
     }
     invocation = {
-        "ordinal": 0, "source_tag": "hard_sources", "phase_tag": "TRAIN",
+        "ordinal": 0, "phase_tag": "hard_sources", "source_tag": "TRAIN",
         "target_len": 3, "row_count": 1, "input_evidence": input_evidence,
         "input_sha256": sha256(canonical_json_bytes_exp472_antigravity(input_evidence)).hexdigest(),
         "output_evidence": output_evidence,
@@ -331,7 +331,7 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
         trace.observe(rows, 3, output, "hard_sources", "TRAIN")
         trace.observe(rows, 3, output, "hard_sources", "TEST")
         shard = replace(
-            _shard_antigravity(), upsampled_rows=1, diagnostic=trace.seal()
+            _shard_antigravity(), upsampled_rows=2, diagnostic=trace.seal()
         )
         path = publish_score_shard_exp472_antigravity(
             self.root, self.context, self.catalog[0], shard
@@ -339,7 +339,7 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
         original = json.loads(path.read_text())
         mutations = (
             ("ordinal", 2),
-            ("phase_tag", "TRAIN"),
+            ("source_tag", "TRAIN"),
             ("upsampled_rows", 0),
         )
         for field, value in mutations:

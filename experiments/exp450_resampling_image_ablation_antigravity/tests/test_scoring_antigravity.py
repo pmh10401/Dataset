@@ -80,8 +80,8 @@ class Exp450DatasetScoringTests(unittest.TestCase):
         seen: list[tuple[object, ...]] = []
         output = scoring_antigravity._align_rows_selected_antigravity(
             rows, 4, CONDITION_D, None,
-            alignment_observer=lambda actual_rows, target, actual_output, source, phase: seen.append((actual_rows, target, actual_output, source, phase)),
-            source_tag="hard_sources", phase_tag="TRAIN",
+            alignment_observer=lambda actual_rows, target, actual_output, phase, source: seen.append((actual_rows, target, actual_output, phase, source)),
+            phase_tag="hard_sources", source_tag="TRAIN",
         )
         self.assertEqual(len(seen), 1)
         self.assertIs(seen[0][2], output)

@@ -143,13 +143,13 @@ class Exp472AlignmentTraceAntigravity:
             raise ValueError("Exp472 trace input differs")
         return row
 
-    def observe(self, rows: Sequence[np.ndarray], target_len: int, output: np.ndarray, source_tag: str, phase_tag: str) -> None:
+    def observe(self, rows: Sequence[np.ndarray], target_len: int, output: np.ndarray, phase_tag: str, source_tag: str) -> None:
         """Passively bind exactly one already-computed Exp450 alignment result."""
         self._require_open_antigravity()
         try:
-            if (source_tag, phase_tag) not in _TRACE_ORDER_ANTIGRAVITY:
+            if (phase_tag, source_tag) not in _TRACE_ORDER_ANTIGRAVITY:
                 raise ValueError("Exp472 trace tag differs")
-            if self._records and _TRACE_ORDER_ANTIGRAVITY.index((source_tag, phase_tag)) <= _TRACE_ORDER_ANTIGRAVITY.index((self._records[-1]["source_tag"], self._records[-1]["phase_tag"])):
+            if self._records and _TRACE_ORDER_ANTIGRAVITY.index((phase_tag, source_tag)) <= _TRACE_ORDER_ANTIGRAVITY.index((self._records[-1]["phase_tag"], self._records[-1]["source_tag"])):
                 raise ValueError("Exp472 trace order differs")
             if type(target_len) is not int or target_len <= 0:
                 raise ValueError("Exp472 trace target differs")
@@ -158,11 +158,11 @@ class Exp472AlignmentTraceAntigravity:
             if array.dtype != np.dtype("float32") or array.shape != (len(materialized), target_len) or not np.isfinite(array).all():
                 raise ValueError("Exp472 trace output differs")
             output_rows = tuple(array[index] for index in range(array.shape[0]))
-            input_evidence = self._row_evidence_antigravity(materialized, (len(materialized), target_len))
+            input_evidence = self._row_evidence_antigravity(materialized, (len(materialized),))
             output_evidence = self._row_evidence_antigravity(output_rows, array.shape)
             row_details = [shape_diagnostic_exp472_antigravity(row, array[index]) for index, row in enumerate(materialized)]
             makima_pairs = [(index, item) for index, (row, item) in enumerate(zip(materialized, row_details, strict=True)) if 1 < row.size < target_len]
-            bare = {"ordinal": len(self._records), "source_tag": source_tag, "phase_tag": phase_tag, "target_len": target_len, "row_count": len(materialized), "input_evidence": input_evidence, "input_sha256": sha256(_canonical_json_bytes_exp472_antigravity(input_evidence)).hexdigest(), "output_evidence": output_evidence, "output_sha256": sha256(_canonical_json_bytes_exp472_antigravity(output_evidence)).hexdigest(), "singleton_rows": sum(row.size == 1 for row in materialized), "equal_rows": sum(row.size == target_len for row in materialized), "polyphase_downsample_rows": sum(row.size > target_len for row in materialized), "makima_rows": len(makima_pairs), "makima_row_indices": [index for index, _item in makima_pairs], "overshoot": float(sum(item["overshoot"] for _index, item in makima_pairs)), "undershoot": float(sum(item["undershoot"] for _index, item in makima_pairs)), "source_extrema": sum(item["source_extrema"] for _index, item in makima_pairs), "output_extrema": sum(item["output_extrema"] for _index, item in makima_pairs), "added_extrema": sum(item["added_extrema"] for _index, item in makima_pairs)}
+            bare = {"ordinal": len(self._records), "phase_tag": phase_tag, "source_tag": source_tag, "target_len": target_len, "row_count": len(materialized), "input_evidence": input_evidence, "input_sha256": sha256(_canonical_json_bytes_exp472_antigravity(input_evidence)).hexdigest(), "output_evidence": output_evidence, "output_sha256": sha256(_canonical_json_bytes_exp472_antigravity(output_evidence)).hexdigest(), "singleton_rows": sum(row.size == 1 for row in materialized), "equal_rows": sum(row.size == target_len for row in materialized), "polyphase_downsample_rows": sum(row.size > target_len for row in materialized), "makima_rows": len(makima_pairs), "makima_row_indices": [index for index, _item in makima_pairs], "overshoot": float(sum(item["overshoot"] for _index, item in makima_pairs)), "undershoot": float(sum(item["undershoot"] for _index, item in makima_pairs)), "source_extrema": sum(item["source_extrema"] for _index, item in makima_pairs), "output_extrema": sum(item["output_extrema"] for _index, item in makima_pairs), "added_extrema": sum(item["added_extrema"] for _index, item in makima_pairs)}
             self._records.append({**bare, "invocation_sha256": sha256(_canonical_json_bytes_exp472_antigravity(bare)).hexdigest()})
         except Exception:
             self._state = "poisoned"
@@ -173,7 +173,7 @@ class Exp472AlignmentTraceAntigravity:
         records = tuple(self._records)
         slots = {(r["source_tag"], index) for r in records for index in r["makima_row_indices"]}
         aggregate = {"invocation_count": len(records), "row_invocation_count": sum(int(r["row_count"]) for r in records), "makima_row_invocation_count": sum(int(r["makima_rows"]) for r in records), "upsampled_rows": len(slots)}
-        bare = {"schema": "exp472-shape-diagnostic-antigravity.v3", "dataset": self.dataset, "trace_state": "sealed", "alignment_status": "completed", **aggregate, "invocations": records, "invocation_order_sha256": sha256(_canonical_json_bytes_exp472_antigravity([(r["source_tag"], r["phase_tag"]) for r in records])).hexdigest(), "invocation_aggregate_sha256": sha256(_canonical_json_bytes_exp472_antigravity(aggregate)).hexdigest()}
+        bare = {"schema": "exp472-shape-diagnostic-antigravity.v3", "dataset": self.dataset, "trace_state": "sealed", "alignment_status": "completed", **aggregate, "invocations": records, "invocation_order_sha256": sha256(_canonical_json_bytes_exp472_antigravity([(r["phase_tag"], r["source_tag"]) for r in records])).hexdigest(), "invocation_aggregate_sha256": sha256(_canonical_json_bytes_exp472_antigravity(aggregate)).hexdigest()}
         self._state = "sealed"
         self._diagnostic = {**bare, "diagnostic_sha256": sha256(_canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
         return self._diagnostic
