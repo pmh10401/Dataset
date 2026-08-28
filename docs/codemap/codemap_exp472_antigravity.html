@@ -239,6 +239,21 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/authority_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
       "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
       "kind": "ast_import"
@@ -249,7 +264,27 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/evaluation_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/reporting_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/label_access_paper.py",
       "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
       "kind": "ast_import"
     },
@@ -389,12 +424,22 @@
       "kind": "ast_import"
     },
     {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
       "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
       "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
       "kind": "ast_import"
     },
     {
       "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/reporting_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
       "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
       "kind": "ast_import"
     },
@@ -695,6 +740,7 @@
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
         "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/authority_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py"
       ],
       "effects": "Descriptor-bound reconstruction and publication of frozen Exp467 authority.",
@@ -710,6 +756,7 @@
     },
     {
       "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/evaluation_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
@@ -725,6 +772,7 @@
     },
     {
       "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/evaluation_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py"
       ],
@@ -740,7 +788,7 @@
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
         "scratch/run_exp472_makima_upsampling_ablation_antigravity.py"
       ],
-      "effects": "Closed, parameter-free Exp472 command surface.\n\nRuntime construction remains deliberately outside the command parser.  The\nscientific scorer and TEST-label loader are injected only by the controller\nafter its independent authority gates, so read-only commands cannot discover\nor open them by accident.",
+      "effects": "Closed, parameter-free Exp472 command surface.\n\nThe controller derives its typed runtime from frozen public authority.  The\nscientific scorer is label-free, while the TEST-label loader is imported only\nafter both independent authority gates, so read-only commands cannot discover\nor open it by accident.",
       "module": "experiments.exp472_makima_upsampling_ablation_antigravity.cli_antigravity",
       "path": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
       "tests": [
@@ -754,7 +802,8 @@
         "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
-        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py"
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
       ],
       "effects": "Frozen Exp472 population, roots, scoring identity, and backend policy.",
       "module": "experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravity",
@@ -762,7 +811,8 @@
       "tests": [
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
-        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py"
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
       ]
     },
     {
@@ -794,6 +844,7 @@
     },
     {
       "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py"
       ],
       "effects": "Path-only, one-label-read Exp472 E-versus-D evaluation.",
@@ -817,6 +868,7 @@
     },
     {
       "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py"
       ],
       "effects": "Bounded two-wave scheduling for label-free Exp472 condition-E scores.",
@@ -828,6 +880,7 @@
     },
     {
       "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
         "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py"
       ],
       "effects": "Thin, label-free condition-E scoring over Exp450's isolated aligner boundary.",
@@ -845,11 +898,15 @@
       "tests": []
     },
     {
-      "callers": [],
+      "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
+      ],
       "effects": "Production-path authority and label-firewall tests for Exp472 Task 5.",
       "module": "experiments.exp472_makima_upsampling_ablation_antigravity.tests.test_authority_evaluation_antigravity",
       "path": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
-      "tests": []
+      "tests": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
     },
     {
       "callers": [],
@@ -930,6 +987,7 @@
     },
     {
       "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
         "paper/equipment_anomaly_detection/tests_paper/test_data_boundary_paper.py"
       ],
       "effects": "Lazy, post-parity TEST label capability for paper evaluation only.",

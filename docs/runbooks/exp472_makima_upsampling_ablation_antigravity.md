@@ -10,13 +10,13 @@ $PYTHON scratch/run_exp472_makima_upsampling_ablation_antigravity.py status
 
 `readiness`와 `status`는 읽기 전용입니다. `status`의 `progress`는 `official_antigravity/progress_antigravity.jsonl`이며, 마지막 내구성 진행 레코드로 완료 수·실패 수·남은 수·ETA를 표시합니다.
 
-값 전용 smoke가 사전에 승인된 뒤에만 controller-bound runtime으로 다음을 실행합니다.
+값 전용 smoke가 사전에 승인된 뒤에만 다음을 실행합니다. 실행기는 동결된 설정과 공개 Exp471 권한을 다시 확인하여 23개 smoke용 타입 컨텍스트와 카탈로그를 자동으로 구성합니다.
 
 ```bash
 $PYTHON scratch/run_exp472_makima_upsampling_ablation_antigravity.py smoke
 ```
 
-공식 실행은 1,117개 E shard가 모두 검증되고 실패가 0일 때만 종료 매니페스트를 만듭니다. MPS가 선택되면 한 번에 하나의 MPS-heavy 작업만 실행합니다. CPU-only 단계는 감지한 논리 CPU 수에서 하나를 뺀 worker 수를 사용합니다.
+공식 실행기는 같은 방식으로 1,117개 full 타입 컨텍스트를 자동 구성합니다. E shard가 모두 검증되고 실패가 0일 때만 종료 매니페스트를 만듭니다. MPS가 선택되면 한 번에 하나의 MPS-heavy 작업만 실행합니다. CPU-only 단계는 감지한 논리 CPU 수에서 하나를 뺀 worker 수를 사용합니다.
 
 ```bash
 $PYTHON scratch/run_exp472_makima_upsampling_ablation_antigravity.py run

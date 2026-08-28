@@ -242,12 +242,36 @@ def _svg_antigravity(rows: Sequence[Mapping[str, object]], x_name: str, y_name: 
     return payload.encode("utf-8")
 
 
-def _png_antigravity() -> bytes:
-    """A deterministic valid PNG companion; canonical CSV/SVG carry coordinates."""
+def _png_antigravity(roc_rows: Sequence[Mapping[str, object]], pr_rows: Sequence[Mapping[str, object]]) -> bytes:
+    """Render a small deterministic ROC/PR raster from the canonical rows."""
     def chunk(name: bytes, payload: bytes) -> bytes:
         return struct.pack(">I", len(payload)) + name + payload + struct.pack(">I", zlib.crc32(name + payload) & 0xffffffff)
-    raw = b"\x00\x1f\x4e\x79\xff"  # one opaque blue pixel
-    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 6, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw, level=9)) + chunk(b"IEND", b"")
+    width, height = 400, 240
+    pixels = bytearray([255, 255, 255, 255]) * (width * height)
+    def point(x: int, y: int, color: tuple[int, int, int]) -> None:
+        if 0 <= x < width and 0 <= y < height:
+            position = 4 * (y * width + x); pixels[position:position + 4] = bytes((*color, 255))
+    def line(x0: int, y0: int, x1: int, y1: int, color: tuple[int, int, int]) -> None:
+        dx, dy = abs(x1 - x0), -abs(y1 - y0); sx, sy = (1 if x0 < x1 else -1), (1 if y0 < y1 else -1); error = dx + dy
+        while True:
+            point(x0, y0, color)
+            if (x0, y0) == (x1, y1): break
+            twice = 2 * error
+            if twice >= dy: error += dy; x0 += sx
+            if twice <= dx: error += dx; y0 += sy
+    for offset in (0, 190):
+        line(offset + 20, 210, offset + 170, 210, (0, 0, 0)); line(offset + 20, 30, offset + 20, 210, (0, 0, 0))
+    for rows, x_name, y_name, offset, color in ((roc_rows, "false_positive_rate", "true_positive_rate", 0, (31, 78, 121)), (pr_rows, "recall", "precision", 190, (180, 70, 30))):
+        for method in sorted({str(row["method"]) for row in rows}):
+            series = [row for row in rows if row["method"] == method]
+            previous: tuple[int, int] | None = None
+            for row in series:
+                coordinate = (offset + 20 + round(150 * float(row[x_name])), 210 - round(180 * float(row[y_name])))
+                point(*coordinate, color)
+                if previous is not None: line(*previous, *coordinate, color)
+                previous = coordinate
+    raw = b"".join(b"\x00" + bytes(pixels[row * width * 4:(row + 1) * width * 4]) for row in range(height))
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(raw, level=9)) + chunk(b"IEND", b"")
 
 
 @dataclass(frozen=True, slots=True)
@@ -272,7 +296,7 @@ class Exp472ReportAuthorityAntigravity:
         object.__setattr__(self, "leaf_sha256", dict(leaves))
 
 
-def _report_leaf_payloads_antigravity(evaluation: object, worker_record: Mapping[str, object]) -> Mapping[str, bytes]:
+def _report_leaf_payloads_antigravity(evaluation: object, worker_record: Mapping[str, object], shape_diagnostics: Sequence[Mapping[str, object]]) -> Mapping[str, bytes]:
     methods = _methods_antigravity(evaluation)
     roc_rows = _curve_rows_antigravity(evaluation, "roc", "false_positive_rate", "true_positive_rate")
     pr_rows = _curve_rows_antigravity(evaluation, "pr", "recall", "precision")
@@ -298,10 +322,12 @@ def _report_leaf_payloads_antigravity(evaluation: object, worker_record: Mapping
     for method in methods:
         row = _mapping_antigravity(macro[method], "macro denominator")
         denominator_rows.append({"scope": "full_population", "method": method, "dataset_count": None, "observation_count": None, "average_precision_denominator": row.get("average_precision_denominator"), "auroc_denominator": row.get("auroc_denominator"), "average_precision_excluded": row.get("average_precision_excluded"), "auroc_excluded": row.get("auroc_excluded")})
-    shape_rows = [dict(row) for row in tuple(getattr(evaluation, "shape_diagnostics", ())) if isinstance(row, Mapping)]
-    for row in subset_dataset:
-        if isinstance(row, Mapping) and row.get("method") == "E":
-            shape_rows.append({"dataset": row.get("dataset"), "overshoot": row.get("overshoot"), "added_extrema": row.get("added_extrema")})
+    for method in methods:
+        row = _mapping_antigravity(subset_macro[method], "subset macro denominator")
+        denominator_rows.append({"scope": "upsampled_rows_gt_zero", "method": method, "dataset_count": None, "observation_count": None, "average_precision_denominator": row.get("average_precision_denominator"), "auroc_denominator": row.get("auroc_denominator"), "average_precision_excluded": row.get("average_precision_excluded"), "auroc_excluded": row.get("auroc_excluded")})
+    shape_rows = [dict(row) for row in shape_diagnostics]
+    if any(type(row.get("dataset")) is not str or type(row.get("upsampled_rows")) is not int for row in shape_rows):
+        raise ValueError("Exp472 shape diagnostics differ")
     html = "".join(("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><title>Exp472 Makima versus PCHIP</title></head><body>", "<h1>Exp472: Makima versus PCHIP</h1>", f"<p>{english}</p>", "<p>ROC: x-axis False-positive rate; y-axis True-positive rate.</p>", "<p>Precision–recall: x-axis Recall; y-axis Precision.</p>", "<p>Context includes A–E and six frozen public baselines (11 methods).</p>", "</body></html>\n"))
     summary = "\n".join(("# Exp472 Makima 업샘플링 보조 실험", "", korean, "", "ROC의 x축은 False-positive rate이고 y축은 True-positive rate입니다.", "PR의 x축은 Recall이고 y축은 Precision입니다.", "구간이 0을 포함하면 동등하다고 결론내리지 않습니다.", ""))
     appendix = "\n".join(("# Methods appendix", "", "E = polyphase downsampling + Makima upsampling + area/local-mean imaging.", "D = frozen Exp471 polyphase + PCHIP + area/local-mean control.", "Only E was newly scored; A–D and public baselines are reused context.", ""))
@@ -313,13 +339,13 @@ def _report_leaf_payloads_antigravity(evaluation: object, worker_record: Mapping
         "exp472_per_dataset_metrics_antigravity.csv": _csv_antigravity(("method", "dataset", "average_precision", "average_precision_exclusion", "auroc", "auroc_exclusion"), [dict(row) for row in per_dataset]),
         "exp472_paired_e_minus_d_antigravity.csv": _csv_antigravity(("comparison", "population", "metric", "mean_delta", "ci_lower", "ci_upper", "wins", "ties", "losses", "seed", "draw_count", "percentile", "tie_tolerance"), [dict(row) for row in paired]),
         "exp472_upsampling_subset_antigravity.csv": _csv_antigravity(("method", "dataset", "average_precision", "average_precision_exclusion", "auroc", "auroc_exclusion"), [dict(row) for row in subset_dataset]),
-        "exp472_shape_diagnostics_antigravity.csv": _csv_antigravity(("dataset", "overshoot", "added_extrema"), shape_rows),
+        "exp472_shape_diagnostics_antigravity.csv": _csv_antigravity(("dataset", "upsampled_rows", "overshoot", "added_extrema", "source_extrema", "output_extrema", "diagnostic_sha256"), [{name: row.get(name) for name in ("dataset", "upsampled_rows", "overshoot", "added_extrema", "source_extrema", "output_extrema", "diagnostic_sha256")} for row in shape_rows]),
         "exp472_denominator_audit_antigravity.csv": _csv_antigravity(("scope", "method", "dataset_count", "observation_count", "average_precision_denominator", "auroc_denominator", "average_precision_excluded", "auroc_excluded"), denominator_rows),
         "exp472_roc_coordinates_antigravity.csv": _csv_antigravity(("method", "false_positive_rate", "true_positive_rate", "threshold"), roc_rows),
         "exp472_pr_coordinates_antigravity.csv": _csv_antigravity(("method", "recall", "precision"), pr_rows),
         "exp472_roc_curve_antigravity.svg": _svg_antigravity(roc_rows, "false_positive_rate", "true_positive_rate", "ROC: False-positive rate / True-positive rate"),
         "exp472_pr_curve_antigravity.svg": _svg_antigravity(pr_rows, "recall", "precision", "PR: Recall / Precision"),
-        "exp472_curves_antigravity.png": _png_antigravity(),
+        "exp472_curves_antigravity.png": _png_antigravity(roc_rows, pr_rows),
         "exp472_backend_provenance_antigravity.json": canonical_json_bytes_exp472_antigravity(_plain_antigravity(worker_record)),
     }
 
@@ -329,7 +355,7 @@ def _manifest_record_antigravity(authority: Exp472ReportAuthorityAntigravity, wo
     return {**bare, "report_manifest_sha256": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
 
 
-def write_exp472_report_antigravity(evaluation: object, root: Path, worker_record: Mapping[str, object], *, e_manifest_sha256: str, code_map_lock_sha256: str) -> Exp472ReportAuthorityAntigravity:
+def write_exp472_report_antigravity(evaluation: object, root: Path, worker_record: Mapping[str, object], *, e_manifest_sha256: str, code_map_lock_sha256: str, shape_diagnostics: Sequence[Mapping[str, object]] = ()) -> Exp472ReportAuthorityAntigravity:
     """Publish exactly 15 leaves, then manifest, then the separate marker."""
     target = _safe_root_antigravity(Path(root), create=True)
     worker = _mapping_antigravity(worker_record, "backend worker provenance")
@@ -337,7 +363,7 @@ def write_exp472_report_antigravity(evaluation: object, root: Path, worker_recor
         raise ValueError("Exp472 backend worker provenance is incomplete")
     if type(worker["logical_cpu_count"]) is not int or type(worker["cpu_workers"]) is not int or worker["cpu_workers"] != max(1, worker["logical_cpu_count"] - 1):
         raise ValueError("Exp472 CPU worker provenance differs")
-    payloads = _report_leaf_payloads_antigravity(evaluation, worker)
+    payloads = _report_leaf_payloads_antigravity(evaluation, worker, tuple(shape_diagnostics))
     if tuple(payloads) != REPORT_LEAVES_ANTIGRAVITY:
         raise ValueError("Exp472 report leaf inventory differs")
     for name in REPORT_LEAVES_ANTIGRAVITY:
