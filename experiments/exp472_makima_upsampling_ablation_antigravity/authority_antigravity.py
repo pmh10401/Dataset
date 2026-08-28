@@ -223,9 +223,10 @@ def _read_verified_exp471_path_antigravity(root: Path) -> Exp472VerifiedExp471Bu
     """Production reader: public Exp471 source/cache/shard APIs plus local JSON leaf checks."""
     from experiments.exp471_exp467_evaluation_recovery_antigravity import cache_artifacts_antigravity as cache, source_authority_antigravity as source
     from experiments.exp471_exp467_evaluation_recovery_antigravity.config_antigravity import EXP467_SOURCE_ROOT_ANTIGRAVITY
+    from .config_antigravity import EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY
     root = Path(root)
     if not root.is_absolute(): raise ValueError("Exp472 Exp471 root must be absolute")
-    repository = Path(__file__).resolve().parents[2]
+    repository = EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY
     session = source.open_exp467_source_session_antigravity(repository, EXP467_SOURCE_ROOT_ANTIGRAVITY)
     source_authority = source.read_source_authority_antigravity(root, repository, EXP467_SOURCE_ROOT_ANTIGRAVITY)
     if session.authority != source_authority or not isinstance(session.catalog, Mapping): raise ValueError("Exp472 Exp471 source session differs")

@@ -18,6 +18,7 @@ import sys
 from typing import TextIO
 
 from .config_antigravity import (
+    EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY,
     EXP471_REUSE_ROOT_ANTIGRAVITY,
     EXP472_EVALUATION_ROOT_ANTIGRAVITY,
     EXP472_OFFICIAL_ROOT_ANTIGRAVITY,
@@ -77,7 +78,7 @@ def _code_closure_antigravity() -> Mapping[str, str]:
 
 
 def _config_sha256_antigravity() -> str:
-    value = {"experiment": FROZEN_EXP472_CONFIG.experiment_id, "database_sha256": FROZEN_EXP472_CONFIG.database_sha256, "dataset_count": FROZEN_EXP472_CONFIG.dataset_count, "test_row_count": FROZEN_EXP472_CONFIG.test_row_count, "condition": {"id": "E", "downsampling": "polyphase", "upsampling": "makima", "image_mode": "area"}, "policy": FROZEN_EXP472_CONFIG.policy_id, "threshold": FROZEN_EXP472_CONFIG.score_threshold, "bootstrap_seed": FROZEN_EXP472_CONFIG.bootstrap_seed}
+    value = {"experiment": FROZEN_EXP472_CONFIG.experiment_id, "database_sha256": FROZEN_EXP472_CONFIG.database_sha256, "dataset_count": FROZEN_EXP472_CONFIG.dataset_count, "test_row_count": FROZEN_EXP472_CONFIG.test_row_count, "condition": {"id": "E", "downsampling": "polyphase", "upsampling": "makima", "image_mode": "area"}, "policy": FROZEN_EXP472_CONFIG.policy_id, "threshold": FROZEN_EXP472_CONFIG.score_threshold, "bootstrap_seed": FROZEN_EXP472_CONFIG.bootstrap_seed, "exp467_verification_repository": FROZEN_EXP472_CONFIG.exp467_verification_repository.as_posix()}
     return sha256(canonical_json_bytes_exp472_antigravity(value)).hexdigest()
 
 
@@ -257,8 +258,10 @@ class Exp472ControllerRuntimeAntigravity:
             _require_captured_values_api_antigravity,
             open_exp467_source_session_antigravity,
         )
-        repository = Path(__file__).resolve().parents[2]
-        session = open_exp467_source_session_antigravity(repository, EXP467_SOURCE_ROOT_ANTIGRAVITY)
+        session = open_exp467_source_session_antigravity(
+            EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY,
+            EXP467_SOURCE_ROOT_ANTIGRAVITY,
+        )
         api = _require_captured_values_api_antigravity(session)
         paper = api.database_config_antigravity
         binding = _bind_captured_values_database_antigravity(session, Path(paper.database_path), config=paper, verified_catalog_database=session.catalog["database"])

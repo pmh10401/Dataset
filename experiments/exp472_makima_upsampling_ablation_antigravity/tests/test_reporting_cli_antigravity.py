@@ -28,8 +28,11 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigra
     canonical_json_bytes_exp472_antigravity,
 )
 from experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravity import (
+    EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY,
     EXP471_REUSE_ROOT_ANTIGRAVITY,
+    FROZEN_EXP472_CONFIG,
 )
+from experiments.exp471_exp467_evaluation_recovery_antigravity import source_authority_antigravity as exp471_source
 from experiments.exp472_makima_upsampling_ablation_antigravity import config_antigravity as config_module
 from experiments.exp472_makima_upsampling_ablation_antigravity.artifacts_antigravity import (
     score_shard_record_exp472_antigravity,
@@ -239,6 +242,29 @@ class Exp472ReportingCliTestsAntigravity(unittest.TestCase):
                 self.assertNotIn(module_name, sys.modules)
             finally:
                 if prior is not None: sys.modules[module_name] = prior
+
+    def test_run_e_uses_pinned_exp467_repository_for_values_only(self) -> None:
+        """Exp472 scores with current code but obtains values from frozen Exp467 bytes."""
+        _bundle, runtime = self._runtime_antigravity()
+        session = mock.Mock(catalog={"database": {}})
+        api = mock.Mock(database_config_antigravity=mock.Mock(
+            database_path=FROZEN_EXP472_CONFIG.database_path
+        ))
+        with mock.patch.object(
+            exp471_source, "open_exp467_source_session_antigravity", return_value=session
+        ) as open_session, mock.patch.object(
+            exp471_source, "_require_captured_values_api_antigravity", return_value=api
+        ), mock.patch.object(
+            exp471_source, "_bind_captured_values_database_antigravity", return_value=object()
+        ), mock.patch.object(
+            exp471_source, "_load_captured_dataset_values_antigravity", return_value=object()
+        ), mock.patch.object(
+            cli, "run_score_wave_exp472_antigravity", return_value={"completed": (), "failures": ()}
+        ) as run_score_wave:
+            self.assertEqual(runtime.run_e_antigravity(), {"completed": (), "failures": ()})
+        self.assertEqual(open_session.call_args.args[0], EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY)
+        self.assertEqual(run_score_wave.call_args.args[:3], (runtime.context.run_root, runtime.context, runtime.catalog))
+        self.assertIs(run_score_wave.call_args.kwargs["score_one"].func, cli._score_one_from_raw_antigravity)
 
     def test_evaluate_refuses_incomplete_runtime_before_labels(self) -> None:
         with self.assertRaisesRegex(ValueError, "typed controller"):

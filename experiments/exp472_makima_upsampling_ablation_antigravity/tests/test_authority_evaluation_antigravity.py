@@ -17,7 +17,7 @@ from experiments.exp472_makima_upsampling_ablation_antigravity import authority_
 from experiments.exp472_makima_upsampling_ablation_antigravity import evaluation_antigravity as evaluation_module
 from experiments.exp472_makima_upsampling_ablation_antigravity.artifacts_antigravity import Exp472CatalogEntryAntigravity, catalog_sha256_exp472_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.authority_antigravity import Exp472ReuseAuthorityAntigravity, Exp472VerifiedExp471BundleAntigravity, verify_exp471_reuse_exp472_antigravity
-from experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravity import BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY, BOOTSTRAP_DRAWS_ANTIGRAVITY, BOOTSTRAP_SEED_ANTIGRAVITY, EXP472_OFFICIAL_ROOT_ANTIGRAVITY
+from experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravity import BOOTSTRAP_CONFIDENCE_LEVEL_ANTIGRAVITY, BOOTSTRAP_DRAWS_ANTIGRAVITY, BOOTSTRAP_SEED_ANTIGRAVITY, EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY, EXP472_OFFICIAL_ROOT_ANTIGRAVITY
 from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigravity import Exp472BackendDecisionAntigravity, Exp472RunContextAntigravity, canonical_json_bytes_exp472_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.evaluation_antigravity import Exp472VerifiedEBundleAntigravity, evaluate_exp472_antigravity
 from experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity import test_identity_exp472_antigravity
@@ -149,7 +149,7 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
             expected_report_digest = sha256(artifact_map_path.read_bytes()).hexdigest()
             with patch.object(exp471_source, "open_exp467_source_session_antigravity", return_value=session) as open_session, patch.object(exp471_source, "read_source_authority_antigravity", return_value=source_authority) as read_source, patch.object(exp471_cache, "read_cache_manifest_antigravity", return_value=manifest), patch.object(exp471_cache, "read_score_shard_antigravity", side_effect=shard):
                 verified = verify_exp471_reuse_exp472_antigravity(root)
-        self.assertEqual(verified.coordinates, bundle.coordinates); self.assertEqual(verified.authority.exp471_evaluation_sha256, sha256(canonical_json_bytes_exp472_antigravity({"source_authority_sha256": source_authority.authority_sha256, "cache_manifest_sha256": manifest.manifest_sha256})).hexdigest()); self.assertEqual(verified.authority.exp471_report_manifest_sha256, expected_report_digest); self.assertEqual(open_session.call_args.args[0], Path(authority_module.__file__).resolve().parents[2]); self.assertEqual(read_source.call_args.args[0], root)
+        self.assertEqual(verified.coordinates, bundle.coordinates); self.assertEqual(verified.authority.exp471_evaluation_sha256, sha256(canonical_json_bytes_exp472_antigravity({"source_authority_sha256": source_authority.authority_sha256, "cache_manifest_sha256": manifest.manifest_sha256})).hexdigest()); self.assertEqual(verified.authority.exp471_report_manifest_sha256, expected_report_digest); self.assertEqual(open_session.call_args.args[0], EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY); self.assertEqual(read_source.call_args.args[:2], (root, EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY))
 
     def test_exp471_path_adapter_rejects_symlinked_evaluation_leaf(self) -> None:
         """A symlinked Exp471 evaluation leaf must fail before any shard or label work."""

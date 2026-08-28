@@ -37,6 +37,10 @@ EXP471_REUSE_ROOT_ANTIGRAVITY = Path(
     "/Users/mac/Documents/Dataset/"
     "exp471_exp467_evaluation_recovery_antigravity_20260824"
 )
+EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY = Path(
+    "/Users/mac/Documents/Time Series/.worktrees/"
+    "exp471-exp467-evaluation-recovery-antigravity"
+)
 
 APPROVED_DESIGN_PATH_ANTIGRAVITY = Path(
     "docs/superpowers/specs/"
@@ -100,6 +104,7 @@ class FrozenExp472ConfigAntigravity:
     score_threshold: float
     roots: tuple[Path, ...]
     exp471_reuse_root: Path
+    exp467_verification_repository: Path
     bootstrap_seed: int
     bootstrap_draws: int
     bootstrap_interval_method: str
@@ -144,6 +149,9 @@ class FrozenExp472ConfigAntigravity:
             or reuse_root != EXP471_ROOT_ANTIGRAVITY
         ):
             raise ValueError("Exp472 Exp471 reuse root differs from frozen authority")
+        verification_repository = Path(self.exp467_verification_repository)
+        if verification_repository != EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY:
+            raise ValueError("Exp472 Exp467 verification repository differs")
         if (
             self.bootstrap_seed != BOOTSTRAP_SEED_ANTIGRAVITY
             or self.bootstrap_draws != BOOTSTRAP_DRAWS_ANTIGRAVITY
@@ -165,6 +173,9 @@ class FrozenExp472ConfigAntigravity:
         object.__setattr__(self, "smoke_datasets", smoke_datasets)
         object.__setattr__(self, "roots", roots)
         object.__setattr__(self, "exp471_reuse_root", reuse_root)
+        object.__setattr__(
+            self, "exp467_verification_repository", verification_repository
+        )
         object.__setattr__(self, "approved_design_path", design_path)
         object.__setattr__(self, "approved_plan_path", plan_path)
 
@@ -225,6 +236,7 @@ FROZEN_EXP472_CONFIG = FrozenExp472ConfigAntigravity(
     score_threshold=SCORE_THRESHOLD_ANTIGRAVITY,
     roots=_ROOTS_ANTIGRAVITY,
     exp471_reuse_root=EXP471_REUSE_ROOT_ANTIGRAVITY,
+    exp467_verification_repository=EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY,
     bootstrap_seed=BOOTSTRAP_SEED_ANTIGRAVITY,
     bootstrap_draws=BOOTSTRAP_DRAWS_ANTIGRAVITY,
     bootstrap_interval_method=BOOTSTRAP_INTERVAL_METHOD_ANTIGRAVITY,
@@ -244,6 +256,7 @@ __all__ = [
     "BOOTSTRAP_SEED_ANTIGRAVITY",
     "CONDITION_E_ANTIGRAVITY",
     "CPU_WORKERS_ANTIGRAVITY",
+    "EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY",
     "EXP471_REUSE_ROOT_ANTIGRAVITY",
     "EXP472_EVALUATION_ROOT_ANTIGRAVITY",
     "EXP472_OFFICIAL_ROOT_ANTIGRAVITY",

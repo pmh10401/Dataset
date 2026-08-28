@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import FrozenInstanceError, replace
+from hashlib import sha256
 import os
 from pathlib import Path
 import unittest
@@ -20,6 +21,7 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravit
     BOOTSTRAP_SEED_ANTIGRAVITY,
     CONDITION_E_ANTIGRAVITY,
     EXP471_REUSE_ROOT_ANTIGRAVITY,
+    EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY,
     EXP472_EVALUATION_ROOT_ANTIGRAVITY,
     EXP472_OFFICIAL_ROOT_ANTIGRAVITY,
     EXP472_REPORT_ROOT_ANTIGRAVITY,
@@ -28,6 +30,10 @@ from experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravit
     FROZEN_EXP472_CONFIG,
     MLX_FALLBACK_REASON_ANTIGRAVITY,
     assess_exp472_backend_antigravity,
+)
+from experiments.exp472_makima_upsampling_ablation_antigravity import cli_antigravity as cli_module
+from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigravity import (
+    canonical_json_bytes_exp472_antigravity,
 )
 from experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigravity import (
     Exp472BackendDecisionAntigravity,
@@ -142,6 +148,40 @@ class Exp472ConfigContractsTests(unittest.TestCase):
         self.assertEqual(
             (BOOTSTRAP_SEED_ANTIGRAVITY, BOOTSTRAP_DRAWS_ANTIGRAVITY),
             (47220260828, 20_000),
+        )
+
+    def test_exp467_verification_repository_is_exact_immutable_and_digest_bound(self) -> None:
+        """Historical source verification uses only its frozen repository identity."""
+        expected = Path(
+            "/Users/mac/Documents/Time Series/.worktrees/"
+            "exp471-exp467-evaluation-recovery-antigravity"
+        )
+        self.assertEqual(EXP467_VERIFICATION_REPOSITORY_ANTIGRAVITY, expected)
+        self.assertEqual(
+            FROZEN_EXP472_CONFIG.exp467_verification_repository, expected
+        )
+        with self.assertRaisesRegex(ValueError, "verification repository"):
+            replace(
+                FROZEN_EXP472_CONFIG,
+                exp467_verification_repository=Path("/private/tmp/drift-antigravity"),
+            )
+        bound = {
+            "experiment": FROZEN_EXP472_CONFIG.experiment_id,
+            "database_sha256": FROZEN_EXP472_CONFIG.database_sha256,
+            "dataset_count": FROZEN_EXP472_CONFIG.dataset_count,
+            "test_row_count": FROZEN_EXP472_CONFIG.test_row_count,
+            "condition": {
+                "id": "E", "downsampling": "polyphase",
+                "upsampling": "makima", "image_mode": "area",
+            },
+            "policy": FROZEN_EXP472_CONFIG.policy_id,
+            "threshold": FROZEN_EXP472_CONFIG.score_threshold,
+            "bootstrap_seed": FROZEN_EXP472_CONFIG.bootstrap_seed,
+            "exp467_verification_repository": expected.as_posix(),
+        }
+        self.assertEqual(
+            cli_module._config_sha256_antigravity(),
+            sha256(canonical_json_bytes_exp472_antigravity(bound)).hexdigest(),
         )
 
     def test_backend_record_freezes_availability_selection_and_worker_policy(self) -> None:
