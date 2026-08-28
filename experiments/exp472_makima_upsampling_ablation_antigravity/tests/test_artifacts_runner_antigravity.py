@@ -263,7 +263,7 @@ class Exp472ArtifactsRunnerTests(unittest.TestCase):
         append_failure_exp472_antigravity(self.root, self.context, dataset="B", wave=1, error=RuntimeError("fixture failure"))
         append_progress_exp472_antigravity(self.root, completed=1, failed=1, remaining=3, elapsed_seconds=20.0, dataset="B", wave=1, status="failed")
         status = status_exp472_antigravity(self.root, total=4, now_monotonic=40.0)
-        self.assertEqual(set(status), {"schema", "completed", "failed", "remaining", "total", "rate_per_second", "eta_seconds", "manifest_complete", "evaluation_present", "report_present", "latest_progress"})
+        self.assertEqual(set(status), {"schema", "completed", "failed", "remaining", "total", "rate_per_second", "eta_seconds", "manifest_complete", "latest_progress"})
         self.assertEqual((status["completed"], status["failed"], status["remaining"], status["total"]), (1, 1, 3, 4))
         self.assertEqual(len((self.root / "progress_antigravity.jsonl").read_text().splitlines()), 2)
         self.assertEqual(len((self.root / "failures_antigravity.jsonl").read_text().splitlines()), 1)

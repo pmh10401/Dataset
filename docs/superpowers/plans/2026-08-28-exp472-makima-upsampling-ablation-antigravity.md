@@ -457,7 +457,7 @@ def test_resume_schedules_only_missing_and_failed_coordinates(self):
 
 def test_status_reports_completed_failed_remaining_rate_and_eta(self):
     status = status_exp472_antigravity(ROOT, now_monotonic=40.0)
-    self.assertEqual(set(status), {"schema", "completed", "failed", "remaining", "total", "rate_per_second", "eta_seconds", "manifest_complete", "evaluation_complete", "report_complete", "latest_progress"})
+    self.assertEqual(set(status), {"schema", "completed", "failed", "remaining", "total", "rate_per_second", "eta_seconds", "manifest_complete", "latest_progress"})
 ```
 
 - [ ] **Step 2: Run RED**
@@ -696,7 +696,7 @@ After those 15 content leaves are durable, publish `exp472_report_manifest_antig
 
 - [ ] **Step 4: Implement closed commands and runbook**
 
-`readiness` checks roots/backends/identities without labels. `smoke` and `run` execute only E. `status` is read-only. `verify` independently verifies E and Exp471 authority. `evaluate` requires both terminal authorities. `report` resumes missing stages but never starts score generation when the user explicitly requests read-only status/verify.
+`readiness` checks roots/backends/identities without labels. `smoke` and `run` execute only E. `status` is read-only. `verify` independently verifies E and Exp471 authority. `evaluate` requires both terminal authorities. `report` only consumes a persisted evaluation and never starts score generation or label evaluation.
 
 The launcher is exactly:
 

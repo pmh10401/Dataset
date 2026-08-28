@@ -45,11 +45,10 @@ from .artifacts_antigravity import (
 )
 from .authority_antigravity import verify_exp471_reuse_exp472_antigravity
 from .evaluation_antigravity import (
+    EVALUATION_COMPLETE_NAME_ANTIGRAVITY,
     evaluate_exp472_antigravity,
-    evaluation_path_exp472_antigravity,
     read_exp472_evaluation_antigravity,
     read_or_evaluate_exp472_antigravity,
-    write_exp472_evaluation_antigravity,
 )
 from .reporting_antigravity import write_exp472_report_antigravity
 from .runner_antigravity import run_score_wave_exp472_antigravity
@@ -298,7 +297,7 @@ def _status_antigravity(mode: str = "full") -> dict[str, object]:
             # Status reports a non-authoritative unreadable log rather than
             # attempting repair or a hidden restart.
             pass
-    evaluation_path = evaluation_path_exp472_antigravity(EXP472_EVALUATION_ROOT_ANTIGRAVITY)
+    evaluation_path = EXP472_EVALUATION_ROOT_ANTIGRAVITY / EVALUATION_COMPLETE_NAME_ANTIGRAVITY
     report_marker = EXP472_REPORT_ROOT_ANTIGRAVITY / ".exp472_report_complete_antigravity.json"
     evaluation_present = evaluation_path.is_file() and not evaluation_path.is_symlink()
     report_present = report_marker.is_file() and not report_marker.is_symlink()

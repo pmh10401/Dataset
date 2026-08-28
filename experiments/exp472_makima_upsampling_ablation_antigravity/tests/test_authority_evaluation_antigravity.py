@@ -184,6 +184,70 @@ class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
                     context_sha256=context.sha256, dataset_order=bundle.dataset_order,
                 )
 
+    def test_persisted_reader_rejects_duplicate_keys_and_symlinked_evaluation(self) -> None:
+        """Neither an ambiguous JSON object nor a redirected sealed result is authority."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle)
+        evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
+        with TemporaryDirectory(prefix="exp472-evaluation-reader-safety-antigravity-") as temporary:
+            root = Path(temporary) / "evaluation_antigravity"
+            write_exp472_evaluation_antigravity(evaluation, root)
+            path = root / "exp472_evaluation_antigravity.json"
+            original = path.read_bytes()
+            path.write_bytes(b'{"schema":"one","schema":"two"}')
+            with self.assertRaises(ValueError):
+                read_exp472_evaluation_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order)
+            target = root / "redirect-target-antigravity.json"
+            target.write_bytes(original); path.unlink(); path.symlink_to(target)
+            with self.assertRaisesRegex(ValueError, "unsafe"):
+                read_exp472_evaluation_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order)
+
+    def test_recomputed_self_digest_cannot_hide_subset_micro_or_curve_mutation(self) -> None:
+        """The persisted reader rederives projection and curve-linked micro science."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle)
+        evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
+        with TemporaryDirectory(prefix="exp472-evaluation-recompute-antigravity-") as temporary:
+            root = Path(temporary) / "evaluation_antigravity"
+            write_exp472_evaluation_antigravity(evaluation, root)
+            path = root / "exp472_evaluation_antigravity.json"
+            baseline = json.loads(path.read_text(encoding="utf-8"))
+            mutations = {
+                "subset": lambda record: record["subset_per_dataset"][0].__setitem__("average_precision", 0.5),
+                "micro": lambda record: record["micro"]["E"].__setitem__("dataset_denominator", 0),
+                "roc": lambda record: record["curves"]["roc"]["rows"][1].__setitem__("true_positive_rate", 0.5),
+            }
+            for name, mutate in mutations.items():
+                with self.subTest(section=name):
+                    changed = json.loads(json.dumps(baseline)); mutate(changed)
+                    bare = {key: value for key, value in changed.items() if key != "evaluation_sha256"}
+                    changed["evaluation_sha256"] = sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()
+                    path.write_bytes(canonical_json_bytes_exp472_antigravity(changed))
+                    marker = evaluation_module._evaluation_marker_record_antigravity(changed)
+                    (root / evaluation_module.EVALUATION_COMPLETE_NAME_ANTIGRAVITY).write_bytes(canonical_json_bytes_exp472_antigravity(marker))
+                    with self.assertRaises(ValueError):
+                        read_exp472_evaluation_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order)
+
+    def test_faulty_compute_authority_cannot_publish_before_write(self) -> None:
+        """A computed object must already bind the caller's terminal authorities."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle)
+        evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
+        with TemporaryDirectory(prefix="exp472-evaluation-compute-authority-antigravity-") as temporary:
+            root = Path(temporary) / "evaluation_antigravity"
+            faulty = replace(evaluation, e_manifest_sha256=_digest("wrong-terminal-manifest"))
+            with self.assertRaisesRegex(ValueError, "authority"):
+                read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=lambda: faulty)
+            self.assertFalse((root / "exp472_evaluation_antigravity.json").exists())
+
+    def test_missing_completion_marker_never_reopens_labels(self) -> None:
+        """A lone artifact is tamper evidence, not a reason to recompute labels."""
+        bundle = _bundle(); context, catalog = _context_and_catalog(bundle)
+        evaluation = _complete_evaluation_antigravity(bundle, context, catalog)
+        with TemporaryDirectory(prefix="exp472-evaluation-marker-required-antigravity-") as temporary:
+            root = Path(temporary) / "evaluation_antigravity"
+            write_exp472_evaluation_antigravity(evaluation, root)
+            (root / evaluation_module.EVALUATION_COMPLETE_NAME_ANTIGRAVITY).unlink()
+            with self.assertRaises(FileNotFoundError):
+                read_or_evaluate_exp472_antigravity(root, authority=bundle.authority, e_manifest_sha256=evaluation.e_manifest_sha256, context_sha256=context.sha256, dataset_order=bundle.dataset_order, compute=lambda: (_ for _ in ()).throw(AssertionError("labels must remain closed")))
+
     def test_recomputed_digest_cannot_hide_missing_scientific_sections(self) -> None:
         """A self-consistent digest is insufficient without the complete 1,117×11 science inventory."""
         bundle = _bundle(); context, catalog = _context_and_catalog(bundle); evaluation = _complete_evaluation_antigravity(bundle, context, catalog)

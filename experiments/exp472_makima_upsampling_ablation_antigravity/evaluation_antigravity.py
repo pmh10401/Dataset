@@ -21,8 +21,10 @@ from .artifacts_antigravity import Exp472CatalogEntryAntigravity, validate_diagn
 METHOD_ORDER_EXP472_ANTIGRAVITY=("A","B","C","D","E","knn_distance","lof_novelty","ocsvm_rbf","isolation_forest","deep_svdd_1d","drocc_1d")
 _DRAWS=20_000; _SEED=47220260828; _TIE=1e-12
 EVALUATION_NAME_ANTIGRAVITY="exp472_evaluation_antigravity.json"
+EVALUATION_COMPLETE_NAME_ANTIGRAVITY=".exp472_evaluation_complete_antigravity.json"
 _EVALUATION_LOCK_NAME_ANTIGRAVITY=".exp472_evaluation_lock_antigravity"
 _EVALUATION_SCHEMA_ANTIGRAVITY="exp472-evaluation-antigravity.v2"
+_EVALUATION_COMPLETE_SCHEMA_ANTIGRAVITY="exp472-evaluation-complete-antigravity.v1"
 
 def _vector(value: object, name: str) -> np.ndarray:
     result=np.asarray(value,dtype=np.float64)
@@ -146,6 +148,9 @@ def evaluation_path_exp472_antigravity(root: Path) -> Path:
         raise ValueError("Exp472 evaluation root differs")
     return target / EVALUATION_NAME_ANTIGRAVITY
 
+def _evaluation_marker_path_antigravity(root: Path) -> Path:
+    return Path(root) / EVALUATION_COMPLETE_NAME_ANTIGRAVITY
+
 def _safe_evaluation_root_antigravity(root: Path, *, create: bool) -> Path:
     target=Path(root)
     if not target.is_absolute() or "antigravity" not in target.name:
@@ -231,6 +236,15 @@ def _read_evaluation_record_antigravity(path: Path) -> Mapping[str, object]:
     if _digest_evaluation_antigravity(record["evaluation_sha256"],"evaluation digest")!=sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest(): raise ValueError("Exp472 evaluation artifact digest differs")
     return MappingProxyType(record)
 
+def _evaluation_marker_record_antigravity(record: Mapping[str,object]) -> dict[str,object]:
+    return {"schema":_EVALUATION_COMPLETE_SCHEMA_ANTIGRAVITY,"evaluation":EVALUATION_NAME_ANTIGRAVITY,"evaluation_sha256":record["evaluation_sha256"],"authority":record["authority"],"e_manifest_sha256":record["e_manifest_sha256"],"context_sha256":record["context_sha256"]}
+
+def _read_evaluation_marker_antigravity(root: Path, record: Mapping[str,object]) -> None:
+    raw=_read_regular_evaluation_antigravity(_evaluation_marker_path_antigravity(root))
+    try: marker=json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError,json.JSONDecodeError) as error: raise ValueError("Exp472 evaluation completion marker is invalid") from error
+    if raw!=canonical_json_bytes_exp472_antigravity(marker) or marker!=_evaluation_marker_record_antigravity(record): raise ValueError("Exp472 evaluation completion marker differs")
+
 def _finite_probability_antigravity(value: object) -> bool:
     return type(value) in (int,float) and math.isfinite(float(value)) and 0.0<=float(value)<=1.0
 
@@ -312,15 +326,39 @@ def _validate_evaluation_science_antigravity(record: Mapping[str,object], order:
             if not values: continue
             xx=[float(row[x]) for row in values]; yy=[float(row[y]) for row in values]
             if len(values)<2 or (name=="roc" and (any(a>b for a,b in zip(xx,xx[1:])) or any(a>b for a,b in zip(yy,yy[1:])) or (xx[0],yy[0])!=(0.0,0.0) or (xx[-1],yy[-1])!=(1.0,1.0))) or (name=="pr" and any(a<b for a,b in zip(xx,xx[1:]))): raise ValueError("Exp472 persisted curve monotonicity differs")
+            if name=="roc":
+                thresholds=[row["threshold"] for row in values]
+                if thresholds[0] is not None or any(threshold is None for threshold in thresholds[1:]) or any(float(left)<float(right) for left,right in zip(thresholds[1:],thresholds[2:])): raise ValueError("Exp472 persisted ROC thresholds differ")
+    # The subset table is a projection, not an independently supplied result.
+    # This catches a self-digested mutation of one subset cell without labels.
+    if any(dict(sub[(method,dataset)]) != dict(full[(method,dataset)]) for method in methods for dataset in subset_order): raise ValueError("Exp472 persisted subset projection differs")
+    # Labels and raw score vectors are intentionally not persisted.  The sealed
+    # completion marker below anchors the generated science; these two exact
+    # producer identities additionally cross-check the persisted metric/curve
+    # sections without reopening labels.
+    for method in methods:
+        roc=[row for row in curves["roc"]["rows"] if row["method"]==method]
+        pr=[row for row in curves["pr"]["rows"] if row["method"]==method]
+        micro=record["micro"][method]
+        if micro["auroc"] is None:
+            if roc: raise ValueError("Exp472 persisted ROC membership differs")
+        elif not math.isclose(float(micro["auroc"]),float(np.trapezoid([float(row["true_positive_rate"]) for row in roc],[float(row["false_positive_rate"]) for row in roc])),rel_tol=0,abs_tol=1e-12): raise ValueError("Exp472 persisted AUROC curve differs")
+        if micro["average_precision"] is None:
+            if pr: raise ValueError("Exp472 persisted PR membership differs")
+        elif not math.isclose(float(micro["average_precision"]),float(-np.sum(np.diff([float(row["recall"]) for row in pr])*np.asarray([float(row["precision"]) for row in pr[:-1]]))),rel_tol=0,abs_tol=1e-12): raise ValueError("Exp472 persisted AP curve differs")
+
+def _validate_evaluation_record_antigravity(record: Mapping[str,object], *, authority: Exp472ReuseAuthorityAntigravity, e_manifest_sha256: str, context_sha256: str, dataset_order: Sequence[str]) -> None:
+    expected_authority=json.loads(canonical_json_bytes_exp472_antigravity({name:getattr(authority,name) for name in authority.__dataclass_fields__}).decode("utf-8"))
+    if record["authority"]!=expected_authority or _digest_evaluation_antigravity(record["e_manifest_sha256"],"E manifest digest")!=e_manifest_sha256 or _digest_evaluation_antigravity(record["context_sha256"],"context digest")!=context_sha256: raise ValueError("Exp472 persisted evaluation authority differs")
+    _validate_evaluation_science_antigravity(record,tuple(dataset_order))
 
 def read_exp472_evaluation_antigravity(root: Path, *, authority: Exp472ReuseAuthorityAntigravity, e_manifest_sha256: str, context_sha256: str, dataset_order: Sequence[str]) -> Exp472EvaluationAntigravity:
     """Reopen only a canonical, authority-bound evaluation; never labels."""
     path=evaluation_path_exp472_antigravity(_safe_evaluation_root_antigravity(root,create=False))
     record=_read_evaluation_record_antigravity(path)
-    expected_authority=json.loads(canonical_json_bytes_exp472_antigravity({name:getattr(authority,name) for name in authority.__dataclass_fields__}).decode("utf-8"))
-    if record["authority"]!=expected_authority or _digest_evaluation_antigravity(record["e_manifest_sha256"],"E manifest digest")!=e_manifest_sha256 or _digest_evaluation_antigravity(record["context_sha256"],"context digest")!=context_sha256: raise ValueError("Exp472 persisted evaluation authority differs")
-    order=tuple(dataset_order)
-    _validate_evaluation_science_antigravity(record,order)
+    target=path.parent
+    _validate_evaluation_record_antigravity(record,authority=authority,e_manifest_sha256=e_manifest_sha256,context_sha256=context_sha256,dataset_order=dataset_order)
+    _read_evaluation_marker_antigravity(target,record)
     try:
         parsed_authority=Exp472ReuseAuthorityAntigravity(**record["authority"])
         return Exp472EvaluationAntigravity(parsed_authority,tuple(record["method_order"]),tuple(record["per_dataset"]),tuple(record["subset_per_dataset"]),MappingProxyType(record["macro"]),MappingProxyType(record["micro"]),MappingProxyType(record["subset_macro"]),MappingProxyType(record["subset_micro"]),tuple(record["paired_statistics"]),MappingProxyType(record["denominators"]),MappingProxyType(record["diagnostic_summary"]),MappingProxyType(record["curves"]),record["e_manifest_sha256"],record["context_sha256"])
@@ -329,8 +367,11 @@ def read_exp472_evaluation_antigravity(root: Path, *, authority: Exp472ReuseAuth
 def write_exp472_evaluation_antigravity(evaluation: Exp472EvaluationAntigravity, root: Path) -> Exp472EvaluationAntigravity:
     """Create one canonical evaluation record, or reuse exactly its bytes."""
     if not isinstance(evaluation,Exp472EvaluationAntigravity): raise ValueError("Exp472 evaluation publication requires typed evaluation")
-    target=_safe_evaluation_root_antigravity(root,create=True); path=evaluation_path_exp472_antigravity(target); payload=canonical_json_bytes_exp472_antigravity(evaluation.artifact_record())
+    record=evaluation.artifact_record()
+    _validate_evaluation_record_antigravity(record,authority=evaluation.authority,e_manifest_sha256=evaluation.e_manifest_sha256,context_sha256=evaluation.context_sha256,dataset_order=tuple(evaluation.diagnostic_summary))
+    target=_safe_evaluation_root_antigravity(root,create=True); path=evaluation_path_exp472_antigravity(target); payload=canonical_json_bytes_exp472_antigravity(record)
     _write_create_or_identical_evaluation_antigravity(path,payload)
+    _write_create_or_identical_evaluation_antigravity(_evaluation_marker_path_antigravity(target),canonical_json_bytes_exp472_antigravity(_evaluation_marker_record_antigravity(record)))
     return read_exp472_evaluation_antigravity(target,authority=evaluation.authority,e_manifest_sha256=evaluation.e_manifest_sha256,context_sha256=evaluation.context_sha256,dataset_order=tuple(evaluation.diagnostic_summary))
 
 def read_or_evaluate_exp472_antigravity(root: Path, *, authority: Exp472ReuseAuthorityAntigravity, e_manifest_sha256: str, context_sha256: str, dataset_order: Sequence[str], compute: Callable[[], Exp472EvaluationAntigravity]) -> Exp472EvaluationAntigravity:
@@ -341,8 +382,10 @@ def read_or_evaluate_exp472_antigravity(root: Path, *, authority: Exp472ReuseAut
         try:
             return read_exp472_evaluation_antigravity(target,authority=authority,e_manifest_sha256=e_manifest_sha256,context_sha256=context_sha256,dataset_order=dataset_order)
         except FileNotFoundError:
+            if evaluation_path_exp472_antigravity(target).exists(): raise
             evaluation=compute()
             if not isinstance(evaluation,Exp472EvaluationAntigravity): raise ValueError("Exp472 evaluation compute differs")
+            _validate_evaluation_record_antigravity(evaluation.artifact_record(),authority=authority,e_manifest_sha256=e_manifest_sha256,context_sha256=context_sha256,dataset_order=dataset_order)
             return write_exp472_evaluation_antigravity(evaluation,target)
 
-__all__=["EVALUATION_NAME_ANTIGRAVITY","Exp472EvaluationAntigravity","Exp472VerifiedEBundleAntigravity","evaluate_exp472_antigravity","evaluation_path_exp472_antigravity","paired_e_minus_d_exp472_antigravity","read_exp472_evaluation_antigravity","read_or_evaluate_exp472_antigravity","write_exp472_evaluation_antigravity"]
+__all__=["EVALUATION_COMPLETE_NAME_ANTIGRAVITY","EVALUATION_NAME_ANTIGRAVITY","Exp472EvaluationAntigravity","Exp472VerifiedEBundleAntigravity","evaluate_exp472_antigravity","evaluation_path_exp472_antigravity","paired_e_minus_d_exp472_antigravity","read_exp472_evaluation_antigravity","read_or_evaluate_exp472_antigravity","write_exp472_evaluation_antigravity"]

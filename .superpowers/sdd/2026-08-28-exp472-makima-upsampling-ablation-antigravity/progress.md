@@ -164,9 +164,11 @@ was started or changed by this migration.
 CLI synthetic E2E repair: the production `main_antigravity` path now has a
 1,117-dataset synthetic authority test that performs first `evaluate`, second
 `evaluate`, and `report` through the real persistence reader and report
-publisher. The only injected seam is the label loader, which returns in-memory
-synthetic labels and records one opening; Exp471/E verification boundaries use
-canonical synthetic authorities. The test proves the first evaluate persists,
+publisher. The label loader is the only science-input seam: it returns
+in-memory synthetic labels and records one opening. The six Exp471/E authority
+verification functions are deliberately mocked to canonical synthetic
+authorities, so the E2E does not read private source trees or result roots. The
+test proves the first evaluate persists,
 the second strictly reopens without another label opening, report consumes the
 same evaluation without labels, and the actual 15-leaf report manifest/marker
 chain reopens with the report verifier. RED initially exposed that canonical
@@ -174,3 +176,18 @@ JSON sorts manifest leaf keys while the report authority constructor requires
 the frozen leaf order; the test reconstructs that contractual order before
 reopening. GREEN focused command: 1/1 passed in 19.601s. No production path,
 official data, TEST label, database, result root, or process was accessed.
+
+Persisted evaluation authority repair: evaluation publication now writes a
+separate create-or-identical canonical completion marker that binds the
+evaluation digest, Exp471 authority, terminal E-manifest digest, and context
+digest. The reader requires that marker as well as the canonical artifact.
+It also verifies that `subset_per_dataset` is the exact full-table projection,
+checks ROC thresholds/coordinates and PR coordinates against producer
+invariants, and cross-checks micro AP/AUROC against their persisted curves.
+Raw TEST labels and score vectors are not copied into the durable artifact;
+the completion marker is the immutable generated-science commitment, while
+reopening performs the strongest available no-label structural and numerical
+checks. A faulty computed result now fails its expected authority/order checks
+before any publication write. The score-runner status no longer reports
+noncanonical evaluation/report paths; closed CLI status reports only canonical
+presence markers.
