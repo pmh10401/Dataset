@@ -25,13 +25,27 @@ def _digest(value: object, name: str) -> str:
     return value
 
 def _coordinate(value: object) -> Mapping[str, object]:
-    if not isinstance(value, Mapping) or set(value) != {"count", "indices", "blob_sha256", "row_sha256"}: raise ValueError("Exp472 TEST coordinate differs")
-    count, indices = value["count"], value["indices"]
+    """Project the shared catalog/Task4 TEST identity, rejecting unknown fields."""
+    allowed = {"dataset", "dataset_id", "series_length", "split", "indices", "values_blob_sha256", "row_digest", "count"}
+    if not isinstance(value, Mapping) or not {"dataset", "series_length", "split", "indices", "values_blob_sha256", "row_digest", "count"}.issubset(value) or set(value) - allowed: raise ValueError("Exp472 TEST coordinate differs")
+    if type(value["dataset"]) is not str or not value["dataset"] or value["split"] != "TEST" or type(value["series_length"]) is not int or value["series_length"] < 1: raise ValueError("Exp472 TEST coordinate differs")
+    count, indices, blobs = value["count"], value["indices"], value["values_blob_sha256"]
     if type(count) is not int or count < 1 or not isinstance(indices, (tuple, list)) or len(indices) != count or any(type(x) is not int or x < 0 for x in indices) or len(set(indices)) != count: raise ValueError("Exp472 TEST coordinate differs")
-    return MappingProxyType({"count": count, "indices": tuple(indices), "blob_sha256": _digest(value["blob_sha256"], "blob"), "row_sha256": _digest(value["row_sha256"], "row")})
+    if not isinstance(blobs, (tuple, list)) or len(blobs) != count: raise ValueError("Exp472 TEST blob coordinate differs")
+    return MappingProxyType({"dataset": value["dataset"], "series_length": value["series_length"], "split": "TEST", "count": count, "indices": tuple(indices), "values_blob_sha256": tuple(_digest(blob, "blob") for blob in blobs), "row_digest": _digest(value["row_digest"], "row")})
+
+def _project_catalog_test_identity_antigravity(value: object) -> Mapping[str, object]:
+    """Project Exp467's dataset-id-bearing TEST identity into Task4's schema."""
+    coordinate = _coordinate(value)
+    bare = {
+        "dataset": coordinate["dataset"], "series_length": coordinate["series_length"],
+        "split": "TEST", "indices": list(coordinate["indices"]),
+        "values_blob_sha256": list(coordinate["values_blob_sha256"]),
+    }
+    return MappingProxyType({**dict(coordinate), "row_digest": sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()})
 
 def _coordinate_digest(order: tuple[str, ...], coordinates: Mapping[str, Mapping[str, object]]) -> str:
-    return sha256(canonical_json_bytes_exp472_antigravity([{"dataset": d, **dict(coordinates[d]), "indices": list(coordinates[d]["indices"])} for d in order])).hexdigest()
+    return sha256(canonical_json_bytes_exp472_antigravity([{**dict(_coordinate(coordinates[d])), "indices": list(_coordinate(coordinates[d])["indices"]), "values_blob_sha256": list(_coordinate(coordinates[d])["values_blob_sha256"])} for d in order])).hexdigest()
 
 @dataclass(frozen=True, slots=True)
 class Exp472ReuseAuthorityAntigravity:
@@ -83,15 +97,21 @@ def _read_verified_exp471_path_antigravity(root: Path) -> Exp472VerifiedExp471Bu
     root = Path(root)
     if not root.is_absolute(): raise ValueError("Exp472 Exp471 root must be absolute")
     repository = Path(__file__).resolve().parents[2]
+    session = source.open_exp467_source_session_antigravity(repository, EXP467_SOURCE_ROOT_ANTIGRAVITY)
     source_authority = source.read_source_authority_antigravity(root, repository, EXP467_SOURCE_ROOT_ANTIGRAVITY)
+    if session.authority != source_authority or not isinstance(session.catalog, Mapping): raise ValueError("Exp472 Exp471 source session differs")
     manifest = cache.read_cache_manifest_antigravity(root / "score_cache_antigravity")
     evaluation = _canonical_leaf(root / "evaluation_antigravity" / "evaluation_antigravity.json", "evaluation_sha256")
     report = _canonical_leaf(root / "report_antigravity" / "exp471_typed_report_manifest_antigravity.json", "report_manifest_sha256")
     if evaluation.get("source_authority_sha256") != source_authority.authority_sha256 or evaluation.get("cache_manifest_sha256") != manifest.manifest_sha256 or report.get("evaluation_sha256") != evaluation["evaluation_sha256"]: raise ValueError("Exp472 Exp471 digest chain differs")
+    catalog_rows = session.catalog.get("datasets")
+    if not isinstance(catalog_rows, (tuple, list)) or len(catalog_rows) != 1117: raise ValueError("Exp472 Exp471 catalog differs")
+    catalog_coordinates = {row.get("dataset"): _project_catalog_test_identity_antigravity(row.get("test")) for row in catalog_rows if isinstance(row, Mapping)}
     coordinates, scores, statuses = {}, {m:{} for m in _METHODS}, {m:{} for m in _METHODS}
     for dataset in manifest.dataset_order:
         first = cache.read_score_shard_antigravity(root / "score_cache_antigravity", "A", dataset)
-        coordinate = {"count": first.test_count, "indices": first.test_indices, "blob_sha256": sha256(canonical_json_bytes_exp472_antigravity([first.test_count, list(first.test_indices)])).hexdigest(), "row_sha256": sha256(canonical_json_bytes_exp472_antigravity({"dataset":dataset,"indices":list(first.test_indices)})).hexdigest()}
+        coordinate = catalog_coordinates.get(dataset)
+        if coordinate is None or first.test_count != coordinate["count"] or first.test_indices != coordinate["indices"]: raise ValueError("Exp472 Exp471 catalog TEST identity differs")
         coordinates[dataset] = coordinate
         for method in _METHODS:
             shard = cache.read_score_shard_antigravity(root / "score_cache_antigravity", method, dataset)

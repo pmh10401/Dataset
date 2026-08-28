@@ -25,9 +25,12 @@ class Exp472VerifiedEBundleAntigravity:
     def __post_init__(self)->None:
         if not isinstance(self.root,Path) or not self.root.is_absolute() or len(self.dataset_order)!=1117 or len(set(self.dataset_order))!=1117: raise ValueError("Exp472 E inventory differs")
         if tuple(self.coordinates)!=self.dataset_order or tuple(self.scores)!=self.dataset_order or tuple(self.upsampled_rows)!=self.dataset_order: raise ValueError("Exp472 E coverage differs")
+        coordinates={};scores={};upsampled={}
         for d in self.dataset_order:
-            _coordinate(self.coordinates[d]); values=_vector(self.scores[d],"E scores")
+            coordinates[d]=_coordinate(self.coordinates[d]); values=_vector(self.scores[d],"E scores")
             if values.size != self.coordinates[d]["count"] or type(self.upsampled_rows[d]) is not int or self.upsampled_rows[d]<0: raise ValueError("Exp472 E shard differs")
+            scores[d]=tuple(float(value) for value in values);upsampled[d]=self.upsampled_rows[d]
+        object.__setattr__(self,"coordinates",MappingProxyType(coordinates));object.__setattr__(self,"scores",MappingProxyType(scores));object.__setattr__(self,"upsampled_rows",MappingProxyType(upsampled))
 
 def _read_verified_e_path_antigravity(root: Path, exp471: Exp472VerifiedExp471BundleAntigravity, context: Exp472RunContextAntigravity, catalog: Sequence[Exp472CatalogEntryAntigravity])->Exp472VerifiedEBundleAntigravity:
     """Reopen Task 4's terminal manifest and every bound E shard before labels."""
@@ -35,7 +38,7 @@ def _read_verified_e_path_antigravity(root: Path, exp471: Exp472VerifiedExp471Bu
     entries=tuple(catalog)
     if len(entries)!=1117 or tuple(entry.dataset for entry in entries)!=exp471.dataset_order: raise ValueError("Exp472 E catalog order differs")
     manifest=verify_manifest_exp472_antigravity(root,context,entries)
-    if manifest["database_sha256"]!=exp471.authority.database_sha256 or tuple(manifest["dataset_order"])!=exp471.dataset_order: raise ValueError("Exp472 E manifest identity differs")
+    if manifest["database_sha256"]!=exp471.authority.database_sha256 or manifest.get("catalog_sha256")!=context.catalog_sha256 or tuple(manifest["dataset_order"])!=exp471.dataset_order: raise ValueError("Exp472 E manifest identity differs")
     coordinates={};scores={};upsampled={}
     for entry,descriptor in zip(entries,manifest["descriptors"],strict=True):
         shard=verify_score_shard_exp472_antigravity(root,context,entry)
@@ -97,24 +100,26 @@ def _curves(labels:Mapping[str,np.ndarray],scores:Mapping[str,Mapping[str,np.nda
 
 @dataclass(frozen=True,slots=True)
 class Exp472EvaluationAntigravity:
-    authority:Exp472ReuseAuthorityAntigravity; method_order:tuple[str,...]; per_dataset:tuple[Mapping[str,object],...]; macro:Mapping[str,Mapping[str,object]]; micro:Mapping[str,Mapping[str,object]]; paired_statistics:tuple[Mapping[str,object],...]; denominators:Mapping[str,Mapping[str,object]]; curves:Mapping[str,Mapping[str,object]]
+    authority:Exp472ReuseAuthorityAntigravity; method_order:tuple[str,...]; per_dataset:tuple[Mapping[str,object],...]; subset_per_dataset:tuple[Mapping[str,object],...]; macro:Mapping[str,Mapping[str,object]]; micro:Mapping[str,Mapping[str,object]]; subset_macro:Mapping[str,Mapping[str,object]]; subset_micro:Mapping[str,Mapping[str,object]]; paired_statistics:tuple[Mapping[str,object],...]; denominators:Mapping[str,Mapping[str,object]]; curves:Mapping[str,Mapping[str,object]]
     def artifact_record(self)->dict[str,object]:
-        bare={"schema":"exp472-evaluation-antigravity.v1","authority":self.authority.__dict__ if hasattr(self.authority,"__dict__") else {name:getattr(self.authority,name) for name in self.authority.__dataclass_fields__},"method_order":list(self.method_order),"per_dataset":[dict(x) for x in self.per_dataset],"macro":{k:dict(v) for k,v in self.macro.items()},"micro":{k:dict(v) for k,v in self.micro.items()},"denominators":{k:dict(v) for k,v in self.denominators.items()},"paired_statistics":[dict(x) for x in self.paired_statistics],"curves":{k:{**{a:b for a,b in v.items() if a!="rows"},"rows":[dict(row) for row in v["rows"]]} for k,v in self.curves.items()}}
+        bare={"schema":"exp472-evaluation-antigravity.v1","authority":self.authority.__dict__ if hasattr(self.authority,"__dict__") else {name:getattr(self.authority,name) for name in self.authority.__dataclass_fields__},"method_order":list(self.method_order),"per_dataset":[dict(x) for x in self.per_dataset],"subset_per_dataset":[dict(x) for x in self.subset_per_dataset],"macro":{k:dict(v) for k,v in self.macro.items()},"micro":{k:dict(v) for k,v in self.micro.items()},"subset_macro":{k:dict(v) for k,v in self.subset_macro.items()},"subset_micro":{k:dict(v) for k,v in self.subset_micro.items()},"denominators":{k:dict(v) for k,v in self.denominators.items()},"paired_statistics":[dict(x) for x in self.paired_statistics],"curves":{k:{**{a:b for a,b in v.items() if a!="rows"},"rows":[dict(row) for row in v["rows"]]} for k,v in self.curves.items()}}
         return {**bare,"evaluation_sha256":sha256(canonical_json_bytes_exp472_antigravity(bare)).hexdigest()}
 
 def evaluate_exp472_antigravity(e_root:Path,exp471_root:Path,label_loader:Callable[[tuple[str,...]],Mapping[str,Sequence[object]]], *, context: Exp472RunContextAntigravity, catalog: Sequence[Exp472CatalogEntryAntigravity])->Exp472EvaluationAntigravity:
     if not isinstance(e_root,Path) or not isinstance(exp471_root,Path) or not callable(label_loader): raise ValueError("Exp472 evaluation requires Path authorities and label loader")
+    if not isinstance(context,Exp472RunContextAntigravity) or not isinstance(catalog,(tuple,list)) or not all(isinstance(entry,Exp472CatalogEntryAntigravity) for entry in catalog): raise ValueError("Exp472 evaluation requires typed E context and catalog")
     exp471=verify_exp471_reuse_exp472_antigravity(exp471_root); e=_read_verified_e_path_antigravity(e_root,exp471,context,catalog); order=bind_e_to_exp471_exp472_antigravity(e,exp471)
     e_scores={d:_vector(e.scores[d],"E scores") for d in order}; subset=tuple(d for d in order if e.upsampled_rows[d]>0)
     scores={m:{d:None if exp471.statuses[m][d]=="abstained" else _vector(exp471.scores[m][d],"D scores") for d in order} for m in METHOD_ORDER_EXP472_ANTIGRAVITY if m!="E"};scores["E"]=e_scores
     labels=_labels(label_loader(order),order)
-    rows=[];macro={};micro={};value_by_method={};subset_audit={}
+    rows=[];subset_rows=[];macro={};micro={};subset_macro={};subset_micro={};value_by_method={};subset_value_by_method={}
     for m in METHOD_ORDER_EXP472_ANTIGRAVITY:
-        r,ma,mi,sub,v=_summary(labels,scores[m],order,subset,m);rows.extend(r);macro[m]=ma;micro[m]=mi;value_by_method[m]=v;subset_audit[m]=sub
+        r,ma,mi,_unused,v=_summary(labels,scores[m],order,subset,m);sr,sma,smi,_unused,sv=_summary(labels,scores[m],subset,(),m);rows.extend(r);subset_rows.extend(sr);macro[m]=ma;micro[m]=mi;subset_macro[m]=sma;subset_micro[m]=smi;value_by_method[m]=v;subset_value_by_method[m]=sv
     paired=[]
-    for metric in ("average_precision","auroc"):
-        common=tuple(d for d in order if (d,metric) in value_by_method["E"] and (d,metric) in value_by_method["D"]); stat=paired_e_minus_d_exp472_antigravity([value_by_method["E"][(d,metric)] for d in common],[value_by_method["D"][(d,metric)] for d in common]) if common else {"mean_delta":None,"ci_lower":None,"ci_upper":None,"wins":0,"ties":0,"losses":0,"seed":_SEED,"draw_count":0,"percentile":95.0,"tie_tolerance":_TIE};paired.append(MappingProxyType({"comparison":"E-D","metric":metric,"dataset_order":common,**stat}))
-    denominators=MappingProxyType({"full_population":MappingProxyType({"dataset_count":len(order),"observation_count":sum(x.size for x in labels.values())}),"upsampled_rows_gt_zero":MappingProxyType({"dataset_count":len(subset),"dataset_order":subset,"metrics":subset_audit})})
-    return Exp472EvaluationAntigravity(exp471.authority,METHOD_ORDER_EXP472_ANTIGRAVITY,tuple(rows),MappingProxyType(macro),MappingProxyType(micro),tuple(paired),denominators,_curves(labels,scores,order))
+    for population,population_order,values in (("full",order,value_by_method),("upsampled_rows_gt_zero",subset,subset_value_by_method)):
+        for metric in ("average_precision","auroc"):
+            common=tuple(d for d in population_order if (d,metric) in values["E"] and (d,metric) in values["D"]); stat=paired_e_minus_d_exp472_antigravity([values["E"][(d,metric)] for d in common],[values["D"][(d,metric)] for d in common]) if common else {"mean_delta":None,"ci_lower":None,"ci_upper":None,"wins":0,"ties":0,"losses":0,"seed":_SEED,"draw_count":0,"percentile":95.0,"tie_tolerance":_TIE};paired.append(MappingProxyType({"comparison":"E-D","population":population,"metric":metric,"dataset_order":common,**stat}))
+    denominators=MappingProxyType({"full_population":MappingProxyType({"dataset_count":len(order),"observation_count":sum(x.size for x in labels.values())}),"upsampled_rows_gt_zero":MappingProxyType({"dataset_count":len(subset),"observation_count":sum(labels[d].size for d in subset),"dataset_order":subset})})
+    return Exp472EvaluationAntigravity(exp471.authority,METHOD_ORDER_EXP472_ANTIGRAVITY,tuple(rows),tuple(subset_rows),MappingProxyType(macro),MappingProxyType(micro),MappingProxyType(subset_macro),MappingProxyType(subset_micro),tuple(paired),denominators,_curves(labels,scores,order))
 
 __all__=["Exp472EvaluationAntigravity","Exp472VerifiedEBundleAntigravity","evaluate_exp472_antigravity","paired_e_minus_d_exp472_antigravity"]
