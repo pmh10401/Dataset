@@ -124,19 +124,19 @@ class ScoringAntigravityTest(unittest.TestCase):
         np.testing.assert_array_equal(
             result.original["hydra_period_rank_max"],
             np.maximum(
-                anomaly_rank_antigravity(hydra_original, hydra_original),
-                anomaly_rank_antigravity(period_original, period_original),
+                hydra_original,
+                period_original,
             ),
         )
         for change_type in PRIMARY_TYPES_ANTIGRAVITY:
             with self.subTest(change_type=change_type):
                 np.testing.assert_array_equal(
-                    result.primary["hydra_period_rank_max"][change_type],
-                    np.maximum(
-                        anomaly_rank_antigravity(hydra_original, hydra_primary[change_type]),
-                        anomaly_rank_antigravity(period_original, period_primary[change_type]),
-                    ),
-                )
+                result.primary["hydra_period_rank_max"][change_type],
+                np.maximum(
+                    hydra_primary[change_type],
+                    period_primary[change_type],
+                ),
+            )
         self.assertEqual(result.feature_dimensions["hydra_local_gap"], 512)
         self.assertEqual(result.feature_dimensions["period_signature_local_gap"], 120)
         self.assertEqual(result.feature_dimensions["hydra_period_rank_max"], 2)

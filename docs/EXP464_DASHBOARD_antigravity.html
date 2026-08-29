@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp464 대시보드 — Task 5 최종 closeout, Task 6 금지</title>
+<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
+<body><main>
+<h1>Exp464 진행 대시보드</h1>
+<div class="note"><p><strong>현재 상태:</strong> <code>stopped_before_official_evaluation_qualification_failed</code>. clean reviewed commit <code>b8646d0fa9bd57dcb1f6ab5e251064d34911a41c</code>에서 Task 5 private TRAIN campaign이 정확히 두 번의 순차 evaluate→inspect reproduction으로 끝났고 두 root는 모든 7개 leaf, 90개 metric row, 30개 failed row, 9개 summary, decision, dashboard, stdout payload까지 exact-equal이었다. 최종 review는 SHIP (spec PASS, quality APPROVED, C/I/M0)이며 Task 5는 7/7 checked로 닫혔다. 주 후보 C6은 10/10이 아니라 9/10이었고 sole failure는 seed <code>20261721</code> fold <code>3</code> gradual_drift AUC <code>0.8402557718424627</code> &lt; <code>0.85</code>였다. C8은 10/10을 통과했지만 non-promotable clue일 뿐이다. 따라서 Task 6은 permanently forbidden이며 다음 공식 action은 없다.</p></div>
+<table>
+<tr><th>experiment</th><td><code>Exp464</code> / <code>ecg_residual_centered_ramp_confirmation_qualification</code></td></tr>
+<tr><th>run identity</th><td><code>exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821</code></td></tr>
+<tr><th>dataset</th><td><code>ECG5000_normal_2</code> TRAIN only, <code>1413×140</code>, seeds <code>20260721</code> / <code>20261721</code>, blocked fold 5개, onset <code>56</code></td></tr>
+<tr><th>주 후보</th><td>C6 <code>template_residual_centered_ramp_confirmed_max</code></td></tr>
+<tr><th>Task 4 범위</th><td><code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></td></tr>
+<tr><th>focused verification</th><td>Task 4 focused suite 16 tests GREEN, Task 5 private scientific run 2회 GREEN, evaluate=inspect within-run exact, run1=run2 exact, label query 0, official evaluate/inspect 0</td></tr>
+<tr><th>공식 root</th><td>없음 — <code>/Users/mac/Documents/Dataset/exp464_ecg_residual_centered_ramp_confirmation_antigravity_20260821</code></td></tr>
+<tr><th>공식 evaluate / inspect</th><td><code>0 / 0</code></td></tr>
+<tr><th>private run / label query</th><td><code>2 / 0</code></td></tr>
+<tr><th>공식 결과 hash</th><td>prediction / evaluation / decision / artifact / dashboard 모두 <code>null</code></td></tr>
+<tr><th>next action</th><td>no next official action; Task 6 permanently forbidden</td></tr>
+</table>
+
+<h2>Task 4에서 구현한 범위</h2>
+<ul>
+<li>점수 배열에서 네 변화 유형 AUC, 평균 AUC, normal false-positive Wilson upper, finite 여부, row pass/fail을 독립 재계산한다.</li>
+<li>C6만 고정 주 후보로 평가하고, 각 seed-fold에서 C0 대비 gradual/period 비열화와 두 historical period floor를 다시 확인한다.</li>
+<li>ordered normal/change pair 기준의 gradual·period fixed/broken diagnostics와 cosine confirmation counts/rates를 row 설명 필드로 보존한다.</li>
+<li>정확히 7개 canonical leaf만 publish하고, replay는 score-derived metrics·summary·decision·dashboard·artifact map을 다시 계산해 rehash tamper를 거부한다.</li>
+<li>dashboard는 등록된 method/family/metric scalar만 내보내며 raw score, path, label string을 포함하지 않는다.</li>
+</ul>
+
+<div class="note"><p>체크박스 truth는 이제 정확히 <code>35/42</code>다. Task 1–5 heading+step은 checked이고 Task 6만 0/7 unchecked다. 명시적 private root 두 개는 review 후 <code>/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821</code>로 recoverable move 되었고, aggregate logs/report/hashes는 그대로 유지된다.</p></div>
+<div class="stop"><p>이 대시보드는 terminal qualification-failed closeout state를 설명한다. official evaluate/inspect, official root 생성, TEST label query, routing, champion/pending mutation, promotion, Task 6 실행은 계속 금지다. 이전의 pre-science wrapper failure 두 건은 로그로 보존되지만 scientific reproduction으로 계산하지 않는다.</p></div>
+</main></body></html>

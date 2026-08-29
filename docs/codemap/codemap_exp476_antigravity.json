@@ -1,0 +1,90 @@
+{
+  "schema": "exp476_minimum_zf_guard_codemap_v1",
+  "current_commit": "82daefaeac56ecc2391fd9457c6ded1ecf9b1787",
+  "frozen_exp475_result_sha256": "6d10981f56af82cd057ad3e0121a4d16568a85c7f00bf06d774c70357f9dd63f",
+  "nodes": [
+    {
+      "id": "exp475_policy",
+      "path": "experiments/exp475_joint_tail_fallback_routing_antigravity/policy_antigravity.py",
+      "caller": "Exp475 evaluator only",
+      "effect": "Frozen prior policy; remains unchanged for exact Exp475 replay.",
+      "tests": ["experiments/exp475_joint_tail_fallback_routing_antigravity/tests/test_policy_antigravity.py"]
+    },
+    {
+      "id": "exp475_results",
+      "path": "experiments/exp475_joint_tail_fallback_routing_antigravity/results_antigravity.json",
+      "caller": "Exp476 comparison only",
+      "effect": "Frozen redundant-guard result with zero changed selections.",
+      "tests": []
+    },
+    {
+      "id": "frozen_inputs",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/train_features_antigravity.json",
+      "caller": "Exp476 runner read-only",
+      "effect": "Supplies the same 962 TRAIN-only feature rows used by Exp474 and Exp475.",
+      "tests": ["experiments/exp474_conservative_fallback_routing_antigravity/tests/test_ragged_features_antigravity.py"]
+    },
+    {
+      "id": "checkpoints",
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints",
+      "caller": "Exp476 evaluator read-only",
+      "effect": "Supplies the same frozen candidate outcomes.",
+      "tests": []
+    },
+    {
+      "id": "exp476_policy",
+      "path": "experiments/exp476_minimum_zf_fallback_routing_antigravity/policy_antigravity.py",
+      "caller": "Exp476 evaluator",
+      "effect": "Rejects a non-MiniRocket proposal if any of its 31 nearest historical neighbours has negative ZF gain.",
+      "tests": ["experiments/exp476_minimum_zf_fallback_routing_antigravity/tests/test_policy_antigravity.py"]
+    },
+    {
+      "id": "exp476_evaluation",
+      "path": "experiments/exp476_minimum_zf_fallback_routing_antigravity/evaluation_antigravity.py",
+      "caller": "Exp476 runner",
+      "effect": "Runs the same 120-family held-out validation with the minimum-ZF guard.",
+      "tests": ["experiments/exp476_minimum_zf_fallback_routing_antigravity/tests/test_evaluation_antigravity.py"]
+    },
+    {
+      "id": "exp476_runner",
+      "path": "experiments/exp476_minimum_zf_fallback_routing_antigravity/run_antigravity.py",
+      "caller": "approved Exp476 operator",
+      "effect": "Verifies the Exp475 hash, reuses frozen inputs, writes Exp476 JSON and HTML only.",
+      "tests": ["experiments/exp476_minimum_zf_fallback_routing_antigravity/tests/test_runner_antigravity.py"]
+    },
+    {
+      "id": "exp476_results",
+      "path": "experiments/exp476_minimum_zf_fallback_routing_antigravity/results_antigravity.json",
+      "caller": "Exp476 dashboard and deterministic replay",
+      "effect": "Preserves 962 decisions, 111 minimum-ZF rejections, improved AUC, restored ZF, and all passing gates.",
+      "tests": []
+    },
+    {
+      "id": "exp476_dashboard",
+      "path": "docs/EXP476_DASHBOARD_antigravity.html",
+      "caller": "user",
+      "effect": "Shows the passing result and checks every completed step while leaving official integration unchecked.",
+      "tests": ["experiments/exp476_minimum_zf_fallback_routing_antigravity/tests/test_runner_antigravity.py"]
+    }
+  ],
+  "edges": [
+    {"from": "exp476_policy", "to": "exp475_policy", "type": "extends"},
+    {"from": "exp476_runner", "to": "exp475_results", "type": "compares"},
+    {"from": "exp476_runner", "to": "frozen_inputs", "type": "reads"},
+    {"from": "exp476_runner", "to": "checkpoints", "type": "reads"},
+    {"from": "exp476_runner", "to": "exp476_evaluation", "type": "calls"},
+    {"from": "exp476_evaluation", "to": "exp476_policy", "type": "calls"},
+    {"from": "exp476_runner", "to": "exp476_results", "type": "writes"},
+    {"from": "exp476_results", "to": "exp476_dashboard", "type": "renders"}
+  ],
+  "constraints": [
+    "Exp474 and Exp475 sources, inputs, results, and dashboards remain unchanged.",
+    "The only routing-behaviour change is replacing the redundant ZF 20th-percentile guard with minimum neighbour ZF gain >= 0.",
+    "Dataset names define held-out families only and are not inference features.",
+    "Official routing modules and pipeline remain unchanged.",
+    "No feature or score source is recomputed, so MLX is not applicable.",
+    "Observed result: 111 selections changed, mean AUC rose to 0.982340991, mean ZF matched MiniRocket at 2.040540541, and severe AUC losses fell to 45."
+  ],
+  "result_sha256": "8b6f881d25d0d2865e05c5a5b9ca204f78641e1364bb60d536e7dcc8ec21733f",
+  "future_declared_paths": []
+}

@@ -316,14 +316,12 @@ def _score_fold_methods_with_dependencies_antigravity(
         "period",
     )
 
-    hybrid_original = np.maximum(
-        anomaly_rank_antigravity(hydra_original, hydra_original),
-        anomaly_rank_antigravity(period_original, period_original),
-    )
+    # Exp472: use raw distance instead of rank to avoid [0,1] saturation.
+    hybrid_original = np.maximum(hydra_original, period_original)
     hybrid_primary = {
         change_type: np.maximum(
-            anomaly_rank_antigravity(hydra_original, hydra_primary[change_type]),
-            anomaly_rank_antigravity(period_original, period_primary[change_type]),
+            hydra_primary[change_type],
+            period_primary[change_type],
         )
         for change_type in _PRIMARY_TYPES_ANTIGRAVITY
     }

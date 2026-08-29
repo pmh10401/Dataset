@@ -1,0 +1,127 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp465 ECG200 C8 외부 검증 구현 계획</title><style>
+body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}.box{padding:1rem;margin:1rem 0;background:#f5f7fa}.stop{border-left:6px solid #b42318}h1,h2{line-height:1.3}li{margin:.45rem 0}input{width:1.05rem;height:1.05rem;vertical-align:-.15rem}
+</style></head><body><main>
+<h1>Exp465 ECG200 C8 외부 검증 구현 계획</h1>
+<blockquote><strong>Agent 실행 규칙:</strong> <code>superpowers:subagent-driven-development</code> 또는 <code>superpowers:executing-plans</code>로 Task별 실행한다. 완료된 Task와 Step만 fresh review 뒤 체크한다.</blockquote>
+<table>
+<tr><th>Goal</th><td>ECG200 TRAIN 정상 69개에서 Exp464 C8 exact가 엄격한 10/10 외부 자격 기준을 통과하는지 검증한다.</td></tr>
+<tr><th>Architecture</th><td>Exp464 흐름을 작은 controlled fork로 만든다. 입력 모듈은 공식 TRAIN 검증과 96→140 보간을, 과학 모듈은 C0·C6·C8만 담당한다. 판정·출판·재생은 원점수에서 모든 지표를 다시 계산한다.</td></tr>
+<tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, stdlib unittest/json/hashlib/pathlib/urllib, 기존 aeon/Hydra CPU 경로. interpreter: <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code>.</td></tr>
+<tr><th>Spec</th><td><code>docs/superpowers/specs/2026-08-22-exp465-ecg200-c8-external-validation-antigravity-design.html</code>, SHA-256 <code>a5f5f43e1787ad2942c883761ee95478e8cf5fcdcc958722a22fe0e1ad98d904</code>.</td></tr>
+<tr><th>Status</th><td><code>implementation_plan_written_awaiting_user_review</code>; 구현·private·공식 실행 0회.</td></tr>
+</table>
+<h2>Global constraints</h2><ul>
+<li>ECG200 TRAIN <code>100×96</code> 중 라벨 <code>+1</code> 정상 69개만 사용하며 TEST 파일은 접근하지 않는다.</li>
+<li>각 행은 고정 <code>np.interp</code> 식으로 <code>96→140</code> 변환한 뒤 기존 합성 변화를 만든다.</li>
+<li>seeds <code>20260721</code>, <code>20261721</code>, 5-fold, onset <code>56</code>, cosine <code>0.95</code>를 고정한다.</li>
+<li>C8만 주 후보다. C6는 진단용이며 사후 승격하지 않는다.</li>
+<li>네 AUC ≥0.85, 평균 ≥0.90, finite, C0 gradual·period 비열화 0건, 각 seed 정상 69개 confirmation 0건과 10/10을 모두 요구한다. Wilson은 설명값이다.</li>
+<li>Task 5 private 결과와 fresh review가 통과한 뒤에만 Task 6을 별도 승인할 수 있다.</li>
+<li>새 파일 이름에는 <code>antigravity</code>를 포함하고 사용자 문서는 HTML만 사용한다.</li>
+<li>MLX는 동일 candidate index, 수치 허용 범위와 1.1배 속도를 모두 통과할 때만 사용한다.</li>
+</ul><pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code></pre>
+<h2>파일 구조</h2><table><thead><tr><th>영역</th><th>파일</th><th>책임</th></tr></thead><tbody>
+<tr><td>계약</td><td><code>config_antigravity.py</code>, <code>contracts_antigravity.py</code></td><td>실험 ID, 자료, 방법, 합격선</td></tr>
+<tr><td>입력</td><td><code>sources_antigravity.py</code>, <code>interpolation_antigravity.py</code></td><td>TRAIN 검증·파싱, 정상 선택, 보간</td></tr>
+<tr><td>과학</td><td><code>scoring_antigravity.py</code></td><td>Exp464 scorer 직접 호출, C0/C6/C8 projection과 exact parity</td></tr>
+<tr><td>판정</td><td><code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></td><td>지표, 결정, 7개 결과와 재생</td></tr>
+<tr><td>실행</td><td><code>cli_antigravity.py</code>, <code>scratch/run_exp465_ecg200_c8_external_validation_antigravity.py</code></td><td>닫힌 evaluate/inspect</td></tr>
+<tr><td>지도</td><td><code>build_codemap_exp465_antigravity.py</code>, <code>codemap_exp465_antigravity.{html,json,lock}</code></td><td>호출자·영향·테스트</td></tr>
+</tbody></table><p>package: <code>experiments/exp465_ecg200_c8_external_validation_antigravity/</code></p>
+
+<h2><label><input type="checkbox" checked disabled> Task 1 — 계약, 문서와 코드맵</label></h2>
+<p><strong>Files:</strong> Create config/contracts/tests, Exp465 HTML 3종, map builder/triplet. Modify dashboard, three ledgers and plan.</p>
+<p><strong>Interfaces:</strong> Produces <code>FROZEN_CONFIG_ANTIGRAVITY: Exp465ConfigAntigravity</code> and immutable score/result contracts.</p><ol>
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED config.</strong></label><pre><code>config = FROZEN_CONFIG_ANTIGRAVITY
+self.assertEqual((config.train_rows, config.width, config.normal_rows), (100, 96, 69))
+self.assertEqual(config.method_order, ("C0", "C6", "C8"))
+self.assertEqual((config.primary_candidate, config.onset, config.cosine_min), ("C8", 56, 0.95))</code></pre><p>Run config test; expect import failure.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — Immutable config/contracts.</strong></label><p>Frozen dataclasses reject bool/int aliases, mutable containers, reordered mappings, non-C8 primary and changed gates.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — RED→GREEN governance.</strong></label><pre><code>self.assertEqual(state["label_query_count"], 0)
+self.assertEqual(state["official_evaluate_count"], 0)
+self.assertIsNone(state["artifact_map_sha256"])</code></pre><p>Create preregistration, runbook and implementation report in easy Korean HTML.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — Code map.</strong></label><p>Map answers what calls each module, what it affects and which tests cover it. Bare builder writes; exact <code>--validate-only</code> is read-only.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — GREEN twice.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_config_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_contracts_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_governance_antigravity
+$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_config_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_contracts_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_governance_antigravity
+$PY scratch/build_codemap_exp465_antigravity.py --validate-only</code></pre></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — Commit/review.</strong></label><p>Functional commit 후 clean map-only child. spec PASS와 quality APPROVED 뒤 Task 1 체크.</p></li></ol>
+
+<h2><label><input type="checkbox" checked disabled> Task 2 — ECG200 TRAIN과 96→140 보간</label></h2>
+<p><strong>Files:</strong> Create sources/interpolation modules and tests. Modify docs, ledgers, map.</p>
+<p><strong>Interfaces:</strong> <code>load_ecg200_normal_train_antigravity(path)-&gt;(69,96)</code>, <code>interpolate_to_140_antigravity(values)-&gt;(n,140)</code>; owned C-contiguous read-only float64.</p><ol>
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED source.</strong></label><pre><code>normal = load_ecg200_normal_train_antigravity(fixture)
+self.assertEqual(normal.shape, (69, 96))
+self.assertEqual(normal.dtype, np.float64)
+self.assertTrue(normal.flags.owndata and not normal.flags.writeable)</code></pre><p>Reject wrong MD5/shape/labels/normal count/nonfinite and TEST-named paths.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — Parser.</strong></label><pre><code>values_text, label_text = data_line.rsplit(":", 1)
+values = np.asarray([float(x) for x in values_text.split(",")], dtype=np.float64)
+label = int(label_text)</code></pre><p>Require MD5 <code>808875aeac1c358a90c630fe369327c4</code>, width 96, label ±1.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — RED interpolation.</strong></label><pre><code>expected = np.vstack([np.interp(np.linspace(0,1,140), np.linspace(0,1,96), row) for row in x96])
+np.testing.assert_array_equal(interpolate_to_140_antigravity(x96), expected)</code></pre><p>Test endpoints, nonlinear/constant rows, flags and immutability.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — Minimal interpolation.</strong></label><p>Use only the design formula; no smoothing, normalization, onset choice or alternative resampling.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — Real TRAIN smoke.</strong></label><p>Fetch only official TRAIN to an external <code>antigravity</code>-named path, record URL/MD5/SHA-256, verify 100×96, 69/31 and output 69×140. TEST remains unopened.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — GREEN/commit/review.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_sources_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_interpolation_antigravity
+$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_sources_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_interpolation_antigravity</code></pre><p>Run Exp464 source regression, map/diff checks, commit and review.</p></li></ol>
+
+<h2><label><input type="checkbox" checked disabled> Task 3 — Exp464-bound C0/C6/C8 점수</label></h2>
+<p><strong>Files:</strong> Create <code>scoring_antigravity.py</code> and <code>tests/test_scoring_antigravity.py</code>. Modify docs, ledgers, map.</p>
+<p><strong>Interfaces:</strong> <code>score_fold_methods_antigravity(train140, fit_indices, query_indices, *, seed, fold_index, authority) -&gt; FoldMethodScoresAntigravity</code>. Result methods are exactly <code>("C0","C6","C8")</code>; <code>original</code> holds normal scores and <code>primary</code> holds exactly four synthetic-type score arrays.</p><ol>
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED direct binding.</strong></label><pre><code>source = score_exp464_fold_methods_antigravity(train140, fit, query, seed=seed, fold_index=fold, authority=authority)
+actual = score_fold_methods_antigravity(train140, fit, query, seed=seed, fold_index=fold, authority=authority)
+self.assertEqual(actual.methods, ("C0", "C6", "C8"))
+for method in actual.methods:
+    np.testing.assert_array_equal(actual.original[method], source.original[method])</code></pre><p>Also require exact equality for four primary arrays, confirmation, amplitudes, cosines, evidence blobs and provenance.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — Golden fixture.</strong></label><p>Use fixed finite 20×140 input, sorted fit/query indices, both seeds and all five folds. Compare directly with Exp464 for every invocation.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — Projection only.</strong></label><pre><code>source = score_exp464_fold_methods_antigravity(
+    train140, fit_indices, query_indices,
+    seed=seed, fold_index=fold_index, authority=authority,
+)
+return project_methods_antigravity(source, ("C0", "C6", "C8"))</code></pre><p>Do not rewrite C0, the synthetic generator, C6 or C8 mathematics.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — Stability interpretation.</strong></label><p>The same 69 rows under two seeds produce 10 repeated stability records, not 690 independent observations.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — MLX gate.</strong></label><p>Same 69×140 input and seed 4653001. Record versions/device/transfer-sync/parity/speed. CPU unless every project gate passes.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — GREEN/commit/review.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_scoring_antigravity
+$PY -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_scoring_antigravity</code></pre><p>Run Exp465 twice and Exp464 once; require exact parity.</p></li></ol>
+
+<h2><label><input type="checkbox" checked disabled> Task 4 — 판정, 결과, 재생, 대시보드</label></h2>
+<p><strong>Files:</strong> Create qualification/evaluation/artifacts/replay/dashboard-export modules and tests. Modify truth docs, ledgers, map.</p>
+<p><strong>Interfaces:</strong> <code>qualify_methods_antigravity</code>, <code>evaluate_qualification_antigravity</code>, <code>publish_result_antigravity</code>, <code>inspect_replay_at_antigravity</code>, <code>export_dashboard_antigravity</code>.</p><ol>
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED metrics.</strong></label><p>Raw scores에서 four AUC, mean, finite, C8-vs-C0 gradual/period와 10/10을 재계산하고 위조 booleans를 거부한다. 각 seed의 5-fold out-of-fold 정상 confirmation 합계는 정확히 0이어야 한다. Wilson <code>0.05273725818905172</code>는 설명값으로만 기록한다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — RED diagnostics.</strong></label><pre><code>fixed = count((not correct_c0) and correct_c8)
+broken = count(correct_c0 and (not correct_c8))
+# ties: neither</code></pre><p>normal×gradual/period total/fixed/broken은 설명값만 된다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — Decision.</strong></label><pre><code>passed = c8_passed_records == 10 and all(seed_normal_confirmations[s] == 0 for s in seeds) and all(
+    r.c8_gradual_auc &gt;= r.c0_gradual_auc and r.c8_period_auc &gt;= r.c0_period_auc
+    for r in rows
+)</code></pre><p>각 row는 four AUC ≥0.85, mean ≥0.90와 finite를 요구한다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — Seven leaves.</strong></label><p>context, fold metrics, failed folds, summaries, decision, dashboard snapshot, artifact map을 canonical하게 출판한다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — Semantic replay.</strong></label><p>모든 score-derived field를 재계산하고 score/AUC/Wilson 설명값/confirmation/count/summary/decision/dashboard 변조를 거부한다.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — GREEN/commit/review.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_qualification_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_evaluation_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_artifacts_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_replay_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_dashboard_export_antigravity</code></pre><p>Focused twice, Tasks 1–3 once, temporary publish→inspect, compile/map/diff, then commit/review.</p></li></ol>
+
+<h2><label><input type="checkbox" checked disabled> Task 5 — 닫힌 CLI와 private 재현 2회</label></h2>
+<p><strong>Files:</strong> Create CLI, launcher, CLI tests. Modify all truth docs, ledgers, plan, map.</p>
+<p><strong>Interfaces:</strong> Public CLI accepts only <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>; root/seed/fold/gate/retry/resume forbidden.</p><ol>
+<li><label><input type="checkbox" checked disabled> <strong>Step 1 — RED CLI.</strong></label><p>Test parser, fixed interpreter, outside-CWD launcher, lazy imports, official-root absence, private seam and label0.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 2 — CLI GREEN twice.</strong></label><pre><code>$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_cli_antigravity
+$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_cli_antigravity</code></pre><p>Commit/review before heavy run.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 3 — Private run 1.</strong></label><p>Clean reviewed commit에서 <code>/private/tmp/exp465_task5_private_run1_antigravity</code> evaluate→inspect once.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 4 — Private run 2.</strong></label><p>Run 1 종료 뒤 run2에서 stdout, leaves/hashes, rows, summaries, decision, dashboard exact equality 확인.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 5 — Frozen decision.</strong></label><p>C8 gate 하나라도 실패하면 Task 6 금지. 통과하면 <code>private_qualification_passed_awaiting_fresh_review</code>만 기록.</p></li>
+<li><label><input type="checkbox" checked disabled> <strong>Step 6 — Full verify/review.</strong></label><pre><code>$PY -m unittest discover -s experiments/exp465_ecg200_c8_external_validation_antigravity/tests -p 'test_*_antigravity.py'
+$PY scratch/build_codemap_exp465_antigravity.py --validate-only
+$PY -m compileall -q experiments/exp465_ecg200_c8_external_validation_antigravity scratch/run_exp465_ecg200_c8_external_validation_antigravity.py
+git diff --check</code></pre><p>Exp465 twice, Exp464 science once, fresh scientific review.</p></li></ol>
+
+<h2><label><input type="checkbox" disabled> Task 6 — 별도 승인 공식 결과 보존</label></h2>
+<div class="box stop"><p>Task 5 C8 qualification과 fresh review가 모두 통과하고 사용자가 별도로 승인할 때만 연다.</p></div><ol>
+<li><label><input type="checkbox" disabled> <strong>Step 1 — Preflight.</strong></label><p>Clean commit, valid map, official root absent, process0, private pass, label0.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 2 — Evaluate once.</strong></label><pre><code>REVIEWED_COMMIT="$(git rev-parse HEAD)"
+$PY scratch/run_exp465_ecg200_c8_external_validation_antigravity.py evaluate --reviewed-commit "$REVIEWED_COMMIT"</code></pre><p>실패 시 재시도하지 않는다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 3 — Inspect once.</strong></label><pre><code>$PY scratch/run_exp465_ecg200_c8_external_validation_antigravity.py inspect</code></pre></li>
+<li><label><input type="checkbox" disabled> <strong>Step 4 — Verify.</strong></label><p>Seven leaves, map, rows/summaries/diagnostics, evaluate=inspect, immutable root, label0.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 5 — Record.</strong></label><p>HTML, ledgers, map만 갱신하고 routing/champion/pending/promotion은 바꾸지 않는다.</p></li>
+<li><label><input type="checkbox" disabled> <strong>Step 6 — Review/stop.</strong></label><p>Fresh review 뒤 쉬운 한국어로 설명하고 별도 routing 실험 여부를 결정한다.</p></li></ol>
+<h2>Execution choice</h2>
+<p><strong>1. Task별 서브에이전트:</strong> fresh implementer와 Task별 두 단계 review.</p>
+<p><strong>2. 현재 세션 순차 실행:</strong> <code>superpowers:executing-plans</code>로 Task별 checkpoint.</p>
+</main></body></html>

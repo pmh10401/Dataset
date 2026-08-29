@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp466 구현 보고서</title>
+<style>body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}</style>
+</head>
+<body><main>
+<h1>Exp466 구현 보고서</h1>
+<p>Task 6은 <code>qualification_failed_blocked_before_fn_validation</code>로 완료됐다. 같은 reviewed commit에서 비공개 TRAIN-only 평가와 독립 검사를 두 번씩 마쳤고 두 결과는 byte 단위로 같았지만, C9 합격은 <code>0/10</code>이었다. 따라서 이것은 성능 합격이 아니라 재현된 자격 검증 실패이며 Exp466은 재실행하지 않는다.</p>
+<h2>Task 1 범위</h2>
+<ul>
+<li><code>config_antigravity.py</code>는 TRAIN-only 입력, seed/fold, onset/suffix, warp/shared length, C0/P9/C9 순서, C9 단독 primary, AUC gate와 0-use governance를 exact-type frozen dataclass로 고정한다.</li>
+<li><code>contracts_antigravity.py</code>는 <code>Exp466PhaseEvidenceAntigravity</code>, <code>Exp466FoldResultAntigravity</code>, <code>Exp466QualificationAntigravity</code>를 불변 contract로 제공한다.</li>
+<li>계약은 seed별 정상 confirmation <code>0..69</code>를 유효한 실패 증거로 보존한다. 모든 seed가 0일 때만 pass gate를 만족하며, mutable/reordered mapping, 범위 밖 count, 불변성 위반, non-finite margin, 잘못된 정상 69개 집계, 잘못된 SHA-256, nonzero official/label count는 거부한다.</li>
+<li>사전등록·runbook·구현 보고서, 기존 dashboard의 Task 1 필드, 세 ledger의 additive planned entry, Exp466 코드맵 triplet을 작성한다.</li>
+</ul>
+<h2>TDD 증거</h2>
+<table>
+<tr><th>RED</th><td>focused suite가 새 config/contracts 모듈 부재로 <code>ModuleNotFoundError</code>를 내며 7 tests / 14 errors / exit 1로 실패했다.</td></tr>
+<tr><th>GREEN 1</th><td>최소 config/contracts 구현 후 7 tests, <code>OK</code>, exit 0.</td></tr>
+<tr><th>GREEN 2</th><td id="exp466-green-2-antigravity">동일 focused suite 재실행: 7 tests, <code>OK</code>, exit 0, 0.005초.</td></tr>
+<tr><th>코드맵·diff</th><td id="exp466-map-diff-antigravity"><code>scratch/build_codemap_exp466_antigravity.py --validate-only</code>, 5개 JSON parse, 다섯 사용자 HTML 구조 검증, <code>git diff --check</code>가 모두 exit 0이었다.</td></tr>
+<tr><th>Task 1 commit</th><td><code>5de243dede76c175c160d9612cc5b834900e559f</code> — <code>feat: freeze Exp466 authority and contracts</code>.</td></tr>
+<tr><th>독립 검토</th><td>Terra High가 전체 Task 1 diff를 다시 확인해 <code>SPEC PASS</code>, <code>QUALITY PASS</code>, 지적 0건으로 승인했다.</td></tr>
+</table>
+<div class="box"><p>Task 1에는 점수 workload가 없으므로 MLX를 채택하지 않는다. score-source full run 전 동일 입력·seed parity, candidate index equality, 수치 허용 범위, transfer/sync 포함 1.1배 속도 gate를 다시 평가한다.</p></div>
+<h2>Task 2 완료</h2>
+<p>Exp465의 TRAIN loader와 96→140 보간 함수를 같은 객체로 다시 내보내고, Exp464의 네 합성 변화 수식과 Exp465 C0 점수를 변경 없이 연결했다. fixture의 C0 normal/primary score bytes가 모두 같았고 TEST 이름은 파일을 열기 전에 거부됐다.</p>
+<table>
+<tr><th>검증</th><td>집중 검사 7개 GREEN ×2, 전체 Exp466 14개 GREEN, C0 byte parity, TEST-before-open, code-map 27 fingerprint, diff-check 통과</td></tr>
+<tr><th>독립 검토</th><td>Luna Max <code>SPEC PASS</code>, <code>QUALITY PASS</code>, 구현·코드맵 재검토 지적 0건</td></tr>
+<tr><th>MLX 판단</th><td>loader·보간·C0는 exact CPU 객체와 bytes를 유지해야 하고 합성 변화는 작은 NumPy 벡터 연산이므로 Task 2는 CPU를 유지한다. Task 3의 실제 새 score stage에서 parity와 속도를 측정한다.</td></tr>
+</table>
+<h2>Task 3 완료</h2>
+<p>P9는 파형을 그대로 비교한 오차와, 고정된 <code>1.25</code>만큼 되돌려 비교한 오차의 차이를 사용한다. 정상 TRAIN fit은 한 행씩 제외해 기준을 만들고, query는 전체 fit 기준을 사용한다. margin이 0보다 크고 정상 fit의 최댓값도 엄격히 넘을 때만 확인된 것으로 처리한다.</p>
+<table>
+<tr><th>검증</th><td>집중 검사 6개, 전체 Exp466 검사 20개, 0 margin 경계 mutation 검사, 코드맵 30/30 fingerprint, diff 검사 통과</td></tr>
+<tr><th>독립 검토</th><td>Terra High 최종 <code>SPEC PASS</code>, <code>QUALITY PASS</code>, 지적 0건. 초기 지적 1건은 0 margin이 음수 정상 기준보다 높아도 확인되지 않음을 고정하는 테스트로 해결했다.</td></tr>
+<tr><th>MLX 판단</th><td>CPU와 MLX 모두 같은 후보 7개를 골랐지만 margin 차이가 허용 범위 <code>1e-12</code>를 넘었다. CPU <code>0.0125초</code>, MLX <code>0.3121초</code>로 MLX가 더 느렸으므로 NumPy CPU를 고정했다.</td></tr>
+</table>
+<h2>Task 4 완료</h2>
+<p>C9는 P9가 정상 기준을 엄격히 넘은 위치에서만 <code>max(C0, P9)</code>를 사용하고, 나머지는 C0 값을 그대로 유지한다. 두 seed × 다섯 fold의 순서, seed별 서로 다른 정상 69개, 원시 입력에서 C0/P9/C9 재계산, 모든 고정 합격 기준을 코드로 잠갔다.</p>
+<table>
+<tr><th>검증</th><td>최초 RED 7개, 집중 검사 8개 GREEN ×2, 전체 Exp466 28개, Exp465 회귀 7개, 코드맵 37/37 fingerprint 통과</td></tr>
+<tr><th>독립 검토</th><td>Terra High 최종 <code>SPEC PASS</code>, <code>QUALITY PASS</code>, 남은 지적 0건. 코드맵 누락과 Task 5 원시 기록 입력 누락은 각각 map 확장과 명시적 <code>records</code> 인자로 해결했다.</td></tr>
+<tr><th>당시 결과 상태</th><td>Task 4 시점에는 합성 fixture 단위 검사만 수행했고 실제 ECG200 TRAIN qualification은 아직 실행하지 않았다. 뒤의 Task 6에서 실제 비공개 TRAIN-only 자격 검증을 수행했다.</td></tr>
+</table>
+<h2>Task 5 완료</h2>
+<p>publisher는 검증된 Task 4 기록·qualification·decision을 새 경로에만 쓰며, canonical JSON/JSONL과 자기 자신을 제외한 SHA-256 map을 포함해 정확히 7개 파일을 만든다. inspector는 이 7개 파일만 읽고 저장된 TRAIN·index·margin 증거에서 P9 rank, 엄격한 confirmation, C9, AUC, 평균, C0 차이, qualification, decision과 쉬운 한국어 대시보드를 독립적으로 다시 계산한다.</p>
+<table>
+<tr><th>실패 결과 보존</th><td>seed별 정상 confirmation <code>1</code>인 결정적 합성 fixture는 예외가 아니라 failed qualification으로 publish→inspect된다. 정확한 blocked-fold query index와 ordered fit complement도 publisher와 inspector 양쪽에서 확인한다.</td></tr>
+<tr><th>검증</th><td>Task 5 집중 검사 <code>10/10</code>을 두 번(<code>60.970초</code>, <code>60.886초</code>), 전체 Exp466 <code>39/39</code>(<code>124.598초</code>), Exp465 하위 회귀 <code>7/7</code>(<code>30.359초</code>) 통과했다. compileall, HTML parse, diff 검사, 금지된 loader/scorer scan, 임시 publish→inspect의 7개 파일 및 qualification·decision·artifact-map equality도 통과했다.</td></tr>
+<tr><th>독립 검토</th><td>fresh Sol은 <code>SHIP</code>, Critical 0건, Important 0건으로 판정했다. replay의 일부 계산 중복은 publisher의 파생값을 믿지 않고 독립 검증하기 위한 의도된 nonblocking minor다.</td></tr>
+<tr><th>당시 결과 상태</th><td>Task 5 시점의 수치는 결정적 합성 fixture 단위 검사였다. 이 설명은 Task 5 검증 이력에만 해당한다. 뒤의 Task 6에서는 실제 비공개 TRAIN-only 자격 검증 결과가 생겼지만 official 결과는 여전히 없다.</td></tr>
+</table>
+<h2>Task 6 Step 1~5 완료</h2>
+<p>CLI는 <code>evaluate --reviewed-commit LOWER40HEX</code>와 인수 없는 <code>inspect</code>만 받는다. Launcher는 고정 interpreter로 다시 시작하고, 환경 선택자 <code>run1</code> 또는 <code>run2</code>를 두 고정 private root에만 연결한다. 별도 canonical 순서 상태 파일이 run1 evaluate→inspect 뒤에만 run2 evaluate→inspect를 허용하며, 네 명령 모두 같은 깨끗한 reviewed commit을 요구한다.</p>
+<table>
+<tr><th>RED</th><td>CLI와 launcher가 없는 상태에서 새 경계 검사가 실패하는 것을 먼저 확인했다.</td></tr>
+<tr><th>집중 검사</th><td><code>17/17</code> GREEN을 같은 상태에서 두 번 확인했다.</td></tr>
+<tr><th>전체·이전 검사</th><td>전체 Exp466 <code>56/56</code>, 이전 Exp465 <code>7/7</code>을 통과했다.</td></tr>
+<tr><th>기본 검사</th><td><code>compileall</code>과 <code>git diff --check</code>를 통과했다.</td></tr>
+<tr><th>독립 검토</th><td>깨끗한 commit <code>0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a</code>에 대한 fresh Sol 판정은 <code>SHIP</code>이며 Critical 0건, Important 0건, Minor 0건이다.</td></tr>
+<tr><th>실행 전 검사</th><td>reviewed commit 고정 시점의 worktree clean, official root 부재, 중복 Exp466 process 부재 검사가 모두 <code>PASS</code>였다.</td></tr>
+<tr><th>실행 내용</th><td><code>evaluate</code>는 TRAIN을 한 번 읽고, 보간과 Exp465 C0 권한 준비를 각각 한 번 수행한 뒤 seed 순서대로 2×5 fold를 점수화한다. 이어서 qualification·decision·7개 결과 파일을 만들고 저장된 결과만으로 다시 검사한다. <code>inspect</code>는 데이터나 scorer를 부르지 않고 저장된 7개 파일만 다시 검사한다.</td></tr>
+<tr><th>비공개 실행</th><td>reviewed commit <code>0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a</code>에서 run1과 run2의 evaluate→inspect를 순서대로 완료했다. private run/evaluate/inspect 횟수는 <code>2/2/2</code>다.</td></tr>
+<tr><th>재현성</th><td>네 stdout과 두 root의 7개 파일이 모두 byte-equal이었다. stdout SHA-256은 모두 <code>7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1</code>이다. 외부 순서 상태는 <code>run2_inspected</code>로 끝났고 SHA-256은 <code>19c4896ea55b415c9a546ff9d3d49eeab982d146df3acacc5bb15ea287f982bd</code>다.</td></tr>
+<tr><th>판정</th><td><code>qualification_failed_blocked_before_fn_validation</code>. C9 합격 <code>0/10</code>, 모든 점수 finite.</td></tr>
+<tr><th>period 실패</th><td>10/10 fold가 AUC 0.85 미만(<code>0.6862244897959183</code>~<code>0.826530612244898</code>). C0보다 좋아진 fold 0개, 같은 fold 8개, 나빠진 fold 2개이며 최소 차이는 <code>-0.0535714285714286</code>였다. confirmation이 없는 fold는 8개였다.</td></tr>
+<tr><th>다른 실패</th><td>평균 AUC 0.90 미만이 7/10(<code>0.8628826530612246</code>~<code>0.9056122448979591</code>), gradual AUC가 C0보다 낮은 fold가 2개(최소 차이 <code>-0.0357142857142857</code>)였다. 두 seed 모두 정상 69회 중 confirmation 1회가 나와 0회 조건을 어겼다.</td></tr>
+<tr><th>공식·외부 상태</th><td>official evaluate/inspect <code>0/0</code>, official root 없음, official result와 공식 용도 hash는 <code>null</code>. label query 0, TEST 열기 false, routing/champion/pending/promotion 모두 false다.</td></tr>
+<tr><th>Step 6 최초 전체 검사</th><td>private 결과가 생긴 뒤 56개 전체 검사를 처음 실행했을 때 검사 1개가 실패했다. 이 검사는 고정 private root가 아직 없다는 실행 전 상태만 가정하고 있었다. 과학 수식이나 결과 코드의 실패는 아니었다.</td></tr>
+<tr><th>수명주기 수정</th><td>commit <code>bf3a75e647c45a8311d89e5b2a3ad59d7735251f</code>에서 CLI 단위 검사를 현재 폴더와 임의 capability 거부 범위로 제한했다. 정확한 고정 root와 evaluate→inspect 순서는 기존 governance 검사가 계속 확인하므로 과학·실행 경계가 약해지지 않았다.</td></tr>
+<tr><th>수정 뒤 검사</th><td>집중 <code>17/17</code>, 직접 확인 <code>2/2</code>, 전체 Exp466 <code>56/56</code> 두 번(<code>123.424초</code>, <code>125.787초</code>), Exp465 하위 회귀 <code>7/7</code>(<code>29.391초</code>)를 통과했다.</td></tr>
+<tr><th>정적·보존 증거</th><td>compileall, map validate, JSON/HTML/diff/static exact 검사를 통과했다. 두 private root, 네 stdout, 7개 leaf, 순서 상태 <code>run2_inspected</code>, FAIL decision과 official root 부재도 다시 확인했다. ECG를 다시 실행하지 않았다.</td></tr>
+<tr><th>Terra 최종 검토</th><td><code>SPEC PASS</code>, <code>SCIENCE APPROVED</code>, terminal failed qualification 승인. Critical 0, Important 0, Minor 1이며, 유일한 minor는 보존 canonical 파일의 Task 5/<code>actual=false</code>/합성 전용 출처 문구다. 이 문구는 완전히 공개했고 downstream 사용 금지로 고정했다.</td></tr>
+<tr><th>fresh Sol 최종 검토</th><td><code>SHIP</code>, 새 Critical 0, Important 0, Minor 0. Task 6 제목, Step 6, 대시보드 최종 검토 체크를 명시적으로 승인했다.</td></tr>
+<tr><th>종료 상태</th><td><code>task_6_complete_qualification_failed_no_rerun</code>. 공식·TEST·라벨·FN 검증·라우팅·champion·pending·promotion 작업은 없고 현재 Exp467 FN 검증 자격도 없다.</td></tr>
+<tr><th>다음 연구</th><td>별도의 local STFT 또는 wavelet change-score 실험 하나를 새로 설계하고 사전등록한다. 별도 설계가 승인되기 전에는 정확한 실행 명령이 없다.</td></tr>
+</table>
+<div class="box"><p><strong>출처 주의:</strong> 보존된 canonical 파일 안에는 Task 5용 schema, <code>actual_private_official_result=false</code>, “합성 단위 결과”라는 오래된 설명이 남아 있다. 이 문구는 이번 Task 6 실행의 출처 설명으로 쓰면 안 된다. 이번 값은 실제 Exp466 Task 6 비공개 TRAIN-only 합성 변화 자격 검증 결과이며 official 또는 TEST 성능은 아니다. 과학 점수, FAIL 판정, 두 번 실행의 byte 재현성은 유효하다. 보존 root는 고치지 않고 Exp466도 다시 실행하지 않는다. 출처 문구까지 깨끗한 결과가 필요하면 별도 승인된 새 실험과 새 root를 사용한다.</p></div>
+<p>구현 상태는 <code>task_6_complete_qualification_failed_no_rerun</code>다. Task 6은 실패 자격 검증으로 완전히 닫혔으며 성능 통과로 해석하지 않는다.</p>
+</main></body>
+</html>

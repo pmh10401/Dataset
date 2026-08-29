@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>Exp471 Task 1 구현 brief</title></head><body><main>
+<h1>Exp471 Task 1 — 고정 계약·Exp470 authority·code map</h1>
+
+<h2>역할과 범위</h2>
+<p>Exp471의 이후 Task가 사용할 고정 config, Exp470 exact authority exports, immutable qualification contracts와 versioned code map을 TDD로 만든다. ACF scorer, runtime assessment, fold scoring, qualification 계산, artifact publication, CLI와 어떤 private/official 실행도 구현하거나 실행하지 않는다.</p>
+
+<h2>전역 제약</h2>
+<ul>
+<li>새 파일 이름은 모두 <code>antigravity</code>를 포함한다.</li>
+<li>ECG200 TRAIN 정상 69개, 96→140 보간, seeds <code>(20260721, 20261721)</code>, blocked fold 5개와 네 합성 변화는 Exp470 authority 그대로다.</li>
+<li>방법 순서는 <code>("C0", "E12", "C12")</code>다.</li>
+<li>창은 <code>[0:56]</code>, <code>[84:140]</code>, ACF 계산 lag는 1..25, peak 후보는 2..24다.</li>
+<li>median은 짝수일 때 가운데 두 값의 산술평균, peak 동점은 작은 lag, peak 없음은 integer 0이다.</li>
+<li>production backend는 float64 Numba, <code>fastmath=False</code>, <code>cache=False</code> 하나다. NumPy scorer나 자동 fallback은 없다.</li>
+<li>MLX는 적격성만 평가하며 Numba authority를 바꾸지 않는다.</li>
+<li>절대 AUC 0.85를 gate로 쓰지 않는다.</li>
+<li>official 실행, TEST/FN 접근, routing과 private 실행 1·2는 금지한다.</li>
+</ul>
+
+<h2>Task 1.1 — 변경 전 code map 확인</h2>
+<p>먼저 다음 명령을 실행해 기존 map을 검증하고, report에 config/sources/interpolation/synthetic/predecessor/contracts 각각에 대해 caller, effect, tests를 기록한다.</p>
+<pre><code>python3 scratch/build_codemap_exp470_antigravity.py --validate-only
+python3 -m json.tool docs/codemap/codemap_exp470_antigravity.json &gt;/dev/null
+python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null</code></pre>
+
+<h2>Task 1.2–1.3 — RED tests first</h2>
+<p>production 파일보다 먼저 아래 테스트 파일을 작성한다.</p>
+<ul>
+<li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests/test_config_antigravity.py</code></li>
+<li><code>tests/test_contracts_antigravity.py</code></li>
+<li><code>tests/test_predecessor_antigravity.py</code></li>
+</ul>
+<p>테스트는 실제 import/behavior를 검사하며 source-text grep이나 mock을 쓰지 않는다. production package가 없기 때문에 import failure로 RED가 되는 것을 확인하고 report에 명령·실패 출력·예상 이유를 남긴다.</p>
+<p>config 테스트는 아래 exact tuple을 한 번에 검증하고 frozen mutation, exact-type aliases, reordered tuples를 거부해야 한다.</p>
+<pre><code>seeds=(20260721, 20261721)
+folds=5
+normal_rows=69
+source_width=96
+interpolated_width=140
+onset=56
+warp_factor=1.25
+early_start=0
+late_start=84
+window_length=56
+acf_lag_min=1
+acf_lag_max=25
+peak_lag_min=2
+peak_lag_max=24
+mad_scale=1.4826
+method_order=("C0", "E12", "C12")
+change_types=("level_shift", "gradual_drift", "amplitude_scaling", "period_change")
+required_speedup=1.1</code></pre>
+<p>authority 테스트는 Exp471 exports가 wrapper가 아니라 아래 Exp470 objects와 <code>is</code> identity가 같음을 검증한다.</p>
+<ul>
+<li><code>load_ecg200_normal_train_antigravity</code></li>
+<li><code>interpolate_to_140_antigravity</code></li>
+<li><code>primary_rows_antigravity</code></li>
+<li><code>capture_exp465_authority_antigravity</code></li>
+<li><code>score_c0_fold_antigravity</code></li>
+</ul>
+<p>contracts 테스트는 Exp470 contracts의 실제 behavior pattern을 유지하되 이름과 score field를 Exp471/C12로 바꾼다. immutable ordered mappings, exact seed-major 10 rows, non-negative exact-int counts, finite AUC in [0,1], strict bools, label_query_count=0, optional lowercase SHA-256와 failure reason tuple을 검사한다.</p>
+
+<h2>Task 1.4 — 최소 구현</h2>
+<p>다음 production 파일만 만든다.</p>
+<ul>
+<li><code>config_antigravity.py</code>: <code>Exp471ConfigAntigravity</code>, exact frozen validation, <code>FROZEN_CONFIG_ANTIGRAVITY</code>.</li>
+<li><code>sources_antigravity.py</code>, <code>interpolation_antigravity.py</code>, <code>synthetic_antigravity.py</code>, <code>predecessor_antigravity.py</code>: 대응 Exp470 object의 direct re-export만.</li>
+<li><code>contracts_antigravity.py</code>: <code>PairRepairCountsAntigravity</code>, <code>Exp471FoldResultAntigravity</code>, <code>Exp471QualificationAntigravity</code>. Exp470 구조를 사용하고 fold result의 score fields는 <code>c0_per_type_auc</code>와 <code>c12_per_type_auc</code>다. Task 4가 값을 계산·채운다.</li>
+<li>package와 tests의 <code>__init___antigravity.py</code>를 만들지 않는다. Python package marker가 필요하면 기존 관례의 <code>__init__.py</code>만 허용하며 새 filename 정책 예외를 report에 명시한다.</li>
+</ul>
+
+<h2>Task 1.5 — Exp471 code map과 HTML report</h2>
+<p><code>scratch/build_codemap_exp471_antigravity.py</code>와 <code>docs/codemap/codemap_exp471_antigravity.html/json/lock</code>을 만든다. map에는 모든 Task 1 production/test/report/builder/triplet path, Exp470 authority nodes와 authority edges가 있어야 한다. 모든 edge endpoint가 실제 node여야 하고 source fingerprints와 triplet validation을 제공한다.</p>
+<p><code>docs/EXP471_IMPLEMENTATION_REPORT_antigravity.html</code>에는 Task 1 범위, RED/GREEN 증거, code map caller/effect/tests, 변경 파일, 금지 실행 0, Task 1 완료 checkbox와 Task 2–6/private/official 미완료 checkbox를 쉬운 한국어로 기록한다.</p>
+
+<h2>사용자 체크박스 ruling</h2>
+<p>Task 1의 code/tests/map/report가 모두 검증된 뒤에만 다음을 갱신한다.</p>
+<ul>
+<li>구현 계획 HTML의 Task 1.1–1.6과 완료 정의 Task 1 checkbox만 checked.</li>
+<li>설계서의 Task 1 checkbox만 checked.</li>
+<li>대시보드 source JSON에서 Task 1=완료, Task 2–6=미시작, private/official=미실행. <code>completed_tasks=1</code>.</li>
+<li>대시보드 HTML을 portable builder로 다시 생성하고 1440/390 verification을 통과.</li>
+</ul>
+
+<h2>Task 1.6 — GREEN, 재검증, commit</h2>
+<p>다음 focused suite를 두 번 실행해 모두 통과시키고, Exp470 baseline 9 tests도 한 번 재실행한다. code map builder를 generate와 validate-only로 실행하며 JSON/lock을 검사하고 <code>git diff --check</code>를 통과시킨다.</p>
+<pre><code>python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_config_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_contracts_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_predecessor_antigravity</code></pre>
+<p>작업을 self-review한 뒤 모든 Task 1 변경을 commit한다. private/official/TEST/FN/routing 실행이나 결과값 생성은 하지 않는다.</p>
+</main></body></html>

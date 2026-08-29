@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp470 ECG200 spectral entropy Numba 구현 계획</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#fff;--fg:#172033;--muted:#5e6878;--line:#b8c0cc;--soft:#f3f6fa;--ok:#16794b;--warn:#9a6700;--stop:#b42318}
+    @media(prefers-color-scheme:dark){:root{--bg:#181a1f;--fg:#e3e7ee;--muted:#b6becb;--line:#48505e;--soft:#232832;--ok:#72d39a;--warn:#f0c36a;--stop:#ff8a87}}
+    *{box-sizing:border-box}body{max-width:1180px;margin:2rem auto;padding:0 1rem;background:var(--bg);color:var(--fg);font:16px/1.68 system-ui,-apple-system,sans-serif}h1,h2,h3{line-height:1.25}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid var(--line);padding:.6rem;text-align:left;vertical-align:top}code,pre{background:var(--soft);border-radius:5px}code{padding:.1rem .3rem}pre{padding:1rem;overflow:auto;white-space:pre}.box{background:var(--soft);border-left:6px solid #3769b1;padding:1rem;margin:1rem 0}.ok{border-left-color:var(--ok)}.warn{border-left-color:var(--warn)}.stop{border-left-color:var(--stop)}.muted{color:var(--muted)}label{display:block;margin:.42rem 0}input{margin-right:.55rem}
+  </style>
+</head>
+<body><main>
+  <h1>Exp470 ECG200 spectral entropy Numba 구현 계획</h1>
+  <div class="box ok">
+    <p><strong>For agentic workers:</strong> 구현 시 <code>superpowers:subagent-driven-development</code>(권장) 또는 <code>superpowers:executing-plans</code>를 반드시 사용한다. 각 단계는 아래 HTML checkbox로 추적한다.</p>
+    <p><strong>목표:</strong> ECG200 TRAIN-only에서 spectral entropy가 C0의 잔여 정상–period 순서 오류를 안전하게 고치는지 Numba 단일 계산 경로로 검증한다.</p>
+    <p><strong>구조:</strong> Exp468의 입력·보간·합성 변화·C0 authority를 그대로 가져오고, Exp470은 spectral entropy, C11 결합, pair repair 판정만 새로 구현한다. 별도 NumPy 점수 backend는 만들지 않으며 작은 Python <code>math</code> 기준 검사와 재현성 검사를 통과해야 결과 실행 경로가 열린다.</p>
+    <p><strong>기술:</strong> Python 3, Numba, llvmlite, 기존 ndarray 기반 Exp468 authority, unittest, canonical JSON/JSONL, self-contained HTML.</p>
+    <p><strong>설계서:</strong> <a href="../specs/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity-design.html">Exp470 승인 설계서</a></p>
+  </div>
+
+  <h2>전역 제약</h2>
+  <ul>
+    <li>새 파일 이름에는 모두 <code>antigravity</code>가 포함되어야 한다.</li>
+    <li>ECG200 TEST, 실제 FN/FP/F1, routing, champion, pending, promotion을 열거나 변경하지 않는다.</li>
+    <li>새 점수 후보는 <code>E11</code> spectral entropy 하나뿐이다.</li>
+    <li>새 점수의 공식 backend는 Numba 하나다. 별도 NumPy scorer와 자동 fallback을 만들지 않는다.</li>
+    <li>길이 28 direct DFT, float64, <code>fastmath=False</code>, <code>cache=False</code>, epsilon <code>1e-12</code>, 자연로그를 고정한다.</li>
+    <li>Python <code>math</code> 기준 대비 raw 최대 오차는 <code>1e-12</code> 이하여야 하며 rank·confirmation·fixed/broken은 정확히 같아야 한다.</li>
+    <li>MLX는 전체 실행 전에 적격성만 평가한다. Numba 공식 계산을 대신하지 않는다.</li>
+    <li>private 실행 1·2와 official 실행은 이 계획의 구현 Task에 포함하지 않으며 별도 사용자 승인이 필요하다.</li>
+    <li>각 Task는 실패 테스트 확인 → 최소 구현 → 통과 확인 → 독립 검토 → 커밋 순서로 끝낸다.</li>
+  </ul>
+
+  <h2>파일 구조</h2>
+  <table>
+    <tr><th>경로</th><th>책임</th></tr>
+    <tr><td><code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/config_antigravity.py</code></td><td>seed, fold, 창, DFT, epsilon, 방법 순서, 통과 기준을 한 곳에서 고정</td></tr>
+    <tr><td><code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/sources_antigravity.py</code>, <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/interpolation_antigravity.py</code>, <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/synthetic_antigravity.py</code>, <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/predecessor_antigravity.py</code></td><td>Exp468 authority exact re-export</td></tr>
+    <tr><td><code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/spectral_entropy_antigravity.py</code></td><td>Numba direct DFT, entropy, LOO raw, rank, strict confirmation</td></tr>
+    <tr><td><code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/python_reference_antigravity.py</code></td><td>작은 고정 입력 전용 Python <code>math</code> 기준값. 전체 score backend가 아님</td></tr>
+    <tr><td><code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/acceleration_antigravity.py</code></td><td>Numba cold/warm·결정성 기록과 MLX 적격성 smoke</td></tr>
+    <tr><td><code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/scoring_antigravity.py</code></td><td>fold별 C0/E11/C11 및 source-free raw evidence</td></tr>
+    <tr><td><code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/qualification_antigravity.py</code>, <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/evaluation_antigravity.py</code></td><td>pair credit, fixed/broken, 보호 변화, 정상 오확인, 최종 PASS/FAIL</td></tr>
+    <tr><td><code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/artifacts_antigravity.py</code>, <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/replay_antigravity.py</code></td><td>7개 canonical leaf, SHA-256, loader-free 재계산과 변조 거부</td></tr>
+    <tr><td><code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/dashboard_export_antigravity.py</code></td><td>실행 결과를 쉬운 한국어 HTML로 표시</td></tr>
+    <tr><td><code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/cli_antigravity.py</code>, <code>scratch/run_exp470_ecg200_spectral_entropy_numba_antigravity.py</code></td><td>승인 뒤에만 쓰는 단일 private sequence 경로</td></tr>
+    <tr><td><code>scratch/build_codemap_exp470_antigravity.py</code>, <code>docs/codemap/codemap_exp470_antigravity.{html,json,lock}</code></td><td>caller/effect/test 관계와 tracked fingerprint</td></tr>
+    <tr><td><code>docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>docs/EXP470_RUNBOOK_antigravity.html</code>, <code>docs/EXP470_DASHBOARD_antigravity.html</code></td><td>구현 근거, 실행 경계, 진행·결과 대시보드</td></tr>
+  </table>
+
+  <h2>Task 1 — 고정 계약·Exp468 authority·code map</h2>
+  <p><strong>Files:</strong> Create <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/config_antigravity.py</code>, <code>sources_antigravity.py</code>, <code>interpolation_antigravity.py</code>, <code>synthetic_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>contracts_antigravity.py</code>; Test <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/tests/test_config_antigravity.py</code>, <code>test_contracts_antigravity.py</code>, <code>test_predecessor_antigravity.py</code>; Create <code>scratch/build_codemap_exp470_antigravity.py</code>, <code>docs/codemap/codemap_exp470_antigravity.html</code>, <code>docs/codemap/codemap_exp470_antigravity.json</code>, <code>docs/codemap/codemap_exp470_antigravity.lock</code>, <code>docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html</code>.</p>
+  <p><strong>Interfaces:</strong> <code>FROZEN_CONFIG_ANTIGRAVITY</code>; <code>load_ecg200_normal_train_antigravity()</code>; <code>interpolate_to_140_antigravity(rows)</code>; <code>primary_rows_antigravity(row)</code>; <code>capture_exp465_authority_antigravity()</code>; <code>score_c0_fold_antigravity(train140, fit_indices, query_indices, *, seed, fold_index, authority)</code>.</p>
+  <section>
+    <label><input type="checkbox" checked disabled> <strong>1.1</strong> Exp468 versioned code map을 읽기 전용으로 검증한다.</label>
+    <pre><code>python3 scratch/build_codemap_exp468_antigravity.py --validate-only
+python3 -m json.tool docs/codemap/codemap_exp468_antigravity.json &gt;/dev/null
+python3 -m json.tool docs/codemap/codemap_exp468_antigravity.lock &gt;/dev/null</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>1.2</strong> config·authority가 다르면 실패하는 테스트를 먼저 작성한다.</label>
+    <pre><code>class Exp470ConfigTestsAntigravity(unittest.TestCase):
+    def test_frozen_math_and_method_order_antigravity(self):
+        c = FROZEN_CONFIG_ANTIGRAVITY
+        self.assertEqual(c.seeds, (20260721, 20261721))
+        self.assertEqual((c.onset, c.window_length, c.window_starts), (56, 28, (0, 14, 28, 42, 56)))
+        self.assertEqual((c.dft_bins, c.power_epsilon), (14, 1e-12))
+        self.assertEqual(c.method_order, ("C0", "E11", "C11"))
+
+class Exp470AuthorityTestsAntigravity(unittest.TestCase):
+    def test_exports_are_exact_exp468_objects_antigravity(self):
+        self.assertIs(load_ecg200_normal_train_antigravity, exp468_load)
+        self.assertIs(interpolate_to_140_antigravity, exp468_interpolate)
+        self.assertIs(primary_rows_antigravity, exp468_primary)
+        self.assertIs(score_c0_fold_antigravity, exp468_c0)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>1.3</strong> 테스트가 import 실패로 RED인지 확인한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_config_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_predecessor_antigravity</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>1.4</strong> frozen dataclass와 exact re-export를 최소 구현한다.</label>
+    <pre><code>@dataclass(frozen=True, slots=True)
+class Exp470ConfigAntigravity:
+    seeds: tuple[int, int] = (20260721, 20261721)
+    folds: int = 5
+    normal_rows: int = 69
+    interpolated_width: int = 140
+    onset: int = 56
+    window_length: int = 28
+    window_starts: tuple[int, ...] = (0, 14, 28, 42, 56)
+    dft_bins: int = 14
+    power_epsilon: float = 1e-12
+    method_order: tuple[str, str, str] = ("C0", "E11", "C11")
+    change_types: tuple[str, ...] = ("level_shift", "gradual_drift", "amplitude_scaling", "period_change")
+
+FROZEN_CONFIG_ANTIGRAVITY = Exp470ConfigAntigravity()</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>1.5</strong> Exp470 code map builder를 만들고 config→scoring→qualification→artifacts→CLI와 각 테스트 edge를 생성한다.</label>
+    <pre><code>python3 scratch/build_codemap_exp470_antigravity.py
+python3 scratch/build_codemap_exp470_antigravity.py --validate-only
+python3 -m json.tool docs/codemap/codemap_exp470_antigravity.json &gt;/dev/null
+python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>1.6</strong> Task 1 테스트를 두 번 통과시키고 commit한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_config_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_contracts_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_predecessor_antigravity
+python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_config_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_contracts_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_predecessor_antigravity
+git diff --check
+git add experiments/exp470_ecg200_spectral_entropy_numba_antigravity scratch/build_codemap_exp470_antigravity.py docs/codemap/codemap_exp470_antigravity.html docs/codemap/codemap_exp470_antigravity.json docs/codemap/codemap_exp470_antigravity.lock docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html
+git commit -m "feat: freeze Exp470 authority and contracts"</code></pre>
+  </section>
+
+  <h2>Task 2 — Numba spectral entropy 단일 scorer</h2>
+  <p><strong>Files:</strong> Create <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/spectral_entropy_antigravity.py</code>, <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/python_reference_antigravity.py</code>; Test <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/tests/test_spectral_entropy_antigravity.py</code>, <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/tests/test_python_reference_antigravity.py</code>.</p>
+  <p><strong>Produces:</strong> <code>EntropyScoresAntigravity</code>; <code>score_spectral_entropy_numba_antigravity(fit_rows, query_rows)</code>; 검사용 <code>score_entropy_python_antigravity(fit_rows, query_rows)</code>. Python 기준 함수는 production scorer에서 호출하지 않는다.</p>
+  <section>
+    <label><input type="checkbox" checked disabled> <strong>2.1</strong> constant·single-tone·고정 ramp와 strict 경계 RED 테스트를 작성한다.</label>
+    <pre><code>def fixed_rows_antigravity():
+    x = np.arange(140, dtype=np.float64)
+    return np.stack((
+        np.ones(140, dtype=np.float64),
+        np.sin(2.0 * np.pi * x / 14.0),
+        x / 139.0,
+        np.sin(2.0 * np.pi * x / 7.0) + 0.25 * np.sin(2.0 * np.pi * x / 4.0),
+    ))
+
+def test_numba_matches_python_math_reference_antigravity(self):
+    rows = fixed_rows_antigravity()  # shape (4, 140), float64; 상수·sinusoid·ramp·혼합파
+    expected = score_entropy_python_antigravity(rows[:3], rows[3:])
+    actual = score_spectral_entropy_numba_antigravity(rows[:3], rows[3:])
+    raw_error = max(
+        max(abs(a - b) for a, b in zip(actual.fit_raw_entropy, expected.fit_raw_entropy)),
+        max(abs(a - b) for a, b in zip(actual.query_raw_entropy, expected.query_raw_entropy)),
+    )
+    self.assertLessEqual(raw_error, 1e-12)
+    self.assertEqual(tuple(actual.query_ranks), expected.query_ranks)
+    self.assertEqual(tuple(actual.confirmation_mask), expected.confirmation_mask)
+    self.assertTrue(np.isfinite(actual.fit_raw_entropy).all())
+
+def test_strict_confirmation_does_not_accept_tie_antigravity(self):
+    query = np.array([0.2, 0.20000000000000004], dtype=np.float64)
+    actual = strict_confirmation_numba_antigravity(query, 0.2)
+    np.testing.assert_array_equal(actual, [False, True])</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>2.2</strong> RED를 확인한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_python_reference_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_spectral_entropy_antigravity</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>2.3</strong> Python 기준은 <code>math</code>, <code>statistics</code>, list만으로 구현하고 전체 pipeline API로 노출하지 않는다.</label>
+    <pre><code>@dataclass(frozen=True, slots=True)
+class PythonReferenceScoresAntigravity:
+    fit_raw_entropy: tuple[float, ...]
+    query_raw_entropy: tuple[float, ...]
+    query_ranks: tuple[float, ...]
+    confirmation_mask: tuple[bool, ...]
+    fit_normal_max_raw_entropy: float
+
+def entropy_window_python_antigravity(window: Sequence[float]) -&gt; float:
+    mean = math.fsum(window) / 28.0
+    weighted = [(window[n] - mean) * (0.5 - 0.5 * math.cos(2.0 * math.pi * n / 27.0)) for n in range(28)]
+    power = []
+    for k in range(1, 15):
+        real = math.fsum(weighted[n] * math.cos(2.0 * math.pi * k * n / 28.0) for n in range(28))
+        imag = -math.fsum(weighted[n] * math.sin(2.0 * math.pi * k * n / 28.0) for n in range(28))
+        power.append(real * real + 1e-12)
+    total = math.fsum(power)
+    probabilities = [value / total for value in power]
+    return -math.fsum(p * math.log(p) for p in probabilities) / math.log(14.0)
+
+def entropy_row_python_antigravity(row: Sequence[float]) -&gt; float:
+    starts = (0, 14, 28, 42, 56)
+    values = [entropy_window_python_antigravity(row[56 + start:56 + start + 28]) for start in starts]
+    return float(statistics.median(values))
+
+def score_entropy_python_antigravity(fit_rows, query_rows) -&gt; PythonReferenceScoresAntigravity:
+    fit_h = [entropy_row_python_antigravity(tuple(row)) for row in fit_rows]
+    query_h = [entropy_row_python_antigravity(tuple(row)) for row in query_rows]
+    fit_raw = []
+    for excluded, value in enumerate(fit_h):
+        others = [candidate for index, candidate in enumerate(fit_h) if index != excluded]
+        fit_raw.append(abs(value - statistics.median(others)))
+    center = statistics.median(fit_h)
+    query_raw = [abs(value - center) for value in query_h]
+    maximum = max(fit_raw)
+    ranks = tuple((1 + sum(value &lt;= raw for value in fit_raw)) / (len(fit_raw) + 1) for raw in query_raw)
+    confirmed = tuple(raw &gt; 0.0 and raw &gt; maximum for raw in query_raw)
+    return PythonReferenceScoresAntigravity(tuple(fit_raw), tuple(query_raw), ranks, confirmed, maximum)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>2.4</strong> Numba direct DFT와 LOO/rank/confirmation을 구현한다.</label>
+    <pre><code>@dataclass(frozen=True, slots=True)
+class EntropyScoresAntigravity:
+    fit_raw_entropy: np.ndarray
+    query_raw_entropy: np.ndarray
+    query_ranks: np.ndarray
+    confirmation_mask: np.ndarray
+    fit_normal_max_raw_entropy: float
+    backend: str
+
+@numba.njit(cache=False, fastmath=False)
+def strict_confirmation_numba_antigravity(query_raw, maximum):
+    output = np.empty(query_raw.size, dtype=np.bool_)
+    for index in range(query_raw.size):
+        output[index] = query_raw[index] &gt; 0.0 and query_raw[index] &gt; maximum
+    return output
+
+@numba.njit(cache=False, fastmath=False)
+def entropy_rows_numba_antigravity(rows: np.ndarray) -&gt; np.ndarray:
+    output = np.empty(rows.shape[0], dtype=np.float64)
+    starts = (0, 14, 28, 42, 56)
+    weighted = np.empty(28, dtype=np.float64)
+    frame_entropy = np.empty(5, dtype=np.float64)
+    power = np.empty(14, dtype=np.float64)
+    for row_index in range(rows.shape[0]):
+        for frame_index in range(5):
+            base = 56 + starts[frame_index]
+            mean = 0.0
+            for n in range(28):
+                mean += rows[row_index, base + n]
+            mean /= 28.0
+            for n in range(28):
+                hann = 0.5 - 0.5 * np.cos(2.0 * np.pi * n / 27.0)
+                weighted[n] = (rows[row_index, base + n] - mean) * hann
+            total = 0.0
+            for bin_index in range(14):
+                k = bin_index + 1
+                real = 0.0
+                imag = 0.0
+                for n in range(28):
+                    angle = 2.0 * np.pi * k * n / 28.0
+                    real += weighted[n] * np.cos(angle)
+                    imag -= weighted[n] * np.sin(angle)
+                value = real * real + imag * imag + 1e-12
+                power[bin_index] = value
+                total += value
+            entropy = 0.0
+            for bin_index in range(14):
+                probability = power[bin_index] / total
+                entropy -= probability * np.log(probability)
+            frame_entropy[frame_index] = entropy / np.log(14.0)
+        output[row_index] = np.median(frame_entropy)
+    return output
+
+@numba.njit(cache=False, fastmath=False)
+def _score_entropy_arrays_numba_antigravity(fit_rows, query_rows):
+    fit_h = entropy_rows_numba_antigravity(fit_rows)
+    query_h = entropy_rows_numba_antigravity(query_rows)
+    fit_raw = np.empty(fit_h.size, dtype=np.float64)
+    loo = np.empty(fit_h.size - 1, dtype=np.float64)
+    for excluded in range(fit_h.size):
+        position = 0
+        for index in range(fit_h.size):
+            if index != excluded:
+                loo[position] = fit_h[index]
+                position += 1
+        fit_raw[excluded] = abs(fit_h[excluded] - np.median(loo))
+    center = np.median(fit_h)
+    maximum = np.max(fit_raw)
+    query_raw = np.empty(query_h.size, dtype=np.float64)
+    ranks = np.empty(query_h.size, dtype=np.float64)
+    confirmed = np.empty(query_h.size, dtype=np.bool_)
+    for query_index in range(query_h.size):
+        raw = abs(query_h[query_index] - center)
+        query_raw[query_index] = raw
+        less_equal = 0
+        for fit_index in range(fit_raw.size):
+            if fit_raw[fit_index] &lt;= raw:
+                less_equal += 1
+        ranks[query_index] = (1.0 + less_equal) / (fit_raw.size + 1.0)
+        confirmed[query_index] = raw &gt; 0.0 and raw &gt; maximum
+    return fit_raw, query_raw, ranks, confirmed, maximum
+
+def score_spectral_entropy_numba_antigravity(fit_rows, query_rows) -&gt; EntropyScoresAntigravity:
+    fit = _validated_rows_antigravity(fit_rows, "fit_rows")
+    query = _validated_rows_antigravity(query_rows, "query_rows")
+    arrays = _score_entropy_arrays_numba_antigravity(fit, query)
+    return EntropyScoresAntigravity(*arrays, backend="numba")</code></pre>
+    <p class="muted">배열 유효성 확인과 immutable dataclass 포장만 Python에서 수행한다. DFT부터 confirmation까지의 수치 계산은 모두 Numba compiled 함수 안에서 수행한다. <code>njit</code> 함수 안의 <code>np.median</code>은 Numba가 native code로 컴파일하며 별도 NumPy backend 호출이 아니다.</p>
+    <label><input type="checkbox" checked disabled> <strong>2.5</strong> 두 테스트 모듈을 두 번 통과시키고 commit한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_python_reference_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_spectral_entropy_antigravity
+python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_python_reference_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_spectral_entropy_antigravity
+git diff --check
+python3 scratch/build_codemap_exp470_antigravity.py
+python3 scratch/build_codemap_exp470_antigravity.py --validate-only
+git add experiments/exp470_ecg200_spectral_entropy_numba_antigravity docs/codemap/codemap_exp470_antigravity.html docs/codemap/codemap_exp470_antigravity.json docs/codemap/codemap_exp470_antigravity.lock
+git commit -m "feat: add Numba spectral entropy scorer"</code></pre>
+  </section>
+
+  <h2>Task 3 — Numba 실행 근거와 MLX 적격성 smoke</h2>
+  <p><strong>Files:</strong> Create <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/acceleration_antigravity.py</code>, <code>scratch/exp470_acceleration_assessment_antigravity.json</code>; Test <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/tests/test_acceleration_antigravity.py</code>.</p>
+  <p><strong>Produces:</strong> <code>RuntimeAssessmentAntigravity</code>; <code>assess_runtime_antigravity(fit_rows, query_rows, repetitions=21)</code>; <code>fixed_reference_rows_antigravity()</code>는 4×140 고정 fixture를 반환하고, <code>score_bytes_antigravity(scores)</code>는 다섯 결과 field의 bytes를 반환하며, <code>scores_finite_antigravity(scores)</code>는 모든 float field의 유한성을 검사한다. <code>timing_summary_antigravity(values)</code>는 median/IQR을, <code>assess_mlx_smoke_antigravity(fit_rows, query_rows, numba_scores, numba_warm_median, required_speedup)</code>는 available·parity·determinism·speedup·fallback_reason을 반환한다. Numba는 항상 selected이며 MLX는 관측 상태만 기록한다.</p>
+  <section>
+    <label><input type="checkbox" checked disabled> <strong>3.1</strong> 필수 manifest와 중단 조건 RED 테스트를 작성한다.</label>
+    <pre><code>def test_assessment_records_numba_and_mlx_without_numpy_backend_antigravity(self):
+    result = assess_runtime_antigravity(self.fit_rows, self.query_rows, repetitions=3)
+    self.assertEqual(result.selected_backend, "numba")
+    self.assertEqual(set(result.backends), {"numba", "mlx"})
+    self.assertTrue(result.backends["numba"].finite)
+    self.assertTrue(result.backends["numba"].python_reference_passed)
+    self.assertTrue(result.backends["numba"].deterministic)
+
+def test_reference_failure_stops_antigravity(self):
+    with self.assertRaisesRegex(RuntimeError, "Python reference"):
+        assess_runtime_antigravity(self.fit_rows, self.query_rows, reference_tolerance=-1.0)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>3.2</strong> RED를 확인한다.</label>
+    <pre><code>python3 -m unittest experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_acceleration_antigravity</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>3.3</strong> cold compile, warm median/IQR, Python 기준, 결정성, MLX capability를 순차 측정한다.</label>
+    <pre><code>@dataclass(frozen=True, slots=True)
+class BackendAssessmentAntigravity:
+    backend: str
+    available: bool
+    finite: bool
+    python_reference_passed: bool | None
+    parity_passed: bool
+    exact_candidate_indices: bool
+    max_raw_abs_error: float | None
+    deterministic: bool
+    cold_seconds: float | None
+    warm_median_seconds: float | None
+    warm_iqr_seconds: float | None
+    speedup: float | None
+    eligible: bool
+    fallback_reason: str | None
+
+@dataclass(frozen=True, slots=True)
+class RuntimeAssessmentAntigravity:
+    selected_backend: str
+    required_mlx_speedup: float
+    backends: Mapping[str, BackendAssessmentAntigravity]
+    python_version: str
+    numba_version: str
+    llvmlite_version: str
+    cpu: str
+
+def assess_runtime_antigravity(fit_rows, query_rows, repetitions=21, reference_tolerance=1e-12):
+    fixed = fixed_reference_rows_antigravity()
+    expected = score_entropy_python_antigravity(fixed[:3], fixed[3:])
+    started = perf_counter()
+    observed = score_spectral_entropy_numba_antigravity(fixed[:3], fixed[3:])
+    cold_seconds = perf_counter() - started
+    error = max(
+        max(abs(a - b) for a, b in zip(observed.fit_raw_entropy, expected.fit_raw_entropy)),
+        max(abs(a - b) for a, b in zip(observed.query_raw_entropy, expected.query_raw_entropy)),
+    )
+    exact_discrete = (
+        tuple(observed.query_ranks) == expected.query_ranks
+        and tuple(observed.confirmation_mask) == expected.confirmation_mask
+    )
+    if not scores_finite_antigravity(observed) or error &gt; reference_tolerance or not exact_discrete:
+        raise RuntimeError("Python reference check failed")
+    first = score_spectral_entropy_numba_antigravity(fit_rows, query_rows)
+    second = score_spectral_entropy_numba_antigravity(fit_rows, query_rows)
+    if score_bytes_antigravity(first) != score_bytes_antigravity(second):
+        raise RuntimeError("Numba determinism check failed")
+    timings = []
+    for _ in range(repetitions):
+        started = perf_counter()
+        score_spectral_entropy_numba_antigravity(fit_rows, query_rows)
+        timings.append(perf_counter() - started)
+    warm_median, warm_iqr = timing_summary_antigravity(timings)
+    numba_result = BackendAssessmentAntigravity(
+        backend="numba", available=True, finite=True,
+        python_reference_passed=True, parity_passed=True,
+        exact_candidate_indices=True, max_raw_abs_error=error,
+        deterministic=True, cold_seconds=cold_seconds,
+        warm_median_seconds=warm_median, warm_iqr_seconds=warm_iqr,
+        speedup=1.0, eligible=True, fallback_reason=None,
+    )
+    mlx_result = assess_mlx_smoke_antigravity(
+        fit_rows, query_rows, first, warm_median, required_speedup=1.1,
+    )
+    return RuntimeAssessmentAntigravity(
+        selected_backend="numba", required_mlx_speedup=1.1,
+        backends=MappingProxyType({"numba": numba_result, "mlx": mlx_result}),
+        python_version=platform.python_version(), numba_version=numba.__version__,
+        llvmlite_version=llvmlite.__version__, cpu=platform.processor(),
+    )</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>3.4</strong> 실제 assessment JSON을 한 번 만들고 값이 finite인지 검증한다. 이것은 qualification 실행이 아니다.</label>
+    <pre><code>python3 -m experiments.exp470_ecg200_spectral_entropy_numba_antigravity.acceleration_antigravity \
+  --output scratch/exp470_acceleration_assessment_antigravity.json
+python3 -m json.tool scratch/exp470_acceleration_assessment_antigravity.json &gt;/dev/null</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>3.5</strong> 테스트와 manifest 재생성을 두 번 확인하고 commit한다.</label>
+    <pre><code>python3 -m unittest experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_acceleration_antigravity
+python3 -m unittest experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_acceleration_antigravity
+git diff --check
+python3 scratch/build_codemap_exp470_antigravity.py
+python3 scratch/build_codemap_exp470_antigravity.py --validate-only
+git add experiments/exp470_ecg200_spectral_entropy_numba_antigravity scratch/exp470_acceleration_assessment_antigravity.json docs/codemap/codemap_exp470_antigravity.html docs/codemap/codemap_exp470_antigravity.json docs/codemap/codemap_exp470_antigravity.lock
+git commit -m "test: qualify Exp470 Numba runtime"</code></pre>
+  </section>
+
+  <h2>Task 4 — C0/E11/C11 fold scoring과 pair repair 판정</h2>
+  <p><strong>Files:</strong> Create <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/scoring_antigravity.py</code>, <code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code>; Test <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/tests/test_scoring_antigravity.py</code>, <code>test_qualification_antigravity.py</code>, <code>test_evaluation_antigravity.py</code>.</p>
+  <p><strong>Consumes:</strong> Task 1 authority와 Task 2 <code>score_spectral_entropy_numba_antigravity</code>. <strong>Produces:</strong> <code>FoldMethodScoresAntigravity</code>, <code>PairRepairCountsAntigravity</code>, <code>Exp470QualificationAntigravity</code>, <code>QualificationDecisionAntigravity</code>; <code>validate_four_score_vectors_antigravity(c0_normal, c0_changed, c11_normal, c11_changed)</code>는 네 입력을 finite, one-dimensional, float64 C-contiguous 배열로 복사해 반환한다; <code>evaluate_repair_gates_antigravity(*, period_fixed, period_broken, protected_broken, normal_confirmations, fallback_exact, finite)</code>는 고정 gate만으로 private 적격성을 판정한다.</p>
+  <p><strong>Type contract:</strong> <code>FoldMethodScoresAntigravity</code>는 seed, fold_index, methods, original, primary, fit/query raw entropy, fit max, confirmed, input_train140, fit/query indices, backend를 보존한다. <code>Exp470QualificationAntigravity</code>는 10개 fold_results, seed별 period_fixed·period_broken·normal_confirmations, 세 protected_broken 합계, fallback_exact, finite, label_query_count를 보존한다. <code>QualificationDecisionAntigravity</code>는 passed, eligible_for_private_reproducibility, failure_reasons를 보존한다.</p>
+  <section>
+    <label><input type="checkbox" checked disabled> <strong>4.1</strong> pair credit와 exact fallback RED 테스트를 작성한다.</label>
+    <pre><code>def test_pair_repairs_count_fixed_and_broken_antigravity(self):
+    c0_n = np.array([0.8, 0.2])
+    c0_p = np.array([0.7, 0.3])
+    c11_n = np.array([0.8, 0.2])
+    c11_p = np.array([0.9, 0.3])
+    result = pair_repair_counts_antigravity(c0_n, c0_p, c11_n, c11_p)
+    self.assertEqual((result.fixed, result.broken), (1, 0))
+
+def test_unconfirmed_c11_is_byte_exact_c0_antigravity(self):
+    record = score_fold_methods_antigravity(
+        self.train140, self.fit_indices, self.query_indices,
+        seed=20260721, fold_index=0, authority=self.authority,
+    )
+    mask = ~record.confirmed["normal"]
+    self.assertEqual(record.original["C11"][mask].tobytes(), record.original["C0"][mask].tobytes())</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>4.2</strong> seed별 fixed/broken·정상 confirmation gate RED 테스트를 작성한다.</label>
+    <pre><code>def test_decision_requires_repairs_without_breakage_antigravity(self):
+    decision = evaluate_repair_gates_antigravity(
+        period_fixed={20260721: 1, 20261721: 2},
+        period_broken={20260721: 0, 20261721: 0},
+        protected_broken={"level_shift": 0, "gradual_drift": 0, "amplitude_scaling": 0},
+        normal_confirmations={20260721: 0, 20261721: 0},
+        fallback_exact=True, finite=True,
+    )
+    self.assertTrue(decision.eligible_for_private_reproducibility)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>4.3</strong> RED를 확인한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_scoring_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_qualification_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_evaluation_antigravity</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>4.4</strong> C11 결합과 pair credit/count를 Numba로 수식 그대로 구현한다.</label>
+    <pre><code>@dataclass(frozen=True, slots=True)
+class PairRepairCountsAntigravity:
+    fixed: int
+    broken: int
+
+@dataclass(frozen=True, slots=True)
+class QualificationDecisionAntigravity:
+    passed: bool
+    eligible_for_private_reproducibility: bool
+    failure_reasons: tuple[str, ...]
+
+@numba.njit(cache=False, fastmath=False)
+def _combine_c11_numba_antigravity(c0, ranks, confirmed):
+    output = np.empty_like(c0)
+    for index in range(c0.size):
+        if confirmed[index] and ranks[index] &gt; c0[index]:
+            output[index] = ranks[index]
+        else:
+            output[index] = c0[index]
+    return output
+
+@numba.njit(cache=False, fastmath=False)
+def _credit_antigravity(normal_score, changed_score):
+    if changed_score &gt; normal_score:
+        return 1.0
+    if changed_score == normal_score:
+        return 0.5
+    return 0.0
+
+@numba.njit(cache=False, fastmath=False)
+def _pair_repair_counts_numba_antigravity(c0_normal, c0_changed, c11_normal, c11_changed):
+    fixed = 0
+    broken = 0
+    for changed_index in range(c0_changed.size):
+        for normal_index in range(c0_normal.size):
+            before = _credit_antigravity(c0_normal[normal_index], c0_changed[changed_index])
+            after = _credit_antigravity(c11_normal[normal_index], c11_changed[changed_index])
+            if after &gt; before:
+                fixed += 1
+            elif after &lt; before:
+                broken += 1
+    return fixed, broken
+
+def pair_repair_counts_antigravity(c0_normal, c0_changed, c11_normal, c11_changed):
+    arrays = validate_four_score_vectors_antigravity(c0_normal, c0_changed, c11_normal, c11_changed)
+    fixed, broken = _pair_repair_counts_numba_antigravity(*arrays)
+    return PairRepairCountsAntigravity(fixed=fixed, broken=broken)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>4.5</strong> fold scorer는 C0 exact authority를 입력으로 받고, E11 계산과 C11 결합은 Numba 함수만 사용한다.</label>
+    <pre><code>entropy = score_spectral_entropy_numba_antigravity(train[fit], combined_query)
+c11 = {}
+for scope in SCOPES_ANTIGRAVITY:
+    section = slices[scope]
+    c11[scope] = _combine_c11_numba_antigravity(
+        c0_scores[scope], entropy.query_ranks[section], entropy.confirmation_mask[section],
+    )</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>4.6</strong> 10개 seed-fold replay는 AUC를 기록하되 0.85를 gate로 사용하지 않는지 검증한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_scoring_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_qualification_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_evaluation_antigravity
+python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_scoring_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_qualification_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_evaluation_antigravity
+git diff --check
+python3 scratch/build_codemap_exp470_antigravity.py
+python3 scratch/build_codemap_exp470_antigravity.py --validate-only
+git add experiments/exp470_ecg200_spectral_entropy_numba_antigravity docs/codemap/codemap_exp470_antigravity.html docs/codemap/codemap_exp470_antigravity.json docs/codemap/codemap_exp470_antigravity.lock
+git commit -m "feat: evaluate Exp470 pair repairs"</code></pre>
+  </section>
+
+  <h2>Task 5 — canonical 결과·source-free replay·HTML 결과 화면</h2>
+  <p><strong>Files:</strong> Create <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code>; Test <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/tests/test_artifacts_antigravity.py</code>, <code>test_replay_antigravity.py</code>, <code>test_dashboard_export_antigravity.py</code>; Modify <code>docs/EXP470_DASHBOARD_antigravity.html</code>, <code>scratch/exp470_dashboard_artifact_antigravity.json</code>.</p>
+  <p><strong>Produces:</strong> 정확히 7개 leaf: <code>artifact_sha256</code>, <code>context</code>, <code>dashboard_snapshot</code>, <code>decision</code>, <code>failed_folds</code>, <code>method_fold_metrics</code>, <code>method_summary</code>. 테스트 helper <code>tamper_and_rehash_antigravity(root, leaf, field)</code>는 지정 scalar를 바꾸고 6개 leaf hash를 다시 만들어 semantic replay가 hash만 맞는 변조도 거부하는지 확인한다.</p>
+  <section>
+    <label><input type="checkbox" checked disabled> <strong>5.1</strong> leaf set, canonical bytes, semantic tamper, HTML checkbox RED 테스트를 작성한다.</label>
+    <pre><code>def test_publication_has_exact_seven_leaves_antigravity(self):
+    published = publish_result_antigravity(self.root, self.records, self.qualification, self.decision)
+    self.assertEqual(set(path.name for path in self.root.iterdir()), set(LEAF_NAMES_ANTIGRAVITY))
+    self.assertEqual(len(published.artifact_sha256), 6)
+
+def test_replay_rejects_rehashed_fixed_count_tamper_antigravity(self):
+    tamper_and_rehash_antigravity(self.root, "decision_antigravity.json", "period_fixed")
+    with self.assertRaisesRegex(ValueError, "pair repair"):
+        inspect_result_antigravity(self.root)
+
+def test_dashboard_checks_only_completed_steps_antigravity(self):
+    html = export_dashboard_antigravity(self.inspected)
+    self.assertIn('checked disabled&gt; 결과 replay 검증', html)
+    self.assertNotIn('checked disabled&gt; official 실행', html)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>5.2</strong> RED를 확인한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_artifacts_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_replay_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_dashboard_export_antigravity</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>5.3</strong> canonical serializer와 7개 leaf publication을 구현한다.</label>
+    <pre><code>LEAF_NAMES_ANTIGRAVITY = (
+    "artifact_sha256_antigravity.json", "context_antigravity.json",
+    "dashboard_snapshot_antigravity.json", "decision_antigravity.json",
+    "failed_folds_antigravity.jsonl", "method_fold_metrics_antigravity.jsonl",
+    "method_summary_antigravity.jsonl",
+)
+
+def _canonical_json_bytes_antigravity(payload):
+    return (json.dumps(payload, ensure_ascii=False, allow_nan=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>5.4</strong> replay는 저장된 input으로 Numba entropy→C11→pair counts→decision을 다시 계산하고 모든 scalar/array를 비교한다.</label>
+    <pre><code>def inspect_result_antigravity(root: str | Path) -&gt; InspectedResultAntigravity:
+    hashes = _read_and_verify_hashes_antigravity(Path(root))
+    records = _records_from_context_antigravity(Path(root))
+    replayed = tuple(_replay_record_antigravity(record) for record in records)
+    qualification = qualify_antigravity(replayed)
+    decision = evaluate_qualification_antigravity(qualification)
+    _reject_semantic_drift_antigravity(root, replayed, qualification, decision)
+    return InspectedResultAntigravity(Path(root), replayed, qualification, decision, hashes)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>5.5</strong> HTML에는 fold별 fixed/broken, seed 합계, 정상 오확인, protected broken, AUC, backend 근거, private 대기 상태를 표시한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>5.6</strong> 테스트를 두 번 통과하고 portable dashboard 검증 후 commit한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_artifacts_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_replay_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_dashboard_export_antigravity
+python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_artifacts_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_replay_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_dashboard_export_antigravity
+node /Users/mac/.codex/plugins/cache/openai-curated-remote/data-analytics/0.2.8-13ceeea1f599/skills/build-report/scripts/deliver_portable_artifact.mjs \
+  --input scratch/exp470_dashboard_artifact_antigravity.json \
+  --output docs/EXP470_DASHBOARD_antigravity.html
+git diff --check
+python3 scratch/build_codemap_exp470_antigravity.py
+python3 scratch/build_codemap_exp470_antigravity.py --validate-only
+git add experiments/exp470_ecg200_spectral_entropy_numba_antigravity docs/EXP470_DASHBOARD_antigravity.html scratch/exp470_dashboard_artifact_antigravity.json docs/codemap/codemap_exp470_antigravity.html docs/codemap/codemap_exp470_antigravity.json docs/codemap/codemap_exp470_antigravity.lock
+git commit -m "feat: publish replayable Exp470 evidence"</code></pre>
+  </section>
+
+  <h2>Task 6 — 단일 CLI·private 승인 경계·최종 검증</h2>
+  <p><strong>Files:</strong> Create <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/cli_antigravity.py</code>, <code>scratch/run_exp470_ecg200_spectral_entropy_numba_antigravity.py</code>, <code>docs/EXP470_RUNBOOK_antigravity.html</code>; Test <code>experiments/exp470_ecg200_spectral_entropy_numba_antigravity/tests/test_cli_antigravity.py</code>, <code>test_pipeline_antigravity.py</code>; Modify <code>docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>docs/EXP470_DASHBOARD_antigravity.html</code>, this plan, and Exp470 code map triplet.</p>
+  <p><strong>Produces:</strong> <code>evaluate</code>와 <code>inspect</code>만 있는 closed CLI, 그리고 사용자 승인 뒤 <code>/private/tmp/exp470_task6_private_run1_antigravity</code> evaluate→inspect 후 <code>/private/tmp/exp470_task6_private_run2_antigravity</code> evaluate→inspect 순서만 허용하는 helper. <code>_evaluate_then_inspect_antigravity(root, commit)</code>는 subprocess 두 호출의 JSON을 반환하고, <code>_require_byte_identical_antigravity(first, second)</code>는 7개 leaf bytes를 비교한다. Task 6은 helper를 실행하지 않는다.</p>
+  <section>
+    <label><input type="checkbox" checked disabled> <strong>6.1</strong> 승인 전 실행 차단과 unknown option RED 테스트를 작성한다.</label>
+    <pre><code>def test_cli_rejects_unknown_surface_antigravity(self):
+    with self.assertRaises(SystemExit):
+        parser_antigravity().parse_args(["official"])
+
+def test_private_helper_requires_explicit_checkpoint_token_antigravity(self):
+    with self.assertRaisesRegex(PermissionError, "checkpoint"):
+        run_private_sequence_antigravity(self.reviewed_commit, approval_token=None)
+
+def test_task6_preflight_does_not_create_private_roots_antigravity(self):
+    self.assertFalse(PRIVATE_RUN1_ANTIGRAVITY.exists())
+    self.assertFalse(PRIVATE_RUN2_ANTIGRAVITY.exists())</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>6.2</strong> RED를 확인한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_cli_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_pipeline_antigravity</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>6.3</strong> CLI와 helper를 구현하되 private root는 만들거나 실행하지 않는다.</label>
+    <pre><code>def run_private_sequence_antigravity(reviewed_commit: str, approval_token: str | None) -&gt; tuple[dict, dict]:
+    if approval_token != "TASK_6_PRIVATE_RUN_1_2_APPROVED":
+        raise PermissionError("private checkpoint approval is required")
+    _require_clean_reviewed_commit_antigravity(reviewed_commit)
+    first = _evaluate_then_inspect_antigravity(PRIVATE_RUN1_ANTIGRAVITY, reviewed_commit)
+    _require_clean_reviewed_commit_antigravity(reviewed_commit)
+    second = _evaluate_then_inspect_antigravity(PRIVATE_RUN2_ANTIGRAVITY, reviewed_commit)
+    _require_byte_identical_antigravity(first, second)
+    return first, second</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>6.4</strong> Exp470 전체 테스트와 Exp468 핵심 회귀 테스트를 실행한다.</label>
+    <pre><code>python3 -m unittest discover -s experiments/exp470_ecg200_spectral_entropy_numba_antigravity/tests -p 'test_*_antigravity.py'
+python3 -m unittest \
+  experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_config_antigravity \
+  experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_contracts_antigravity \
+  experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_predecessor_antigravity</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>6.5</strong> fresh read-only reviewer가 설계 위반, NumPy score backend, TEST/FN 접근, 잘못된 checkbox를 검사한다.</label>
+    <pre><code>rg -n "backend=.numpy.|np\.fft|ECG200_TEST|TEST_LABEL|false_negative|routing|champion|promotion" \
+  experiments/exp470_ecg200_spectral_entropy_numba_antigravity scratch/run_exp470_ecg200_spectral_entropy_numba_antigravity.py
+python3 scratch/build_codemap_exp470_antigravity.py --validate-only
+git diff --check</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>6.6</strong> 실제 완료 항목만 HTML 체크하고 구현 보고서·runbook·dashboard를 검증한다.</label>
+    <pre><code>python3 -m json.tool scratch/exp470_dashboard_artifact_antigravity.json &gt;/dev/null
+node /Users/mac/.codex/plugins/cache/openai-curated-remote/data-analytics/0.2.8-13ceeea1f599/skills/build-report/scripts/deliver_portable_artifact.mjs \
+  --input scratch/exp470_dashboard_artifact_antigravity.json \
+  --output docs/EXP470_DASHBOARD_antigravity.html
+python3 scratch/build_codemap_exp470_antigravity.py
+python3 scratch/build_codemap_exp470_antigravity.py --validate-only
+git status --short
+git diff --check</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>6.7</strong> 구현 완료를 commit하고 private 실행 checkpoint에서 멈춘다.</label>
+    <pre><code>git add experiments/exp470_ecg200_spectral_entropy_numba_antigravity \
+  scratch/run_exp470_ecg200_spectral_entropy_numba_antigravity.py \
+  scratch/exp470_acceleration_assessment_antigravity.json \
+  scratch/exp470_dashboard_artifact_antigravity.json \
+  docs/codemap/codemap_exp470_antigravity.html \
+  docs/codemap/codemap_exp470_antigravity.json \
+  docs/codemap/codemap_exp470_antigravity.lock \
+  docs/EXP470_IMPLEMENTATION_REPORT_antigravity.html \
+  docs/EXP470_RUNBOOK_antigravity.html \
+  docs/EXP470_DASHBOARD_antigravity.html \
+  docs/superpowers/plans/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html
+git commit -m "feat: complete Exp470 private-run preflight"
+git status --short</code></pre>
+  </section>
+
+  <h2>완료 정의</h2>
+  <div class="box stop">
+    <p>이 계획의 완료는 <strong>구현·테스트·replay·대시보드·private 실행 전 사전검증 완료</strong>다. private run 1·2, official 실행, TEST/FN 확인, routing은 완료 정의에 포함되지 않는다.</p>
+  </div>
+  <section aria-label="계획 진행 체크박스">
+    <label><input type="checkbox" checked disabled> Task 1 고정 계약·authority·code map</label>
+    <label><input type="checkbox" checked disabled> Task 2 Numba spectral entropy 단일 scorer</label>
+    <label><input type="checkbox" checked disabled> Task 3 Numba 근거·MLX smoke</label>
+    <label><input type="checkbox" checked disabled> Task 4 C0/E11/C11·pair repair qualification</label>
+    <label><input type="checkbox" checked disabled> Task 5 canonical artifacts·replay·HTML 결과 화면</label>
+    <label><input type="checkbox" checked disabled> Task 6 closed CLI·최종 사전검증</label>
+    <label><input type="checkbox" checked disabled> private 실행 1·2와 결과 분석 — 재현성 통과, 성능 기준 실패</label>
+  </section>
+  <p class="muted">작성일: 2026-08-24 · private 실행 2회와 결과 분석을 완료했으며 official 실행과 TEST/FN 접근은 하지 않았다.</p>
+</main></body>
+</html>

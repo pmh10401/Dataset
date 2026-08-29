@@ -1,0 +1,25 @@
+{
+  "schema": "exp476_minimum_zf_guard_codemap_lock_v1",
+  "current_commit": "82daefaeac56ecc2391fd9457c6ded1ecf9b1787",
+  "frozen_exp475_result_sha256": "6d10981f56af82cd057ad3e0121a4d16568a85c7f00bf06d774c70357f9dd63f",
+  "triplet": [
+    "docs/codemap/codemap_exp476_antigravity.html",
+    "docs/codemap/codemap_exp476_antigravity.json",
+    "docs/codemap/codemap_exp476_antigravity.lock"
+  ],
+  "represented_paths": [
+    "experiments/exp475_joint_tail_fallback_routing_antigravity/policy_antigravity.py",
+    "experiments/exp475_joint_tail_fallback_routing_antigravity/results_antigravity.json",
+    "experiments/exp474_conservative_fallback_routing_antigravity/train_features_antigravity.json",
+    "experiments/exp_routing_label_free_antigravity/checkpoints",
+    "experiments/exp476_minimum_zf_fallback_routing_antigravity/policy_antigravity.py",
+    "experiments/exp476_minimum_zf_fallback_routing_antigravity/evaluation_antigravity.py",
+    "experiments/exp476_minimum_zf_fallback_routing_antigravity/run_antigravity.py",
+    "experiments/exp476_minimum_zf_fallback_routing_antigravity/tests/test_policy_antigravity.py",
+    "experiments/exp476_minimum_zf_fallback_routing_antigravity/tests/test_evaluation_antigravity.py",
+    "experiments/exp476_minimum_zf_fallback_routing_antigravity/tests/test_runner_antigravity.py",
+    "experiments/exp476_minimum_zf_fallback_routing_antigravity/results_antigravity.json",
+    "docs/EXP476_DASHBOARD_antigravity.html"
+  ],
+  "result_sha256": "8b6f881d25d0d2865e05c5a5b9ca204f78641e1364bb60d536e7dcc8ec21733f"
+}

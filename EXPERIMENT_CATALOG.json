@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-20T00:00:00+09:00",
+  "updated_at": "2026-08-22T00:00:00+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -2304,7 +2304,7 @@
       "experiment": "Exp461",
       "kind": "ecg_period_signature_qualification",
       "status": "stopped_before_official_evaluation_qualification_failed",
-      "implementation_status": "task_5_private_train_reproducibility_complete_qualification_failed",
+      "implementation_status": "task_5_review_ship_qualification_failed_task_6_forbidden",
       "documents": {
         "preregistration": "docs/EXP461_PREREGISTRATION_antigravity.html",
         "runbook": "docs/EXP461_RUNBOOK_antigravity.html",
@@ -2731,6 +2731,500 @@
         "official_root_exists_after": false,
         "overlap_nonresult": {"publisher_error": "publication destination must be a new private path", "writes": false}
       }
+    },
+    {
+      "id": "Exp464",
+      "experiment": "Exp464",
+      "kind": "ecg_residual_centered_ramp_confirmation_qualification",
+      "status": "stopped_before_official_evaluation_qualification_failed",
+      "implementation_status": "task_5_review_ship_qualification_failed_task_6_forbidden",
+      "documents": {
+        "dashboard": "docs/EXP464_DASHBOARD_antigravity.html",
+        "preregistration": "docs/EXP464_PREREGISTRATION_antigravity.html",
+        "runbook": "docs/EXP464_RUNBOOK_antigravity.html",
+        "implementation_report": "docs/EXP464_IMPLEMENTATION_REPORT_antigravity.html"
+      },
+      "run_identity": "exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821",
+      "run_root": "/Users/mac/Documents/Dataset/exp464_ecg_residual_centered_ramp_confirmation_antigravity_20260821",
+      "package": "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity",
+      "approved_design": "docs/superpowers/specs/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity-design.html",
+      "approved_plan": "docs/superpowers/plans/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html",
+      "approved_design_sha256": "d0e36ae176598810289fbd5693a5e582ca6f0821a8b8fcd52edd1bcb96ec1f9f",
+      "predecessor": {
+        "experiment": "Exp463",
+        "terminal_closeout_commit": "147225831e9c13e9df5043fa88757bb03e01b79a",
+        "status": "stopped_before_official_evaluation_qualification_failed",
+        "primary_candidate": "hydra_period_ramp_gated_max",
+        "primary_passed_count": 7,
+        "primary_required_count": 10,
+        "gradual_min_auc": 0.83450279161008,
+        "period_min_auc": 0.8984897640963734,
+        "historical_period_folds": [
+          {"seed": 20260721, "fold_index": 3, "period_change_auc": 0.907392736783864},
+          {"seed": 20261721, "fold_index": 4, "period_change_auc": 0.9216148584075248}
+        ]
+      },
+      "scientific_contract": {
+        "target_dataset": "ECG5000_normal_2",
+        "data_split": "TRAIN_only",
+        "train_shape": [1413, 140],
+        "label_query_count_must_remain": 0,
+        "official_command_invocations_must_remain": 0,
+        "method_order": ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8"],
+        "primary_candidate": "template_residual_centered_ramp_confirmed_max",
+        "seed_pair": [20260721, 20261721],
+        "blocked_fold_count": 5,
+        "onset": 56,
+        "cosine_min": 0.95,
+        "per_type_auc_min": 0.85,
+        "pooled_auc_min": 0.9,
+        "normal_wilson_upper_max": 0.05,
+        "gradual_drift_auc_min": 0.85,
+        "gradual_drift_auc_strictly_above_exp463": 0.8402306222021025,
+        "period_change_auc_global_min": 0.907392736783864,
+        "historical_period_fold_thresholds": [
+          {"seed": 20260721, "fold_index": 3, "period_change_auc_min": 0.907392736783864},
+          {"seed": 20261721, "fold_index": 4, "period_change_auc_min": 0.9216148584075248}
+        ],
+        "test_metrics_may_inform_routing": false
+      },
+      "method_definitions": {
+        "C0": "Exp463 M0 exact replay control",
+        "C1": "Exp463 M2 exact replay control",
+        "C2": "Exp463 M4 exact replay control",
+        "C3": "template residual centered ramp rank only without M0 max or cosine gate",
+        "C4": "same C3 rank with unconditional max against C0 and no cosine gate",
+        "C5": "centered ramp confirmation without template subtraction",
+        "C6": "template residual centered ramp rank with cosine >= 0.95 confirmed max against C0",
+        "C7": "Exp463 M6 exact replay control",
+        "C8": "template residual ramp confirmation without centering"
+      },
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_evaluate_count": 0,
+      "official_inspect_count": 0,
+      "official_evaluate_invocations": 0,
+      "official_inspect_invocations": 0,
+      "private_run_count": 2,
+      "result_root_created": false,
+      "official_result": null,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "artifact_map_sha256": null,
+      "dashboard_snapshot_sha256": null,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "official_root_present": false,
+      "review_only": false,
+      "notes": "Task 5 private TRAIN campaign completed exactly two sequential evaluate-to-inspect reproductions at clean reviewed commit b8646d0fa9bd57dcb1f6ab5e251064d34911a41c. The two roots matched exactly for all 90 metric rows, 30 failed rows, nine summaries, decision, dashboard, seven leaf bytes/hashes, and canonical stdout payload. Primary C6 template_residual_centered_ramp_confirmed_max passed 9/10 because the sole failed record was seed 20261721 fold 3 gradual_drift AUC 0.8402557718424627 below 0.85, so frozen qualification failed and status remains stopped_before_official_evaluation_qualification_failed. C8 passed 10/10 but remains a non-promotable clue only. Final review is SHIP (spec PASS, quality APPROVED, C/I/M0), completing Task 5 (7/7 checked). The explicit private roots were removed after review into the recoverable directory /private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821; aggregate logs, report, and hashes remain retained. Official evaluate/inspect counts remain 0, the official root is absent, label_query_count is 0, official result hashes remain null, and champion, pending candidate, routing, and promotion remain unchanged. Two earlier pre-science wrapper failures remain disclosed and non-scientific. Task 6 is permanently forbidden and there is no next official action.",
+      "task5_private_train_result": {
+        "reviewed_commit": "b8646d0fa9bd57dcb1f6ab5e251064d34911a41c",
+        "runs": [
+          {"run": 1, "evaluate_exit": 0, "inspect_exit": 0, "evaluate_seconds": 269.67, "inspect_seconds": 6.62},
+          {"run": 2, "evaluate_exit": 0, "inspect_exit": 0, "evaluate_seconds": 261.50, "inspect_seconds": 6.64}
+        ],
+        "temporary_roots_removed": true,
+        "private_roots": null,
+        "removed_private_roots_recoverable_parent": "/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821",
+        "removed_private_roots_entries": [
+          "/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821/exp464_task5_private_run1_antigravity",
+          "/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821/exp464_task5_private_run2_antigravity"
+        ],
+        "final_review_ship": {
+          "spec": "PASS",
+          "quality": "APPROVED",
+          "critical": 0,
+          "important": 0,
+          "minor": 0
+        },
+        "row_count": 90,
+        "failed_row_count": 30,
+        "summary_count": 9,
+        "leaf_count": 7,
+        "exact_equality": {"rows": true, "failed_rows": true, "summaries": true, "decision": true, "dashboard": true, "leaf_bytes": true, "leaf_hashes": true, "artifact_map_hash": true, "stdout_payload": true},
+        "leaf_sha256": {
+          "context_antigravity.json": "577a8a989abaf7b64d69968578e3d15b2b597acb97618c7d71eeaaf45fc46653",
+          "method_fold_metrics_antigravity.jsonl": "51073f3caf4793a2a70602547d6f249e42bcc7dcd64709ab5a62ccfeba791bcf",
+          "failed_folds_antigravity.jsonl": "54eefdbb8bbc3d2495bfa1cd0d444c04ffa9845c5f12f4e79f6bc6e25717bff3",
+          "method_summary_antigravity.jsonl": "3f7ad67d51c7dd63a31e9f373b14eb2ce2ffc616a81a611db2dd599e083f5540",
+          "decision_antigravity.json": "d66a23ef0749833220700f7d6b3ec56422722a9167d443cf2f58d327ce9593cd",
+          "dashboard_snapshot_antigravity.json": "da1e2333728b2886cea918f4c34ad6d084d10e1811b48c8903c0946ad167e1cb",
+          "artifact_sha256_antigravity.json": "8e0cc3391f5acf970fb73a322a2ec313538cd2c4d153114e07b2d480f845bbca"
+        },
+        "leaf_bytes": {
+          "context_antigravity.json": 1180,
+          "method_fold_metrics_antigravity.jsonl": 53043215,
+          "failed_folds_antigravity.jsonl": 5511663,
+          "method_summary_antigravity.jsonl": 3899,
+          "decision_antigravity.json": 428,
+          "dashboard_snapshot_antigravity.json": 3839,
+          "artifact_sha256_antigravity.json": 605
+        },
+        "stdout_sha256": "f41151e67a07b33bae607437501317e61c79d8f5508b62d0886b210b63180111",
+        "artifact_map_sha256": "8e0cc3391f5acf970fb73a322a2ec313538cd2c4d153114e07b2d480f845bbca",
+        "primary_candidate": "template_residual_centered_ramp_confirmed_max",
+        "primary_passed_count": 9,
+        "primary_required_count": 10,
+        "primary_min_per_type_auc": {
+          "amplitude_scaling": 0.9722347970424023,
+          "gradual_drift": 0.8402557718424627,
+          "level_shift": 0.9411749911976258,
+          "period_change": 0.907392736783864
+        },
+        "sole_failed_record": {
+          "seed": 20261721,
+          "fold_index": 3,
+          "type": "gradual_drift",
+          "auc": 0.8402557718424627,
+          "threshold": 0.85
+        },
+        "non_promotable_clue": {
+          "method": "C8",
+          "passed_count": 10,
+          "required_count": 10,
+          "promotable": false
+        },
+        "method_pass_counts": {
+          "C0": {"passed_count": 9, "failed_count": 1},
+          "C1": {"passed_count": 8, "failed_count": 2},
+          "C2": {"passed_count": 9, "failed_count": 1},
+          "C3": {"passed_count": 0, "failed_count": 10},
+          "C4": {"passed_count": 3, "failed_count": 7},
+          "C5": {"passed_count": 9, "failed_count": 1},
+          "C6": {"passed_count": 9, "failed_count": 1},
+          "C7": {"passed_count": 3, "failed_count": 7},
+          "C8": {"passed_count": 10, "failed_count": 0}
+        },
+        "decision": {
+          "eligible_for_routing_research": false,
+          "failure_reasons": [
+            "primary_candidate_not_10_of_10",
+            "primary_gradual_drift_auc_below_min",
+            "primary_gradual_drift_min_below_0.85"
+          ],
+          "label_query_count": 0,
+          "primary_candidate": "template_residual_centered_ramp_confirmed_max",
+          "primary_passed_count": 9,
+          "primary_required_count": 10,
+          "routing_applied": false,
+          "status": "qualification_failed_blocked_before_routing_research",
+          "test_labels_opened": false
+        },
+        "status": "qualification_failed_blocked_before_routing_research",
+        "label_query_count": 0,
+        "official_root_exists_after": false,
+        "pre_science_failures_retained": [
+          {
+            "name": "reviewed_commit_mismatch",
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "8a3a459348603f9c79fd68fdd39cd39594dd87e63547e539a147bad29a4657cf",
+            "time_sha256": "e4a4cb4a2aa2fb6d1f64f82e137be621de64c2b92de18d41d25572d8949b90db",
+            "root_created": false
+          },
+          {
+            "name": "duplicate_process_false_positive",
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "e67bee7ce606726713bd7aaa6df6a2cf978094c3d68123372b4f3d9bb23be1a4",
+            "time_sha256": "539f1596e3b178a02613d497aadf76b6bf99d0df3bab746117cc74e40e28b68a",
+            "root_created": false
+          }
+        ],
+        "overlap_nonresult": {"pre_science_failures_retained": 2, "writes": false}
+      }
+    }
+    ,
+    {
+      "id": "Exp465",
+      "experiment": "Exp465",
+      "kind": "ecg200_c8_external_train_qualification",
+      "status": "private_qualification_failed_blocked_before_routing_research",
+      "implementation_status": "task_5_reviewed_closeout_qualification_failed",
+      "documents": {
+        "dashboard": "docs/EXP465_DASHBOARD_antigravity.html",
+        "preregistration": "docs/EXP465_PREREGISTRATION_antigravity.html",
+        "runbook": "docs/EXP465_RUNBOOK_antigravity.html",
+        "implementation_report": "docs/EXP465_IMPLEMENTATION_REPORT_antigravity.html"
+      },
+      "run_identity": "exp465-ecg200-c8-external-validation-antigravity-20260822",
+      "run_root": "/Users/mac/Documents/Dataset/exp465_ecg200_c8_external_validation_antigravity_20260822",
+      "package": "experiments/exp465_ecg200_c8_external_validation_antigravity",
+      "approved_design": "docs/superpowers/specs/2026-08-22-exp465-ecg200-c8-external-validation-antigravity-design.html",
+      "approved_plan": "docs/superpowers/plans/2026-08-22-exp465-ecg200-c8-external-validation-antigravity.html",
+      "approved_design_sha256": "a5f5f43e1787ad2942c883761ee95478e8cf5fcdcc958722a22fe0e1ad98d904",
+      "predecessor": {
+        "experiment": "Exp464",
+        "terminal_closeout_commit": "1fdc8422996fe7e85325987f7543e00db79e22d9"
+      },
+      "scientific_contract": {
+        "dataset": "ECG200",
+        "data_split": "TRAIN_only",
+        "train_shape": [100, 96],
+        "normal_label_plus_one_count": 69,
+        "interpolated_width": 140,
+        "label_query_count_must_remain": 0,
+        "official_command_invocations_must_remain": 0,
+        "method_order": ["C0", "C6", "C8"],
+        "primary_candidate": "C8",
+        "seed_pair": [20260721, 20261721],
+        "fold_count": 5,
+        "onset": 56,
+        "cosine_min": 0.95,
+        "per_type_auc_min": 0.85,
+        "mean_auc_min": 0.9,
+        "required_stability_records": 10,
+        "seed_normal_confirmation_count_must_remain_zero": true,
+        "test_metrics_may_inform_routing": false
+      },
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_evaluate_count": 0,
+      "official_inspect_count": 0,
+      "private_run_count": 2,
+      "private_qualification": {
+        "status": "qualification_failed_blocked_before_routing_research",
+        "reviewed_commit": "fd997fcfd077b1bb14b2a1e82842052c08258693",
+        "exact_reproduction": true,
+        "stdout_sha256": "0436fbbd727815daf2cecdac353b380d0624b923ff74f43a03197536f894f891",
+        "artifact_map_sha256": "0532bf2d09adb4b2086d0ccf109a204c0e6e0fec4dc260889fb733072b29536f",
+        "c8_passed_count": 0,
+        "c8_required_count": 10,
+        "c8_min_period_auc": 0.6862244897959183,
+        "c8_min_mean_auc": 0.8679846938775511,
+        "failure_reasons": ["c8_not_10_of_10"]
+      },
+      "result_root_created": false,
+      "official_result": null,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "artifact_map_sha256": null,
+      "dashboard_snapshot_sha256": null,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "official_root_present": false,
+      "review_only": false,
+      "notes": "Task 5 private qualification reproduced exactly twice but C8 passed 0/10. Task 6 and routing research are blocked; official execution and TEST access remain zero."
+    },
+    {
+      "id": "Exp466",
+      "experiment": "Exp466",
+      "kind": "ecg200_phase_registration_margin_qualification",
+      "status": "qualification_failed_blocked_before_fn_validation",
+      "implementation_status": "task_6_complete_qualification_failed_no_rerun",
+      "documents": {
+        "dashboard": "docs/EXP466_DASHBOARD_antigravity.html",
+        "preregistration": "docs/EXP466_PREREGISTRATION_antigravity.html",
+        "runbook": "docs/EXP466_RUNBOOK_antigravity.html",
+        "implementation_report": "docs/EXP466_IMPLEMENTATION_REPORT_antigravity.html"
+      },
+      "run_identity": "exp466-ecg200-phase-registration-margin-antigravity-20260823",
+      "run_root": "/Users/mac/Documents/Dataset/exp466_ecg200_phase_registration_margin_antigravity_20260823",
+      "package": "experiments/exp466_ecg200_phase_registration_margin_antigravity",
+      "approved_design": "docs/superpowers/specs/2026-08-23-exp466-ecg200-phase-registration-margin-antigravity-design.html",
+      "approved_plan": "docs/superpowers/plans/2026-08-23-exp466-ecg200-phase-registration-margin-antigravity.html",
+      "approved_design_sha256": "eddb057724e0ef21402c07b9f362bc6b260fc917a9f6bfdcb130f118b30a5c66",
+      "predecessor": {
+        "experiment": "Exp465",
+        "status": "private_qualification_failed_blocked_before_routing_research"
+      },
+      "scientific_contract": {
+        "dataset": "ECG200",
+        "data_split": "TRAIN_only",
+        "train_md5": "808875aeac1c358a90c630fe369327c4",
+        "train_shape": [100, 96],
+        "normal_label_plus_one_count": 69,
+        "interpolated_width": 140,
+        "seed_pair": [20260721, 20261721],
+        "fold_count": 5,
+        "onset": 56,
+        "suffix_length": 84,
+        "warp_factor": 1.25,
+        "shared_length": 67,
+        "method_order": ["C0", "P9", "C9"],
+        "primary_candidate": "C9",
+        "p9_explanatory_only": true,
+        "per_type_auc_min": 0.85,
+        "mean_auc_min": 0.9,
+        "required_fold_results": 10,
+        "period_auc_strictly_above_c0_every_fold": true,
+        "gradual_auc_not_below_c0_every_fold": true,
+        "period_confirmation_min_per_fold": 1,
+        "normal_trials_per_seed": 69,
+        "seed_normal_confirmation_count_must_remain_zero": true,
+        "private_reproduction_count_required": 2,
+        "label_query_count_must_remain": 0,
+        "official_command_invocations_must_remain": 0,
+        "test_metrics_may_inform_routing": false
+      },
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_evaluate_count": 0,
+      "official_inspect_count": 0,
+      "private_run_count": 2,
+      "private_evaluate_count": 2,
+      "private_inspect_count": 2,
+      "private_result_roots": [
+        "/private/tmp/exp466_task6_private_run1_antigravity",
+        "/private/tmp/exp466_task6_private_run2_antigravity"
+      ],
+      "private_stdout_sha256": {
+        "run1_evaluate": "7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1",
+        "run1_inspect": "7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1",
+        "run2_evaluate": "7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1",
+        "run2_inspect": "7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1"
+      },
+      "private_leaf_sha256": {
+        "artifact_sha256_antigravity.json": "50bee8c512f6fed258062ac462c9921932ca234c4add09991037d66fd4241d0f",
+        "context_antigravity.json": "21771cf942b19811f416a2be6d5e31d3b27ef20d2a382e373f3932b4f57faa4d",
+        "dashboard_snapshot_antigravity.json": "29c79e275942afa28285a429d0787678dfbe9706955767da10e3bea728d3409d",
+        "decision_antigravity.json": "ee50e2e92481dd69d6cb38a19b4411e6079d84d23f422f0fe2d02272ded199aa",
+        "failed_folds_antigravity.jsonl": "766b4704453f68f60754830c7bb96bc8369b67c8f9318cbe88e822bc18ec9fc5",
+        "method_fold_metrics_antigravity.jsonl": "f5eb24cbd86b1c424abab9dd6b37df94d115c5717a95d4e53f6f8fd39fc194fe",
+        "method_summary_antigravity.jsonl": "7c83f3cad3c013ed376d491310f4818fffeba87869610a00b6b05c76173251cb"
+      },
+      "private_sequence_state": {
+        "path": "/private/tmp/exp466_task6_private_sequence_state_antigravity.json",
+        "schema": "exp466_task6_private_sequence_antigravity_v1",
+        "reviewed_commit": "0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a",
+        "stage": "run2_inspected",
+        "sha256": "19c4896ea55b415c9a546ff9d3d49eeab982d146df3acacc5bb15ea287f982bd"
+      },
+      "private_qualification": {
+        "status": "qualification_failed_blocked_before_fn_validation",
+        "exact_reproduction": true,
+        "stdout_and_all_seven_leaves_byte_equal": true,
+        "all_scores_finite": true,
+        "c9_passed_count": 0,
+        "c9_required_count": 10,
+        "period_auc_below_0_85_fold_count": 10,
+        "period_auc_min": 0.6862244897959183,
+        "period_auc_max": 0.826530612244898,
+        "mean_auc_below_0_90_fold_count": 7,
+        "mean_auc_min": 0.8628826530612246,
+        "mean_auc_max": 0.9056122448979591,
+        "period_auc_improved_over_c0_fold_count": 0,
+        "period_auc_equal_to_c0_fold_count": 8,
+        "period_auc_below_c0_fold_count": 2,
+        "period_auc_delta_min": -0.0535714285714286,
+        "period_auc_delta_max": 0,
+        "period_confirmation_missing_fold_count": 8,
+        "gradual_auc_below_c0_fold_count": 2,
+        "gradual_auc_delta_min": -0.0357142857142857,
+        "normal_trial_counts": {
+          "20260721": 69,
+          "20261721": 69
+        },
+        "normal_confirmation_counts": {
+          "20260721": 1,
+          "20261721": 1
+        },
+        "failure_reasons": [
+          "c9_not_10_of_10",
+          "period_change_auc_below_0.85",
+          "mean_auc_below_0.90",
+          "period_auc_not_strictly_above_c0",
+          "period_confirmation_missing",
+          "gradual_auc_below_c0",
+          "normal_confirmation_present",
+          "seed_20260721_normal_confirmations_not_zero",
+          "seed_20261721_normal_confirmations_not_zero"
+        ],
+        "preserved_artifact_provenance_valid_for_downstream": false,
+        "preserved_artifact_provenance_caveat": "The preserved canonical leaves contain obsolete Task5, actual=false, and synthetic-only wording. That wording must not be used as Task6 provenance. The scientific scores, failed decision, and byte reproducibility remain valid. Exp466 will not be rerun; clean provenance artifacts require a separately approved experiment and new roots."
+      },
+      "step_6_verification": {
+        "status": "complete",
+        "initial_full_suite_after_private_results": {
+          "passed": false,
+          "failure_count": 1,
+          "cause": "one CLI unit test still assumed the two fixed private roots were absent, which was true only before the private lifecycle completed",
+          "science_or_result_code_failure": false
+        },
+        "lifecycle_fix_commit": "bf3a75e647c45a8311d89e5b2a3ad59d7735251f",
+        "lifecycle_fix": "the CLI unit test now exercises only current-working-directory and arbitrary-capability rejection; the existing governance test retains exact fixed-root and evaluate-inspect order coverage",
+        "post_fix_focused_passed": 17,
+        "post_fix_focused_required": 17,
+        "post_fix_direct_passed": 2,
+        "post_fix_direct_required": 2,
+        "full_exp466_runs": [
+          {
+            "passed": 56,
+            "required": 56,
+            "seconds": 123.424
+          },
+          {
+            "passed": 56,
+            "required": 56,
+            "seconds": 125.787
+          }
+        ],
+        "exp465_lower_passed": 7,
+        "exp465_lower_required": 7,
+        "exp465_lower_seconds": 29.391,
+        "compileall_passed": true,
+        "map_validate_passed": true,
+        "json_html_diff_static_exact_checks_passed": true,
+        "private_roots_stdout_leaves_sequence_decision_reverified": true,
+        "official_root_absence_reverified": true,
+        "final_reviews_pending": [],
+        "final_reviews": {
+          "terra": {
+            "spec_verdict": "PASS",
+            "science_verdict": "APPROVED",
+            "qualification_disposition": "terminal_failed_qualification",
+            "critical": 0,
+            "important": 0,
+            "minor": 1,
+            "minor_finding": "preserved canonical Task5, actual=false, and synthetic-only provenance wording",
+            "minor_disposition": "fully_disclosed_invalid_for_downstream_use_no_rerun"
+          },
+          "fresh_sol": {
+            "verdict": "SHIP",
+            "critical_new": 0,
+            "important_new": 0,
+            "minor_new": 0,
+            "authorized_checkboxes": [
+              "task_6_heading",
+              "task_6_step_6",
+              "dashboard_final_review"
+            ]
+          }
+        },
+        "final_reviewed_parent_commit": "2f8fc1fa8dd4fdb2b8a021f420b59b9b6d59d4cf",
+        "task_6_complete": true,
+        "qualification_passed": false,
+        "performance_passed": false,
+        "terminal_failed_qualification": true
+      },
+      "result_root_created": false,
+      "official_result": null,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "artifact_map_sha256": null,
+      "dashboard_snapshot_sha256": null,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "eligible_for_exp467_design": false,
+      "eligible_for_exp467_fn_validation": false,
+      "official_root_present": false,
+      "review_only": false,
+      "next_action": "design_separate_local_stft_or_wavelet_change_score_experiment",
+      "exact_next_command": "none_until_separate_design_is_preregistered_and_approved",
+      "notes": "Task 6 is complete as a terminal failed qualification, never a performance pass. Terra returned SPEC PASS and SCIENCE APPROVED with C0/I0/M1; the only minor is the fully disclosed preserved Task5/actual=false/synthetic provenance wording, which is invalid downstream. Fresh Sol returned SHIP with C0/I0/M0 new and authorized the Task 6, Step 6, and dashboard final-review checkboxes. C9 remains reproducibly 0/10 and blocked before FN validation. Exp466 must not be rerun and is not eligible for current Exp467 FN validation. TEST/labels, official execution, routing, champion, pending, and promotion remain untouched. The only next work is to separately preregister one local STFT or wavelet change-score experiment; no exact run command exists before approval."
     }
   ]
 }

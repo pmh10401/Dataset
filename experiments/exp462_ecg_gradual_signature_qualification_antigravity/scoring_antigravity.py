@@ -316,14 +316,12 @@ def _score_fold_methods_with_dependencies_antigravity(
         reference_indexer=reference_indexer,
     )
 
-    hybrid_original = np.maximum(
-        anomaly_rank_antigravity(baseline_original, baseline_original),
-        anomaly_rank_antigravity(gradual_original, gradual_original),
-    )
+    # Exp472: use raw distance instead of rank to avoid [0,1] saturation.
+    hybrid_original = np.maximum(baseline_original, gradual_original)
     hybrid_primary = {
         change_type: np.maximum(
-            anomaly_rank_antigravity(baseline_original, baseline_primary[change_type]),
-            anomaly_rank_antigravity(gradual_original, gradual_primary[change_type]),
+            baseline_primary[change_type],
+            gradual_primary[change_type],
         )
         for change_type in _PRIMARY_TYPES_ANTIGRAVITY
     }

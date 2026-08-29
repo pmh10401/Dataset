@@ -1,0 +1,90 @@
+{
+  "schema": "exp475_joint_tail_guard_codemap_v1",
+  "current_commit": "82daefaeac56ecc2391fd9457c6ded1ecf9b1787",
+  "frozen_exp474_result_sha256": "c4f1d722cb3d975fcb7623307a264c98a35a2cec3edb750bc339e31f0bf8abf4",
+  "nodes": [
+    {
+      "id": "exp474_policy",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/policy_antigravity.py",
+      "caller": "Exp474 evaluator only",
+      "effect": "Frozen prior policy; remains unchanged so the failed Exp474 result is reproducible.",
+      "tests": ["experiments/exp474_conservative_fallback_routing_antigravity/tests/test_policy_antigravity.py"]
+    },
+    {
+      "id": "exp474_inputs",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/train_features_antigravity.json",
+      "caller": "Exp475 runner read-only",
+      "effect": "Supplies the same 962 TRAIN-only feature rows used by Exp474.",
+      "tests": ["experiments/exp474_conservative_fallback_routing_antigravity/tests/test_ragged_features_antigravity.py"]
+    },
+    {
+      "id": "exp474_results",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/results_antigravity.json",
+      "caller": "Exp475 comparison only",
+      "effect": "Frozen failed baseline: AUC improves, ZF-TP total falls by one, overall hold.",
+      "tests": []
+    },
+    {
+      "id": "checkpoints",
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints",
+      "caller": "Exp475 evaluator read-only",
+      "effect": "Supplies the same frozen per-method outcomes for 962 valid datasets.",
+      "tests": []
+    },
+    {
+      "id": "exp475_policy",
+      "path": "experiments/exp475_joint_tail_fallback_routing_antigravity/policy_antigravity.py",
+      "caller": "Exp475 evaluator",
+      "effect": "Adds exactly one acceptance condition: the neighbour ZF-gain 20th percentile must be at least zero.",
+      "tests": ["experiments/exp475_joint_tail_fallback_routing_antigravity/tests/test_policy_antigravity.py"]
+    },
+    {
+      "id": "exp475_evaluation",
+      "path": "experiments/exp475_joint_tail_fallback_routing_antigravity/evaluation_antigravity.py",
+      "caller": "Exp475 runner",
+      "effect": "Performs the same 120-family held-out validation using the Exp475 policy.",
+      "tests": ["experiments/exp475_joint_tail_fallback_routing_antigravity/tests/test_evaluation_antigravity.py"]
+    },
+    {
+      "id": "exp475_runner",
+      "path": "experiments/exp475_joint_tail_fallback_routing_antigravity/run_antigravity.py",
+      "caller": "approved Exp475 operator",
+      "effect": "Reuses frozen inputs, runs one policy variant, writes JSON evidence and an HTML dashboard without changing the official router.",
+      "tests": ["experiments/exp475_joint_tail_fallback_routing_antigravity/tests/test_runner_antigravity.py"]
+    },
+    {
+      "id": "exp475_results",
+      "path": "experiments/exp475_joint_tail_fallback_routing_antigravity/results_antigravity.json",
+      "caller": "Exp475 dashboard and deterministic replay",
+      "effect": "Preserves 962 decisions, zero changes from Exp474, zero ZF-tail rejections, and the failed ZF gate.",
+      "tests": []
+    },
+    {
+      "id": "exp475_dashboard",
+      "path": "docs/EXP475_DASHBOARD_antigravity.html",
+      "caller": "user",
+      "effect": "Explains that the new rule was redundant and keeps the official promotion checkbox unchecked.",
+      "tests": ["experiments/exp475_joint_tail_fallback_routing_antigravity/tests/test_runner_antigravity.py"]
+    }
+  ],
+  "edges": [
+    {"from": "exp475_runner", "to": "exp474_inputs", "type": "reads"},
+    {"from": "exp475_runner", "to": "exp474_results", "type": "compares"},
+    {"from": "exp475_runner", "to": "checkpoints", "type": "reads"},
+    {"from": "exp475_runner", "to": "exp475_evaluation", "type": "calls"},
+    {"from": "exp475_evaluation", "to": "exp475_policy", "type": "calls"},
+    {"from": "exp475_runner", "to": "exp475_results", "type": "writes"},
+    {"from": "exp475_results", "to": "exp475_dashboard", "type": "renders"}
+  ],
+  "constraints": [
+    "Exp474 policy, inputs, results, and dashboard remain byte-for-byte unchanged.",
+    "The only routing-behaviour change is lower_zf_gain at quantile 0.20 must be >= 0.",
+    "Dataset names are used only to define held-out families, never as inference features.",
+    "TEST outcomes are used only as historical meta-training targets and held-out evaluation evidence.",
+    "Official routing modules and official pipeline remain unchanged.",
+    "No new score-source computation is introduced; MLX assessment stays ineligible for the same frozen feature path.",
+    "Observed result: the 90% joint-success gate already implies the ZF 20th percentile is nonnegative for k=31, so Exp475 changes zero selections."
+  ],
+  "result_sha256": "6d10981f56af82cd057ad3e0121a4d16568a85c7f00bf06d774c70357f9dd63f",
+  "future_declared_paths": []
+}

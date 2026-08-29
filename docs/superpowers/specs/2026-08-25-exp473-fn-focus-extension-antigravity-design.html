@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="utf-8"><title>Exp473 FN Focus Extension</title>
+<style>body{font-family:sans-serif;max-width:800px;margin:auto;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:6px;text-align:left}.muted{color:#666;font-size:.9em}</style>
+</head><body>
+<h1>Exp473: 잔여 FN 집중군 확장 진단 결과</h1>
+<p class="muted">작성일 2026-08-25 · 커밋 8ca0230d · 산출 root exp473_fn_focus_extension_antigravity_20260825</p>
+
+<h2>목적</h2>
+<p>ECG200에서 검증한 방법론(per-dataset majority-class TRAIN + raw LocalGap 거리)을 상위 FN 데이터셋에 적용해 개선폭을 측정한다.</p>
+
+<h2>대상 (기준선 FN 상위)</h2>
+<ul>
+<li>ElectricDevices_normal_5 (FN=83)</li>
+<li>ElectricDevices_normal_4 (FN=43)</li>
+<li>ChlorineConcentration_normal_3 (FN=35)</li>
+<li>ECG5000_normal_2 (FN=28)</li>
+</ul>
+
+<h2>결과 (seed 20260721, seed 간 일치 확인)</h2>
+<table>
+<thead><tr><th>Dataset</th><th>baseline FN</th><th>AUC</th><th>zero-FP TP</th><th>TP@3</th><th>TP@10</th></tr></thead>
+<tbody>
+<tr><td>ChlorineConcentration_3</td><td>35</td><td><strong>0.9994</strong></td><td>31/47</td><td>44</td><td>44</td></tr>
+<tr><td>ECG5000_2</td><td>28</td><td>0.9832</td><td>1/36</td><td>18</td><td>28</td></tr>
+<tr><td>ElectricDevices_4</td><td>43</td><td>0.9735</td><td>15/53</td><td>21</td><td>26</td></tr>
+<tr><td>ElectricDevices_5</td><td>83</td><td>0.9553</td><td>11/87</td><td>18</td><td>20</td></tr>
+</tbody>
+</table>
+
+<h2>해석</h2>
+<ul>
+<li><strong>ChlorineConcentration_3</strong>: AUC ≈1.0 완전 분리. zero-FP로 31개 회복(기존 FN 35 → 잔여 ~16).</li>
+<li><strong>ElectricDevices</strong>: AUC 0.95~0.97, zero-FP로 11~15개 회복.</li>
+<li><strong>ECG5000_2</strong>: AUC 높지만(0.98) 정상 분포 꼬리가 두꺼워 zero-FP TP는 1. FP@10에서 28개 회복으로 기준선과 유사.</li>
+</ul>
+
+<h2>결론</h2>
+<p>Raw C0 + per-dataset majority TRAIN 매핑은 4개 데이터셋 모두에서 유효하다.
+특히 ChlorineConcentration과 ElectricDevices에서 큰 FN 감소 효과를 보인다.
+ECG5000의 경우 추가 피처 또는 임계값 최적화가 필요하다.</p>
+
+<h2>Phase 2 상태 (2026-08-25)</h2>
+<p>
+  FordA/B·Yoga 데이터셋(폭 426~500, train 1200~2000행)에 대한 확장 진단을 시도했으나
+  Hydra representation 학습 시간이 수 시간 이상 소요되어 중단했다. 커밋
+  <code>0fa920a5</code>에서 phase 선택 기능을 추가했다. 향후 별도 실험으로 재시도한다.
+</p>
+
+</body></html>

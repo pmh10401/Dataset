@@ -1,0 +1,1202 @@
+{
+ "UWaveGestureLibraryAll_normal_2": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 11
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 11
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 11
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 11
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "UWaveGestureLibraryAll_normal_3": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9991566874683758,
+    "zf": 7
+   },
+   "multirocket_local_gap": {
+    "auc": 0.994602799797605,
+    "zf": 2
+   },
+   "hydra_local_gap": {
+    "auc": 0.9949401248102547,
+    "zf": 6
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9971327373924777,
+    "zf": 6
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryAll_normal_4": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9988193624557261,
+    "zf": 9
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9883622870635858,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9959520998482038,
+    "zf": 3
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9996626749873503,
+    "zf": 9
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryAll_normal_5": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9981447124304267,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9947714623039299,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9957834373418789,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9981447124304267,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "UWaveGestureLibraryAll_normal_6": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9900489121268342,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.8988024962050936,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9893742621015348,
+    "zf": 3
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9807724742789677,
+    "zf": 4
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryAll_normal_7": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 11
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9983133749367515,
+    "zf": 5
+   },
+   "hydra_local_gap": {
+    "auc": 0.9993253499747006,
+    "zf": 9
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9986506999494013,
+    "zf": 5
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryAll_normal_8": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9981447124304267,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9962894248608535,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9966267498735031,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9978073874177771,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "UWaveGestureLibraryX_normal_1": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9947714623039299,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9851576994434137,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8817675830662843,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9935908247596559,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryX_normal_2": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 11
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9996626749873503,
+    "zf": 9
+   },
+   "hydra_local_gap": {
+    "auc": 0.9902175746331591,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9994940124810254,
+    "zf": 9
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryX_normal_3": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 11
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9976387249114522,
+    "zf": 3
+   },
+   "hydra_local_gap": {
+    "auc": 0.8245909934221622,
+    "zf": 8
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9988193624557261,
+    "zf": 10
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryX_normal_4": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9753752740765728,
+    "zf": 5
+   },
+   "multirocket_local_gap": {
+    "auc": 0.5803676842637882,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.8024962050936076,
+    "zf": 3
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.46989374262101535,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryX_normal_5": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9475459605329736,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.925451172204419,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.7965930173722382,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9637375611401585,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryX_normal_6": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9580030359251138,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9305110473941642,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.7235621521335807,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9596896609883623,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": true
+ },
+ "UWaveGestureLibraryX_normal_7": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.998988024962051,
+    "zf": 8
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9966267498735031,
+    "zf": 3
+   },
+   "hydra_local_gap": {
+    "auc": 0.7979423174228369,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9979760499241018,
+    "zf": 8
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryX_normal_8": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9964580873671782,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9866756620003373,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8939112835216732,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.991398212177433,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryY_normal_1": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.988024962050936,
+    "zf": 7
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9966267498735031,
+    "zf": 6
+   },
+   "hydra_local_gap": {
+    "auc": 0.8235790183842132,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9935908247596559,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryY_normal_2": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9991566874683758,
+    "zf": 9
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9959520998482038,
+    "zf": 8
+   },
+   "hydra_local_gap": {
+    "auc": 0.9920728622027324,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9994940124810254,
+    "zf": 9
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryY_normal_3": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9451846854444257,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9161747343565525,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9436667228875021,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9558104233428909,
+    "zf": 2
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryY_normal_4": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9935908247596559,
+    "zf": 5
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9878562995446112,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8296508686119076,
+    "zf": 3
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9296677348625401,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryY_normal_5": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.8898633833698769,
+    "zf": 4
+   },
+   "multirocket_local_gap": {
+    "auc": 0.6375442739079102,
+    "zf": 3
+   },
+   "hydra_local_gap": {
+    "auc": 0.9785798616967448,
+    "zf": 4
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.632484398718165,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryY_normal_6": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9895429246078596,
+    "zf": 4
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9836397368864901,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8713105076741441,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9752066115702479,
+    "zf": 3
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryY_normal_7": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9905548996458088,
+    "zf": 3
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9863383369876877,
+    "zf": 2
+   },
+   "hydra_local_gap": {
+    "auc": 0.9806038117726429,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9917355371900827,
+    "zf": 2
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryY_normal_8": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9966267498735031,
+    "zf": 3
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9886996120762355,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9038623713948389,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9971327373924777,
+    "zf": 4
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryZ_normal_1": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9897115871141845,
+    "zf": 8
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9659301737223815,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.7380671276775173,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9834710743801653,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryZ_normal_2": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 11
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9964580873671782,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9659301737223815,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9996626749873503,
+    "zf": 9
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryZ_normal_3": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9315230224321134,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.8463484567380671,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8655759824590994,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9605329735199865,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryZ_normal_4": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9662674987350311,
+    "zf": 3
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9418114353179288,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9208972845336482,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9674481362793051,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryZ_normal_5": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.981615786810592,
+    "zf": 8
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 11
+   },
+   "hydra_local_gap": {
+    "auc": 0.9741946365322989,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9976387249114522,
+    "zf": 5
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "UWaveGestureLibraryZ_normal_6": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.976218586608197,
+    "zf": 2
+   },
+   "multirocket_local_gap": {
+    "auc": 0.8928993084837241,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.7304773148928994,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.804351492663181,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryZ_normal_7": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.991398212177433,
+    "zf": 4
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9652555236970821,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.8844661831674818,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9883622870635858,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "UWaveGestureLibraryZ_normal_8": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9996626749873503,
+    "zf": 10
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9964580873671782,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8893573958509023,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9966267498735031,
+    "zf": 2
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "Wafer_normal_-1": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9960997732426304,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.995827664399093,
+    "zf": 2
+   },
+   "hydra_local_gap": {
+    "auc": 0.9984580498866213,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9992743764172336,
+    "zf": 12
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "Wafer_normal_1": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9996461779978264,
+    "zf": 78
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9985786740731796,
+    "zf": 38
+   },
+   "hydra_local_gap": {
+    "auc": 0.9999553194058689,
+    "zf": 102
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9997005192609588,
+    "zf": 53
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Wine_normal_1": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.8367346938775511,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.7959183673469388,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": true
+ },
+ "Wine_normal_2": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "WordSynonyms_normal_1": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.8775510204081632,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "WordSynonyms_normal_10": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "WordSynonyms_normal_11": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "WordSynonyms_normal_12": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "WordSynonyms_normal_13": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9183673469387755,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "WordSynonyms_normal_14": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "WordSynonyms_normal_15": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9387755102040817,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": true
+ },
+ "WordSynonyms_normal_16": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "WordSynonyms_normal_17": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "WordSynonyms_normal_18": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8367346938775511,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.8571428571428571,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "WordSynonyms_normal_19": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9183673469387755,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "WordSynonyms_normal_2": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9783163265306123,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9668367346938775,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9693877551020408,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9834183673469388,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "WordSynonyms_normal_20": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8163265306122449,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9387755102040817,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "WordSynonyms_normal_21": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.8979591836734694,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "WordSynonyms_normal_22": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ }
+}

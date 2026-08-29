@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="utf-8"><title>Exp472 Zero-FP Tail Recovery Design</title>
+<style>body{font-family:sans-serif;max-width:800px;margin:auto;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:6px;text-align:left}h2{border-bottom:1px solid #ddd;padding-bottom:4px}.muted{color:#666;font-size:.9em}</style>
+</head><body>
+<h1>Exp472: Zero-FP Tail Recovery 설계</h1>
+<p class="muted">작성일 2026-08-25 · 상태: 설계 승인 대기</p>
+
+<h2>1. 문제</h2>
+<p>ECG200 두 변형에서 C0 AUC는 정상(0.99/0.84)이지만 zero-FP TP가 0이다.
+정상 점수 분포 상단이 이상치와 겹쳐서 "정상 최댓값보다 큰" 기준을 통과하는 이상치가 없다.</p>
+
+<h2>2. 원인</h2>
+<table>
+<thead><tr><th>원인</th><th>증거</th></tr></thead>
+<tbody>
+<tr><td>C0 점수 포화</td><td>점수 범위 [0,1]. 정상 상위 2%가 0.99 도달, 이상치 0.99·1.0과 동일 천장.</td></tr>
+<tr><td>E12 피크 미검출</td><td>TRAIN early 피크 존재 30/106, late 32/106. 이상치 2개 모두 early=None, late=None → shift=0 → 랭크 ≈0.54 고정.</td></tr>
+<tr><td>E12 confirmation 불발</td><td>confirm 조건 <code>raw &gt; maximum</code>이 절대 참이 되지 않음 → C12=C0과 동일.</td></tr>
+</tbody>
+</table>
+
+<h2>3. 제안 접근</h2>
+<table>
+<thead><tr><th>접근</th><th>변경</th><th>예상 효과</th><th>리스크</th></tr></thead>
+<tbody>
+<tr><td><strong>A</strong>: C0 raw-distance 복원</td><td>LocalGap의 정규화 전 raw 평균 거리를 별도 필드로 노출하여 스코어링에 사용</td><td>꼬리가 펴져서 이상치-정상 분리 폭 증가</td><td>기존 qualification 재검증 필요</td></tr>
+<tr><td><strong>B</strong>: E12 confirmation 완화</td><td><code>confirmed = raw &gt; percentile(fit_raw, p)</code>, p ∈ {90, 95} 스캔</td><td>confirm 발생률 상승 → C12가 C0과 달라질 여지</td><td>FP 증가 가능</td></tr>
+<tr><td><strong>C</strong>: 통계 피처 결합</td><td>spectral entropy(Exp470), RMS, kurtosis 등을 C0에 concat 후 LocalGap</td><td>ECG200 매끄러운 신호에 대한 분별력 추가</td><td>피처 수 증가 → 학습 시간 증가</td></tr>
+</tbody>
+</table>
+
+<h2>4. 평가 프로토콜</h2>
+<ul>
+<li>데이터셋: ECG200_normal_1, ECG200_normal_-1 (per-dataset majority-class TRAIN)</li>
+<li>seed: 20260721, 20261721 (frozen)</li>
+<li>지표: AUC, zero-FP TP, FP budget {3,5,10}에서 TP, F1-best</li>
+<li>baseline: 현재 C0 (AUC만 알려진 상태)</li>
+<li>routing/champion/promotion 변경 금지</li>
+</ul>
+
+<h2>5. 성공 기준</h2>
+<ul>
+<li>zero-FP TP ≥ 1을 달성하는 접근이 하나라도 존재할 것</li>
+<li>AUC 열화 없을 것 (기존 C0 AUC −0.01 이내)</li>
+<li>두 seed 결과 일관성 유지</li>
+</ul>
+
+<h2>6. 산출물</h2>
+<ul>
+<li>진단 스크립트 + 결과 root</li>
+<li>비교 표 (baseline vs A vs B vs C vs A+B+C)</li>
+<li>HTML 요약 문서</li>
+</ul>
+
+<h2>7. 진행 체크</h2>
+<label><input type="checkbox" checked disabled> Task 1: raw-distance 노출 경로 확인</label><br>
+<label><input type="checkbox" checked disabled> Task 2: A안 구현·테스트</label><br>
+<label><input type="checkbox" checked disabled> Task 3: B안 구현·p 스캔</label><br>
+<label><input type="checkbox" checked disabled> Task 4: C안 피처 결합</label><br>
+<label><input type="checkbox" disabled> Task 5: 공식 실행 및 비교 보고서</label>
+
+<h2>8. 진단 결과 (2026-08-25)</h2>
+<p class="muted">커밋 f62c3f79, 산출 root exp472_zero_fp_tail_recovery_antigravity_20260825</p>
+<table>
+<thead><tr><th></th><th colspan="5">ECG200_normal_1</th><th colspan="5">ECG200_normal_-1</th></tr>
+<tr><th>Method</th><th>AUC</th><th>zFP</th><th>TP@3</th><th>TP@5</th><th>TP@10</th><th>AUC</th><th>zFP</th><th>TP@3</th><th>TP@5</th><th>TP@10</th></tr></thead>
+<tbody>
+<tr><td>A_raw_gap</td><td><strong>1.0000</strong></td><td><strong>2/2</strong></td><td>2</td><td>2</td><td>2</td><td><strong>0.8980</strong></td><td>0/1</td><td>0</td><td><strong>1</strong></td><td><strong>1</strong></td></tr>
+<tr><td>B_c12_p90</td><td>0.9821</td><td>0/2</td><td>2</td><td>2</td><td>2</td><td>0.6327</td><td>0/1</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>B_c12_p95</td><td>0.9821</td><td>0/2</td><td>2</td><td>2</td><td>2</td><td>0.7347</td><td>0/1</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>C_gap+entropy</td><td><strong>1.0000</strong></td><td><strong>2/2</strong></td><td>2</td><td>2</td><td>2</td><td>0.3265</td><td>0/1</td><td>0</td><td>0</td><td>0</td></tr>
+<tr><td>baseline_c0</td><td>0.9898</td><td>0/2</td><td>2</td><td>2</td><td>2</td><td>0.8367</td><td>0/1</td><td>0</td><td>0</td><td>1</td></tr>
+</tbody>
+</table>
+<h3>결론</h3>
+<ul>
+<li><strong>normal_1</strong>: A_raw_gap이 zero-FP TP=2를 달성. AUC도 1.0000으로 완벽 분리.</li>
+<li><strong>normal_-1</strong>: A_raw_gap이 AUC 0.84→0.90 개선, TP@5에서 TP 1개 확보(baseline은 TP@10에서만). 여전히 zero-FP TP는 0.</li>
+<li>B(confirmation 완화)와 C(entropy 결합)는 normal_-1을 악화시킴 → 채택하지 않음.</li>
+<li>두 seed 결과 일치.</li>
+</ul>
+
+</body></html>

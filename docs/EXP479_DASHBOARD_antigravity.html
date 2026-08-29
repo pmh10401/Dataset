@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp479 성능 복구 대시보드</title><style>
+body{font-family:system-ui,-apple-system,sans-serif;max-width:1050px;margin:30px auto;padding:0 20px 50px;line-height:1.6;color:#182230}
+h1,h2{line-height:1.25}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px}.card{border:1px solid #d8dee8;border-radius:10px;padding:14px}.big{font-size:1.55rem;font-weight:750}
+.pass{border-left:5px solid #08783e;background:#f2fbf6;padding:12px 16px}.running{border-left:5px solid #2563eb;background:#eff6ff;padding:12px 16px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #d8dee8;padding:8px 10px;text-align:left}th{background:#eef2f7}label{display:block;margin:8px 0}input{margin-right:8px}code{background:#eef2f7;padding:2px 5px;border-radius:4px}
+</style></head><body>
+<h1>Exp479 성능 미산출 155개 복구</h1>
+<p class="pass"><strong>공식 실행 완료</strong> — 완료 155 / 155, 성공 155, 실패 0</p>
+<div class="cards"><div class="card"><div>공식 진행률</div><div class="big">155 / 155</div></div><div class="card"><div>성공</div><div class="big">155</div></div><div class="card"><div>실패</div><div class="big">0</div></div><div class="card"><div>최근 데이터셋</div><div><code>아직 없음</code></div></div><div class="card"><div>누적 실행 시간</div><div class="big">16.7분</div></div></div>
+<h2>성능 결과</h2><table><tr><th>범위</th><th>공식 평균 AUC</th><th>기준선 평균 AUC</th><th>공식 평균 ZF-TP</th><th>기준선 평균 ZF-TP</th><th>AUC 큰 손실</th></tr>
+<tr><td>새로 복구한 155개</td><td>0.989814</td><td>0.989814</td><td>0.948387</td><td>0.948387</td><td>2</td></tr>
+<tr><td>기존 962개 + 신규 155개</td><td>0.983295</td><td>0.983141</td><td>1.890779</td><td>1.888988</td><td>48</td></tr></table>
+<p>기존 962개는 다시 학습하지 않고 저장된 네 후보 점수에 현재 공식 라우터를 적용했습니다. 신규 155개만 Numba CPU로 계산합니다. 데이터셋 이름이나 TEST 라벨은 라우팅 입력에 쓰지 않습니다.</p>
+<p><strong>가속 판단:</strong> 고정 Python 환경은 MLX 미설치 상태이므로 Numba CPU 유지를 선택했습니다.</p>
+<p><strong>복구 대상 SHA256:</strong> <code>ce85b1626061c50b6ee92e57948442bc565b84c08c219dff7f2b45a40e453065</code></p>
+<h2>진행 체크</h2>
+<label><input type="checkbox" checked disabled> Exp479 설계 승인</label><label><input type="checkbox" checked disabled> 파생 데이터셋 정상 라벨 의미 확인</label><label><input type="checkbox" checked disabled> 구현 계획서 작성</label><label><input type="checkbox" checked disabled> 구현 계획 승인</label><label><input type="checkbox" checked disabled> Task 1 — 대상 155개와 실행 계약 고정</label><label><input type="checkbox" checked disabled> Task 2 — Numba 전처리와 155개 감사</label><label><input type="checkbox" checked disabled> Task 3 — 네 후보 성능 평가 코드 구현</label><label><input type="checkbox" checked disabled> Task 4 — MLX 적용 여부 판정: Numba CPU 유지</label><label><input type="checkbox" checked disabled> Task 5 — 실행기와 소규모 실데이터 검증</label><label><input type="checkbox" checked disabled> Task 6 — 공식 155개 실행과 1,117개 통합</label>
+</body></html>

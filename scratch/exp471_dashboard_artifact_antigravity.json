@@ -1,0 +1,1027 @@
+{
+  "surface": "dashboard",
+  "manifest": {
+    "version": 1,
+    "surface": "dashboard",
+    "title": "Exp471 Task 6 사전검증 대시보드",
+    "description": "합성 canonical replay에 closed CLI와 private checkpoint 경계를 추가한 Task 6 상태. private/official/TEST/FN/routing은 아직 없다.",
+    "generatedAt": "2026-08-24T15:30:00+09:00",
+    "cards": [
+      {
+        "id": "replay_status",
+        "description": "저장된 합성 증거의 semantic replay 검증 상태.",
+        "dataset": "summary",
+        "sourceId": "exp471_truth",
+        "metrics": [
+          {
+            "label": "Replay 검증 통과",
+            "field": "replay_verified",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "gate_status",
+        "description": "유한값과 exact fallback을 통과한 fold 수다. 전체 pair-repair 자격 통과와는 다른 값이다.",
+        "dataset": "summary",
+        "sourceId": "exp471_truth",
+        "metrics": [
+          {
+            "label": "무결성 통과 fold",
+            "field": "integrity_passed_folds",
+            "format": "number"
+          },
+          {
+            "label": "전체 fold",
+            "field": "planned_folds",
+            "format": "number"
+          },
+          {
+            "label": "전체 자격 통과",
+            "field": "qualification_passed",
+            "format": "number"
+          }
+        ]
+      },
+      {
+        "id": "boundary_counts",
+        "description": "Task 6 구현 단계의 private·official 실행과 라벨 접근 횟수다. private root 생성도 없다.",
+        "dataset": "summary",
+        "sourceId": "exp471_truth",
+        "metrics": [
+          {
+            "label": "private 실행",
+            "field": "private_runs",
+            "format": "number"
+          },
+          {
+            "label": "official 실행",
+            "field": "official_runs",
+            "format": "number"
+          },
+          {
+            "label": "라벨 query",
+            "field": "label_query_count",
+            "format": "number"
+          }
+        ]
+      }
+    ],
+    "charts": [
+      {
+        "id": "auc_chart",
+        "title": "C0와 C12 변화 유형별 AUC",
+        "subtitle": "AUC는 관측값이며 합격 gate로 사용하지 않는다.",
+        "headerMarkdown": "각 seed-fold에서 평균하지 않고 개별 관측값을 표시한다.",
+        "type": "bar",
+        "dataset": "method_auc",
+        "sourceId": "exp471_truth",
+        "valueFormat": "number",
+        "encodings": {
+          "x": {
+            "field": "change_type",
+            "type": "nominal",
+            "label": "변화 유형"
+          },
+          "y": {
+            "field": "auc",
+            "type": "quantitative",
+            "label": "AUC",
+            "format": "number"
+          },
+          "color": {
+            "field": "method",
+            "type": "nominal",
+            "label": "방법"
+          },
+          "tooltip": [
+            {
+              "field": "seed_fold",
+              "type": "nominal",
+              "label": "seed·fold"
+            }
+          ]
+        }
+      },
+      {
+        "id": "gap_chart",
+        "title": "고정 gate 충족 비율",
+        "subtitle": "모든 조건은 1.0이어야 한다.",
+        "headerMarkdown": "비율 1은 해당 조건을 두 seed 모두 만족한다는 뜻이다.",
+        "type": "bar",
+        "dataset": "gate_gap",
+        "sourceId": "exp471_truth",
+        "valueFormat": "percent",
+        "encodings": {
+          "x": {
+            "field": "condition",
+            "type": "nominal",
+            "label": "조건"
+          },
+          "y": {
+            "field": "share",
+            "type": "quantitative",
+            "label": "충족 비율",
+            "format": "percent"
+          }
+        }
+      }
+    ],
+    "tables": [
+      {
+        "id": "fold_table",
+        "title": "seed-fold 무결성과 pair 관측값",
+        "subtitle": "fold PASS는 유한값과 exact fallback 통과를 뜻한다. 전체 자격 gate는 별도로 본다.",
+        "dataset": "fold_results",
+        "sourceId": "exp471_truth",
+        "defaultSort": {
+          "field": "order",
+          "direction": "asc"
+        },
+        "columns": [
+          {
+            "field": "order",
+            "label": "순서",
+            "format": "number"
+          },
+          {
+            "field": "seed",
+            "label": "seed",
+            "format": "number"
+          },
+          {
+            "field": "fold",
+            "label": "fold",
+            "format": "number"
+          },
+          {
+            "field": "period_fixed",
+            "label": "period fixed",
+            "format": "number"
+          },
+          {
+            "field": "period_broken",
+            "label": "period broken",
+            "format": "number"
+          },
+          {
+            "field": "normal_confirmations",
+            "label": "정상 확인",
+            "format": "number"
+          },
+          {
+            "field": "result",
+            "label": "fold 무결성",
+            "type": "text"
+          }
+        ]
+      },
+      {
+        "id": "evidence_table",
+        "title": "Task 6 합성 replay와 사전검증 집계",
+        "subtitle": "backend, 전체 gate, closed CLI 검증, private root 미생성과 모든 fold의 shift 분포다.",
+        "dataset": "evidence_summary",
+        "sourceId": "exp471_truth",
+        "defaultSort": {
+          "field": "order",
+          "direction": "asc"
+        },
+        "columns": [
+          {"field": "order", "label": "순서", "format": "number"},
+          {"field": "item", "label": "항목", "type": "text"},
+          {"field": "value", "label": "실제 값", "type": "text"},
+          {"field": "meaning", "label": "뜻", "type": "text"}
+        ]
+      },
+      {
+        "id": "checklist_table",
+        "title": "진행 경계",
+        "subtitle": "실제 완료 항목만 체크한다.",
+        "dataset": "progress_checklist",
+        "sourceId": "exp471_truth",
+        "defaultSort": {
+          "field": "order",
+          "direction": "asc"
+        },
+        "columns": [
+          {
+            "field": "order",
+            "label": "순서",
+            "format": "number"
+          },
+          {
+            "field": "checked",
+            "label": "상태",
+            "type": "text"
+          },
+          {
+            "field": "task",
+            "label": "작업",
+            "type": "text"
+          },
+          {
+            "field": "status",
+            "label": "비고",
+            "type": "text"
+          }
+        ]
+      }
+    ],
+    "sources": [
+      {
+        "id": "exp471_truth",
+        "label": "Exp471 Task 5 canonical synthetic smoke",
+        "path": "scratch/exp471_dashboard_artifact_antigravity.json",
+        "query": {
+          "engine": "duckdb",
+          "language": "sql",
+          "description": "Exp471 Task 5 canonical synthetic smoke",
+          "sql": "SELECT 1 AS replay_verified, 10 AS integrity_passed_folds, 10 AS planned_folds, 0 AS qualification_passed, 0 AS private_runs, 0 AS official_runs, 0 AS label_query_count, 'numba' AS backend",
+          "tables_used": [
+            "scratch/exp471_dashboard_artifact_antigravity.json"
+          ],
+          "executed_at": "2026-08-24T00:00:00Z"
+        }
+      }
+    ],
+    "blocks": [
+      {
+        "id": "status_note",
+        "type": "markdown",
+        "sourceId": "exp471_truth",
+        "body": "## Task 5 결과: replay는 검증됐고 자격 gate는 실패\n\n합성 입력으로 만든 정확히 7개 canonical leaf를 다시 계산해 검증했다. 이것은 성능 통과가 아니라 구현 검증이다. private 실행, official 실행, TEST/FN 확인과 routing은 하지 않았다."
+      },
+      {
+        "id": "metrics",
+        "type": "metric-strip",
+        "cardIds": [
+          "replay_status",
+          "gate_status",
+          "boundary_counts"
+        ]
+      },
+      {
+        "id": "auc",
+        "type": "chart",
+        "chartId": "auc_chart",
+        "layout": "full"
+      },
+      {
+        "id": "folds",
+        "type": "table",
+        "tableId": "fold_table",
+        "layout": "full"
+      },
+      {
+        "id": "gap",
+        "type": "chart",
+        "chartId": "gap_chart",
+        "layout": "full"
+      },
+      {
+        "id": "task5_evidence",
+        "type": "table",
+        "tableId": "evidence_table",
+        "layout": "full"
+      },
+      {
+        "id": "checklist",
+        "type": "table",
+        "tableId": "checklist_table",
+        "layout": "full"
+      }
+    ]
+  },
+  "snapshot": {
+    "version": 1,
+    "generatedAt": "2026-08-24T15:30:00+09:00",
+    "status": "ready",
+    "datasets": {
+      "summary": [
+        {
+          "status": "task_6_preflight_verified_private_checkpoint_pending",
+          "replay_verified": 1,
+          "integrity_passed_folds": 10,
+          "planned_folds": 10,
+          "qualification_passed": 0,
+          "private_runs": 0,
+          "official_runs": 0,
+          "label_query_count": 0,
+          "test_labels_opened": false,
+          "routing_applied": false,
+          "publication_leaves": 7
+        }
+      ],
+      "evidence_summary": [
+        {"order": 1, "item": "backend", "value": "numba", "meaning": "Task 3에서 선택한 계산 경로"},
+        {"order": 2, "item": "전체 자격", "value": "실패", "meaning": "합성 smoke는 구현 검증이며 private 진행 보장이 아님"},
+        {"order": 3, "item": "period fixed", "value": "20260721:0, 20261721:0", "meaning": "각 seed에서 1개 이상 필요"},
+        {"order": 4, "item": "period broken", "value": "20260721:10, 20261721:10", "meaning": "각 seed에서 0이어야 함"},
+        {"order": 5, "item": "보호 변화 broken", "value": "level_shift:20, gradual_drift:20, amplitude_scaling:20", "meaning": "세 변화 모두 0이어야 함"},
+        {"order": 6, "item": "정상 confirmation", "value": "20260721:1, 20261721:1", "meaning": "각 seed에서 0이어야 함"},
+        {"order": 7, "item": "fit peak 없음 행", "value": "0", "meaning": "early 또는 late peak가 없는 fit 행"},
+        {"order": 8, "item": "query peak 없음 행", "value": "0", "meaning": "모든 scope를 합친 early 또는 late peak 없음 행"},
+        {"order": 9, "item": "fit shift 분포", "value": "-17:8, -16:16, -15:8, -14:16, -13:24, -12:24, -11:16, -10:8, -9:8, -7:32, -6:8, -5:24, -4:16, -3:24, -2:24, -1:24, 0:40, 1:24, 2:16, 3:24, 5:16, 7:8, 8:48, 9:8, 10:16, 11:8, 12:8, 13:8, 15:8, 16:8, 17:16, 18:8, 19:8", "meaning": "10개 기록의 fit shift 전체 히스토그램"},
+        {"order": 10, "item": "query shift 분포", "value": "-20:2, -19:4, -18:4, -17:12, -16:16, -15:12, -14:22, -13:28, -12:26, -11:24, -10:12, -9:14, -8:2, -7:32, -6:14, -5:36, -4:26, -3:40, -2:36, -1:24, 0:36, 1:26, 2:24, 3:30, 4:20, 5:22, 6:6, 7:12, 8:38, 9:8, 10:12, 11:10, 12:10, 13:8, 15:6, 16:8, 17:14, 18:6, 19:8", "meaning": "10개 기록과 다섯 scope의 query shift 전체 히스토그램"}
+      ],
+      "fold_results": [
+        {
+          "order": 1,
+          "seed": 20260721,
+          "fold": 0,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 2,
+          "seed": 20260721,
+          "fold": 1,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 3,
+          "seed": 20260721,
+          "fold": 2,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 4,
+          "seed": 20260721,
+          "fold": 3,
+          "period_fixed": 0,
+          "period_broken": 10,
+          "normal_confirmations": 1,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 5,
+          "seed": 20260721,
+          "fold": 4,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 6,
+          "seed": 20261721,
+          "fold": 0,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 7,
+          "seed": 20261721,
+          "fold": 1,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 8,
+          "seed": 20261721,
+          "fold": 2,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 9,
+          "seed": 20261721,
+          "fold": 3,
+          "period_fixed": 0,
+          "period_broken": 10,
+          "normal_confirmations": 1,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        },
+        {
+          "order": 10,
+          "seed": 20261721,
+          "fold": 4,
+          "period_fixed": 0,
+          "period_broken": 0,
+          "normal_confirmations": 0,
+          "fallback_exact": true,
+          "finite": true,
+          "result": "PASS",
+          "reason": "없음"
+        }
+      ],
+      "method_auc": [
+        {
+          "seed_fold": "20260721·0",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·0",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·0",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·0",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·0",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·0",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·0",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·0",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·1",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·2",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.44642857142857145
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4260204081632653
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.44642857142857145
+        },
+        {
+          "seed_fold": "20260721·3",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4260204081632653
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20260721·4",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·0",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·1",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·2",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.4744897959183674
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.44642857142857145
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.4260204081632653
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.44642857142857145
+        },
+        {
+          "seed_fold": "20261721·3",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.4260204081632653
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C0",
+          "change_type": "level shift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C0",
+          "change_type": "gradual drift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C0",
+          "change_type": "amplitude scaling",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C0",
+          "change_type": "period change",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C12",
+          "change_type": "level shift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C12",
+          "change_type": "gradual drift",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C12",
+          "change_type": "amplitude scaling",
+          "auc": 0.5236686390532544
+        },
+        {
+          "seed_fold": "20261721·4",
+          "method": "C12",
+          "change_type": "period change",
+          "auc": 0.5236686390532544
+        }
+      ],
+      "gate_gap": [
+        {
+          "condition": "seed마다 period fixed ≥ 1",
+          "share": 0.0
+        },
+        {
+          "condition": "seed마다 period broken = 0",
+          "share": 0.0
+        },
+        {
+          "condition": "보호 broken 모두 0",
+          "share": 0.0
+        },
+        {
+          "condition": "정상 confirmation 0",
+          "share": 0.0
+        }
+      ],
+      "progress_checklist": [
+        {
+          "order": 1,
+          "checked": "☑",
+          "task": "Task 5 canonical 저장·semantic replay·HTML export",
+          "status": "완료"
+        },
+        {
+          "order": 2,
+          "checked": "☑",
+          "task": "정확히 7개 leaf",
+          "status": "완료"
+        },
+        {
+          "order": 3,
+          "checked": "☑",
+          "task": "peak→shift→raw→E12/C12 재계산 replay",
+          "status": "완료"
+        },
+        {
+          "order": 4,
+          "checked": "☑",
+          "task": "재해시 위조 변조 거부",
+          "status": "완료"
+        },
+        {
+          "order": 5,
+          "checked": "☑",
+          "task": "closed evaluate·inspect CLI",
+          "status": "완료"
+        },
+        {
+          "order": 6,
+          "checked": "☑",
+          "task": "private 승인 checkpoint",
+          "status": "완료"
+        },
+        {
+          "order": 7,
+          "checked": "☑",
+          "task": "Task 6 preflight에서 private root 생성",
+          "status": "없음"
+        },
+        {
+          "order": 8,
+          "checked": "☐",
+          "task": "private 실행 1·2",
+          "status": "승인 전 금지"
+        },
+        {
+          "order": 9,
+          "checked": "☐",
+          "task": "official 실행·TEST/FN/routing",
+          "status": "별도 판단 필요"
+        }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "id": "exp471_truth",
+      "label": "Exp471 Task 6 canonical synthetic replay preflight",
+      "path": "scratch/exp471_dashboard_artifact_antigravity.json",
+      "query": {
+        "engine": "duckdb",
+        "language": "sql",
+        "description": "Exp471 Task 6 canonical synthetic replay preflight",
+        "sql": "SELECT 1 AS replay_verified, 10 AS integrity_passed_folds, 10 AS planned_folds, 0 AS qualification_passed, 0 AS private_runs, 0 AS official_runs, 0 AS label_query_count, 'numba' AS backend",
+        "tables_used": [
+          "scratch/exp471_dashboard_artifact_antigravity.json"
+        ],
+        "executed_at": "2026-08-24T00:00:00Z"
+      }
+    }
+  ],
+  "package_info": {
+    "createdBy": "codex-task5-tdd"
+  }
+}

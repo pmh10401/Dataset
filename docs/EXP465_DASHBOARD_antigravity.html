@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp465 진행 대시보드</title>
+<style>
+body{max-width:1000px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left}code{background:#eef2f7;padding:.12rem .3rem}.box{padding:1rem;margin:1rem 0;background:#f5f7fa;border-left:6px solid #2457a6}.stop{border-left-color:#b42318}input{width:1.05rem;height:1.05rem;vertical-align:-.15rem}
+</style>
+</head>
+<body><main>
+<h1>Exp465 진행 대시보드</h1>
+<div class="box stop"><strong>현재 상태:</strong> Task 5 private qualification은 두 번 똑같이 재현됐지만 <strong>실패</strong>했다. C8은 <code>0/10</code>만 통과했다. 가장 약한 period-change AUC는 <code>0.6862</code>, 가장 낮은 평균 AUC는 <code>0.8680</code>으로 각각 기준 <code>0.85</code>, <code>0.90</code>에 못 미쳤다. 따라서 Task 6과 라우팅 연구는 차단한다.</div>
+<table>
+<tr><th>목표</th><td>ECG200 정상 TRAIN에서 Exp464 C8의 외부 재현성 확인</td></tr>
+<tr><th>자료</th><td>ECG200 TRAIN 100×96 중 정상 +1 라벨 69개</td></tr>
+<tr><th>주 후보</th><td>C8 exact</td></tr>
+<tr><th>합격선</th><td>10/10, 유형별 AUC ≥0.85, 평균 ≥0.90, finite, C0 gradual·period 비열화 0건, 각 seed 정상 69개 confirmation 0건</td></tr>
+<tr><th>현재 공식 성능</th><td>변경 없음: 전체 F1 0.624185, recall 0.488770, FN 2,003</td></tr>
+<tr><th>Task 1 검증</th><td>8 tests GREEN × 2회; code-map <code>--validate-only</code> 통과; <code>git diff --check</code> 통과</td></tr>
+<tr><th>Task 2 입력</th><td>공식 Zenodo TRAIN만 외부 경로에 저장, MD5 일치, 실제 smoke 출력 <code>69×140</code>, TEST 미접근</td></tr>
+<tr><th>Task 3 검증</th><td>scoring test RED → GREEN ×2(10-fold exact parity + Exp464 호출 spy), Exp464 scoring regression ×1</td></tr>
+<tr><th>Task 4 검증</th><td>판정·출판·재생·대시보드 최종 집중 검사 9개 ×2, Task 3 점수 회귀 3개, fresh review 통과</td></tr>
+<tr><th>Task 5 CLI 검증</th><td>CLI 검사 8개 ×2, 하위 회귀 22개, fresh review 통과. inspect는 저장 결과만 검산하며 점수를 다시 계산하지 않는다.</td></tr>
+<tr><th>Private 결과</th><td>C8 <code>0/10</code>; 유형별 최저 AUC <code>[0.9172, 0.9053, 0.9231, 0.6862]</code>; 최저 평균 AUC <code>0.8680</code>; 두 seed 정상 confirmation 모두 <code>0</code>; C0 gradual·period 비열화 <code>0</code></td></tr>
+<tr><th>재현성</th><td>두 실행의 출력 SHA-256 <code>0436fbbd…f894f891</code>, 7개 파일과 모든 해시가 정확히 일치</td></tr>
+<tr><th>실행 경계</th><td>official evaluate / inspect <code>0 / 0</code>, private run <code>2</code>, label query <code>0</code>, 공식 결과 hash는 계속 <code>null</code></td></tr>
+</table>
+
+<h2>진행 상황</h2>
+<ul>
+<li><label><input type="checkbox" checked disabled> 외부 자료 선택</label></li>
+<li><label><input type="checkbox" checked disabled> 방법과 합격 기준 승인</label></li>
+<li><label><input type="checkbox" checked disabled> HTML 설계서 작성</label></li>
+<li><label><input type="checkbox" checked disabled> 구현 계획 작성</label></li>
+<li><label><input type="checkbox" disabled> 구현 계획 승인</label></li>
+<li><label><input type="checkbox" checked disabled> Task 1 구현(계약·문서·코드맵)</label></li>
+<li><label><input type="checkbox" checked disabled> Task 2 구현(TRAIN 입력과 보간)</label></li>
+<li><label><input type="checkbox" checked disabled> Task 3 구현과 독립 검토</label></li>
+<li><label><input type="checkbox" checked disabled> Task 4 검토 지적 수정과 재검증</label></li>
+<li><label><input type="checkbox" checked disabled> Task 4 fresh 독립 검토</label></li>
+<li><label><input type="checkbox" checked disabled> Task 5 닫힌 CLI 구현과 독립 검토</label></li>
+<li><label><input type="checkbox" checked disabled> private 실행 1</label></li>
+<li><label><input type="checkbox" checked disabled> private 실행 2 및 재현성 확인</label></li>
+<li><label><input type="checkbox" checked disabled> private 결과 독립 검토</label></li>
+<li><label><input type="checkbox" disabled> 공식 실행 승인</label></li>
+<li><label><input type="checkbox" disabled> 공식 실행 및 결과 판단</label></li>
+</ul>
+
+<div class="box stop"><strong>현재 금지:</strong> Task 6 공식 실행, ECG200 TEST 접근, 후보 교체, 라우팅 연구, 실제 라우팅과 공식 모델 변경. Task 5는 재현 가능한 자격 실패로 닫혔고 Ox Alpha Ultra와 Sol 최종 검토가 모두 <code>SPEC PASS / SCIENCE APPROVED</code>를 기록했다.</div>
+<p>설계서: <a href="superpowers/specs/2026-08-22-exp465-ecg200-c8-external-validation-antigravity-design.html">Exp465 설계 보기</a>. 사전등록: <a href="EXP465_PREREGISTRATION_antigravity.html">보기</a>. Runbook: <a href="EXP465_RUNBOOK_antigravity.html">보기</a>. 구현 보고서: <a href="EXP465_IMPLEMENTATION_REPORT_antigravity.html">보기</a>.</p>
+</main></body>
+</html>

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp466 Task 3 구현 보고</title>
+  <style>
+    body { max-width: 1120px; margin: 2rem auto; padding: 0 1rem; font: 16px/1.65 system-ui, sans-serif; color: #172033; }
+    h1, h2 { line-height: 1.25; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+    th, td { border: 1px solid #aab3bf; padding: .55rem; text-align: left; vertical-align: top; }
+    code, pre { background: #eef2f7; }
+    code { padding: .1rem .3rem; overflow-wrap: anywhere; }
+    pre { padding: 1rem; overflow: auto; white-space: pre-wrap; }
+    .ok { border-left: 6px solid #16794b; background: #f5fff9; padding: 1rem; }
+    .note { border-left: 6px solid #2457a6; background: #f5f7fa; padding: 1rem; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Exp466 Task 3 — P9 고정 위상 정렬 evidence</h1>
+  <p><strong>상태:</strong> <code>task_3_accepted_map_report_closeout_complete_cpu_frozen</code>. 엄격한 RED→GREEN 순서로 고정 위상 정렬 margin, leave-one-out fit calibration, full-fit query calibration, exact anomaly rank, strict confirmation, 불변 결과 계약을 구현했다. Terra P2가 지적한 exact-zero/negative-threshold confirmation 경계도 mutation RED와 회귀 테스트로 고정했고, 최종 Terra 재검토와 Task 3 code-map closeout을 완료했다. 실제 실험·데이터·private·official 경로는 실행하지 않았다.</p>
+
+  <h2>구현 커밋</h2>
+  <table>
+    <tr><th>커밋</th><td><code>cd8bb23a2f131976a928a0e9f385556545ae457e</code></td></tr>
+    <tr><th>메시지</th><td><code>feat: add Exp466 fixed phase registration evidence</code></td></tr>
+    <tr><th>Review fix 커밋</th><td><code>f24dbc6f0d04168e742b4074b495fe5bce04f689</code> — <code>test: lock Exp466 zero-margin confirmation boundary</code>.</td></tr>
+    <tr><th>Map closeout 커밋</th><td><code>fcbc26464bbab566989c829a2dc53942e2d8b7e3</code> — <code>docs: map Exp466 task 3 boundaries</code>.</td></tr>
+    <tr><th>Map source boundary</th><td>기능·경계 테스트와 독립 검토를 승인한 뒤 생성한 map/report closeout <code>fcbc26464bbab566989c829a2dc53942e2d8b7e3</code>를 graph와 lock의 <code>source_parent_commit</code>으로 고정했다.</td></tr>
+    <tr><th>범위</th><td>구현 커밋은 <code>phase_registration_antigravity.py</code>와 최초 5-test 파일만 포함한다. Review fix 커밋은 exact-zero 경계 test와 이 보고서를 포함한다. Map closeout은 builder, code-map HTML/JSON/lock, 이 보고서만 수정했다.</td></tr>
+  </table>
+
+  <h2>공개 인터페이스와 결과 계약</h2>
+  <table>
+    <tr><th>인터페이스</th><th>계약</th></tr>
+    <tr><td><code>phase_registration_margin_antigravity(row, template) -&gt; float</code></td><td>각 140-point row의 onset 56 이후 84-point suffix를 각각 median과 <code>1.4826 × MAD</code>로 표준화한다. 67-point shared 구간에서 identity MSE와 고정 <code>1.25</code> inverse-warp MSE를 계산해 <code>identity_error - undo_error</code>를 반환한다.</td></tr>
+    <tr><td><code>score_phase_registration_antigravity(fit_rows, query_rows) -&gt; PhaseScoresAntigravity</code></td><td>fit 각 row에는 그 row를 뺀 median template을 사용하고, query 전체에는 full-fit median template 하나를 사용한다. <code>confirmed = (query_margins &gt; 0) &amp; (query_margins &gt; max(fit_margins))</code>를 strict하게 적용한다.</td></tr>
+    <tr><td><code>PhaseScoresAntigravity</code></td><td>owned, C-contiguous, read-only, finite float64 <code>fit_margins</code>, <code>query_margins</code>, <code>ranks</code>, finite float scalar <code>fit_normal_max_margin</code>, owned read-only bool <code>confirmed</code>를 제공한다. 길이, threshold, exact predecessor rank, strict confirmation을 생성 시 다시 검증하고 입력 배열과 memory를 공유하지 않는다.</td></tr>
+  </table>
+
+  <h2>Strict TDD 증거</h2>
+  <p>production module을 만들기 전에 전체 focused test를 먼저 추가하고 아래 명령을 실행했다.</p>
+  <pre>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_phase_registration_antigravity</pre>
+  <table>
+    <tr><th>RED</th><td>exit <code>1</code>; <code>Ran 1 test in 0.000s</code>; <code>FAILED (errors=1)</code>. 원인은 정확히 <code>ModuleNotFoundError: No module named 'experiments.exp466_ecg200_phase_registration_margin_antigravity.phase_registration_antigravity'</code>였다. 오타나 fixture 실패가 아니라 Task 3 module이 아직 없어서 난 예상된 실패였다.</td></tr>
+    <tr><th>GREEN 1</th><td>exit <code>0</code>; <code>.....</code>; <code>Ran 5 tests in 0.029s</code>; <code>OK</code>.</td></tr>
+    <tr><th>GREEN 2</th><td>exit <code>0</code>; <code>.....</code>; <code>Ran 5 tests in 0.024s</code>; <code>OK</code>.</td></tr>
+    <tr><th>전체 Exp466 회귀</th><td><code>python3 -m unittest discover -s experiments/exp466_ecg200_phase_registration_margin_antigravity/tests -p 'test_*_antigravity.py'</code>: exit <code>0</code>; <code>...................</code>; <code>Ran 19 tests in 4.071s</code>; <code>OK</code>.</td></tr>
+  </table>
+  <details>
+    <summary>Exact RED output</summary>
+    <pre>E
+======================================================================
+ERROR: test_phase_registration_antigravity (unittest.loader._FailedTest.test_phase_registration_antigravity)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_phase_registration_antigravity
+Traceback (most recent call last):
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 137, in loadTestsFromName
+    module = __import__(module_name)
+  File "/Users/mac/Documents/Time Series/.worktrees/exp462-ecg-gradual-signature-antigravity/experiments/exp466_ecg200_phase_registration_margin_antigravity/tests/test_phase_registration_antigravity.py", line 8, in &lt;module&gt;
+    from experiments.exp466_ecg200_phase_registration_margin_antigravity.phase_registration_antigravity import (
+    ...&lt;3 lines&gt;...
+    )
+ModuleNotFoundError: No module named 'experiments.exp466_ecg200_phase_registration_margin_antigravity.phase_registration_antigravity'
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)</pre>
+  </details>
+
+  <h2>Terra P2 review fix disposition</h2>
+  <div class="ok">
+    <p><strong>판정:</strong> <code>RESOLVED</code>. 기존 fixture는 query margin 0과 음수 fit maximum의 조합을 분리해 검증하지 않았다. 새 <code>test_zero_margin_is_not_confirmed_above_negative_fit_max_antigravity</code>는 public scorer에 literal fit margins <code>[-2.0, -1.0]</code>과 query margin <code>[0.0]</code>을 공급한다. 따라서 <code>0.0 &gt; -1.0</code>이 참이어도 positivity 조건 때문에 confirmation은 정확히 <code>false</code>여야 한다. margin 계산만 boundary 아래에서 고정했으며 mock 자체에는 assertion하지 않고 실제 scorer/result 동작만 검증한다.</p>
+    <p><strong>Mutation RED:</strong> authoritative scorer의 <code>(query_margins &gt; 0.0)</code> conjunct만 일시적으로 제거한 뒤 아래 단일 테스트를 실행했다. exit <code>1</code>; <code>Ran 1 test in 0.004s</code>; <code>FAILED (errors=1)</code>; exact 원인은 <code>ValueError: confirmed must use the strict positive fit-max rule</code>였다. 즉 scorer의 잘못된 <code>true</code>와 result contract의 올바른 <code>false</code>가 충돌해 mutation이 검출됐다. 실행 직후 conjunct를 복원했고 production diff가 없음을 확인했다.</p>
+    <pre>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_phase_registration_antigravity.PhaseRegistrationAntigravityTest.test_zero_margin_is_not_confirmed_above_negative_fit_max_antigravity</pre>
+    <p><strong>Review GREEN 1:</strong> focused Task 3 command exit <code>0</code>; <code>......</code>; <code>Ran 6 tests in 0.013s</code>; <code>OK</code>.</p>
+    <p><strong>Review GREEN 2:</strong> 같은 focused Task 3 command exit <code>0</code>; <code>......</code>; <code>Ran 6 tests in 0.013s</code>; <code>OK</code>.</p>
+    <p><strong>Review 전체 회귀:</strong> full Exp466 discovery exit <code>0</code>; <code>....................</code>; <code>Ran 20 tests in 2.921s</code>; <code>OK</code>.</p>
+    <p><strong>범위:</strong> review fix는 Task 3 test와 이 Task 3 report만 변경한다. production, code map, plan, dashboard, implementation report, ledgers는 변경하지 않았고 MLX/data/private/official 실행도 추가하지 않았다.</p>
+  </div>
+
+  <h2>Terra final review</h2>
+  <div class="ok">
+    <p><strong>최종 verdict:</strong> <code>PASS</code>. P2 exact-zero/negative-threshold fixture와 mutation 검출 evidence를 포함한 accepted Task 3 boundary <code>f24dbc6f0d04168e742b4074b495fe5bce04f689</code>를 재검토했고, 남은 finding은 <code>0</code>개였다. Production 수정 요구나 추가 concern은 없었다.</p>
+  </div>
+
+  <h2>Terra map/report scoped review</h2>
+  <div class="ok">
+    <p><strong>최종 verdict:</strong> <code>PASS</code>, finding 0건. <code>f24dbc6f..fcbc264</code>에는 code-map triplet, builder, 이 보고서만 포함됐고 functional code/test 변경은 없었다. Task 1/2 graph는 그대로 보존됐으며 Task 3 caller/effect/test, unknown 0, fingerprint <code>30/30</code>, embedded HTML graph, 전체 Exp466 20개 검사와 diff 검사가 모두 통과했다.</p>
+  </div>
+
+  <h2>수식·경계 검증</h2>
+  <div class="ok">
+    <p><strong>고정 수식:</strong> 동일 template은 margin이 0 이하이고, suffix에 <code>np.interp(arange(84) / 1.25, arange(84), suffix)</code>를 적용한 period-warp row는 margin이 0보다 큼을 확인했다. row와 template에 서로 다른 상수 level 및 양의 amplitude scale을 적용해도 margin 차이가 <code>1e-12</code> 이하임을 확인했다.</p>
+    <p><strong>shared length:</strong> test가 67개 좌표를 사용한 독립 수식으로 identity/undo MSE를 계산하고 production margin과 absolute <code>1e-15</code> 이내로 일치시켰다. grid, 학습 threshold, alpha, 대체 warp는 없다.</p>
+    <p><strong>calibration:</strong> literal fixture에서 LOO fit margins는 <code>[-1.1803652644198817, -1.1902612785807918, -1.1691030154695568, -1.1866388604308464]</code>, full-fit query margins는 <code>[-1.197118344225737, 1.2835243752805767]</code>, fit max는 <code>-1.1691030154695568</code>, ranks는 <code>[0.2, 1.0]</code>, confirmations는 <code>[false, true]</code>로 검증했다.</p>
+    <p><strong>거부 경계:</strong> exact ndarray가 아닌 입력, float64가 아닌 dtype, 140 이외의 width, 잘못된 차원, fit row 2개 미만, 빈 query, nonfinite 값, suffix의 zero/nonpositive MAD를 거부한다. result constructor는 wrong dtype, nonfinite, 길이 불일치, forged max/ranks/confirmation을 거부하고 모든 배열을 copy/freeze한다.</p>
+  </div>
+
+  <h2>단일 CPU/MLX smoke manifest</h2>
+  <p>고정 seed 하나로 동일한 <code>55×140</code> fit과 <code>14×140</code> query를 만들었다. CPU scorer와 수식이 같은 일회성 MLX 후보를 각각 한 번 실행했다. MLX timing에는 host→device 배열 생성, 연산·compile, <code>mx.eval</code> synchronization, device→host margin 변환을 포함했다. 동시에 실행한 MLX process는 없고, smoke는 한 번만 실행했다.</p>
+  <pre>{
+  "confirmation_indices_equal": true,
+  "cpu_confirmed_indices": [7, 8, 9, 10, 11, 12, 13],
+  "cpu_finite": true,
+  "cpu_seconds": 0.012517457827925682,
+  "device": "Device(gpu, 0)",
+  "fallback_reason": "MLX margin parity exceeded the preregistered 1e-12 tolerance",
+  "fit_shape": [55, 140],
+  "margin_parity": false,
+  "max_abs_fit_margin_difference": 3.1882765294533044e-07,
+  "max_abs_query_margin_difference": 2.2327208948347277e-07,
+  "mlx": "0.32.0",
+  "mlx_confirmed_indices": [7, 8, 9, 10, 11, 12, 13],
+  "mlx_finite": true,
+  "mlx_metal": "0.32.0",
+  "mlx_seconds": 0.31210108287632465,
+  "numpy": "2.3.5",
+  "python": "3.14.6",
+  "query_shape": [14, 140],
+  "required_speedup": 1.1,
+  "seed": 466032023,
+  "selected_path": "CPU",
+  "smoke_runs": 1,
+  "speedup_cpu_over_mlx": 0.040107063110979134,
+  "tolerance": 1e-12
+}</pre>
+  <p><strong>판정:</strong> 두 경로 모두 finite이고 confirmed indices도 정확히 같았지만, fit/query margin 차이가 <code>1e-12</code> tolerance를 초과했다. 또한 CPU-over-MLX speedup은 <code>0.040107063110979134×</code>로 요구한 <code>1.1×</code>보다 낮았다. 따라서 production에는 NumPy CPU 경로만 남겼으며 MLX 후보 코드는 포함하지 않았다.</p>
+
+  <h2>코드맵 시작 검사와 caller/effect/test 답변</h2>
+  <table>
+    <tr><th>시작 검사</th><td><code>python3 scratch/build_codemap_exp466_antigravity.py --validate-only</code>가 편집 전에 exit <code>0</code>, 출력 없음으로 통과했다. 현재 <code>codemap_exp466_antigravity</code>는 Task 1 frozen geometry가 future scoring을 지배하고 Task 2 interpolation/synthetic/predecessor가 future phase scoring 입력을 제공한다고 답한다.</td></tr>
+    <tr><th>무엇이 호출하는가?</th><td>현재는 <code>test_phase_registration_antigravity.py</code>가 두 공개 scorer 경계와 result contract를 직접 호출한다. 이후 별도로 승인된 Exp466 C9/qualification 단계가 P9 margin/rank/confirmation을 소비할 수 있으나 이번 Task에서는 구현하지 않았다.</td></tr>
+    <tr><th>무엇에 영향을 주는가?</th><td>Task 2가 제공하는 140-point fit/query rows를 읽어 P9 fit/query margins, fit max, exact anomaly ranks, strict confirmation bool만 생성한다. 입력, C0, synthetic rows, config/contracts, data source, qualification/publication/routing state는 변경하지 않는다.</td></tr>
+    <tr><th>어떤 테스트가 덮는가?</th><td><code>test_phase_registration_antigravity.py</code>의 6개 test가 고정 수식·affine invariance·shared 67, LOO/full-fit calibration, predecessor rank, strict confirmation, exact-zero/negative-threshold 경계, geometry/dtype/finite/MAD 경계, 소유권·불변 결과를 덮는다. 전체 Exp466 20-test regression이 Task 1/2 인터페이스 보존을 확인한다.</td></tr>
+    <tr><th>map closeout</th><td><code>exp466_task3_phase_registration_codemap_v1</code> graph에 phase module, 6-test boundary, 이 report의 세 Task 3 node를 추가했다. 기존 Task 1/2의 25 nodes, 30 edges, 7 flows와 caller/effect/test answers를 보존하고 Task 3 관계를 더해 총 <code>28 nodes</code>, <code>35 edges</code>, <code>9 flows</code>, unknown relationship <code>0</code>으로 닫았다. Lock schema는 <code>exp466_task3_phase_registration_codemap_lock_v1</code>이며 tracked fingerprints는 <code>30</code>개다.</td></tr>
+  </table>
+
+  <h2>최종 MAP/REPORT closeout 검증</h2>
+  <table>
+    <tr><th>Focused 6</th><td>accepted review evidence의 동일 focused command를 두 번 실행했고 각각 exit <code>0</code>, <code>......</code>, <code>Ran 6 tests in 0.013s</code>, <code>OK</code>였다.</td></tr>
+    <tr><th>Full 20</th><td>closeout에서 <code>python3 -m unittest discover -s experiments/exp466_ecg200_phase_registration_margin_antigravity/tests -p 'test_*_antigravity.py'</code>를 다시 실행했다. exit <code>0</code>, <code>....................</code>, <code>Ran 20 tests in 3.341s</code>, <code>OK</code>.</td></tr>
+    <tr><th>Map generation/validation</th><td>기능·테스트 검토 직후에는 <code>f24dbc6f0d04168e742b4074b495fe5bce04f689</code>를 기준으로 생성·검토했다. 최종 Task 3 문서 체크와 함께 scoped review를 통과한 map closeout <code>fcbc26464bbab566989c829a2dc53942e2d8b7e3</code>를 source boundary로 갱신하며, 이어진 <code>--validate-only</code>에서 HTML embedded graph와 canonical JSON 일치를 다시 확인한다.</td></tr>
+    <tr><th>JSON·fingerprints</th><td>JSON 세 파일 parse가 exit <code>0</code>이었고 graph는 <code>28/35/9</code> node/edge/flow, unknown <code>0</code>, lock은 <code>30</code> fingerprints를 기록했다. 각 tracked path를 SHA-256으로 다시 계산해 lock의 path/order/hash와 <code>30/30</code> exact match를 확인했다.</td></tr>
+    <tr><th>Diff</th><td><code>git diff --cached --check</code> exit <code>0</code>, 출력 없음. Commit 대상은 builder, Task 3 report, code-map HTML/JSON/lock의 정확히 5개 파일이며 functional code/tests와 금지된 truth surfaces는 포함하지 않는다.</td></tr>
+  </table>
+
+  <h2>Diff 검사와 보존 경계</h2>
+  <table>
+    <tr><th>구현 diff</th><td>exact 두 구현 파일을 stage한 뒤 <code>git diff --cached --check</code> exit <code>0</code>, 출력 없음. <code>git diff --cached --name-only</code>에는 owned module/test 두 파일만 있었고 commit 결과는 <code>2 files changed, 454 insertions(+)</code>였다.</td></tr>
+    <tr><th>cache</th><td>커밋 전에 Exp466 package 아래 <code>__pycache__</code>, <code>*.pyc</code>, <code>*.pyo</code>를 제거했다.</td></tr>
+    <tr><th>보존 경계</th><td>Task 1 config/contracts와 Task 2 source/interpolation/synthetic/predecessor, Task 3 functional code/tests를 수정하지 않았다. Code-map triplet, builder, 이 Task 3 report 외의 docs, ledgers, dashboard, plan, implementation report, runbook은 수정하지 않았다. C0/P9/C9 fusion, qualification, publication, CLI, TEST/label, private/official execution, routing, champion, pending, promotion을 구현하거나 실행하지 않았다.</td></tr>
+  </table>
+
+  <h2>Concern</h2>
+  <div class="note">
+    <p><strong>기능 blocker는 없다.</strong> Terra P2 exact-zero 경계는 mutation으로 검출력을 확인하고 <code>RESOLVED</code> 처리했다. MLX는 confirmed indices를 보존했지만 float margin tolerance와 speed gate를 모두 실패했으므로 CPU-only가 고정 결정이다. 실제 experiment/data/private/official 경로는 금지되어 검증하지 않았으며, 이는 이번 Task 범위에 맞는 의도적 미실행이다.</p>
+    <p>Task 3 code-map/report scoped review와 HTML 완료 체크까지 닫혔다. 남은 기능 또는 행정 blocker는 없으며 다음 작업은 Task 4다.</p>
+  </div>
+</main>
+</body>
+</html>

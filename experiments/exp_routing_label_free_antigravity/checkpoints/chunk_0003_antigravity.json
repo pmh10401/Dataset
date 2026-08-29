@@ -1,0 +1,992 @@
+{
+ "Crop_normal_10": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9958673469387755,
+    "zf": 9
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9946938775510205,
+    "zf": 11
+   },
+   "hydra_local_gap": {
+    "auc": 0.9965306122448979,
+    "zf": 16
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9965306122448979,
+    "zf": 12
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "Crop_normal_11": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9903571428571428,
+    "zf": 8
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9788775510204082,
+    "zf": 4
+   },
+   "hydra_local_gap": {
+    "auc": 0.9687755102040816,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9774489795918367,
+    "zf": 8
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Crop_normal_12": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9710714285714286,
+    "zf": 7
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9797448979591836,
+    "zf": 13
+   },
+   "hydra_local_gap": {
+    "auc": 0.9649489795918368,
+    "zf": 5
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.973265306122449,
+    "zf": 12
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "Crop_normal_13": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9982142857142857,
+    "zf": 19
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9992857142857143,
+    "zf": 17
+   },
+   "hydra_local_gap": {
+    "auc": 0.9944897959183674,
+    "zf": 14
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9993367346938775,
+    "zf": 16
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "Crop_normal_14": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.954234693877551,
+    "zf": 4
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9578571428571429,
+    "zf": 2
+   },
+   "hydra_local_gap": {
+    "auc": 0.9478571428571428,
+    "zf": 3
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9587755102040816,
+    "zf": 4
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Crop_normal_15": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9990816326530613,
+    "zf": 17
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9804081632653061,
+    "zf": 15
+   },
+   "hydra_local_gap": {
+    "auc": 0.999234693877551,
+    "zf": 15
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9888265306122449,
+    "zf": 15
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Crop_normal_16": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.992295918367347,
+    "zf": 12
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9952551020408164,
+    "zf": 11
+   },
+   "hydra_local_gap": {
+    "auc": 0.9908163265306122,
+    "zf": 12
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9941326530612244,
+    "zf": 12
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Crop_normal_17": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9929081632653062,
+    "zf": 12
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9970918367346939,
+    "zf": 11
+   },
+   "hydra_local_gap": {
+    "auc": 0.8553061224489796,
+    "zf": 12
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9978571428571429,
+    "zf": 17
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "Crop_normal_18": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9806122448979592,
+    "zf": 7
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9948469387755102,
+    "zf": 12
+   },
+   "hydra_local_gap": {
+    "auc": 0.9855612244897959,
+    "zf": 6
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9941836734693877,
+    "zf": 13
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "Crop_normal_19": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9884693877551021,
+    "zf": 9
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9874489795918368,
+    "zf": 8
+   },
+   "hydra_local_gap": {
+    "auc": 0.9801530612244898,
+    "zf": 8
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9876020408163265,
+    "zf": 9
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Crop_normal_2": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9667346938775511,
+    "zf": 6
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9791836734693877,
+    "zf": 5
+   },
+   "hydra_local_gap": {
+    "auc": 0.9362244897959183,
+    "zf": 2
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.979030612244898,
+    "zf": 6
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": true
+ },
+ "Crop_normal_20": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9912755102040817,
+    "zf": 9
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9918367346938776,
+    "zf": 8
+   },
+   "hydra_local_gap": {
+    "auc": 0.9747448979591836,
+    "zf": 4
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9866836734693878,
+    "zf": 7
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Crop_normal_21": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 20
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 20
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 20
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 20
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Crop_normal_22": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9982142857142857,
+    "zf": 15
+   },
+   "multirocket_local_gap": {
+    "auc": 0.996734693877551,
+    "zf": 8
+   },
+   "hydra_local_gap": {
+    "auc": 0.9970918367346939,
+    "zf": 14
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.997704081632653,
+    "zf": 13
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Crop_normal_23": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9996428571428572,
+    "zf": 17
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9995408163265306,
+    "zf": 19
+   },
+   "hydra_local_gap": {
+    "auc": 0.9988775510204082,
+    "zf": 3
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9994897959183674,
+    "zf": 19
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "Crop_normal_24": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 20
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 20
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 20
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 20
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Crop_normal_3": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9581632653061225,
+    "zf": 9
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9550510204081633,
+    "zf": 7
+   },
+   "hydra_local_gap": {
+    "auc": 0.9353571428571429,
+    "zf": 7
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9661734693877551,
+    "zf": 5
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Crop_normal_4": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9486224489795918,
+    "zf": 2
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9702551020408163,
+    "zf": 2
+   },
+   "hydra_local_gap": {
+    "auc": 0.9464285714285714,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9696428571428571,
+    "zf": 3
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "Crop_normal_5": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9661224489795919,
+    "zf": 11
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9753061224489796,
+    "zf": 9
+   },
+   "hydra_local_gap": {
+    "auc": 0.960561224489796,
+    "zf": 5
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9780102040816326,
+    "zf": 7
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": true
+ },
+ "Crop_normal_6": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.947295918367347,
+    "zf": 7
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9129081632653061,
+    "zf": 5
+   },
+   "hydra_local_gap": {
+    "auc": 0.9540306122448979,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9157142857142857,
+    "zf": 3
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Crop_normal_7": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9914795918367347,
+    "zf": 15
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9854081632653061,
+    "zf": 15
+   },
+   "hydra_local_gap": {
+    "auc": 0.9927551020408163,
+    "zf": 15
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9858673469387755,
+    "zf": 15
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Crop_normal_8": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9851020408163266,
+    "zf": 11
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9824489795918367,
+    "zf": 8
+   },
+   "hydra_local_gap": {
+    "auc": 0.9826020408163265,
+    "zf": 7
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.987295918367347,
+    "zf": 8
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Crop_normal_9": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9658673469387755,
+    "zf": 8
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9651530612244898,
+    "zf": 7
+   },
+   "hydra_local_gap": {
+    "auc": 0.95,
+    "zf": 5
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9585204081632653,
+    "zf": 9
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "DiatomSizeReduction_normal_1": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9183673469387755,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8979591836734694,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9183673469387755,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": true
+ },
+ "DiatomSizeReduction_normal_2": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 2
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 2
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 2
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9948979591836735,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "DiatomSizeReduction_normal_3": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 2
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 2
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 2
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 2
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "DiatomSizeReduction_normal_4": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "DistalPhalanxOutlineAgeGroup_normal_1": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "DistalPhalanxOutlineAgeGroup_normal_2": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.8390022675736961,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.8117913832199547,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8458049886621315,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.8412698412698413,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": true
+ },
+ "DistalPhalanxOutlineAgeGroup_normal_3": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9688208616780045,
+    "zf": 3
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9750566893424036,
+    "zf": 3
+   },
+   "hydra_local_gap": {
+    "auc": 0.7828798185941043,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9778911564625851,
+    "zf": 3
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "DistalPhalanxOutlineCorrect_normal_0": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.8231292517006803,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.8214285714285714,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8117913832199547,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.8117913832199547,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "DistalPhalanxOutlineCorrect_normal_1": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9627255861022095,
+    "zf": 5
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9814471243042672,
+    "zf": 4
+   },
+   "hydra_local_gap": {
+    "auc": 0.8524203069657615,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9720020239500758,
+    "zf": 4
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "DistalPhalanxTW_normal_3": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "DistalPhalanxTW_normal_4": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "DistalPhalanxTW_normal_5": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 2
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 2
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 2
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 2
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "DistalPhalanxTW_normal_6": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "DistalPhalanxTW_normal_7": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.8367346938775511,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.6938775510204082,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8367346938775511,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.8571428571428571,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": true
+ },
+ "DistalPhalanxTW_normal_8": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 5
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 5
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 5
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 5
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "DodgerLoopDay_normal_1": {
+  "status": "non_finite"
+ },
+ "DodgerLoopDay_normal_2": {
+  "status": "non_finite"
+ },
+ "DodgerLoopDay_normal_3": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.8775510204081632,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.8163265306122449,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8775510204081632,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9387755102040817,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": true
+ },
+ "DodgerLoopDay_normal_4": {
+  "status": "non_finite"
+ },
+ "DodgerLoopDay_normal_5": {
+  "status": "non_finite"
+ },
+ "DodgerLoopDay_normal_6": {
+  "status": "non_finite"
+ },
+ "DodgerLoopDay_normal_7": {
+  "status": "non_finite"
+ },
+ "DodgerLoopGame_normal_1": {
+  "status": "non_finite"
+ },
+ "DodgerLoopGame_normal_2": {
+  "status": "non_finite"
+ },
+ "DodgerLoopWeekend_normal_1": {
+  "status": "non_finite"
+ },
+ "DodgerLoopWeekend_normal_2": {
+  "status": "non_finite"
+ },
+ "ECG200_normal_-1": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9183673469387755,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.7551020408163265,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9183673469387755,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.8571428571428571,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ }
+}

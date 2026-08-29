@@ -1,0 +1,104 @@
+{
+  "schema": "exp479_smoke_results_v1",
+  "mode": "smoke",
+  "requested": 2,
+  "completed": 2,
+  "success": 2,
+  "failures": 0,
+  "source_fingerprint": "33e06fcc4c13a8c15fc49924bf24ee870d02696d2e68c7538a33890cfd98192d",
+  "population_sha256": "ce85b1626061c50b6ee92e57948442bc565b84c08c219dff7f2b45a40e453065",
+  "rows": [
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteX_normal_1",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.9540816326530612,
+          "zf": 0
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9642857142857143,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 1.0,
+          "zf": 2
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9744897959183674,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.9540816326530612,
+        "zf": 0
+      },
+      "baseline": {
+        "auc": 0.9540816326530612,
+        "zf": 0
+      },
+      "oracle_auc": 1.0,
+      "target_length": 130,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 5120,
+        "hydra_multirocket_local_gap": 13184
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 11.36901370799751
+    },
+    {
+      "status": "ok",
+      "dataset": "AllGestureWiimoteX_normal_10",
+      "scores": {
+        "minirocket_local_gap": {
+          "auc": 0.989795918367347,
+          "zf": 1
+        },
+        "multirocket_local_gap": {
+          "auc": 0.9846938775510203,
+          "zf": 0
+        },
+        "hydra_local_gap": {
+          "auc": 0.9999999999999999,
+          "zf": 2
+        },
+        "hydra_multirocket_local_gap": {
+          "auc": 0.9897959183673469,
+          "zf": 0
+        }
+      },
+      "official_method": "minirocket_local_gap",
+      "baseline_method": "minirocket_local_gap",
+      "official": {
+        "auc": 0.989795918367347,
+        "zf": 1
+      },
+      "baseline": {
+        "auc": 0.989795918367347,
+        "zf": 1
+      },
+      "oracle_auc": 0.9999999999999999,
+      "target_length": 105,
+      "retained_train_rows": 80,
+      "retained_test_rows": 100,
+      "excluded_train_rows": 0,
+      "excluded_test_rows": 0,
+      "feature_dimensions": {
+        "minirocket_local_gap": 4032,
+        "multirocket_local_gap": 8064,
+        "hydra_local_gap": 4096,
+        "hydra_multirocket_local_gap": 12160
+      },
+      "seed": 20260721,
+      "elapsed_seconds": 9.315699250000762
+    }
+  ]
+}

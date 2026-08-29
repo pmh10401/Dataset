@@ -1,0 +1,1182 @@
+{
+ "Chinatown_normal_2": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9273469387755102,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.8130612244897959,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.7828571428571428,
+    "zf": 2
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9804081632653061,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "ChlorineConcentration_normal_1": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.997704081632653,
+    "zf": 13
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9962244897959184,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9994897959183674,
+    "zf": 18
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.998265306122449,
+    "zf": 11
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "ChlorineConcentration_normal_2": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9973469387755102,
+    "zf": 13
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9978061224489796,
+    "zf": 16
+   },
+   "hydra_local_gap": {
+    "auc": 0.9992857142857143,
+    "zf": 19
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9981122448979591,
+    "zf": 16
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "ChlorineConcentration_normal_3": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9967664748108388,
+    "zf": 23
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9981430326770817,
+    "zf": 33
+   },
+   "hydra_local_gap": {
+    "auc": 0.9993810108923605,
+    "zf": 31
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9983370441884314,
+    "zf": 14
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ },
+ "CinCECGTorso_normal_1": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 7
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 7
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 7
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 7
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CinCECGTorso_normal_2": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 7
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 7
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 7
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 7
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CinCECGTorso_normal_3": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 7
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 7
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 7
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 7
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CinCECGTorso_normal_4": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9995835068721366,
+    "zf": 6
+   },
+   "multirocket_local_gap": {
+    "auc": 0.8529779258642233,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 7
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 7
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Coffee_normal_0": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.8775510204081632,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "Coffee_normal_1": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.8979591836734694,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Computers_normal_1": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.8840816326530613,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.8987755102040816,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9461224489795919,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9085714285714286,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Computers_normal_2": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9224489795918367,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.8971428571428571,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9355102040816327,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9510204081632653,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": true
+ },
+ "CornellWhaleChallenge": {
+  "status": "skipped_size",
+  "est_elements": 167112000
+ },
+ "CricketX_normal_1": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketX_normal_10": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketX_normal_11": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketX_normal_12": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.7755102040816326,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8571428571428571,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.8571428571428571,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketX_normal_2": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketX_normal_3": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "CricketX_normal_4": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketX_normal_5": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketX_normal_6": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketX_normal_7": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketX_normal_8": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketX_normal_9": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9183673469387755,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": true
+ },
+ "CricketY_normal_1": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketY_normal_10": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketY_normal_11": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "CricketY_normal_12": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketY_normal_2": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketY_normal_3": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "CricketY_normal_4": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketY_normal_5": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketY_normal_6": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketY_normal_7": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "CricketY_normal_8": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "CricketY_normal_9": {
+  "status": "ok",
+  "pick": "hydra_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketZ_normal_1": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketZ_normal_10": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "CricketZ_normal_11": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9387755102040817,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9387755102040817,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": true
+ },
+ "CricketZ_normal_12": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.8571428571428571,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.7755102040816326,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.8571428571428571,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.7755102040816326,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": true
+ },
+ "CricketZ_normal_2": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketZ_normal_3": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketZ_normal_4": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketZ_normal_5": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": true
+ },
+ "CricketZ_normal_6": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketZ_normal_7": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketZ_normal_8": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "CricketZ_normal_9": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9591836734693877,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9795918367346939,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "Crop_normal_1": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9904591836734694,
+    "zf": 10
+   },
+   "multirocket_local_gap": {
+    "auc": 0.9806632653061225,
+    "zf": 9
+   },
+   "hydra_local_gap": {
+    "auc": 0.986938775510204,
+    "zf": 9
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9871938775510204,
+    "zf": 12
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": false
+ }
+}

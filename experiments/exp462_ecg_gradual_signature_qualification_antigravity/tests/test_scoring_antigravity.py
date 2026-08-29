@@ -136,8 +136,8 @@ class ScoringAntigravityTest(unittest.TestCase):
         np.testing.assert_array_equal(
             result.original["hydra_period_gradual_rank_max"],
             np.maximum(
-                anomaly_rank_antigravity(baseline.original["hydra_period_rank_max"], baseline.original["hydra_period_rank_max"]),
-                anomaly_rank_antigravity(gradual_original, gradual_original),
+                baseline.original["hydra_period_rank_max"],
+                gradual_original,
             ),
         )
         self.assertEqual(result.feature_dimensions["gradual_signature_local_gap"], 2)
