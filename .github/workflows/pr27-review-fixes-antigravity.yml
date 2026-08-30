@@ -1,0 +1,264 @@
+name: PR27 review fixes antigravity
+
+on:
+  push:
+    branches:
+      - codex/pr27-review-fixes-antigravity-ci
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr27-review-fixes-antigravity
+  cancel-in-progress: false
+
+env:
+  BASE_HEAD_ANTIGRAVITY: 75c0f2484209f744e218b871b01777854fcee11c
+  TARGET_BRANCH_ANTIGRAVITY: codex/exp470-ecg200-spectral-entropy-numba-antigravity
+  GENERATED_AT_ANTIGRAVITY: 2026-08-30T00:00:00Z
+
+jobs:
+  red-evidence-antigravity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out reviewed PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE_HEAD_ANTIGRAVITY }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install RED test dependency
+        run: python -m pip install --disable-pip-version-check pytest
+
+      - name: Prove the reviewed defects are RED at the old head
+        shell: bash
+        run: |
+          cat > /tmp/test_pr27_red_antigravity.py <<'PY'
+          from pathlib import Path
+
+          ROOT = Path.cwd()
+
+          def text(path: str) -> str:
+              return (ROOT / path).read_text(encoding="utf-8")
+
+          def test_exp472_has_the_exact_fp_budget_boundary_antigravity() -> None:
+              source = text("scratch/run_exp472_zero_fp_tail_recovery_antigravity.py")
+              assert "boundary_index = min(fp_budget - 1, len(sorted_norm) - 1)" in source
+
+          def test_exp479_pins_the_actual_database_bytes_antigravity() -> None:
+              source = text(
+                  "experiments/exp479_missing_score_recovery_antigravity/"
+                  "population_antigravity.py"
+              )
+              assert "actual_database_sha256 = _sha256_antigravity(database)" in source
+              assert "database SHA256 does not match" in source
+
+          def test_exp479_resume_reuses_success_only_and_binds_source_closure_antigravity() -> None:
+              source = text(
+                  "experiments/exp479_missing_score_recovery_antigravity/"
+                  "run_antigravity.py"
+              )
+              assert 'row.get("status") == "ok"' in source
+              assert "_result_affecting_source_paths_antigravity" in source
+              assert "official_exp476_policy_artifact_antigravity.json" in source
+
+          def test_missing_maps_and_markdown_policy_are_repaired_antigravity() -> None:
+              for version in ("exp472", "exp473", "exp479"):
+                  for suffix in ("html", "json", "lock"):
+                      assert (
+                          ROOT / f"docs/codemap/codemap_{version}_antigravity.{suffix}"
+                      ).is_file()
+              forbidden = (
+                  ".superpowers/sdd/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html/task-4-report-antigravity.md",
+                  ".superpowers/sdd/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html/task-5-report-antigravity.md",
+                  ".superpowers/sdd/2026-08-22-exp465-ecg200-c8-external-validation-antigravity.html/progress.md",
+                  ".superpowers/sdd/2026-08-23-exp466-ecg200-phase-registration-margin-antigravity.html/task-1-brief-antigravity.md",
+              )
+              assert all(not (ROOT / path).exists() for path in forbidden)
+          PY
+          set +e
+          pytest -q /tmp/test_pr27_red_antigravity.py
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "Expected RED assertions to fail at the reviewed head" >&2
+            exit 1
+          fi
+          echo "RED evidence captured with pytest exit $status"
+
+  green-fix-and-publish-antigravity:
+    needs: red-evidence-antigravity
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out isolated fix branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install focused verification dependencies
+        run: |
+          python -m pip install --disable-pip-version-check \
+            pytest markdown numpy scipy scikit-learn numba 'aeon==1.4.0'
+
+      - name: Apply review fixes in the isolated checkout
+        run: python scratch/apply_pr27_review_fixes_antigravity.py
+
+      - name: Run focused GREEN verification before commit construction
+        shell: bash
+        run: |
+          set -euo pipefail
+          pytest -q scratch/test_run_exp472_zero_fp_tail_recovery_antigravity.py
+          pytest -q \
+            experiments/exp479_missing_score_recovery_antigravity/tests/test_population_antigravity.py \
+            -k 'wrong_digest or population_manifest_records_every_source_hash'
+          pytest -q \
+            experiments/exp479_missing_score_recovery_antigravity/tests/test_runner_antigravity.py \
+            -k 'resume_rejects_changed_sources_population_or_execution_mode or source_fingerprint_binds_all_transitive_result_sources'
+          pytest -q \
+            experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_scoring_antigravity.py
+          pytest -q \
+            experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_scoring_antigravity.py
+          pytest -q scratch/test_codemap_exp472_473_479_antigravity.py
+          python -m compileall -q \
+            scratch/run_exp472_zero_fp_tail_recovery_antigravity.py \
+            scratch/test_run_exp472_zero_fp_tail_recovery_antigravity.py \
+            scratch/build_codemap_exp461_antigravity.py \
+            scratch/build_codemap_exp462_antigravity.py \
+            scratch/build_codemap_exp472_473_479_antigravity.py \
+            scratch/test_codemap_exp472_473_479_antigravity.py \
+            experiments/exp479_missing_score_recovery_antigravity
+          python - <<'PY'
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          paths = (
+              ".superpowers/sdd/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html/task-4-report-antigravity.html",
+              ".superpowers/sdd/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html/task-5-report-antigravity.html",
+              ".superpowers/sdd/2026-08-22-exp465-ecc200-c8-external-validation-antigravity.html/progress-antigravity.html",
+              ".superpowers/sdd/2026-08-23-exp466-ecg200-phase-registration-margin-antigravity.html/task-1-brief-antigravity.html",
+          )
+          for relative in paths:
+              parser = HTMLParser()
+              parser.feed(Path(relative).read_text(encoding="utf-8"))
+              parser.close()
+          PY
+          git diff --check "$BASE_HEAD_ANTIGRAVITY"
+
+      - name: Construct functional commit from the reviewed head
+        id: functional
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git diff --binary "$BASE_HEAD_ANTIGRAVITY" -- . \
+            ':(exclude).github/workflows/pr27-review-fixes-antigravity.yml' \
+            ':(exclude)scratch/apply_pr27_review_fixes_antigravity.py' \
+            ':(exclude)pr27_source_fingerprint_antigravity.txt' \
+            ':(exclude,glob)docs/codemap/**' \
+            > /tmp/pr27_functional_antigravity.patch
+
+          test -s /tmp/pr27_functional_antigravity.patch
+          git reset --hard "$BASE_HEAD_ANTIGRAVITY"
+          git clean -fdx
+          git apply --index /tmp/pr27_functional_antigravity.patch
+          git diff --cached --check
+          git commit -m "fix: address Exp472-479 review findings"
+          functional_sha=$(git rev-parse HEAD)
+          echo "sha=$functional_sha" >> "$GITHUB_OUTPUT"
+          echo "$functional_sha" > /tmp/pr27_functional_sha_antigravity.txt
+
+      - name: Regenerate all affected code-map triplets on the functional boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          functional_sha='${{ steps.functional.outputs.sha }}'
+          python scratch/build_codemap_exp461_antigravity.py \
+            --source-commit "$functional_sha" \
+            --generated-at "$GENERATED_AT_ANTIGRAVITY"
+          python scratch/build_codemap_exp462_antigravity.py \
+            --source-commit "$functional_sha" \
+            --generated-at "$GENERATED_AT_ANTIGRAVITY"
+          python scratch/build_codemap_exp464_antigravity.py
+          python scratch/build_codemap_exp465_antigravity.py
+          python scratch/build_codemap_exp466_antigravity.py
+          python scratch/build_codemap_exp472_473_479_antigravity.py \
+            --source-commit "$functional_sha" \
+            --generated-at "$GENERATED_AT_ANTIGRAVITY"
+          git add docs/codemap
+          git diff --cached --check
+          git commit -m "docs: synchronize Exp461-479 code maps"
+          git rev-parse HEAD > /tmp/pr27_map_sha_antigravity.txt
+
+      - name: Run post-commit verification on the exact proposed head
+        shell: bash
+        run: |
+          set -euo pipefail
+          pytest -q scratch/test_run_exp472_zero_fp_tail_recovery_antigravity.py
+          pytest -q \
+            experiments/exp479_missing_score_recovery_antigravity/tests/test_population_antigravity.py \
+            -k 'wrong_digest or population_manifest_records_every_source_hash'
+          pytest -q \
+            experiments/exp479_missing_score_recovery_antigravity/tests/test_runner_antigravity.py \
+            -k 'resume_rejects_changed_sources_population_or_execution_mode or source_fingerprint_binds_all_transitive_result_sources'
+          pytest -q \
+            experiments/exp461_ecg_period_signature_qualification_antigravity/tests/test_scoring_antigravity.py
+          pytest -q \
+            experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_scoring_antigravity.py
+          pytest -q scratch/test_codemap_exp472_473_479_antigravity.py
+          python scratch/build_codemap_exp461_antigravity.py --validate-only
+          python scratch/build_codemap_exp462_antigravity.py --validate-only
+          python scratch/build_codemap_exp464_antigravity.py --validate-only
+          python scratch/build_codemap_exp465_antigravity.py --validate-only
+          python scratch/build_codemap_exp466_antigravity.py --validate-only
+          python scratch/build_codemap_exp472_473_479_antigravity.py --validate-only
+          git diff --check "$BASE_HEAD_ANTIGRAVITY" HED
+          git status --short
+          test -z "$(git status --porcelain)"
+
+      - name: Publish the verified two-commit fix to the PR branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "$TARGET_BRANCH_ANTIGRAVITY"
+          remote_sha=$(git rev-parse "origin/$TARGET_BRANCH_ANTIGRAVITY")
+          if [ "$remote_sha" != "$BASE_HEAD_ANTIGRAVITY" ]; then
+            echo "Target branch moved from the reviewed base: $remote_sha" >&2
+            exit 1
+          fi
+          git push origin "HEAD:$TARGET_BRANCH_ANTIGRAVITY"
+
+      - name: Assemble verification evidence
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p pr27_review_fix_evidence_antigravity
+          cp /tmp/pr27_functional_sha_antigravity.txt \
+            pr27_review_fix_evidence_antigravity/functional_sha_antigravity.txt 2>/dev/null || true
+          cp /tmp/pr27_map_sha_antigravity.txt \
+            pr27_review_fix_evidence_antigravity/map_sha_antigravity.txt 2>/dev/null || true
+          git log -3 --oneline --decorate \
+            > pr27_review_fix_evidence_antigravity/git_log_antigravity.txt || true
+          git diff --name-status "$BASE_HEAD_ANTIGRAVITY" HEAD \
+            > pr27_review_fix_evidence_antigravity/name_status_antigravity.txt || true
+          git status --short \
+            > pr27_review_fix_evidence_antigravity/status_antigravity.txt || true
+
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr27-review-fix-evidence-antigravity
+          path: pr27_review_fix_evidence_antigravity
+          if-no-files-found: error
