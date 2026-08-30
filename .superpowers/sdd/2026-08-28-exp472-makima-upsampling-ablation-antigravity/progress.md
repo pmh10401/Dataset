@@ -235,15 +235,3 @@ creation.
 Independent-hash verification: official Python Exp472 passed 133/133 in
 853.236 seconds; retained Exp450 passed 17/17 (six MPS-unavailable skips).
 Code-map regeneration/check, compileall, and diff whitespace checks passed.
-
-Task 8 operational completion: the mixed-context incomplete smoke root was
-preserved whole as `smoke_recovery_evidence_20260830_antigravity`, then a clean
-canonical values-only Smoke ran outside the sandbox with MPS and one effective
-worker. It completed 23/23 with 0 failed and 0 remaining. Independent read-only
-verification exited 0 and bound terminal manifest field SHA-256
-`261835f92c208178f63f92bef7677587da63299a8d4d42891f44f2fb9713691b`;
-the manifest file SHA-256 is
-`81bf89ad33f4ba54560c835615cce046ed92e09e906a1554044400949918da42`.
-Commit `a03bf5d0` records the authority and `full_run_authorized=true` only in
-`RESEARCH_STATE.json`; Terra implementation checks and a fresh Sol review both
-passed. No TEST labels were opened.
