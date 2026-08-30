@@ -41,6 +41,22 @@ def _plain_antigravity(value: object) -> object:
     return value
 
 
+def _json_safe_antigravity(value: object) -> object:
+    """Normalize non-finite floats to null at the digest boundary.
+
+    Only at the digest boundary: sklearn's initial +inf ROC threshold becomes
+    ``None`` exactly like ``canonicalize_exp450_json_antigravity``; every
+    finite value passes through unchanged.
+    """
+    if isinstance(value, Mapping):
+        return {key: _json_safe_antigravity(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_json_safe_antigravity(item) for item in value]
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
+
+
 def _validated_score_manifests_antigravity(
     verification: Exp467VerificationAntigravity,
     score_authority: object,
@@ -108,7 +124,7 @@ class Exp467EvaluationAntigravity:
 
 
 def _evaluation_digest_antigravity(value: Exp450EvaluationAntigravity) -> str:
-    return sha256(canonical_json_bytes(_plain_antigravity({
+    payload = _plain_antigravity({
         "manifests": value.manifests,
         "metric_tables": {
             "method_order": value.metric_tables.method_order,
@@ -118,7 +134,8 @@ def _evaluation_digest_antigravity(value: Exp450EvaluationAntigravity) -> str:
             "paired_statistics": value.metric_tables.paired_statistics,
         },
         "curve_tables": value.curve_tables,
-    }))).hexdigest()
+    })
+    return sha256(canonical_json_bytes(_json_safe_antigravity(payload))).hexdigest()
 
 
 def _validate_evaluation_antigravity(
