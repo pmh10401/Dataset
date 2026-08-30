@@ -1,43 +1,53 @@
 #!/usr/bin/env python3
-"""Run the PR #27 fix applicator while preserving escaped source literals."""
+"""Restore and run the byte-verified PR #27 review-fix applicator."""
+
 from __future__ import annotations
 
-import importlib.util
+import base64
+import gzip
+from hashlib import sha256
 from pathlib import Path
 
 
 ROOT_ANTIGRAVITY = Path(__file__).resolve().parents[1]
-APPLICATOR_ANTIGRAVITY = ROOT_ANTIGRAVITY / "scratch/apply_pr27_review_fixes_antigravity.py"
+PAYLOAD_SHA256_ANTIGRAVITY = (
+    "3cc3b45e5d083e2e474852ecca6cf993e9c54e7e3ea9ebb491cfdfe33341e4d7"
+)
+SOURCE_SHA256_ANTIGRAVITY = (
+    "3f6c5f7c86381a638dc85366ab0b0cca8b2604a957aab8f46314d9e0d0c8a879"
+)
 
 
 def main_antigravity() -> None:
-    specification = importlib.util.spec_from_file_location(
-        "apply_pr27_review_fixes_antigravity",
-        APPLICATOR_ANTIGRAVITY,
+    payload_paths = tuple(
+        ROOT_ANTIGRAVITY
+        / ".github/workflows"
+        / f"pr27-review-fixes-payload-{index:02d}-antigravity.txt"
+        for index in range(5)
     )
-    if specification is None or specification.loader is None:
-        raise RuntimeError("PR27 applicator cannot be loaded")
-    module = importlib.util.module_from_spec(specification)
-    specification.loader.exec_module(module)
-    original_replace_once = module.replace_once
-
-    def replace_once_preserving_escaped_literals_antigravity(
-        path: str,
-        old: str,
-        new: str,
-    ) -> None:
-        try:
-            original_replace_once(path, old, new)
-            return
-        except RuntimeError as original_error:
-            escaped_old = old.replace('"\n"', r'"\n"')
-            escaped_new = new.replace('"\n"', r'"\n"')
-            if escaped_old == old:
-                raise original_error
-            original_replace_once(path, escaped_old, escaped_new)
-
-    module.replace_once = replace_once_preserving_escaped_literals_antigravity
-    module.main()
+    missing = tuple(path for path in payload_paths if not path.is_file())
+    if missing:
+        raise RuntimeError(f"PR27 applicator payload is incomplete: {missing}")
+    payload = "".join(
+        path.read_text(encoding="ascii") for path in payload_paths
+    ).encode("ascii")
+    if sha256(payload).hexdigest() != PAYLOAD_SHA256_ANTIGRAVITY:
+        raise RuntimeError("PR27 applicator payload SHA256 mismatch")
+    source = gzip.decompress(base64.b64decode(payload, validate=True))
+    if sha256(source).hexdigest() != SOURCE_SHA256_ANTIGRAVITY:
+        raise RuntimeError("PR27 applicator source SHA256 mismatch")
+    decoded = (
+        ROOT_ANTIGRAVITY
+        / "scratch/apply_pr27_review_fixes_decoded_antigravity.py"
+    )
+    decoded.write_bytes(source)
+    code = compile(source, str(decoded), "exec")
+    namespace = {
+        "__name__": "__main__",
+        "__file__": str(decoded),
+        "__package__": None,
+    }
+    exec(code, namespace)
 
 
 if __name__ == "__main__":
