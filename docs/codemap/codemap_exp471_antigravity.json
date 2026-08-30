@@ -1,0 +1,686 @@
+{
+  "edges": [
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/baseline_preflight_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/numba_preprocessing_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "scratch/generate_exp471_codemap_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "scratch/generate_exp471_codemap_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/numba_preprocessing_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/baseline_preflight_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "caller": "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py",
+      "kind": "ast_import"
+    }
+  ],
+  "flows": [
+    {
+      "from": "fixed-commit Exp467 source authority",
+      "name": "exp471_source_verification_flow",
+      "through": "reconstructed Git bytes and context digest",
+      "to": "verified 4,468 source envelopes"
+    },
+    {
+      "from": "verified source authority",
+      "name": "exp471_resumable_score_cache_flow",
+      "through": "label-free raw/micro score shards with create-only publication",
+      "to": "complete score-cache manifest"
+    },
+    {
+      "from": "complete score-cache manifest",
+      "name": "exp471_evaluation_flow",
+      "through": "frozen Exp450 metrics with JSON null normalization",
+      "to": "durable evaluation artifact"
+    },
+    {
+      "from": "durable evaluation artifact",
+      "name": "exp471_report_flow",
+      "through": "atomic canonical JSON/CSV/figure publication",
+      "to": "paper report manifest"
+    },
+    {
+      "from": "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py",
+      "name": "exp471_operator_report_flow",
+      "through": "closed CLI source verification, resumable cache, evaluation, and identity-bound report publication",
+      "to": "paper report manifest"
+    }
+  ],
+  "nodes": [
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ],
+      "effects": "Strict typed-abstain classification for frozen public-baseline inputs.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.baseline_preflight_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/baseline_preflight_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py"
+      ],
+      "effects": "Descriptor-bound create-only persistence for Exp471 score-cache artifacts.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.cache_artifacts_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py"
+      ],
+      "effects": "Closed Exp471 source-to-report command orchestration.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.cli_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py"
+      ],
+      "effects": "Frozen Exp471 source identity, roots, ordering, and backend policy.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.config_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/config_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cache_artifacts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py"
+      ],
+      "effects": "Strict, deeply immutable generic artifact contracts for Exp471.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.contracts_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/contracts_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py"
+      ],
+      "effects": "Label-gated, create-only persistence for the frozen Exp471 evaluation.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.evaluation_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py"
+      ],
+      "effects": "Candidate Numba ASPE kernels for the Exp471 preprocessing spike.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.numba_preprocessing_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/numba_preprocessing_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py"
+      ],
+      "effects": "Result-preserving Exp471 preprocessing parallelism and live ETA evidence.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.preprocessing_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/preprocessing_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ],
+      "effects": "Verified, create-only Exp471 paper-report publication.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.reporting_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py"
+      ],
+      "effects": "Label-free, resumable preparation of deterministic Exp471 score shards.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.score_cache_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py"
+      ],
+      "effects": "Descriptor-bound reconstruction and publication of frozen Exp467 authority.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.source_authority_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py"
+      ]
+    },
+    {
+      "callers": [],
+      "effects": "Lifecycle tests for durable create-only Exp471 score-cache artifacts.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_cache_artifacts_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_cache_artifacts_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Final publication invariants for the synchronized Exp471 code map.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_codemap_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Behavior tests for the frozen Exp471 configuration and strict contracts.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_config_contracts_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ],
+      "effects": "Public-literal tests for Exp471 durable continuous-score evaluation.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_evaluation_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [],
+      "effects": "Parity tests for candidate Exp471 Numba preprocessing kernels.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_numba_preprocessing_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Deterministic preprocessing parallelism and live ETA evidence for Exp471.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_preprocessing_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Public-literal lifecycle tests for Exp471 reporting and its closed CLI.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_reporting_cli_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Synthetic behavior tests for resumable Exp471 score preparation.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_score_cache_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
+      "tests": []
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ],
+      "effects": "Synthetic Git and source-tree tests for the Exp467 authority boundary.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.tests.test_source_authority_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/reporting_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ],
+      "effects": "Deterministic paper leaves for the validated Exp471 typed-abstain artifact.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.typed_abstain_reporting_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/typed_abstain_reporting_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py"
+      ],
+      "effects": "Generate and verify the factual, synchronized Exp471 code-map triplet.",
+      "module": "scratch.generate_exp471_codemap_antigravity",
+      "path": "scratch/generate_exp471_codemap_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_codemap_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_config_contracts_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ],
+      "effects": "Closed launcher for the verified Exp471 recovery pipeline.",
+      "module": "scratch.run_exp471_exp467_evaluation_recovery_antigravity",
+      "path": "scratch/run_exp471_exp467_evaluation_recovery_antigravity.py",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
+    }
+  ],
+  "schema": "exp471-codemap.v1",
+  "scope": {
+    "derived_from_index_tracked_paths_only": true,
+    "experiment": "Exp471",
+    "external_closure_policy": "index_tracked_exp471_production_closure",
+    "governance_fingerprint_evidence": {
+      "design_path": "docs/superpowers/specs/2026-08-25-exp471-typed-abstain-recovery-antigravity-design.md",
+      "design_sha256": "e8c5414b9fa1434d23d84ce9ec6638183e21718c7444479fc9abb9eead7b05e0",
+      "exp471_production_modules_exist": true,
+      "frozen_exp467_source_commit": "1e616731a88da9bc0268823e1d2cef2a53c1054f",
+      "frozen_exp467_source_context_sha256": "31341d8e14cf58a486cf7418276c432ac2dbda1af139699ff2afbd85969442af",
+      "plan_path": "docs/superpowers/plans/2026-08-25-exp471-typed-abstain-recovery-antigravity.md",
+      "plan_sha256": "480d789ee64a7ddcf9741d93a106812094b9bb4539667520b4c1969039dcb3ac"
+    },
+    "namespace": "experiments/exp471_exp467_evaluation_recovery_antigravity",
+    "node_count": 23,
+    "production_node_count": 12,
+    "test_node_count": 9
+  },
+  "unknowns": []
+}
