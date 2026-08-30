@@ -1434,7 +1434,7 @@
   },
   "exp472_makima_upsampling_ablation_antigravity": {
     "experiment": "Exp472",
-    "status": "implementation_planned",
+    "status": "smoke_verified",
     "design": "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md",
     "plan": "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md",
     "database_path": "/Users/mac/Documents/Dataset/univariate_ts.db",
@@ -1464,7 +1464,23 @@
     "tie_tolerance": 1e-12,
     "mps_canonical_when_available": true,
     "mlx_assessed_but_unsuitable_for_exact_scipy_interpolation": true,
-    "smoke_started": false,
+    "smoke_started": true,
+    "smoke_authority": {
+      "scope": "values_only",
+      "completed": 23,
+      "failed": 0,
+      "remaining": 0,
+      "backend": {
+        "tensor_backend": "mps"
+      },
+      "workers": 1,
+      "terminal_manifest_field_manifest_sha256": "261835f92c208178f63f92bef7677587da63299a8d4d42891f44f2fb9713691b",
+      "manifest_file_sha256": "81bf89ad33f4ba54560c835615cce046ed92e09e906a1554044400949918da42",
+      "context_sha256": "d462e71ff70b85efcf66957908f144959f3f7027ebff63b4f78ead9f2459c85a",
+      "independent_read_only_verify_exit_code": 0,
+      "test_label_access": false,
+      "full_run_authorized": true
+    },
     "official_run_started": false,
     "evaluation_started": false,
     "report_started": false,
@@ -1478,6 +1494,6 @@
       "terminal_e_manifest_rule": "bind the verified terminal manifest_sha256 field exactly; never hash a manifest containing its self-digest",
       "status_rule": "presence flags are observational only; completion requires strict authority reopen"
     },
-    "next_action": "complete_verified_exp472_implementation_before_values_only_smoke"
+    "next_action": "run_full_1117_values_only_condition_E_without_TEST_labels"
   }
 }
