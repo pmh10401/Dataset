@@ -506,13 +506,13 @@ git commit -m "feat: qualify Exp480 execution path"
     <li>수정: Exp480 코드맵 triplet</li>
   </ul>
 
-  <label><input type="checkbox" disabled>Step 1. 공식 모드로 128개 held family와 1,117개 결정을 실행합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 1. 공식 모드로 128개 held family와 1,117개 결정을 실행합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp480_family_balanced_evidence_routing_antigravity.py --official
 # 예상: 1117/1117 결정, 누락 0, 모든 지표 유한 또는 명시적 fallback</code></pre>
-  <label><input type="checkbox" disabled>Step 2. 결과를 다시 계산하되 파일을 덮어쓰지 않고 SHA256 일치를 확인합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 2. 결과를 다시 계산하되 파일을 덮어쓰지 않고 SHA256 일치를 확인합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp480_family_balanced_evidence_routing_antigravity.py --verify-only
 # 예상: stored_result_sha256 == recomputed_result_sha256</code></pre>
-  <label><input type="checkbox" disabled>Step 3. 사전 통과 기준을 기계적으로 확인합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 3. 사전 통과 기준을 기계적으로 확인합니다.</label>
   <pre><code>assert exp480["zf_total"] &gt; mini["zf_total"] and exp480["zf_total"] &gt; row_knn["zf_total"]
 assert exp480["family_mean_zf"] &gt; mini["family_mean_zf"] and exp480["family_mean_zf"] &gt; row_knn["family_mean_zf"]
 assert exp480["dataset_mean_auc"] &gt;= max(mini["dataset_mean_auc"], row_knn["dataset_mean_auc"])
@@ -520,16 +520,17 @@ assert exp480["family_mean_auc"] &gt;= max(mini["family_mean_auc"], row_knn["fam
 assert exp480["loss_over_0_05"] &lt;= row_knn["loss_over_0_05"]
 assert exp480["loss_over_0_10"] &lt;= row_knn["loss_over_0_10"]
 assert exp480["accepted_non_baseline"] &gt;= 1</code></pre>
-  <label><input type="checkbox" disabled>Step 4. 통과하면 “공식 반영 준비”, 실패하면 “개선 실패 보존”으로 대시보드와 쉬운 설명 보고서를 생성합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 4. 통과하면 “공식 반영 준비”, 실패하면 “개선 실패 보존”으로 대시보드와 쉬운 설명 보고서를 생성합니다.</label>
+  <p><strong>공식 판정:</strong> 개선 실패 보존. Exp480은 ZF 합계 2,107로 MiniRocket 2,110과 row-KNN 2,111보다 낮았고, 평균 AUC와 family 평균 지표도 사전 기준을 통과하지 못했습니다. 저장 결과와 독립 재계산 SHA256은 <code>bfe65c92aa5890bcffa90d1febe4c2d902219a66eb5d7e50361a29e94458d566</code>으로 일치했습니다.</p>
   <pre><code># 통과해도 official_router_antigravity.py는 이 Task에서 수정하지 않습니다.
 # 실패해도 기준, family 규칙, 결과 JSON은 바꾸지 않습니다.</code></pre>
-  <label><input type="checkbox" disabled>Step 5. 전체 테스트, HTML, 코드맵과 작업 트리를 최종 검증합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 5. 전체 테스트, HTML, 코드맵과 작업 트리를 최종 검증합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp480_family_balanced_evidence_routing_antigravity/tests -q
 xmllint --html --noout docs/EXP480_DASHBOARD_antigravity.html docs/EXP480_IMPLEMENTATION_REPORT_antigravity.html
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp480_antigravity.py --write --validate
 git diff --check
 git status --short</code></pre>
-  <label><input type="checkbox" disabled>Step 6. 공식 증거를 커밋하고, 공식 라우터 반영은 별도 사용자 판단으로 남깁니다.</label>
+  <label><input type="checkbox" checked disabled>Step 6. 공식 증거를 커밋하고, 공식 라우터 반영은 별도 사용자 판단으로 남깁니다.</label>
   <pre><code>git add experiments/exp480_family_balanced_evidence_routing_antigravity docs/EXP480_DASHBOARD_antigravity.html docs/EXP480_IMPLEMENTATION_REPORT_antigravity.html docs/codemap/codemap_exp480_antigravity.*
 git commit -m "experiment: preserve Exp480 qualification results"</code></pre>
 

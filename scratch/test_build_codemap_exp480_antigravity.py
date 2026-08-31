@@ -101,7 +101,7 @@ def test_exp480_map_tracks_manifest_and_fail_closed_verification_flow_antigravit
             "experiments/exp480_family_balanced_evidence_routing_antigravity/"
             "tests/test_runner_antigravity.py"
         ],
-        "planned": True,
+        "planned": False,
     }
     assert by_id["official_verification"]["caller"] == "CLI --verify-only"
     assert "exact result bytes" in by_id["official_verification"]["effect"]

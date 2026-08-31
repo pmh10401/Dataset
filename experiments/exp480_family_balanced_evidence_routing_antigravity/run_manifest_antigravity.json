@@ -1,0 +1,23 @@
+{
+  "acceleration_evidence": {
+    "actual_result_backend": "cpu_numpy",
+    "candidate_indices_equal": false,
+    "cpu_seconds": 0.000811332996818237,
+    "device": "Device(gpu, 0)",
+    "fallback_detail": "float64 is not supported on the GPU",
+    "fallback_reason": "mlx_unavailable:ValueError",
+    "finite": false,
+    "max_abs_error": null,
+    "mlx_metal_version": "0.32.0",
+    "mlx_seconds": null,
+    "mlx_version": "0.32.0",
+    "recommended_backend": "cpu_numpy",
+    "speedup": null,
+    "tolerance": 1e-10
+  },
+  "completed_at_utc": "2026-08-31T23:52:21.221513+00:00",
+  "elapsed_seconds": 2.0954808329988737,
+  "result_sha256": "bfe65c92aa5890bcffa90d1febe4c2d902219a66eb5d7e50361a29e94458d566",
+  "schema": "exp480_run_manifest_v1",
+  "started_at_utc": "2026-08-31T23:52:19.125844+00:00"
+}

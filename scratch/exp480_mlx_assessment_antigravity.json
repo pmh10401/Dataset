@@ -1,6 +1,6 @@
 {
   "candidate_indices_equal": false,
-  "cpu_seconds": 9.795799996936694e-05,
+  "cpu_seconds": 0.000811332996818237,
   "device": "Device(gpu, 0)",
   "fallback_detail": "float64 is not supported on the GPU",
   "fallback_reason": "mlx_unavailable:ValueError",
@@ -11,7 +11,7 @@
   "mlx_version": "0.32.0",
   "operation": "standardized_dense_l2_distances_and_family_indices",
   "queries": 32,
-  "rows": 88,
+  "rows": 1117,
   "schema": "exp480_mlx_assessment_v1",
   "selected_backend": "cpu_numpy",
   "speedup": null,

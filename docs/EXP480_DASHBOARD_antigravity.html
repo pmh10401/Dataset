@@ -4,9 +4,10 @@
 body{font-family:system-ui,-apple-system,sans-serif;max-width:1050px;margin:30px auto;padding:0 20px 60px;line-height:1.62;color:#182230}
 .status{border-left:5px solid #175cd3;background:#eff8ff;padding:12px 16px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.card{border:1px solid #d8dee8;border-radius:9px;padding:14px}.big{font-size:1.7rem;font-weight:750}label{display:block;margin:8px 0}input{margin-right:8px}
 </style></head><body><h1>Exp480 family 균형 경험 라우팅</h1>
-<p class="status"><strong>Task 5 smoke 완료 — 공식 성능 결과가 아닙니다.</strong></p>
-<div class="cards"><div class="card"><div>평가 family</div><div class="big">8</div></div><div class="card"><div>평가 데이터셋</div><div class="big">88</div></div><div class="card"><div>backend</div><div class="big">cpu_numpy</div></div></div>
-<p><strong>가속 판정:</strong> MLX 정확 연산 불가 → NumPy CPU 유지</p>
+<p class="status"><strong>개선 실패 보존</strong></p>
+<div class="cards"><div class="card"><div>평가 family</div><div class="big">128</div></div><div class="card"><div>평가 데이터셋</div><div class="big">1117</div></div><div class="card"><div>backend</div><div class="big">cpu_numpy</div></div></div>
+<p><strong>가속 판정:</strong> 공식 평가 계산은 NumPy CPU 고정</p>
+<h2>핵심 결과</h2><div class="cards"><div class="card"><div>ZF 합계</div><div class="big">2107</div></div><div class="card"><div>family 평균 ZF</div><div class="big">2.93138</div></div><div class="card"><div>평균 AUC</div><div class="big">0.982251</div></div><div class="card"><div>family 평균 AUC</div><div class="big">0.969494</div></div></div>
 <h2>이름 사용 경계</h2><p>과거 family ID는 중복 투표 제거와 검증 분리에만 씁니다. 새 대상의 이름이나 family는 라우팅 입력이 아니며 TRAIN 데이터의 7개 숫자 특징만 사용합니다.</p>
 <h2>진행 체크</h2>
 <label><input type="checkbox" checked disabled> 설계 및 구현 계획 승인</label>
@@ -15,6 +16,6 @@ body{font-family:system-ui,-apple-system,sans-serif;max-width:1050px;margin:30px
 <label><input type="checkbox" checked disabled> Task 3 — family 균형 정책</label>
 <label><input type="checkbox" checked disabled> Task 4 — out-of-family 평가기</label>
 <label><input type="checkbox" checked disabled> Task 5 — 실행기와 smoke 검증</label>
-<label><input type="checkbox" disabled> Task 6 — 공식 1,117개 실행 승인</label>
-<label><input type="checkbox" disabled> Task 6 — 공식 결과 검증</label>
+<label><input type="checkbox" checked disabled> Task 6 — 공식 1,117개 실행 승인</label>
+<label><input type="checkbox" checked disabled> Task 6 — 공식 결과 검증</label>
 </body></html>
