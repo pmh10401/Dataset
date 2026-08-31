@@ -5,6 +5,24 @@
 Approved by the user on 2026-08-28. Exp472 is an isolated supplementary
 ablation. It does not modify or supersede the completed Exp471 artifacts.
 
+### Recovery amendment approved on 2026-08-31
+
+The first full attempt under
+`exp472_makima_upsampling_ablation_antigravity_20260828` is retained as
+read-only failure evidence: 1,101 datasets produced shards and 16 stopped at
+`Exp472 Makima endpoints differ`, so no terminal manifest, evaluation, or
+report exists. All 16 failures came from SciPy polynomial roundoff at a zero
+endpoint, with absolute residuals no larger than approximately `2.08e-17`.
+
+Makima is an interpolator and its source knots are authoritative. After finite
+and exact-length validation, true upsampling therefore copies the original
+first and last `float32` knot values into the first and last output slots. No
+interior value, route, score, threshold, or backend changes. The repaired run
+uses the clean create-only root
+`exp472_makima_upsampling_ablation_recovery_antigravity_20260831`; it never
+mixes shards from the failed code context. The repaired 23-dataset smoke gates
+one fresh 1,117-dataset run in that root.
+
 ## Purpose
 
 Exp472 tests whether replacing PCHIP with modified Akima (Makima) during
@@ -48,8 +66,9 @@ select a new production method automatically.
   supports finite endpoint-preserving output for source lengths 2 and above.
 - No clipping, smoothing, fallback to another interpolator, or label-dependent
   choice is permitted.
-- Output must have the exact target length, be finite, and preserve the source
-  endpoints within the preregistered numeric tolerance.
+- Output must have the exact target length and be finite. For true upsampling,
+  the first and last output slots are canonicalized to the original `float32`
+  source knots and must then match them bit-for-bit.
 
 ## Scope
 

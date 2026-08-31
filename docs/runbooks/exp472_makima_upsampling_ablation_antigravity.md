@@ -2,6 +2,20 @@
 
 Exp472는 Exp471을 수정하지 않고, 조건 E(Makima)만 새로 계산합니다. 모든 명령은 고정된 경로와 고정된 Python을 사용하며 과학 파라미터를 받지 않습니다.
 
+## 2026-08-31 복구 실행
+
+첫 공식 시도의 1,101개 shard와 16개 끝점 실패는
+`exp472_makima_upsampling_ablation_antigravity_20260828`에 읽기 전용으로
+보존합니다. 수정된 실행은 기존 shard와 코드 컨텍스트를 섞지 않고 다음 새
+루트만 사용합니다.
+
+`/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831`
+
+복구 변경은 SciPy Makima 평가 후 첫·마지막 출력 슬롯을 원본 `float32`
+절점으로 정확히 고정하는 것뿐입니다. 내부 보간값과 나머지 점수 경로는
+변경하지 않습니다. 새 루트에서 23개 smoke를 먼저 검증한 뒤에만 1,117개
+공식 실행을 시작합니다.
+
 ```bash
 PYTHON=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-py314/bin/python
 $PYTHON scratch/run_exp472_makima_upsampling_ablation_antigravity.py readiness

@@ -25,7 +25,7 @@ from .contracts_antigravity import (
 
 EXP472_ROOT_ANTIGRAVITY = Path(
     "/Users/mac/Documents/Dataset/"
-    "exp472_makima_upsampling_ablation_antigravity_20260828"
+    "exp472_makima_upsampling_ablation_recovery_antigravity_20260831"
 )
 EXP472_SMOKE_ROOT_ANTIGRAVITY = EXP472_ROOT_ANTIGRAVITY / "smoke_antigravity"
 EXP472_OFFICIAL_ROOT_ANTIGRAVITY = EXP472_ROOT_ANTIGRAVITY / "official_antigravity"

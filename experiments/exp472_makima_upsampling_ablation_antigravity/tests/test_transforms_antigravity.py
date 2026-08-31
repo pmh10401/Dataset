@@ -187,6 +187,23 @@ class Exp472TransformTests(unittest.TestCase):
         self.assertTrue(np.isfinite(first).all())
         self.assertEqual((float(first[0]), float(first[-1])), (-2.0, 3.0))
 
+    def test_makima_zero_endpoint_roundoff_is_canonicalized_to_source_knot(self) -> None:
+        """SciPy polynomial roundoff must not turn an interpolated zero knot nonzero."""
+        row = np.asarray([-1.0, -1.0, -0.3, 0.0], dtype=np.float32)
+        source_x = np.linspace(0.0, 1.0, row.size, dtype=np.float64)
+        target_x = np.linspace(0.0, 1.0, 5, dtype=np.float64)
+        scipy_output = np.asarray(
+            scipy.interpolate.Akima1DInterpolator(
+                source_x, row, method="makima", extrapolate=False
+            )(target_x),
+            dtype=np.float32,
+        )
+        self.assertNotEqual(scipy_output[-1].tobytes(), row[-1].tobytes())
+        output = transforms.resample_series_exp472_antigravity(row, 5)
+        self.assertEqual(output[0].tobytes(), row[0].tobytes())
+        self.assertEqual(output[-1].tobytes(), row[-1].tobytes())
+        np.testing.assert_array_equal(output[1:-1], scipy_output[1:-1])
+
     def test_shape_diagnostics_cover_preregistered_fixture_families(self) -> None:
         """Dropping shape evidence would hide overshoot or extrema changes."""
         fixtures = {

@@ -72,6 +72,19 @@ def backend_antigravity(
 
 
 class Exp472ConfigContractsTests(unittest.TestCase):
+    def test_recovery_root_does_not_reuse_failed_create_only_attempt(self) -> None:
+        """A repaired context must not collide with shards from the failed attempt."""
+        failed_root = Path(
+            "/Users/mac/Documents/Dataset/"
+            "exp472_makima_upsampling_ablation_antigravity_20260828"
+        )
+        recovery_root = Path(
+            "/Users/mac/Documents/Dataset/"
+            "exp472_makima_upsampling_ablation_recovery_antigravity_20260831"
+        )
+        self.assertEqual(EXP472_ROOT_ANTIGRAVITY, recovery_root)
+        self.assertNotEqual(EXP472_ROOT_ANTIGRAVITY, failed_root)
+
     def test_condition_e_is_the_only_new_condition(self) -> None:
         """Changing any factor must be rejected at the frozen E boundary."""
         self.assertEqual(

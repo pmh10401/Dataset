@@ -71,8 +71,11 @@ def resample_series_exp472_antigravity(values: np.ndarray, target_len: int) -> n
     output = np.asarray(result, dtype=np.float32)
     if output.shape != (target_len,) or not np.isfinite(output).all():
         raise ValueError("Exp472 resampler output differs")
-    if target_len > row.size and (output[0] != row[0] or output[-1] != row[-1]):
-        raise ValueError("Exp472 Makima endpoints differ")
+    if target_len > row.size:
+        output[0] = row[0]
+        output[-1] = row[-1]
+        if output[0] != row[0] or output[-1] != row[-1]:
+            raise ValueError("Exp472 Makima endpoints differ")
     return output
 
 

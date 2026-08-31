@@ -1434,7 +1434,7 @@
   },
   "exp472_makima_upsampling_ablation_antigravity": {
     "experiment": "Exp472",
-    "status": "official_values_run_in_progress",
+    "status": "recovery_smoke_pending",
     "design": "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md",
     "plan": "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md",
     "database_path": "/Users/mac/Documents/Dataset/univariate_ts.db",
@@ -1451,11 +1451,11 @@
     "control_condition": "Exp471 condition D",
     "proposal_policy": "hard_plus_stable",
     "score_threshold": 0.5,
-    "artifact_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828",
-    "smoke_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/smoke_antigravity",
-    "official_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/official_antigravity",
-    "evaluation_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/evaluation_antigravity",
-    "report_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/report_antigravity",
+    "artifact_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831",
+    "smoke_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/smoke_antigravity",
+    "official_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/official_antigravity",
+    "evaluation_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/evaluation_antigravity",
+    "report_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/report_antigravity",
     "exp471_reuse_root": "/Users/mac/Documents/Dataset/exp471_exp467_evaluation_recovery_antigravity_20260824",
     "bootstrap_seed": 47220260828,
     "bootstrap_draws": 20000,
@@ -1464,8 +1464,8 @@
     "tie_tolerance": 1e-12,
     "mps_canonical_when_available": true,
     "mlx_assessed_but_unsuitable_for_exact_scipy_interpolation": true,
-    "smoke_started": true,
-    "smoke_authority": {
+    "smoke_started": false,
+    "prior_smoke_authority": {
       "scope": "values_only",
       "completed": 23,
       "failed": 0,
@@ -1481,15 +1481,15 @@
       "test_label_access": false,
       "full_run_authorized": true
     },
-    "official_run_started": true,
-    "official_run": {
+    "official_run_started": false,
+    "failed_official_attempt": {
       "expected_dataset_count": 1117,
       "values_only": true,
       "launchd_label": "com.openai.exp472.full.antigravity.20260830T022933Z",
       "prepared_runstamp_utc": "2026-08-30T02:29:33Z",
       "observed_launch_timestamp_utc": "2026-08-30T02:32:54Z",
       "pid_at_launch": 37528,
-      "observed_running": true,
+      "observed_running": false,
       "backend": "mps",
       "environment": {
         "NUMBA_CACHE_DIR": "/private/tmp/exp472_numba_cache_antigravity",
@@ -1511,6 +1511,27 @@
         "limitation": "local documentation does not absolutely guarantee mutation of already-loaded KeepAlive",
         "terminal_monitoring_requirement": "verify runs remains 1 and no new PID appears after natural exit"
       },
+      "test_label_access": false,
+      "terminal_scored": 1101,
+      "terminal_failed": 16,
+      "terminal_remaining": 16,
+      "terminal_manifest_published": false,
+      "terminal_error": "Exp472 Makima endpoints differ",
+      "process_ended": true,
+      "launchd_service_absent": true
+    },
+    "recovery": {
+      "approved_on": "2026-08-31",
+      "failed_root_preserved_read_only": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828",
+      "root_cause": "SciPy Makima zero-endpoint polynomial roundoff rejected by exact equality",
+      "maximum_observed_absolute_endpoint_residual": 2.0816681711721685e-17,
+      "repair": "canonicalize only the first and last true-upsampling output slots to the original float32 source knots",
+      "failed_dataset_memory_rescore_completed": 16,
+      "failed_dataset_memory_rescore_failed": 0,
+      "full_test_count": 134,
+      "full_test_failures": 0,
+      "recovery_smoke_started": false,
+      "recovery_full_run_started": false,
       "test_label_access": false
     },
     "evaluation_started": false,
@@ -1525,6 +1546,6 @@
       "terminal_e_manifest_rule": "bind the verified terminal manifest_sha256 field exactly; never hash a manifest containing its self-digest",
       "status_rule": "presence flags are observational only; completion requires strict authority reopen"
     },
-    "next_action": "read_only_monitor_until_terminal_manifest_then_independent_full_verify"
+    "next_action": "run_recovery_smoke_23_then_independent_verify_before_full_promotion"
   }
 }

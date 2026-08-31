@@ -235,3 +235,28 @@ creation.
 Independent-hash verification: official Python Exp472 passed 133/133 in
 853.236 seconds; retained Exp450 passed 17/17 (six MPS-unavailable skips).
 Code-map regeneration/check, compileall, and diff whitespace checks passed.
+
+## 2026-08-31 endpoint-roundoff recovery
+
+The first full attempt terminated without a manifest at 1,101 scored and 16
+failed datasets. Every failure was `Exp472 Makima endpoints differ`; no TEST
+labels, evaluation, or report were opened. Direct values-only diagnosis found
+that SciPy's Makima polynomial evaluation returned a nonzero residual at a
+zero final source knot, with the largest observed absolute residual
+`2.0816681711721685e-17`. The strict bit equality guard therefore rejected a
+mathematically interpolated endpoint.
+
+TDD evidence: a four-point `float32` row reproduced the error before the fix.
+The minimal repair canonicalizes only the first and last output slots to the
+original source knots after finite and exact-length validation. The regression
+test checks both bit-exact endpoints and byte-identical SciPy interior values.
+The pre-recovery-root full Exp472 suite passed 134/134 in 874.055 seconds, and
+all 16 failed official datasets completed an in-memory end-to-end score shard
+composition with zero failures.
+
+The user approved a clean create-only recovery root:
+`/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831`.
+The failed `20260828` root remains read-only evidence and none of its 1,101
+shards may be mixed into the repaired context. A fresh 23-dataset MPS smoke is
+the next gate; the 1,117-dataset run remains unstarted until smoke verification
+succeeds.

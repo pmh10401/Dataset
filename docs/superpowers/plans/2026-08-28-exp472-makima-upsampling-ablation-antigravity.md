@@ -10,6 +10,17 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md`
 
+## Approved recovery amendment — 2026-08-31
+
+The incomplete `20260828` result root remains immutable failure evidence. A
+minimal TDD repair canonicalizes only Makima's first and last output slots to
+their original `float32` source knots after SciPy evaluation. The repaired
+code and its updated code-map triplet use the new create-only root
+`/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831`.
+Run the frozen 23-dataset smoke there first; only a verified 23/23 smoke may
+promote a fresh 1,117-dataset full run. Do not reuse or rewrite the 1,101 shards
+from the failed context.
+
 ## Global Constraints
 
 - Exp471 code, cache, evaluation, report, source root, and original database remain immutable.
@@ -170,7 +181,7 @@ class Exp472ScoreShardAntigravity:
 Freeze:
 
 ```python
-EXP472_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828")
+EXP472_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831")
 EXP472_SMOKE_ROOT_ANTIGRAVITY = EXP472_ROOT_ANTIGRAVITY / "smoke_antigravity"
 EXP472_OFFICIAL_ROOT_ANTIGRAVITY = EXP472_ROOT_ANTIGRAVITY / "official_antigravity"
 EXP472_EVALUATION_ROOT_ANTIGRAVITY = EXP472_ROOT_ANTIGRAVITY / "evaluation_antigravity"
@@ -772,7 +783,7 @@ If no repair was needed, do not create an empty commit.
 ### Task 8: Run and Verify the 23-Dataset Values-Only Smoke
 
 **Files:**
-- Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/smoke_antigravity`
+- Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/smoke_antigravity`
 
 **Interfaces:**
 - Consumes: the verified implementation and frozen smoke inventory.
@@ -817,7 +828,7 @@ git commit -m "chore(exp472): record successful makima smoke"
 ### Task 9: Run the 1,117-Dataset Condition E Experiment
 
 **Files:**
-- Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/official_antigravity`
+- Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/official_antigravity`
 
 **Interfaces:**
 - Consumes: successful smoke authority and immutable repository commit.
@@ -937,8 +948,8 @@ tests completed in 429.453 seconds; Exp450 transform/imaging boundary 17/17
 passed, with only six MPS-unavailable skips in each applicable suite.
 
 **Files:**
-- Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/evaluation_antigravity`
-- Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828/report_antigravity`
+- Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/evaluation_antigravity`
+- Runtime only under: `/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/report_antigravity`
 - Modify: `RESEARCH_STATE.json`
 - Modify: `EXPERIMENT_CATALOG.json`
 
