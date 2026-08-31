@@ -330,10 +330,88 @@ def load_evidence_database_antigravity(
     return tuple(rows)
 
 
+def validate_evidence_database_antigravity(
+    path: Path = EVIDENCE_DATABASE_PATH_ANTIGRAVITY,
+) -> dict[str, object]:
+    """Fail closed unless the derived DB exactly matches every frozen source contract."""
+    connection = sqlite3.connect(f"file:{Path(path)}?mode=ro", uri=True)
+    try:
+        integrity_rows = connection.execute("PRAGMA integrity_check").fetchall()
+        if integrity_rows != [("ok",)]:
+            raise RuntimeError("evidence integrity check failed")
+        if connection.execute("PRAGMA foreign_key_check").fetchall():
+            raise RuntimeError("evidence foreign-key check failed")
+
+        stored_provenance = {
+            str(key): str(value)
+            for key, value in connection.execute(
+                "SELECT key,value FROM provenance ORDER BY key"
+            )
+        }
+        if stored_provenance != source_provenance_antigravity():
+            raise RuntimeError("evidence source provenance changed")
+
+        dataset_rows = tuple(
+            (str(dataset), str(source_family))
+            for dataset, source_family in connection.execute(
+                "SELECT dataset,source_family FROM dataset_evidence ORDER BY dataset"
+            )
+        )
+        if len(dataset_rows) != EXPECTED_DATASETS_ANTIGRAVITY:
+            raise RuntimeError("evidence dataset count must be exactly 1117")
+        if len({dataset for dataset, _ in dataset_rows}) != EXPECTED_DATASETS_ANTIGRAVITY:
+            raise RuntimeError("evidence datasets must be unique")
+        if any(
+            source_family != family_from_dataset_antigravity(dataset)
+            for dataset, source_family in dataset_rows
+        ):
+            raise RuntimeError("evidence family mapping changed")
+        if len({source_family for _, source_family in dataset_rows}) != EXPECTED_FAMILIES_ANTIGRAVITY:
+            raise RuntimeError("evidence family count must be exactly 128")
+
+        train_feature_count = int(
+            connection.execute("SELECT count(*) FROM train_features").fetchone()[0]
+        )
+        if train_feature_count != EXPECTED_DATASETS_ANTIGRAVITY:
+            raise RuntimeError("evidence TRAIN feature count must be exactly 1117")
+
+        metric_rows = tuple(
+            (str(dataset), str(method))
+            for dataset, method in connection.execute(
+                "SELECT dataset,method FROM candidate_metrics ORDER BY dataset,method"
+            )
+        )
+        expected_metric_count = EXPECTED_DATASETS_ANTIGRAVITY * len(METHODS_ANTIGRAVITY)
+        if len(metric_rows) != expected_metric_count:
+            raise RuntimeError("evidence candidate metric count must be exactly 4468")
+        methods_by_dataset: dict[str, set[str]] = {}
+        for dataset, method in metric_rows:
+            methods_by_dataset.setdefault(dataset, set()).add(method)
+        expected_methods = set(METHODS_ANTIGRAVITY)
+        if set(methods_by_dataset) != {dataset for dataset, _ in dataset_rows} or any(
+            methods != expected_methods for methods in methods_by_dataset.values()
+        ):
+            raise RuntimeError("evidence candidate method population changed")
+    except sqlite3.DatabaseError as error:
+        raise RuntimeError("evidence integrity check failed") from error
+    finally:
+        connection.close()
+    return {
+        "datasets": len(dataset_rows),
+        "families": len({source_family for _, source_family in dataset_rows}),
+        "candidate_metrics": len(metric_rows),
+        "train_features": train_feature_count,
+        "provenance_equal": True,
+        "integrity": "ok",
+        "foreign_keys_valid": True,
+    }
+
+
 __all__ = [
     "build_evidence_database_antigravity",
     "family_from_dataset_antigravity",
     "load_evidence_database_antigravity",
     "load_evidence_rows_antigravity",
     "source_provenance_antigravity",
+    "validate_evidence_database_antigravity",
 ]

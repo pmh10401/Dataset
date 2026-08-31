@@ -70,7 +70,7 @@
     {
       "from": "runner",
       "to": "dashboard",
-      "type": "atomic_html"
+      "type": "atomic_interim_html"
     },
     {
       "from": "acceleration",
@@ -88,9 +88,29 @@
       "type": "deterministic_json"
     },
     {
+      "from": "runner",
+      "to": "run_manifest",
+      "type": "nondeterministic_execution_evidence"
+    },
+    {
       "from": "official_results",
+      "to": "official_verification",
+      "type": "exact_byte_recompute"
+    },
+    {
+      "from": "run_manifest",
+      "to": "official_verification",
+      "type": "result_sha_guard"
+    },
+    {
+      "from": "official_verification",
+      "to": "dashboard",
+      "type": "verified_atomic_html"
+    },
+    {
+      "from": "official_verification",
       "to": "implementation_report",
-      "type": "easy_summary"
+      "type": "verified_easy_korean_report"
     }
   ],
   "fingerprints": [
@@ -146,13 +166,13 @@
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py",
-      "sha256": "db2aa4cb94c33e9331dd441bfc816029c8ee17fb067979452e32714cee526e23",
-      "size": 11235
+      "sha256": "2612a1c36405a76f2b4da0c220102116dc8fb3722f9ccf8bdd210d7387247d85",
+      "size": 13229
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py",
-      "sha256": "2f8c0a77211e97edf77d62daad55e88deb9e9e8be2009389e6d3861817030cb9",
-      "size": 13851
+      "sha256": "cf1da0185a3a46d952ea637c0e09f51dc9d8c682b7ba45e1b06163ac6fe913e0",
+      "size": 17507
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.sqlite3",
@@ -166,8 +186,8 @@
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_antigravity.py",
-      "sha256": "5d2231c233a7498e25b4836277617310e539bd17e1cba1f9c3336d6d2ac6da3b",
-      "size": 9796
+      "sha256": "7c8b307e0b071864a9dbb6c2b24324aa2070b6458c96d501e0403ecb1e72d395",
+      "size": 19111
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/smoke_results_antigravity.json",
@@ -296,8 +316,8 @@
     },
     {
       "path": "scratch/build_codemap_exp480_antigravity.py",
-      "sha256": "04554fafafac929245cc741d804536835be927827770fd61e0f3011806edb30d",
-      "size": 15003
+      "sha256": "fbdcc2a543209539dd77f69948e05792ea8d99be0cd470cf9e64c6cad6611cf6",
+      "size": 16090
     },
     {
       "path": "scratch/exp480_mlx_assessment_antigravity.json",
@@ -311,8 +331,8 @@
     },
     {
       "path": "scratch/test_build_codemap_exp480_antigravity.py",
-      "sha256": "885661a92389864b8b617f7299c9811bec6401763b147ea8dcfca154aa22fb42",
-      "size": 3013
+      "sha256": "1a46513c17bb87ef32f836dcd3a93a6acc4f5e2edbd216ea75950e292e9ec8bf",
+      "size": 4581
     }
   ],
   "nodes": [
@@ -488,16 +508,37 @@
       ]
     },
     {
-      "caller": "run_antigravity.py and the user",
+      "caller": "run_official_antigravity() and verify_official_antigravity()",
+      "effect": "Keeps time, device, CPU/MLX parity and speed evidence, and the deterministic result SHA outside the result bytes.",
+      "id": "run_manifest",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_manifest_antigravity.json",
+      "planned": true,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_runner_antigravity.py"
+      ]
+    },
+    {
+      "caller": "CLI --verify-only",
+      "effect": "Recomputes with NumPy CPU, requires exact result bytes and manifest SHA, then atomically publishes final HTML.",
+      "id": "official_verification",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_antigravity.py",
+      "planned": false,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_runner_antigravity.py"
+      ]
+    },
+    {
+      "caller": "verify_official_antigravity() after result bytes and manifest SHA match",
       "effect": "Explains the preserved qualification result in easy Korean.",
       "id": "implementation_report",
       "path": "docs/EXP480_IMPLEMENTATION_REPORT_antigravity.html",
       "planned": true,
       "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_runner_antigravity.py",
         "HTML parser validation"
       ]
     }
   ],
   "schema": "exp480_family_balanced_routing_codemap_v1",
-  "status": "task_1_boundary_frozen"
+  "status": "task_6_preflight_hardened"
 }

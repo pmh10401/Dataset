@@ -79,3 +79,42 @@ def test_exp480_map_tracks_smoke_and_mlx_assessment_artifacts_antigravity() -> N
         "to": "smoke_results",
         "type": "non_official_smoke_json",
     } in graph["edges"]
+
+
+def test_exp480_map_tracks_manifest_and_fail_closed_verification_flow_antigravity() -> None:
+    """The map must not hide the separate manifest or post-byte-check report flow."""
+    graph = _builder_antigravity().build_graph_antigravity()
+    by_id = {node["id"]: node for node in graph["nodes"]}
+
+    assert by_id["run_manifest"] == {
+        "id": "run_manifest",
+        "path": (
+            "experiments/exp480_family_balanced_evidence_routing_antigravity/"
+            "run_manifest_antigravity.json"
+        ),
+        "caller": "run_official_antigravity() and verify_official_antigravity()",
+        "effect": (
+            "Keeps time, device, CPU/MLX parity and speed evidence, and the "
+            "deterministic result SHA outside the result bytes."
+        ),
+        "tests": [
+            "experiments/exp480_family_balanced_evidence_routing_antigravity/"
+            "tests/test_runner_antigravity.py"
+        ],
+        "planned": True,
+    }
+    assert by_id["official_verification"]["caller"] == "CLI --verify-only"
+    assert "exact result bytes" in by_id["official_verification"]["effect"]
+    assert by_id["implementation_report"]["caller"] == (
+        "verify_official_antigravity() after result bytes and manifest SHA match"
+    )
+    assert {
+        "from": "run_manifest",
+        "to": "official_verification",
+        "type": "result_sha_guard",
+    } in graph["edges"]
+    assert {
+        "from": "official_verification",
+        "to": "implementation_report",
+        "type": "verified_easy_korean_report",
+    } in graph["edges"]

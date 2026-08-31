@@ -22,6 +22,29 @@ from .policy_antigravity import FamilyBalancedCandidatePolicyAntigravity
 
 
 BASELINE_METHOD_ANTIGRAVITY = METHODS_ANTIGRAVITY[0]
+EVALUATION_BACKEND_ANTIGRAVITY = "cpu_numpy"
+
+
+def _route_input_audit_antigravity() -> dict[str, object]:
+    route_input_keys = tuple(FEATURE_KEYS_ANTIGRAVITY)
+    name_keys = tuple(
+        key
+        for key in route_input_keys
+        if any(token in key for token in ("dataset", "family", "name"))
+    )
+    score_keys = tuple(
+        key
+        for key in route_input_keys
+        if any(token in key for token in ("auc", "zf", "score", "label"))
+    )
+    return {
+        "route_input_keys": list(route_input_keys),
+        "route_input_key_count": len(route_input_keys),
+        "dataset_name_route_input_keys": list(name_keys),
+        "held_out_score_route_input_keys": list(score_keys),
+        "dataset_name_feature_count": len(name_keys),
+        "held_out_score_feature_count": len(score_keys),
+    }
 
 
 def _feature_mapping_antigravity(row: EvidenceRowAntigravity) -> dict[str, float]:
@@ -190,6 +213,19 @@ def evaluate_out_of_family_antigravity(
             features = _feature_mapping_antigravity(row)
             row_decision = row_policy.route(features, row.proposal)
             family_decision = family_policy.route(features)
+            candidate_assessments = tuple(
+                {
+                    "method": assessment.method,
+                    "passed": assessment.passed,
+                    "support": assessment.support,
+                    "positive_auc_rate": assessment.positive_auc_rate,
+                    "positive_zf_rate": assessment.positive_zf_rate,
+                    "lower_auc_gain": assessment.lower_auc_gain,
+                    "mean_zf_gain": assessment.mean_zf_gain,
+                    "neighbour_families": assessment.neighbour_families,
+                }
+                for assessment in family_decision.candidates
+            )
             scores = _score_mapping_antigravity(row)
             mini = scores[BASELINE_METHOD_ANTIGRAVITY]
             row_score = scores[row_decision.method]
@@ -207,6 +243,11 @@ def evaluate_out_of_family_antigravity(
                     "exp480_reason": family_decision.reason,
                     "support": family_decision.support,
                     "neighbour_families": family_decision.neighbour_families,
+                    "selected_positive_auc_rate": family_decision.positive_auc_rate,
+                    "selected_positive_zf_rate": family_decision.positive_zf_rate,
+                    "selected_lower_auc_gain": family_decision.lower_auc_gain,
+                    "selected_mean_zf_gain": family_decision.mean_zf_gain,
+                    "candidate_assessments": candidate_assessments,
                     "mini_auc": mini.auc,
                     "mini_zf": mini.zf,
                     "row_knn_auc": row_score.auc,
@@ -246,21 +287,24 @@ def evaluate_out_of_family_antigravity(
             ),
         ),
     }
+    route_input_audit = _route_input_audit_antigravity()
     return {
+        "backend": EVALUATION_BACKEND_ANTIGRAVITY,
         "dataset_count": len(decisions),
         "family_count": len({str(row["held_family"]) for row in decisions}),
         "summaries": summaries,
         "gates": apply_qualification_gates_antigravity(summaries),
         "leakage": {
             "family_overlap_count": family_overlap_count,
-            "dataset_name_feature_count": 0,
-            "held_out_score_feature_count": 0,
+            **route_input_audit,
+            "held_out_scores_read_after_routing": True,
         },
         "decisions": decisions,
     }
 
 
 __all__ = [
+    "EVALUATION_BACKEND_ANTIGRAVITY",
     "apply_qualification_gates_antigravity",
     "evaluate_out_of_family_antigravity",
     "iter_family_splits_antigravity",

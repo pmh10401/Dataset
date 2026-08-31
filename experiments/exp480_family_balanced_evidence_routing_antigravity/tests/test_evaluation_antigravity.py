@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from experiments.exp480_family_balanced_evidence_routing_antigravity.config_antigravity import (
+    FEATURE_KEYS_ANTIGRAVITY,
+)
 from experiments.exp480_family_balanced_evidence_routing_antigravity.contracts_antigravity import (
     CandidateMetricAntigravity,
     EvidenceRowAntigravity,
@@ -66,10 +69,16 @@ def test_out_of_family_evaluation_has_zero_overlap_and_full_coverage_antigravity
 
     assert result["dataset_count"] == 4
     assert result["family_count"] == 4
+    assert result["backend"] == "cpu_numpy"
     assert result["leakage"] == {
         "family_overlap_count": 0,
+        "route_input_keys": list(FEATURE_KEYS_ANTIGRAVITY),
+        "route_input_key_count": 7,
+        "dataset_name_route_input_keys": [],
+        "held_out_score_route_input_keys": [],
         "dataset_name_feature_count": 0,
         "held_out_score_feature_count": 0,
+        "held_out_scores_read_after_routing": True,
     }
     assert {row["dataset"] for row in result["decisions"]} == {
         row.dataset for row in rows
@@ -78,6 +87,43 @@ def test_out_of_family_evaluation_has_zero_overlap_and_full_coverage_antigravity
         decision["held_family"] not in decision["neighbour_families"]
         for decision in result["decisions"]
     )
+
+
+def test_each_decision_preserves_selected_and_all_candidate_evidence_antigravity() -> None:
+    """Dropping rates, lower AUC, mean ZF, or rejected assessments must fail audit."""
+    result = evaluate_out_of_family_antigravity(
+        _synthetic_rows_antigravity(),
+        family_policy_kwargs={"k": 3, "min_support": 3},
+        row_policy_kwargs={"k": 3, "min_support": 3},
+    )
+    decision = result["decisions"][0]
+    assessments = decision["candidate_assessments"]
+    selected = next(
+        assessment
+        for assessment in assessments
+        if assessment["method"] == decision["exp480_candidate"]
+    )
+
+    assert len(assessments) == 3
+    assert {assessment["method"] for assessment in assessments} == {
+        "multirocket_local_gap",
+        "hydra_local_gap",
+        "hydra_multirocket_local_gap",
+    }
+    assert set(selected) == {
+        "method",
+        "passed",
+        "support",
+        "positive_auc_rate",
+        "positive_zf_rate",
+        "lower_auc_gain",
+        "mean_zf_gain",
+        "neighbour_families",
+    }
+    assert decision["selected_positive_auc_rate"] == selected["positive_auc_rate"]
+    assert decision["selected_positive_zf_rate"] == selected["positive_zf_rate"]
+    assert decision["selected_lower_auc_gain"] == selected["lower_auc_gain"]
+    assert decision["selected_mean_zf_gain"] == selected["mean_zf_gain"]
 
 
 def test_family_macro_summary_does_not_weight_large_families_more_antigravity() -> None:
@@ -133,4 +179,3 @@ def test_gate_requires_strict_zf_improvement_without_auc_regression_antigravity(
 
     measured["exp480"]["zf_total"] = 101
     assert apply_qualification_gates_antigravity(measured)["overall_pass"] is False
-

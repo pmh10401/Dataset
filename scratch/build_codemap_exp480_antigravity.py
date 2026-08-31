@@ -153,11 +153,25 @@ NODE_SPECS_ANTIGRAVITY = (
         (_test_antigravity("test_runner_antigravity.py"),),
     ),
     (
+        "run_manifest",
+        _package_antigravity("run_manifest_antigravity.json"),
+        "run_official_antigravity() and verify_official_antigravity()",
+        "Keeps time, device, CPU/MLX parity and speed evidence, and the deterministic result SHA outside the result bytes.",
+        (_test_antigravity("test_runner_antigravity.py"),),
+    ),
+    (
+        "official_verification",
+        _package_antigravity("run_antigravity.py"),
+        "CLI --verify-only",
+        "Recomputes with NumPy CPU, requires exact result bytes and manifest SHA, then atomically publishes final HTML.",
+        (_test_antigravity("test_runner_antigravity.py"),),
+    ),
+    (
         "implementation_report",
         "docs/EXP480_IMPLEMENTATION_REPORT_antigravity.html",
-        "run_antigravity.py and the user",
+        "verify_official_antigravity() after result bytes and manifest SHA match",
         "Explains the preserved qualification result in easy Korean.",
-        ("HTML parser validation",),
+        (_test_antigravity("test_runner_antigravity.py"), "HTML parser validation"),
     ),
 )
 
@@ -174,11 +188,15 @@ EDGE_SPECS_ANTIGRAVITY = (
     ("evaluation", "runner", "qualification_metrics"),
     ("acceleration", "runner", "backend_gate"),
     ("cli", "runner", "execution_mode"),
-    ("runner", "dashboard", "atomic_html"),
+    ("runner", "dashboard", "atomic_interim_html"),
     ("acceleration", "mlx_assessment", "parity_and_speed_evidence"),
     ("runner", "smoke_results", "non_official_smoke_json"),
     ("runner", "official_results", "deterministic_json"),
-    ("official_results", "implementation_report", "easy_summary"),
+    ("runner", "run_manifest", "nondeterministic_execution_evidence"),
+    ("official_results", "official_verification", "exact_byte_recompute"),
+    ("run_manifest", "official_verification", "result_sha_guard"),
+    ("official_verification", "dashboard", "verified_atomic_html"),
+    ("official_verification", "implementation_report", "verified_easy_korean_report"),
 )
 
 STATIC_FINGERPRINT_PATHS_ANTIGRAVITY = (
@@ -252,7 +270,7 @@ def build_graph_antigravity() -> dict[str, object]:
     """Return the complete current/planned Exp480 dependency boundary."""
     return {
         "schema": "exp480_family_balanced_routing_codemap_v1",
-        "status": "task_1_boundary_frozen",
+        "status": "task_6_preflight_hardened",
         "nodes": [
             _node_antigravity(node_id, path, caller, effect, tests)
             for node_id, path, caller, effect, tests in NODE_SPECS_ANTIGRAVITY
@@ -293,7 +311,7 @@ def _render_html_antigravity(graph: dict[str, object]) -> str:
 body{{font-family:system-ui,-apple-system,sans-serif;max-width:1250px;margin:30px auto;padding:0 20px 60px;line-height:1.55;color:#182230}}
 table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #d8dee8;padding:8px;vertical-align:top;text-align:left}}th{{background:#eef2f7}}code{{background:#eef2f7;padding:2px 4px;border-radius:4px}}
 </style></head><body><h1>Exp480 코드맵</h1>
-<p>Task 1에서 호출자, 영향 범위와 테스트 경계를 고정했습니다. 예정 파일은 구현 Task가 끝날 때마다 실제 파일과 해시로 갱신합니다.</p>
+<p>Task 6 사전 점검에서 호출자, manifest 분리, 독립 검증과 최종 보고 흐름을 갱신했습니다. 예정 파일은 공식 실행 뒤 실제 파일과 해시로 바뀝니다.</p>
 <table><tr><th>ID</th><th>경로</th><th>호출자</th><th>영향</th><th>테스트</th><th>상태</th></tr>{rows}</table>
 </body></html>"""
 
@@ -328,7 +346,7 @@ def write_triplet_antigravity() -> None:
                 "schema": "exp480_family_balanced_routing_codemap_lock_v1",
                 "map_json_sha256": sha256(json_bytes).hexdigest(),
                 "map_html_sha256": sha256(html_bytes).hexdigest(),
-                "status": "task_1_boundary_frozen",
+                "status": "task_6_preflight_hardened",
             }
         )
     )

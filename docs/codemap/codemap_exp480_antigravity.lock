@@ -1,6 +1,6 @@
 {
-  "map_html_sha256": "6447184a6fa08f5b3f6fd153efe80861b0f38fbc463d88c4129015205718ff1a",
-  "map_json_sha256": "6c7df87e15f42dd1b343fc2971712ec7c3c5815914d3f497c810792b3719ea98",
+  "map_html_sha256": "e94e23e1bd79b996fc2483b7e262720c4938014fe311978033d1f2e52534cac3",
+  "map_json_sha256": "f25e8ebff6f9b6591f9bad5e1b8754edde02b3c407d1b76a224cf908edb4044b",
   "schema": "exp480_family_balanced_routing_codemap_lock_v1",
-  "status": "task_1_boundary_frozen"
+  "status": "task_6_preflight_hardened"
 }

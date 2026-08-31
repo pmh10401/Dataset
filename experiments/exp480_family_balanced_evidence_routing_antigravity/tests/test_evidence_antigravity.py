@@ -4,10 +4,14 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+import shutil
 import sqlite3
 
 import pytest
 
+from experiments.exp480_family_balanced_evidence_routing_antigravity import (
+    evidence_antigravity as evidence_module_antigravity,
+)
 from experiments.exp480_family_balanced_evidence_routing_antigravity.config_antigravity import (
     METHODS_ANTIGRAVITY,
 )
@@ -81,3 +85,72 @@ def test_sqlite_round_trip_preserves_all_evidence_antigravity(
         assert connection.execute("SELECT count(*) FROM dataset_evidence").fetchone()[0] == 1117
         assert connection.execute("SELECT count(*) FROM candidate_metrics").fetchone()[0] == 4468
 
+
+def test_official_evidence_validation_checks_the_complete_frozen_contract_antigravity() -> None:
+    """Skipping census, provenance, family, integrity, or FK checks must fail preflight."""
+    validation = evidence_module_antigravity.validate_evidence_database_antigravity()
+
+    assert validation == {
+        "datasets": 1117,
+        "families": 128,
+        "candidate_metrics": 4468,
+        "train_features": 1117,
+        "provenance_equal": True,
+        "integrity": "ok",
+        "foreign_keys_valid": True,
+    }
+
+
+def test_official_evidence_validation_rejects_provenance_drift_antigravity(
+    tmp_path: Path,
+) -> None:
+    """A derived DB copied from different frozen sources must not reach evaluation."""
+    target = tmp_path / "evidence_provenance_drift_antigravity.sqlite3"
+    source = Path(__file__).resolve().parents[1] / "evidence_antigravity.sqlite3"
+    shutil.copy2(source, target)
+    with sqlite3.connect(target) as connection:
+        connection.execute(
+            "UPDATE provenance SET value=? WHERE key='exp479_result_sha256'",
+            ("0" * 64,),
+        )
+        connection.commit()
+
+    with pytest.raises(RuntimeError, match="provenance"):
+        evidence_module_antigravity.validate_evidence_database_antigravity(target)
+
+
+def test_official_evidence_validation_rejects_family_mapping_drift_antigravity(
+    tmp_path: Path,
+) -> None:
+    """A family label not derived from the exact first `_normal_` marker must fail."""
+    target = tmp_path / "evidence_family_drift_antigravity.sqlite3"
+    source = Path(__file__).resolve().parents[1] / "evidence_antigravity.sqlite3"
+    shutil.copy2(source, target)
+    with sqlite3.connect(target) as connection:
+        connection.execute(
+            "UPDATE dataset_evidence SET source_family='wrong_family' "
+            "WHERE dataset=(SELECT min(dataset) FROM dataset_evidence)"
+        )
+        connection.commit()
+
+    with pytest.raises(RuntimeError, match="family mapping"):
+        evidence_module_antigravity.validate_evidence_database_antigravity(target)
+
+
+def test_official_evidence_validation_rejects_foreign_key_drift_antigravity(
+    tmp_path: Path,
+) -> None:
+    """An orphaned feature row must fail even when all table row counts still match."""
+    target = tmp_path / "evidence_foreign_key_drift_antigravity.sqlite3"
+    source = Path(__file__).resolve().parents[1] / "evidence_antigravity.sqlite3"
+    shutil.copy2(source, target)
+    with sqlite3.connect(target) as connection:
+        connection.execute("PRAGMA foreign_keys=OFF")
+        connection.execute(
+            "UPDATE train_features SET dataset='orphan_normal_1' "
+            "WHERE dataset=(SELECT min(dataset) FROM train_features)"
+        )
+        connection.commit()
+
+    with pytest.raises(RuntimeError, match="foreign-key"):
+        evidence_module_antigravity.validate_evidence_database_antigravity(target)
