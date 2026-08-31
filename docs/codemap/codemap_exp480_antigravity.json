@@ -39,8 +39,13 @@
     },
     {
       "from": "evidence",
+      "to": "evidence_database",
+      "type": "deterministic_sqlite"
+    },
+    {
+      "from": "evidence_database",
       "to": "family_policy",
-      "type": "training_evidence"
+      "type": "validated_training_evidence"
     },
     {
       "from": "family_policy",
@@ -81,8 +86,8 @@
   "fingerprints": [
     {
       "path": "docs/EXP480_DASHBOARD_antigravity.html",
-      "sha256": "9b53c1e1d131bd523a4dba27a18aabca747ab7b4d777e5627293a820de16bb25",
-      "size": 4111
+      "sha256": "906fdee70d072cf960a42e7ca8357c48e55d08d0c00c4c1b3a39881200cecb05",
+      "size": 4315
     },
     {
       "path": "docs/codemap/codemap_exp479_antigravity.json",
@@ -96,13 +101,13 @@
     },
     {
       "path": "docs/superpowers/plans/2026-08-31-exp480-family-balanced-evidence-routing-antigravity.html",
-      "sha256": "7d917674b938919eb28b42554299fb0cc9208ebd0b609f944bf26566e43cab6f",
-      "size": 39151
+      "sha256": "f2aaf8a06181a8400ab48acff6dd24f0295e2a8349d8f433fc77fdefa6e77ba2",
+      "size": 39199
     },
     {
       "path": "docs/superpowers/specs/2026-08-31-exp480-family-balanced-evidence-routing-antigravity-design.html",
-      "sha256": "0bbadfacc75c75657e9d05ebc899d4bce681bb77419b4c11294d5a1276ff1ae5",
-      "size": 10891
+      "sha256": "78179c99ce5e0c20e442ba2bf39014bce219d9dd9d67439f14881678ae53fea7",
+      "size": 10899
     },
     {
       "path": "experiments/exp478_full_1117_official_routing_antigravity/results_antigravity.json",
@@ -113,6 +118,26 @@
       "path": "experiments/exp479_missing_score_recovery_antigravity/results_antigravity.json",
       "sha256": "88680cf17487b87996aa729a7f5b3787e7d8e5013f0c672b32c26d49bf8d8110",
       "size": 182520
+    },
+    {
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/config_antigravity.py",
+      "sha256": "ca393092b4a44a400cf289398a0310bc5dd4fc427b84637f4db2855388210c54",
+      "size": 2658
+    },
+    {
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/contracts_antigravity.py",
+      "sha256": "af92668efdb0f5ea6827b16a3dfc88762016d77cd078c1da5ec75345e463cddb",
+      "size": 2320
+    },
+    {
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py",
+      "sha256": "2f8c0a77211e97edf77d62daad55e88deb9e9e8be2009389e6d3861817030cb9",
+      "size": 13851
+    },
+    {
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.sqlite3",
+      "sha256": "77c53e1afd0af071edf71ef692bd978458dda6a5f8a0fec110736b787fe1b998",
+      "size": 765952
     },
     {
       "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0000_antigravity.json",
@@ -236,13 +261,13 @@
     },
     {
       "path": "scratch/build_codemap_exp480_antigravity.py",
-      "sha256": "b8453bb1c9fbb4b8060ed000a11ea54a46005c40fbf8f09791f8a6961ee4822f",
-      "size": 13876
+      "sha256": "7af9d37e0664fc49292283eabd83ada636e2f32bc94d4c83e1e3e70746d84069",
+      "size": 14275
     },
     {
       "path": "scratch/test_build_codemap_exp480_antigravity.py",
-      "sha256": "a065eca3965db38baa6262b538437c5db8ff2773fbcea1702c5a5263760a7abc",
-      "size": 1325
+      "sha256": "2965ff4b5bd5a1019099bc4b7719ca2fd5ec18500107164ad339721a78d7e30c",
+      "size": 2343
     }
   ],
   "nodes": [
@@ -291,7 +316,7 @@
       "effect": "Freezes paths, method order, feature order and qualification thresholds.",
       "id": "config",
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/config_antigravity.py",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evidence_antigravity.py"
       ]
@@ -301,7 +326,7 @@
       "effect": "Rejects malformed or non-finite candidate metrics and evidence rows.",
       "id": "contracts",
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/contracts_antigravity.py",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evidence_antigravity.py"
       ]
@@ -311,7 +336,17 @@
       "effect": "Builds the read-only-derived 1117-row SQLite evidence database.",
       "id": "evidence",
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py",
-      "planned": true,
+      "planned": false,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evidence_antigravity.py"
+      ]
+    },
+    {
+      "caller": "policy_antigravity.py and evaluation_antigravity.py",
+      "effect": "Stores the deterministic 1117-row derived evidence without changing sources.",
+      "id": "evidence_database",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.sqlite3",
+      "planned": false,
       "tests": [
         "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evidence_antigravity.py"
       ]

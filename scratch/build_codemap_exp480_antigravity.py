@@ -83,6 +83,13 @@ NODE_SPECS_ANTIGRAVITY = (
         (_test_antigravity("test_evidence_antigravity.py"),),
     ),
     (
+        "evidence_database",
+        _package_antigravity("evidence_antigravity.sqlite3"),
+        "policy_antigravity.py and evaluation_antigravity.py",
+        "Stores the deterministic 1117-row derived evidence without changing sources.",
+        (_test_antigravity("test_evidence_antigravity.py"),),
+    ),
+    (
         "family_policy",
         _package_antigravity("policy_antigravity.py"),
         "evaluation_antigravity.py",
@@ -147,7 +154,8 @@ EDGE_SPECS_ANTIGRAVITY = (
     ("proposal_source", "evidence", "read_only_control_proposals"),
     ("config", "evidence", "frozen_contract"),
     ("contracts", "evidence", "validated_rows"),
-    ("evidence", "family_policy", "training_evidence"),
+    ("evidence", "evidence_database", "deterministic_sqlite"),
+    ("evidence_database", "family_policy", "validated_training_evidence"),
     ("family_policy", "evaluation", "candidate_decisions"),
     ("evaluation", "runner", "qualification_metrics"),
     ("acceleration", "runner", "backend_gate"),

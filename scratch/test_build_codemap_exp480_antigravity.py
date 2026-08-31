@@ -35,3 +35,28 @@ def test_exp480_map_answers_calls_effects_and_tests_antigravity() -> None:
         "tests/test_policy_antigravity.py"
     ]
 
+
+def test_exp480_map_tracks_the_derived_database_flow_antigravity() -> None:
+    """Removing the derived DB node or its consumer edge must fail the map."""
+    graph = _builder_antigravity().build_graph_antigravity()
+    by_id = {node["id"]: node for node in graph["nodes"]}
+
+    assert by_id["evidence_database"] == {
+        "id": "evidence_database",
+        "path": (
+            "experiments/exp480_family_balanced_evidence_routing_antigravity/"
+            "evidence_antigravity.sqlite3"
+        ),
+        "caller": "policy_antigravity.py and evaluation_antigravity.py",
+        "effect": "Stores the deterministic 1117-row derived evidence without changing sources.",
+        "tests": [
+            "experiments/exp480_family_balanced_evidence_routing_antigravity/"
+            "tests/test_evidence_antigravity.py"
+        ],
+        "planned": False,
+    }
+    assert {
+        "from": "evidence_database",
+        "to": "family_policy",
+        "type": "validated_training_evidence",
+    } in graph["edges"]
