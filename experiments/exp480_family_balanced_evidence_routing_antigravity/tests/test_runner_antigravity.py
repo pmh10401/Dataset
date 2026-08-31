@@ -331,6 +331,32 @@ def test_manifest_validator_rejects_missing_top_level_fields_antigravity() -> No
         )
 
 
+def test_manifest_validator_rejects_extra_top_level_field_antigravity() -> None:
+    """An unregistered top-level field must not silently extend the frozen schema."""
+    manifest = _complete_cpu_manifest_antigravity(b"official-result\n")
+    manifest["unexpected_top_level"] = "not frozen"
+
+    with pytest.raises(RuntimeError, match="unexpected manifest fields"):
+        runner_module_antigravity.validate_run_manifest_antigravity(
+            manifest,
+            expected_result_sha256=manifest["result_sha256"],
+        )
+
+
+def test_manifest_validator_rejects_extra_acceleration_field_antigravity() -> None:
+    """An unregistered acceleration field must not bypass the exact evidence schema."""
+    manifest = _complete_cpu_manifest_antigravity(b"official-result\n")
+    acceleration = manifest["acceleration_evidence"]
+    assert isinstance(acceleration, dict)
+    acceleration["unexpected_acceleration"] = 1.0
+
+    with pytest.raises(RuntimeError, match="unexpected acceleration fields"):
+        runner_module_antigravity.validate_run_manifest_antigravity(
+            manifest,
+            expected_result_sha256=manifest["result_sha256"],
+        )
+
+
 @pytest.mark.parametrize(
     ("section", "key", "value", "message"),
     (

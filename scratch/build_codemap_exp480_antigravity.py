@@ -163,7 +163,7 @@ NODE_SPECS_ANTIGRAVITY = (
         "official_verification",
         _package_antigravity("run_antigravity.py"),
         "CLI --verify-only",
-        "Recomputes with NumPy CPU, requires exact result bytes, complete manifest schema and SHA, then atomically publishes final HTML.",
+        "Recomputes with NumPy CPU, requires exact result bytes, exact manifest schema and SHA, then atomically publishes final HTML.",
         (_test_antigravity("test_runner_antigravity.py"),),
     ),
     (

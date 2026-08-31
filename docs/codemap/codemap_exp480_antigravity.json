@@ -186,8 +186,8 @@
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_antigravity.py",
-      "sha256": "d943da33790599b38bda4036206ef20a39039a441928e11ee5b8cea7d5733dd7",
-      "size": 25767
+      "sha256": "86e5c4e77b7f43eab9a7727a370d5cb9a28aeca4045de6d620c3e710c1aa2123",
+      "size": 26191
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/smoke_results_antigravity.json",
@@ -316,8 +316,8 @@
     },
     {
       "path": "scratch/build_codemap_exp480_antigravity.py",
-      "sha256": "bc5fec48db806b4345f5d1f3743f0a4091694b06d497252b98b3ffb4b8250d16",
-      "size": 16146
+      "sha256": "5400df57fd8e183b9c5f45b0e9d7a028b41c7819375d86de8bb7446cc8580bd1",
+      "size": 16143
     },
     {
       "path": "scratch/exp480_mlx_assessment_antigravity.json",
@@ -331,8 +331,8 @@
     },
     {
       "path": "scratch/test_build_codemap_exp480_antigravity.py",
-      "sha256": "719e6f6b4855a6d7af654c1883cbcb3bdf4da29417b56b13904aeab5f982ed10",
-      "size": 4733
+      "sha256": "354f754cb3599429211d33548f6b1a9ae50cafaf7bf7bb7195ff52ff26613f7f",
+      "size": 4730
     }
   ],
   "nodes": [
@@ -519,7 +519,7 @@
     },
     {
       "caller": "CLI --verify-only",
-      "effect": "Recomputes with NumPy CPU, requires exact result bytes, complete manifest schema and SHA, then atomically publishes final HTML.",
+      "effect": "Recomputes with NumPy CPU, requires exact result bytes, exact manifest schema and SHA, then atomically publishes final HTML.",
       "id": "official_verification",
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_antigravity.py",
       "planned": false,

@@ -240,6 +240,11 @@ def validate_run_manifest_antigravity(
     missing_top = sorted(required_top - set(manifest))
     if missing_top:
         raise RuntimeError("manifest fields missing: " + ", ".join(missing_top))
+    unexpected_top = sorted(set(manifest) - required_top)
+    if unexpected_top:
+        raise RuntimeError(
+            "unexpected manifest fields: " + ", ".join(unexpected_top)
+        )
     if manifest["schema"] != "exp480_run_manifest_v1":
         raise RuntimeError("manifest schema changed")
     parsed_times: list[datetime] = []
@@ -292,6 +297,11 @@ def validate_run_manifest_antigravity(
     if missing_acceleration:
         raise RuntimeError(
             "manifest acceleration fields missing: " + ", ".join(missing_acceleration)
+        )
+    unexpected_acceleration = sorted(set(acceleration) - required_acceleration)
+    if unexpected_acceleration:
+        raise RuntimeError(
+            "unexpected acceleration fields: " + ", ".join(unexpected_acceleration)
         )
     for key in ("mlx_version", "mlx_metal_version", "device"):
         _manifest_optional_text_antigravity(acceleration[key], key)
