@@ -329,7 +329,7 @@ git commit -m "feat: add family-balanced candidate routing"</code></pre>
   <p><strong>입력:</strong> SQLite에서 읽은 1,117개 근거 행, Exp476 <code>MinimumZFGuardKNNPolicyAntigravity</code>, Exp480 정책.</p>
   <p><strong>출력:</strong> <code>iter_family_splits_antigravity()</code>, <code>evaluate_out_of_family_antigravity()</code>, <code>apply_qualification_gates_antigravity()</code>.</p>
 
-  <label><input type="checkbox" disabled>Step 1. held-out family가 표준화·fit·이웃에 한 행도 들어가지 않는 실패 테스트를 작성합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 1. held-out family가 표준화·fit·이웃에 한 행도 들어가지 않는 실패 테스트를 작성합니다.</label>
   <pre><code>def make_complete_row_antigravity(dataset, feature_offset, alternative_auc, alternative_zf):
     return EvidenceRowAntigravity(
         dataset=dataset,
@@ -364,7 +364,7 @@ def test_out_of_family_split_has_zero_overlap_antigravity():
     assert {row["dataset"] for row in result["decisions"]} == {
         row.dataset for row in rows
     }</code></pre>
-  <label><input type="checkbox" disabled>Step 2. 기준선·row-KNN·Exp480 집계와 gate 테스트를 먼저 실패시킵니다.</label>
+  <label><input type="checkbox" checked disabled>Step 2. 기준선·row-KNN·Exp480 집계와 gate 테스트를 먼저 실패시킵니다.</label>
   <pre><code>def test_gate_requires_strict_zf_improvement_without_auc_regression_antigravity():
     measured = {
         "mini": {"zf_total": 100, "family_mean_zf": 1.0,
@@ -384,7 +384,7 @@ def test_out_of_family_split_has_zero_overlap_antigravity():
     assert gates["dataset_mean_auc"]["pass"] is True
     assert gates["family_mean_auc"]["pass"] is True
     assert gates["overall_pass"] is True</code></pre>
-  <label><input type="checkbox" disabled>Step 3. 각 held family마다 세 방법을 같은 학습 행으로 평가합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 3. 각 held family마다 세 방법을 같은 학습 행으로 평가합니다.</label>
   <pre><code>for held_family, train_rows, test_rows in iter_family_splits_antigravity(rows):
     row_policy = MinimumZFGuardKNNPolicyAntigravity(**ROW_POLICY_CONFIG_ANTIGRAVITY).fit(
         fit_row_from_proposal_antigravity(row) for row in train_rows
@@ -393,7 +393,7 @@ def test_out_of_family_split_has_zero_overlap_antigravity():
         **FAMILY_POLICY_CONFIG_ANTIGRAVITY
     ).fit(train_rows)
     # test_rows의 feature로만 결정하고, 그 뒤 고정 scores에서 성능을 조회합니다.</code></pre>
-  <label><input type="checkbox" disabled>Step 4. dataset 평균과 family macro 평균을 분리하고 Mini 대비 AUC 손실 개수를 계산합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 4. dataset 평균과 family macro 평균을 분리하고 Mini 대비 AUC 손실 개수를 계산합니다.</label>
   <pre><code>baseline_auc_loss = baseline_auc - selected_auc
 summary = {
     "dataset_mean_auc": mean(dataset_aucs),
@@ -403,10 +403,10 @@ summary = {
     "loss_over_0_05": sum(loss &gt; 0.05 for loss in losses),
     "loss_over_0_10": sum(loss &gt; 0.10 for loss in losses),
 }</code></pre>
-  <label><input type="checkbox" disabled>Step 5. 모든 gate와 1개 이상 비-Mini 선택 조건을 검증합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 5. 모든 gate와 1개 이상 비-Mini 선택 조건을 검증합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evaluation_antigravity.py -q
 # 예상: PASS</code></pre>
-  <label><input type="checkbox" disabled>Step 6. 코드맵을 갱신하고 Task 4를 커밋합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 6. 코드맵을 갱신하고 Task 4를 커밋합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp480_antigravity.py --write --validate
 git add experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evaluation_antigravity.py docs/codemap/codemap_exp480_antigravity.*
 git commit -m "feat: evaluate Exp480 out of family"</code></pre>
