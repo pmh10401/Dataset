@@ -260,3 +260,15 @@ The failed `20260828` root remains read-only evidence and none of its 1,101
 shards may be mixed into the repaired context. A fresh 23-dataset MPS smoke is
 the next gate; the 1,117-dataset run remains unstarted until smoke verification
 succeeds.
+
+Recovery smoke evidence: the clean `20260831` root completed all 23 preregistered
+values-only datasets with zero failures on MPS and published the terminal
+manifest. Independent read-only verification exited zero. The terminal
+manifest digest is
+`53b0d8d71f18ca10e70ee462952a1a9059dc1b9f27165a45c42a8f070182a248`,
+the manifest file digest is
+`641759dec3542b19cf26d1a89140158f31f7258bf94b8e42f7611b3107e7a986`,
+and the bound context digest is
+`1221e84f0196b6bc71a2b58e9cf82216ebd9109c8669309f897e4267e5ae80b2`.
+No TEST labels, evaluation, or report were opened. The clean 1,117-dataset
+values-only recovery run is now the next authorized gate.

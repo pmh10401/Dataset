@@ -1183,7 +1183,7 @@
     {
       "id": "Exp472",
       "kind": "makima_upsampling_ablation",
-      "status": "recovery_smoke_pending",
+      "status": "recovery_smoke_verified_ready_for_full_1117",
       "documents": [
         "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md",
         "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md"
@@ -1232,9 +1232,14 @@
         "failed_dataset_memory_rescore_completed": 16,
         "failed_dataset_memory_rescore_failed": 0,
         "full_tests_passed": 134,
-        "recovery_smoke_pending": true
+        "recovery_smoke_pending": false,
+        "recovery_smoke_verified": true,
+        "recovery_smoke_completed": 23,
+        "recovery_smoke_failed": 0,
+        "recovery_smoke_manifest_sha256": "53b0d8d71f18ca10e70ee462952a1a9059dc1b9f27165a45c42a8f070182a248",
+        "recovery_smoke_context_sha256": "1221e84f0196b6bc71a2b58e9cf82216ebd9109c8669309f897e4267e5ae80b2"
       },
-      "smoke_started": false,
+      "smoke_started": true,
       "official_run_started": false,
       "evaluation_started": false,
       "report_started": false,
@@ -1243,7 +1248,7 @@
       "prediction_sha256": null,
       "evaluation_sha256": null,
       "report_sha256": null,
-      "notes": "The failed 20260828 context is preserved read-only after 1,101 scored and 16 endpoint-roundoff failures. The endpoint-only repair passed 134 tests and all 16 failed datasets in memory. A fresh 23-dataset smoke is pending in the 20260831 recovery root; no recovery shard, evaluation, report, or TEST-label access has started."
+      "notes": "The failed 20260828 context is preserved read-only after 1,101 scored and 16 endpoint-roundoff failures. The endpoint-only repair passed 134 tests and all 16 failed datasets in memory. The fresh 20260831 MPS recovery smoke completed 23/23 with zero failures and passed independent read-only verification. The clean 1,117-dataset values-only recovery run is ready; evaluation, report, and TEST-label access remain unstarted."
     }
   ]
 }

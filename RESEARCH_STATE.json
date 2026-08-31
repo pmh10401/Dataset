@@ -1434,7 +1434,7 @@
   },
   "exp472_makima_upsampling_ablation_antigravity": {
     "experiment": "Exp472",
-    "status": "recovery_smoke_pending",
+    "status": "recovery_smoke_verified_ready_for_full_1117",
     "design": "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md",
     "plan": "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md",
     "database_path": "/Users/mac/Documents/Dataset/univariate_ts.db",
@@ -1464,7 +1464,23 @@
     "tie_tolerance": 1e-12,
     "mps_canonical_when_available": true,
     "mlx_assessed_but_unsuitable_for_exact_scipy_interpolation": true,
-    "smoke_started": false,
+    "smoke_started": true,
+    "recovery_smoke_authority": {
+      "scope": "values_only",
+      "completed": 23,
+      "failed": 0,
+      "remaining": 0,
+      "backend": {
+        "tensor_backend": "mps"
+      },
+      "workers": 1,
+      "terminal_manifest_field_manifest_sha256": "53b0d8d71f18ca10e70ee462952a1a9059dc1b9f27165a45c42a8f070182a248",
+      "manifest_file_sha256": "641759dec3542b19cf26d1a89140158f31f7258bf94b8e42f7611b3107e7a986",
+      "context_sha256": "1221e84f0196b6bc71a2b58e9cf82216ebd9109c8669309f897e4267e5ae80b2",
+      "independent_read_only_verify_exit_code": 0,
+      "test_label_access": false,
+      "full_run_authorized": true
+    },
     "prior_smoke_authority": {
       "scope": "values_only",
       "completed": 23,
@@ -1530,7 +1546,8 @@
       "failed_dataset_memory_rescore_failed": 0,
       "full_test_count": 134,
       "full_test_failures": 0,
-      "recovery_smoke_started": false,
+      "recovery_smoke_started": true,
+      "recovery_smoke_verified": true,
       "recovery_full_run_started": false,
       "test_label_access": false
     },
@@ -1546,6 +1563,6 @@
       "terminal_e_manifest_rule": "bind the verified terminal manifest_sha256 field exactly; never hash a manifest containing its self-digest",
       "status_rule": "presence flags are observational only; completion requires strict authority reopen"
     },
-    "next_action": "run_recovery_smoke_23_then_independent_verify_before_full_promotion"
+    "next_action": "start_clean_recovery_full_1117_values_only_then_monitor_without_test_labels"
   }
 }
