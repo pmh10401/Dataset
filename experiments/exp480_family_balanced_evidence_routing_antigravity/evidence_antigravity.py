@@ -22,6 +22,7 @@ from .config_antigravity import (
     EVIDENCE_DATABASE_PATH_ANTIGRAVITY,
     EXPECTED_DATABASE_SHA256_ANTIGRAVITY,
     EXPECTED_DATASETS_ANTIGRAVITY,
+    EXPECTED_EVIDENCE_DATABASE_SHA256_ANTIGRAVITY,
     EXPECTED_EXP478_SHA256_ANTIGRAVITY,
     EXPECTED_EXP479_SHA256_ANTIGRAVITY,
     EXPECTED_FAMILIES_ANTIGRAVITY,
@@ -66,9 +67,44 @@ CREATE TABLE candidate_metrics(
 CREATE TABLE provenance(key TEXT PRIMARY KEY, value TEXT NOT NULL);
 """
 
+_SOURCE_SHA256_CACHE_ANTIGRAVITY: dict[
+    tuple[str, int, int, int, int, int], str
+] = {}
+
 
 def _sha256_antigravity(path: Path) -> str:
-    return sha256(path.read_bytes()).hexdigest()
+    digest = sha256()
+    with Path(path).open("rb") as source:
+        for chunk in iter(lambda: source.read(4 * 1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _source_identity_antigravity(path: Path) -> tuple[str, int, int, int, int, int]:
+    target = Path(path).resolve()
+    stat = target.stat()
+    return (
+        str(target),
+        int(stat.st_dev),
+        int(stat.st_ino),
+        int(stat.st_size),
+        int(stat.st_mtime_ns),
+        int(stat.st_ctime_ns),
+    )
+
+
+def _cached_source_sha256_antigravity(path: Path) -> str:
+    """Hash a stable source once per exact filesystem identity."""
+    before = _source_identity_antigravity(path)
+    cached = _SOURCE_SHA256_CACHE_ANTIGRAVITY.get(before)
+    if cached is not None:
+        return cached
+    digest = _sha256_antigravity(path)
+    after = _source_identity_antigravity(path)
+    if after != before:
+        raise RuntimeError("source changed while computing SHA256")
+    _SOURCE_SHA256_CACHE_ANTIGRAVITY[after] = digest
+    return digest
 
 
 def family_from_dataset_antigravity(dataset: str) -> str:
@@ -84,7 +120,7 @@ def family_from_dataset_antigravity(dataset: str) -> str:
 def _validated_source_hash_antigravity(
     path: Path, expected: str, label: str
 ) -> str:
-    actual = _sha256_antigravity(path)
+    actual = _cached_source_sha256_antigravity(path)
     if actual != expected:
         raise RuntimeError(f"{label} source hash changed")
     return actual
@@ -98,9 +134,14 @@ def source_provenance_antigravity() -> dict[str, str]:
     ]
     checkpoint_digest = sha256("\n".join(checkpoint_hashes).encode("utf-8")).hexdigest()
     database_stat = DATABASE_PATH_ANTIGRAVITY.stat()
+    database_sha256 = _validated_source_hash_antigravity(
+        DATABASE_PATH_ANTIGRAVITY,
+        EXPECTED_DATABASE_SHA256_ANTIGRAVITY,
+        "database",
+    )
     return {
         "schema": "exp480_evidence_provenance_v1",
-        "database_expected_sha256": EXPECTED_DATABASE_SHA256_ANTIGRAVITY,
+        "database_expected_sha256": database_sha256,
         "database_inode": str(database_stat.st_ino),
         "database_size": str(database_stat.st_size),
         "exp478_result_sha256": _validated_source_hash_antigravity(
@@ -334,6 +375,8 @@ def validate_evidence_database_antigravity(
     path: Path = EVIDENCE_DATABASE_PATH_ANTIGRAVITY,
 ) -> dict[str, object]:
     """Fail closed unless the derived DB exactly matches every frozen source contract."""
+    if _sha256_antigravity(path) != EXPECTED_EVIDENCE_DATABASE_SHA256_ANTIGRAVITY:
+        raise RuntimeError("canonical evidence SHA changed")
     connection = sqlite3.connect(f"file:{Path(path)}?mode=ro", uri=True)
     try:
         integrity_rows = connection.execute("PRAGMA integrity_check").fetchall()

@@ -99,6 +99,32 @@ def _mlx_recommendation_antigravity() -> dict[str, object]:
     }
 
 
+def _complete_cpu_manifest_antigravity(result_bytes: bytes) -> dict[str, object]:
+    return {
+        "schema": "exp480_run_manifest_v1",
+        "started_at_utc": "2026-09-01T00:00:00+00:00",
+        "completed_at_utc": "2026-09-01T00:00:02+00:00",
+        "elapsed_seconds": 2.0,
+        "result_sha256": sha256(result_bytes).hexdigest(),
+        "acceleration_evidence": {
+            "mlx_version": "0.32.0",
+            "mlx_metal_version": "0.32.0",
+            "device": "Device(gpu, 0)",
+            "cpu_seconds": 0.22,
+            "mlx_seconds": None,
+            "finite": False,
+            "candidate_indices_equal": False,
+            "tolerance": 1e-10,
+            "max_abs_error": None,
+            "speedup": None,
+            "recommended_backend": "cpu_numpy",
+            "actual_result_backend": "cpu_numpy",
+            "fallback_reason": "mlx_unavailable:ValueError",
+            "fallback_detail": "float64 is not supported on the GPU",
+        },
+    }
+
+
 def test_atomic_json_write_leaves_no_temporary_file_antigravity(tmp_path: Path) -> None:
     """A partial JSON artifact must never look like a finished result."""
     target = tmp_path / "result_antigravity.json"
@@ -293,6 +319,101 @@ def test_official_entry_atomically_writes_interim_state_without_report_antigravi
     assert tuple(tmp_path.glob("*temporary_antigravity*")) == ()
 
 
+def test_manifest_validator_rejects_missing_top_level_fields_antigravity() -> None:
+    """A result SHA alone must never qualify as a complete execution manifest."""
+    manifest = _complete_cpu_manifest_antigravity(b"official-result\n")
+    del manifest["completed_at_utc"]
+
+    with pytest.raises(RuntimeError, match="manifest fields"):
+        runner_module_antigravity.validate_run_manifest_antigravity(
+            manifest,
+            expected_result_sha256=manifest["result_sha256"],
+        )
+
+
+@pytest.mark.parametrize(
+    ("section", "key", "value", "message"),
+    (
+        ("top", "schema", "wrong_schema", "schema"),
+        ("top", "elapsed_seconds", float("nan"), "elapsed_seconds"),
+        ("acceleration", "actual_result_backend", "mlx", "actual result backend"),
+        ("acceleration", "fallback_reason", "", "fallback reason"),
+        (
+            "acceleration",
+            "fallback_reason",
+            "speedup_below_1_1x",
+            "null relationship",
+        ),
+        ("acceleration", "cpu_seconds", True, "cpu_seconds"),
+        ("acceleration", "speedup", 1.0, "null relationship"),
+    ),
+)
+def test_manifest_validator_rejects_malformed_fields_antigravity(
+    section: str, key: str, value: object, message: str
+) -> None:
+    """Malformed types, backend claims, fallback, or null evidence must fail."""
+    manifest = _complete_cpu_manifest_antigravity(b"official-result\n")
+    target = manifest if section == "top" else manifest["acceleration_evidence"]
+    assert isinstance(target, dict)
+    target[key] = value
+
+    with pytest.raises(RuntimeError, match=message):
+        runner_module_antigravity.validate_run_manifest_antigravity(
+            manifest,
+            expected_result_sha256=manifest["result_sha256"],
+        )
+
+
+def test_verify_rejects_incomplete_manifest_before_publication_antigravity(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Verification must not publish HTML from a hash-only manifest."""
+    evidence_path = tmp_path / "evidence_antigravity.sqlite3"
+    evidence_path.write_bytes(b"controlled-test-evidence")
+    result_path = tmp_path / "results_antigravity.json"
+    manifest_path = tmp_path / "run_manifest_antigravity.json"
+    dashboard_path = tmp_path / "dashboard_antigravity.html"
+    report_path = tmp_path / "implementation_report_antigravity.html"
+    stored_result = _qualification_result_antigravity()
+    stored_result["evidence_database_sha256"] = sha256(
+        evidence_path.read_bytes()
+    ).hexdigest()
+    write_json_atomic_antigravity(result_path, stored_result)
+    write_json_atomic_antigravity(
+        manifest_path,
+        {
+            "schema": "exp480_run_manifest_v1",
+            "result_sha256": sha256(result_path.read_bytes()).hexdigest(),
+        },
+    )
+    monkeypatch.setattr(
+        runner_module_antigravity,
+        "validate_evidence_database_antigravity",
+        lambda path: {"datasets": 1117},
+    )
+    monkeypatch.setattr(
+        runner_module_antigravity,
+        "load_evidence_database_antigravity",
+        lambda path: (),
+    )
+    monkeypatch.setattr(
+        runner_module_antigravity,
+        "build_official_result_antigravity",
+        lambda rows, evidence_database_sha256: stored_result,
+    )
+
+    with pytest.raises(RuntimeError, match="manifest fields"):
+        runner_module_antigravity.verify_official_antigravity(
+            evidence_path=evidence_path,
+            result_path=result_path,
+            manifest_path=manifest_path,
+            dashboard_path=dashboard_path,
+            report_path=report_path,
+        )
+    assert not dashboard_path.exists()
+    assert not report_path.exists()
+
+
 def test_verify_rejects_result_byte_or_manifest_sha_mismatch_antigravity(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -307,7 +428,10 @@ def test_verify_rejects_result_byte_or_manifest_sha_mismatch_antigravity(
     write_json_atomic_antigravity(result_path, stored_result)
     write_json_atomic_antigravity(
         manifest_path,
-        {"schema": "exp480_run_manifest_v1", "result_sha256": "0" * 64},
+        {
+            **_complete_cpu_manifest_antigravity(result_path.read_bytes()),
+            "result_sha256": "0" * 64,
+        },
     )
     recomputed = _qualification_result_antigravity()
     recomputed["dataset_count"] = 1116
@@ -372,10 +496,7 @@ def test_verify_success_writes_final_dashboard_and_easy_korean_report_antigravit
     write_json_atomic_antigravity(result_path, stored_result)
     write_json_atomic_antigravity(
         manifest_path,
-        {
-            "schema": "exp480_run_manifest_v1",
-            "result_sha256": sha256(result_path.read_bytes()).hexdigest(),
-        },
+        _complete_cpu_manifest_antigravity(result_path.read_bytes()),
     )
     monkeypatch.setattr(
         runner_module_antigravity,

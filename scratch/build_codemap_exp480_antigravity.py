@@ -79,7 +79,7 @@ NODE_SPECS_ANTIGRAVITY = (
         "evidence",
         _package_antigravity("evidence_antigravity.py"),
         "run_antigravity.py",
-        "Builds the read-only-derived 1117-row SQLite evidence database.",
+        "Builds the read-only-derived 1117-row SQLite database and rejects any canonical evidence DB SHA drift.",
         (_test_antigravity("test_evidence_antigravity.py"),),
     ),
     (
@@ -163,7 +163,7 @@ NODE_SPECS_ANTIGRAVITY = (
         "official_verification",
         _package_antigravity("run_antigravity.py"),
         "CLI --verify-only",
-        "Recomputes with NumPy CPU, requires exact result bytes and manifest SHA, then atomically publishes final HTML.",
+        "Recomputes with NumPy CPU, requires exact result bytes, complete manifest schema and SHA, then atomically publishes final HTML.",
         (_test_antigravity("test_runner_antigravity.py"),),
     ),
     (

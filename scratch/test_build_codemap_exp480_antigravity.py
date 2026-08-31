@@ -105,6 +105,8 @@ def test_exp480_map_tracks_manifest_and_fail_closed_verification_flow_antigravit
     }
     assert by_id["official_verification"]["caller"] == "CLI --verify-only"
     assert "exact result bytes" in by_id["official_verification"]["effect"]
+    assert "complete manifest schema" in by_id["official_verification"]["effect"]
+    assert "canonical evidence DB SHA" in by_id["evidence"]["effect"]
     assert by_id["implementation_report"]["caller"] == (
         "verify_official_antigravity() after result bytes and manifest SHA match"
     )

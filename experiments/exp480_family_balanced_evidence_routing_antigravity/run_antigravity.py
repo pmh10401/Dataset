@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from hashlib import sha256
 from html import escape
 import json
+import math
 from pathlib import Path
 from time import perf_counter
 from typing import Mapping, Sequence
@@ -195,6 +196,164 @@ def build_official_result_antigravity(
     }
 
 
+def _manifest_float_antigravity(
+    value: object, label: str, *, positive: bool = False
+) -> float:
+    if type(value) is not float or not math.isfinite(value):
+        raise RuntimeError(f"manifest {label} must be a finite float")
+    if (positive and value <= 0.0) or (not positive and value < 0.0):
+        qualifier = "positive" if positive else "nonnegative"
+        raise RuntimeError(f"manifest {label} must be {qualifier}")
+    return value
+
+
+def _manifest_optional_float_antigravity(value: object, label: str) -> float | None:
+    if value is None:
+        return None
+    return _manifest_float_antigravity(value, label)
+
+
+def _manifest_optional_text_antigravity(value: object, label: str) -> str | None:
+    if value is None:
+        return None
+    if type(value) is not str or not value.strip():
+        raise RuntimeError(f"manifest {label} must be nonempty text or null")
+    return value
+
+
+def validate_run_manifest_antigravity(
+    manifest: object,
+    *,
+    expected_result_sha256: str,
+) -> None:
+    """Fail closed on incomplete or internally inconsistent execution evidence."""
+    if type(manifest) is not dict:
+        raise RuntimeError("manifest must be a JSON object")
+    required_top = {
+        "schema",
+        "started_at_utc",
+        "completed_at_utc",
+        "elapsed_seconds",
+        "result_sha256",
+        "acceleration_evidence",
+    }
+    missing_top = sorted(required_top - set(manifest))
+    if missing_top:
+        raise RuntimeError("manifest fields missing: " + ", ".join(missing_top))
+    if manifest["schema"] != "exp480_run_manifest_v1":
+        raise RuntimeError("manifest schema changed")
+    parsed_times: list[datetime] = []
+    for key in ("started_at_utc", "completed_at_utc"):
+        raw = manifest[key]
+        if type(raw) is not str or not raw:
+            raise RuntimeError(f"manifest {key} must be UTC ISO text")
+        try:
+            parsed = datetime.fromisoformat(raw)
+        except ValueError as error:
+            raise RuntimeError(f"manifest {key} must be UTC ISO text") from error
+        offset = parsed.utcoffset()
+        if offset is None or offset.total_seconds() != 0.0:
+            raise RuntimeError(f"manifest {key} must use UTC")
+        parsed_times.append(parsed)
+    if parsed_times[1] < parsed_times[0]:
+        raise RuntimeError("manifest completion time precedes start time")
+    _manifest_float_antigravity(manifest["elapsed_seconds"], "elapsed_seconds")
+
+    result_sha = manifest["result_sha256"]
+    if (
+        type(result_sha) is not str
+        or len(result_sha) != 64
+        or any(character not in "0123456789abcdef" for character in result_sha)
+    ):
+        raise RuntimeError("manifest result SHA must be lowercase SHA256")
+    if result_sha != expected_result_sha256:
+        raise RuntimeError("manifest result SHA does not match official result")
+
+    acceleration = manifest["acceleration_evidence"]
+    if type(acceleration) is not dict:
+        raise RuntimeError("manifest acceleration evidence must be an object")
+    required_acceleration = {
+        "mlx_version",
+        "mlx_metal_version",
+        "device",
+        "cpu_seconds",
+        "mlx_seconds",
+        "finite",
+        "candidate_indices_equal",
+        "tolerance",
+        "max_abs_error",
+        "speedup",
+        "recommended_backend",
+        "actual_result_backend",
+        "fallback_reason",
+        "fallback_detail",
+    }
+    missing_acceleration = sorted(required_acceleration - set(acceleration))
+    if missing_acceleration:
+        raise RuntimeError(
+            "manifest acceleration fields missing: " + ", ".join(missing_acceleration)
+        )
+    for key in ("mlx_version", "mlx_metal_version", "device"):
+        _manifest_optional_text_antigravity(acceleration[key], key)
+    cpu_seconds = _manifest_float_antigravity(
+        acceleration["cpu_seconds"], "cpu_seconds", positive=True
+    )
+    mlx_seconds = _manifest_optional_float_antigravity(
+        acceleration["mlx_seconds"], "mlx_seconds"
+    )
+    tolerance = _manifest_float_antigravity(acceleration["tolerance"], "tolerance")
+    max_abs_error = _manifest_optional_float_antigravity(
+        acceleration["max_abs_error"], "max_abs_error"
+    )
+    speedup = _manifest_optional_float_antigravity(
+        acceleration["speedup"], "speedup"
+    )
+    finite = acceleration["finite"]
+    indices_equal = acceleration["candidate_indices_equal"]
+    if type(finite) is not bool or type(indices_equal) is not bool:
+        raise RuntimeError("manifest parity flags must be exact booleans")
+    recommended_backend = acceleration["recommended_backend"]
+    if recommended_backend not in {"cpu_numpy", "mlx"}:
+        raise RuntimeError("manifest recommended backend is invalid")
+    if acceleration["actual_result_backend"] != EVALUATION_BACKEND_ANTIGRAVITY:
+        raise RuntimeError("manifest actual result backend must be cpu_numpy")
+    fallback_reason = acceleration["fallback_reason"]
+    if type(fallback_reason) is not str or not fallback_reason.strip():
+        raise RuntimeError("manifest CPU fallback reason must be nonempty")
+    fallback_detail = _manifest_optional_text_antigravity(
+        acceleration["fallback_detail"], "fallback_detail"
+    )
+
+    if mlx_seconds is None:
+        if (
+            max_abs_error is not None
+            or speedup is not None
+            or finite
+            or indices_equal
+            or recommended_backend != EVALUATION_BACKEND_ANTIGRAVITY
+            or fallback_detail is None
+            or not fallback_reason.startswith("mlx_unavailable:")
+        ):
+            raise RuntimeError("manifest acceleration null relationship is invalid")
+    else:
+        if mlx_seconds <= 0.0 or max_abs_error is None or speedup is None:
+            raise RuntimeError("manifest acceleration null relationship is invalid")
+        expected_speedup = cpu_seconds / mlx_seconds
+        if not math.isclose(speedup, expected_speedup, rel_tol=1e-12, abs_tol=0.0):
+            raise RuntimeError("manifest speedup does not match timing evidence")
+    if recommended_backend == "mlx":
+        if (
+            not finite
+            or not indices_equal
+            or max_abs_error is None
+            or max_abs_error > tolerance
+            or speedup is None
+            or speedup < 1.1
+            or fallback_reason != "mlx_recommendation_unwired_numpy_evaluation"
+        ):
+            raise RuntimeError("manifest MLX recommendation evidence is inconsistent")
+
+
 def build_run_manifest_antigravity(
     *,
     result_bytes: bytes,
@@ -233,7 +392,7 @@ def build_run_manifest_antigravity(
             "The official evaluation is NumPy-only; MLX benchmark output is not "
             "wired into result computation."
         )
-    return {
+    manifest = {
         "schema": "exp480_run_manifest_v1",
         "started_at_utc": started_at_utc,
         "completed_at_utc": completed_at_utc,
@@ -256,6 +415,11 @@ def build_run_manifest_antigravity(
             "fallback_detail": fallback_detail,
         },
     }
+    validate_run_manifest_antigravity(
+        manifest,
+        expected_result_sha256=manifest["result_sha256"],
+    )
+    return manifest
 
 
 def _summary_cell_antigravity(summary: Mapping[str, object], key: str) -> str:
@@ -366,8 +530,10 @@ def verify_official_antigravity(
         raise RuntimeError("official result bytes do not match CPU recomputation")
     stored_digest = sha256(stored).hexdigest()
     manifest = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
-    if manifest.get("result_sha256") != stored_digest:
-        raise RuntimeError("manifest result SHA does not match official result")
+    validate_run_manifest_antigravity(
+        manifest,
+        expected_result_sha256=stored_digest,
+    )
     final_view = dict(recomputed_payload)
     final_view["state"] = "official_verified"
     _write_text_atomic_antigravity(
@@ -395,6 +561,7 @@ __all__ = [
     "run_official_antigravity",
     "run_smoke_antigravity",
     "run_validate_antigravity",
+    "validate_run_manifest_antigravity",
     "verify_official_antigravity",
     "write_json_atomic_antigravity",
 ]

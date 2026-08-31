@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from hashlib import sha256
 import math
 from pathlib import Path
 import shutil
@@ -102,7 +103,7 @@ def test_official_evidence_validation_checks_the_complete_frozen_contract_antigr
 
 
 def test_official_evidence_validation_rejects_provenance_drift_antigravity(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A derived DB copied from different frozen sources must not reach evaluation."""
     target = tmp_path / "evidence_provenance_drift_antigravity.sqlite3"
@@ -114,13 +115,19 @@ def test_official_evidence_validation_rejects_provenance_drift_antigravity(
             ("0" * 64,),
         )
         connection.commit()
+    monkeypatch.setattr(
+        evidence_module_antigravity,
+        "EXPECTED_EVIDENCE_DATABASE_SHA256_ANTIGRAVITY",
+        sha256(target.read_bytes()).hexdigest(),
+        raising=False,
+    )
 
     with pytest.raises(RuntimeError, match="provenance"):
         evidence_module_antigravity.validate_evidence_database_antigravity(target)
 
 
 def test_official_evidence_validation_rejects_family_mapping_drift_antigravity(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A family label not derived from the exact first `_normal_` marker must fail."""
     target = tmp_path / "evidence_family_drift_antigravity.sqlite3"
@@ -132,13 +139,19 @@ def test_official_evidence_validation_rejects_family_mapping_drift_antigravity(
             "WHERE dataset=(SELECT min(dataset) FROM dataset_evidence)"
         )
         connection.commit()
+    monkeypatch.setattr(
+        evidence_module_antigravity,
+        "EXPECTED_EVIDENCE_DATABASE_SHA256_ANTIGRAVITY",
+        sha256(target.read_bytes()).hexdigest(),
+        raising=False,
+    )
 
     with pytest.raises(RuntimeError, match="family mapping"):
         evidence_module_antigravity.validate_evidence_database_antigravity(target)
 
 
 def test_official_evidence_validation_rejects_foreign_key_drift_antigravity(
-    tmp_path: Path,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """An orphaned feature row must fail even when all table row counts still match."""
     target = tmp_path / "evidence_foreign_key_drift_antigravity.sqlite3"
@@ -151,6 +164,117 @@ def test_official_evidence_validation_rejects_foreign_key_drift_antigravity(
             "WHERE dataset=(SELECT min(dataset) FROM train_features)"
         )
         connection.commit()
+    monkeypatch.setattr(
+        evidence_module_antigravity,
+        "EXPECTED_EVIDENCE_DATABASE_SHA256_ANTIGRAVITY",
+        sha256(target.read_bytes()).hexdigest(),
+        raising=False,
+    )
 
     with pytest.raises(RuntimeError, match="foreign-key"):
         evidence_module_antigravity.validate_evidence_database_antigravity(target)
+
+
+def _tampered_evidence_database_antigravity(
+    tmp_path: Path, filename: str, statement: str
+) -> Path:
+    target = tmp_path / filename
+    source = Path(__file__).resolve().parents[1] / "evidence_antigravity.sqlite3"
+    shutil.copy2(source, target)
+    with sqlite3.connect(target) as connection:
+        connection.execute(statement)
+        connection.commit()
+    return target
+
+
+def test_canonical_evidence_sha_rejects_coherent_proposal_tamper_antigravity(
+    tmp_path: Path,
+) -> None:
+    """A valid alternative proposal must still fail when it is not canonical evidence."""
+    target = _tampered_evidence_database_antigravity(
+        tmp_path,
+        "proposal_tamper_antigravity.sqlite3",
+        "UPDATE dataset_evidence SET proposal=CASE "
+        "WHEN proposal='minirocket_local_gap' THEN 'hydra_local_gap' "
+        "ELSE 'minirocket_local_gap' END "
+        "WHERE dataset=(SELECT min(dataset) FROM dataset_evidence)",
+    )
+
+    with pytest.raises(RuntimeError, match="canonical evidence SHA"):
+        evidence_module_antigravity.validate_evidence_database_antigravity(target)
+
+
+def test_canonical_evidence_sha_rejects_coherent_feature_tamper_antigravity(
+    tmp_path: Path,
+) -> None:
+    """A finite seven-feature mutation must not pass structural validation."""
+    target = _tampered_evidence_database_antigravity(
+        tmp_path,
+        "feature_tamper_antigravity.sqlite3",
+        "UPDATE train_features SET width=width+0.125 "
+        "WHERE dataset=(SELECT min(dataset) FROM train_features)",
+    )
+
+    with pytest.raises(RuntimeError, match="canonical evidence SHA"):
+        evidence_module_antigravity.validate_evidence_database_antigravity(target)
+
+
+def test_canonical_evidence_sha_rejects_coherent_auc_tamper_antigravity(
+    tmp_path: Path,
+) -> None:
+    """An in-range AUC mutation must not pass the frozen metric contract."""
+    target = _tampered_evidence_database_antigravity(
+        tmp_path,
+        "auc_tamper_antigravity.sqlite3",
+        "UPDATE candidate_metrics SET auc=CASE WHEN auc<0.99 THEN auc+0.001 "
+        "ELSE auc-0.001 END WHERE rowid=(SELECT min(rowid) FROM candidate_metrics)",
+    )
+
+    with pytest.raises(RuntimeError, match="canonical evidence SHA"):
+        evidence_module_antigravity.validate_evidence_database_antigravity(target)
+
+
+def test_canonical_evidence_sha_rejects_coherent_zf_tamper_antigravity(
+    tmp_path: Path,
+) -> None:
+    """A nonnegative integer ZF mutation must not pass the frozen metric contract."""
+    target = _tampered_evidence_database_antigravity(
+        tmp_path,
+        "zf_tamper_antigravity.sqlite3",
+        "UPDATE candidate_metrics SET zf=zf+1 "
+        "WHERE rowid=(SELECT min(rowid) FROM candidate_metrics)",
+    )
+
+    with pytest.raises(RuntimeError, match="canonical evidence SHA"):
+        evidence_module_antigravity.validate_evidence_database_antigravity(target)
+
+
+def test_source_provenance_hashes_database_and_invalidates_changed_cache_antigravity(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Recording a literal or reusing a digest after same-size mutation must fail."""
+    database = tmp_path / "original_database_antigravity.db"
+    database.write_bytes(b"alpha")
+    alpha_sha = "8ed3f6ad685b959ead7022518e1af76cd816f8e8ec7ccdda1ed4018e8f2223f8"
+    omega_sha = "304b4a90a76a1cbe4c112e074b30e75181f54df43d60f883597457844293b341"
+    monkeypatch.setattr(evidence_module_antigravity, "DATABASE_PATH_ANTIGRAVITY", database)
+    monkeypatch.setattr(
+        evidence_module_antigravity, "EXPECTED_DATABASE_SHA256_ANTIGRAVITY", alpha_sha
+    )
+    assert evidence_module_antigravity.source_provenance_antigravity()[
+        "database_expected_sha256"
+    ] == alpha_sha
+
+    database.write_bytes(b"omega")
+    monkeypatch.setattr(
+        evidence_module_antigravity, "EXPECTED_DATABASE_SHA256_ANTIGRAVITY", omega_sha
+    )
+    assert evidence_module_antigravity.source_provenance_antigravity()[
+        "database_expected_sha256"
+    ] == omega_sha
+
+    monkeypatch.setattr(
+        evidence_module_antigravity, "EXPECTED_DATABASE_SHA256_ANTIGRAVITY", alpha_sha
+    )
+    with pytest.raises(RuntimeError, match="database source hash changed"):
+        evidence_module_antigravity.source_provenance_antigravity()

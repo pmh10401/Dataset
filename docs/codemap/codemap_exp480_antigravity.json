@@ -156,8 +156,8 @@
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/config_antigravity.py",
-      "sha256": "0e5d4a6547751662da30568d9b24d5147a3daebd3f6f1410cb7f7c419a179c9e",
-      "size": 3256
+      "sha256": "722946a8b93656e0c72cd699fd69410d4d849fbe93aab457b8f3e608eb5ac404",
+      "size": 3379
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/contracts_antigravity.py",
@@ -171,8 +171,8 @@
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py",
-      "sha256": "cf1da0185a3a46d952ea637c0e09f51dc9d8c682b7ba45e1b06163ac6fe913e0",
-      "size": 17507
+      "sha256": "a052df0e23425c6a86bb70c39bf18bd05a17d0efa4f8d2d1460c6bedc507108b",
+      "size": 18959
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.sqlite3",
@@ -186,8 +186,8 @@
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_antigravity.py",
-      "sha256": "7c8b307e0b071864a9dbb6c2b24324aa2070b6458c96d501e0403ecb1e72d395",
-      "size": 19111
+      "sha256": "d943da33790599b38bda4036206ef20a39039a441928e11ee5b8cea7d5733dd7",
+      "size": 25767
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/smoke_results_antigravity.json",
@@ -316,8 +316,8 @@
     },
     {
       "path": "scratch/build_codemap_exp480_antigravity.py",
-      "sha256": "fbdcc2a543209539dd77f69948e05792ea8d99be0cd470cf9e64c6cad6611cf6",
-      "size": 16090
+      "sha256": "bc5fec48db806b4345f5d1f3743f0a4091694b06d497252b98b3ffb4b8250d16",
+      "size": 16146
     },
     {
       "path": "scratch/exp480_mlx_assessment_antigravity.json",
@@ -331,8 +331,8 @@
     },
     {
       "path": "scratch/test_build_codemap_exp480_antigravity.py",
-      "sha256": "1a46513c17bb87ef32f836dcd3a93a6acc4f5e2edbd216ea75950e292e9ec8bf",
-      "size": 4581
+      "sha256": "719e6f6b4855a6d7af654c1883cbcb3bdf4da29417b56b13904aeab5f982ed10",
+      "size": 4733
     }
   ],
   "nodes": [
@@ -398,7 +398,7 @@
     },
     {
       "caller": "run_antigravity.py",
-      "effect": "Builds the read-only-derived 1117-row SQLite evidence database.",
+      "effect": "Builds the read-only-derived 1117-row SQLite database and rejects any canonical evidence DB SHA drift.",
       "id": "evidence",
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py",
       "planned": false,
@@ -519,7 +519,7 @@
     },
     {
       "caller": "CLI --verify-only",
-      "effect": "Recomputes with NumPy CPU, requires exact result bytes and manifest SHA, then atomically publishes final HTML.",
+      "effect": "Recomputes with NumPy CPU, requires exact result bytes, complete manifest schema and SHA, then atomically publishes final HTML.",
       "id": "official_verification",
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_antigravity.py",
       "planned": false,
