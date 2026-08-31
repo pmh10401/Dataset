@@ -272,3 +272,12 @@ and the bound context digest is
 `1221e84f0196b6bc71a2b58e9cf82216ebd9109c8669309f897e4267e5ae80b2`.
 No TEST labels, evaluation, or report were opened. The clean 1,117-dataset
 values-only recovery run is now the next authorized gate.
+
+The clean 1,117-dataset values-only recovery run started once at
+`2026-08-31T03:25:46Z` from commit
+`b615f2882ae1ea24e51cf297892ce07b272c1892`. The one-shot launchd label is
+`com.openai.exp472.recovery.full.antigravity.20260831T032546Z`; initial
+verification recorded PID 45509, runs 1, state running, no prior exit, and an
+empty stderr file. The job has no KeepAlive/restart policy. Monitoring is
+read-only; any failure must be preserved and must not trigger an automatic
+restart. TEST labels, evaluation, and reporting remain unopened.

@@ -1183,7 +1183,7 @@
     {
       "id": "Exp472",
       "kind": "makima_upsampling_ablation",
-      "status": "recovery_smoke_verified_ready_for_full_1117",
+      "status": "recovery_full_running",
       "documents": [
         "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md",
         "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md"
@@ -1240,7 +1240,15 @@
         "recovery_smoke_context_sha256": "1221e84f0196b6bc71a2b58e9cf82216ebd9109c8669309f897e4267e5ae80b2"
       },
       "smoke_started": true,
-      "official_run_started": false,
+      "official_run_started": true,
+      "recovery_official_launch": {
+        "launchd_label": "com.openai.exp472.recovery.full.antigravity.20260831T032546Z",
+        "started_at_utc": "2026-08-31T03:25:46Z",
+        "initial_pid": 45509,
+        "initial_runs": 1,
+        "automatic_restart_policy": "none_one_shot_launchctl_submit",
+        "initial_stderr_bytes": 0
+      },
       "evaluation_started": false,
       "report_started": false,
       "test_labels_opened": false,
@@ -1248,7 +1256,7 @@
       "prediction_sha256": null,
       "evaluation_sha256": null,
       "report_sha256": null,
-      "notes": "The failed 20260828 context is preserved read-only after 1,101 scored and 16 endpoint-roundoff failures. The endpoint-only repair passed 134 tests and all 16 failed datasets in memory. The fresh 20260831 MPS recovery smoke completed 23/23 with zero failures and passed independent read-only verification. The clean 1,117-dataset values-only recovery run is ready; evaluation, report, and TEST-label access remain unstarted."
+      "notes": "The failed 20260828 context is preserved read-only after 1,101 scored and 16 endpoint-roundoff failures. The endpoint-only repair passed 134 tests and all 16 failed datasets in memory. The fresh 20260831 MPS recovery smoke completed 23/23 with zero failures and passed independent read-only verification. The clean 1,117-dataset values-only recovery run is active under a one-shot launchd job; evaluation, report, and TEST-label access remain unstarted."
     }
   ]
 }

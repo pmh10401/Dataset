@@ -1434,7 +1434,7 @@
   },
   "exp472_makima_upsampling_ablation_antigravity": {
     "experiment": "Exp472",
-    "status": "recovery_smoke_verified_ready_for_full_1117",
+    "status": "recovery_full_running",
     "design": "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md",
     "plan": "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md",
     "database_path": "/Users/mac/Documents/Dataset/univariate_ts.db",
@@ -1497,7 +1497,22 @@
       "test_label_access": false,
       "full_run_authorized": true
     },
-    "official_run_started": false,
+    "official_run_started": true,
+    "recovery_official_launch": {
+      "values_only": true,
+      "launchd_label": "com.openai.exp472.recovery.full.antigravity.20260831T032546Z",
+      "started_at_utc": "2026-08-31T03:25:46Z",
+      "pid_at_initial_verification": 45509,
+      "runs_at_initial_verification": 1,
+      "state_at_initial_verification": "running",
+      "last_exit_at_initial_verification": "never exited",
+      "automatic_restart_policy": "none_one_shot_launchctl_submit",
+      "stdout_path": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/official_full_launchd_20260831T032546Z_antigravity.stdout",
+      "stderr_path": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/official_full_launchd_20260831T032546Z_antigravity.stderr",
+      "exit_path": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/official_full_launchd_20260831T032546Z_antigravity.exit",
+      "initial_stderr_bytes": 0,
+      "test_label_access": false
+    },
     "failed_official_attempt": {
       "expected_dataset_count": 1117,
       "values_only": true,
@@ -1548,7 +1563,7 @@
       "full_test_failures": 0,
       "recovery_smoke_started": true,
       "recovery_smoke_verified": true,
-      "recovery_full_run_started": false,
+      "recovery_full_run_started": true,
       "test_label_access": false
     },
     "evaluation_started": false,
@@ -1563,6 +1578,6 @@
       "terminal_e_manifest_rule": "bind the verified terminal manifest_sha256 field exactly; never hash a manifest containing its self-digest",
       "status_rule": "presence flags are observational only; completion requires strict authority reopen"
     },
-    "next_action": "start_clean_recovery_full_1117_values_only_then_monitor_without_test_labels"
+    "next_action": "monitor_recovery_full_1117_read_only_and_do_not_restart_on_failure"
   }
 }
