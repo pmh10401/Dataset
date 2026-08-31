@@ -22,12 +22,12 @@
 </head>
 <body>
   <h1>Exp480 family 균형 경험 라우팅</h1>
-  <p class="pass"><strong>현재 상태:</strong> Task 2 완료. 1,117개 근거를 128개 family로 보존한 파생 DB를 만들었으며 성능 평가는 아직 시작하지 않았습니다.</p>
+  <p class="pass"><strong>현재 상태:</strong> Task 3 완료. family당 한 표와 후보별 독립 평가 정책을 구현했으며 공식 성능 평가는 아직 시작하지 않았습니다.</p>
   <div class="cards">
     <div class="card"><div>기존 학습 근거</div><div class="big">962개</div></div>
     <div class="card"><div>기존 원본 family</div><div class="big">120개</div></div>
     <div class="card"><div>전체 평가 대상</div><div class="big">1,117개</div></div>
-    <div class="card"><div>현재 단계</div><div class="big">Task 2 완료</div></div>
+    <div class="card"><div>현재 단계</div><div class="big">Task 3 완료</div></div>
   </div>
 
   <h2>핵심 문제</h2>
@@ -40,7 +40,7 @@
     <tr><td>Exp480 목표</td><td>한 family 한 표로 바꾸고, out-of-family 검증에서 잔여 FN을 실제로 줄이는 경우만 채택합니다.</td></tr>
   </table>
 
-  <p class="pending"><strong>다음 단계:</strong> Task 3에서 family당 한 표인 후보별 정책을 구현합니다. 원본 DB, 공식 라우터, 기존 결과는 변경하지 않았습니다.</p>
+  <p class="pending"><strong>다음 단계:</strong> Task 4에서 Mini 고정, 기존 row-KNN, Exp480을 같은 out-of-family 조건으로 비교합니다. 원본 DB, 공식 라우터, 기존 결과는 변경하지 않았습니다.</p>
   <p><a href="superpowers/plans/2026-08-31-exp480-family-balanced-evidence-routing-antigravity.html">Exp480 구현 계획서 열기</a></p>
 
   <h2>진행 체크</h2>
@@ -54,7 +54,7 @@
   <label><input type="checkbox" checked disabled> 구현 계획 승인</label>
   <label><input type="checkbox" checked disabled> Task 1 — 코드맵과 변경 경계 고정</label>
   <label><input type="checkbox" checked disabled> Task 2 — 근거 병합과 파생 DB</label>
-  <label><input type="checkbox" disabled> Task 3 — family 균형 정책</label>
+  <label><input type="checkbox" checked disabled> Task 3 — family 균형 정책</label>
   <label><input type="checkbox" disabled> Task 4 — out-of-family 평가</label>
   <label><input type="checkbox" disabled> Task 5 — 실행기와 smoke 검증</label>
   <label><input type="checkbox" disabled> Task 6 공식 1,117개 실행 승인</label>

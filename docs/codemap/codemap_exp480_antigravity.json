@@ -86,8 +86,8 @@
   "fingerprints": [
     {
       "path": "docs/EXP480_DASHBOARD_antigravity.html",
-      "sha256": "906fdee70d072cf960a42e7ca8357c48e55d08d0c00c4c1b3a39881200cecb05",
-      "size": 4315
+      "sha256": "be5b52f0f7177485e579ebebce75f7dfe203f827371727d75fc109c14f696c2e",
+      "size": 4358
     },
     {
       "path": "docs/codemap/codemap_exp479_antigravity.json",
@@ -101,13 +101,13 @@
     },
     {
       "path": "docs/superpowers/plans/2026-08-31-exp480-family-balanced-evidence-routing-antigravity.html",
-      "sha256": "f2aaf8a06181a8400ab48acff6dd24f0295e2a8349d8f433fc77fdefa6e77ba2",
-      "size": 39199
+      "sha256": "2cb5164bba3ad9a85947b9b86d0ff1b5ad0273fe84340f6b9f6b52cc15b194a8",
+      "size": 39247
     },
     {
       "path": "docs/superpowers/specs/2026-08-31-exp480-family-balanced-evidence-routing-antigravity-design.html",
-      "sha256": "78179c99ce5e0c20e442ba2bf39014bce219d9dd9d67439f14881678ae53fea7",
-      "size": 10899
+      "sha256": "6bf5d6d4e17079d922db37a5346e1305eab840ad5280e37bb1d4c7b70f1e584b",
+      "size": 10907
     },
     {
       "path": "experiments/exp478_full_1117_official_routing_antigravity/results_antigravity.json",
@@ -138,6 +138,11 @@
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.sqlite3",
       "sha256": "77c53e1afd0af071edf71ef692bd978458dda6a5f8a0fec110736b787fe1b998",
       "size": 765952
+    },
+    {
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/policy_antigravity.py",
+      "sha256": "826e0014e48598b01ea09a489679d8f2f2185d4bd311b531d965b0add22b6a49",
+      "size": 9515
     },
     {
       "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0000_antigravity.json",
@@ -356,7 +361,7 @@
       "effect": "Qualifies a candidate without modifying the official router.",
       "id": "family_policy",
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/policy_antigravity.py",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_policy_antigravity.py"
       ]
