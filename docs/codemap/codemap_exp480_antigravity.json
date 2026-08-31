@@ -73,6 +73,16 @@
       "type": "atomic_html"
     },
     {
+      "from": "acceleration",
+      "to": "mlx_assessment",
+      "type": "parity_and_speed_evidence"
+    },
+    {
+      "from": "runner",
+      "to": "smoke_results",
+      "type": "non_official_smoke_json"
+    },
+    {
       "from": "runner",
       "to": "official_results",
       "type": "deterministic_json"
@@ -86,8 +96,8 @@
   "fingerprints": [
     {
       "path": "docs/EXP480_DASHBOARD_antigravity.html",
-      "sha256": "777750a53fdaa60c2bc8b5734c29e3f8aab71914d5791c8200435039c30373eb",
-      "size": 4397
+      "sha256": "83167d2518d15df3116baf4587b5ff93b5ab414f26de771b89896e9b90c6c63b",
+      "size": 2152
     },
     {
       "path": "docs/codemap/codemap_exp479_antigravity.json",
@@ -101,13 +111,13 @@
     },
     {
       "path": "docs/superpowers/plans/2026-08-31-exp480-family-balanced-evidence-routing-antigravity.html",
-      "sha256": "658d51b82447d4bc4fcbfa21ae5e4a37368823e29e37e78fd4cfc52678317eff",
-      "size": 39295
+      "sha256": "e57b705916bbe054dd7df2fa56dfa82dca2fe9405b3f884218d35e6695675e79",
+      "size": 39625
     },
     {
       "path": "docs/superpowers/specs/2026-08-31-exp480-family-balanced-evidence-routing-antigravity-design.html",
-      "sha256": "11cb8f46e36464875e43bbd1a9056b00aaa52f7a6f60621496ed575208a42014",
-      "size": 10915
+      "sha256": "955efe5960f144e8e8cff73fbccf1378c1dbd0a7e7837fa0efaa4a004dd97680",
+      "size": 10923
     },
     {
       "path": "experiments/exp478_full_1117_official_routing_antigravity/results_antigravity.json",
@@ -120,9 +130,14 @@
       "size": 182520
     },
     {
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/acceleration_antigravity.py",
+      "sha256": "ce65cdd06d713cac32c60b4a3515d1534c52bcef7bbd13c0622e7d5cb2024aa0",
+      "size": 5481
+    },
+    {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/config_antigravity.py",
-      "sha256": "ca393092b4a44a400cf289398a0310bc5dd4fc427b84637f4db2855388210c54",
-      "size": 2658
+      "sha256": "0e5d4a6547751662da30568d9b24d5147a3daebd3f6f1410cb7f7c419a179c9e",
+      "size": 3256
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/contracts_antigravity.py",
@@ -148,6 +163,16 @@
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/policy_antigravity.py",
       "sha256": "826e0014e48598b01ea09a489679d8f2f2185d4bd311b531d965b0add22b6a49",
       "size": 9515
+    },
+    {
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_antigravity.py",
+      "sha256": "5d2231c233a7498e25b4836277617310e539bd17e1cba1f9c3336d6d2ac6da3b",
+      "size": 9796
+    },
+    {
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/smoke_results_antigravity.json",
+      "sha256": "eaa37baf4eed2e2d59d5561a50c7b31751f743576775adbcce096033641dd41b",
+      "size": 74627
     },
     {
       "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0000_antigravity.json",
@@ -271,13 +296,23 @@
     },
     {
       "path": "scratch/build_codemap_exp480_antigravity.py",
-      "sha256": "7af9d37e0664fc49292283eabd83ada636e2f32bc94d4c83e1e3e70746d84069",
-      "size": 14275
+      "sha256": "04554fafafac929245cc741d804536835be927827770fd61e0f3011806edb30d",
+      "size": 15003
+    },
+    {
+      "path": "scratch/exp480_mlx_assessment_antigravity.json",
+      "sha256": "a23e1df41e94522370cf049c3e93c5c32cf086151b2ad01867f290753c0ab1c5",
+      "size": 563
+    },
+    {
+      "path": "scratch/run_exp480_family_balanced_evidence_routing_antigravity.py",
+      "sha256": "ebeb9e36d35ab60c3642854bdbefd16702ecf35fa8323e257b070c4b084767aa",
+      "size": 1817
     },
     {
       "path": "scratch/test_build_codemap_exp480_antigravity.py",
-      "sha256": "2965ff4b5bd5a1019099bc4b7719ca2fd5ec18500107164ad339721a78d7e30c",
-      "size": 2343
+      "sha256": "885661a92389864b8b617f7299c9811bec6401763b147ea8dcfca154aa22fb42",
+      "size": 3013
     }
   ],
   "nodes": [
@@ -386,7 +421,7 @@
       "effect": "Selects MLX only after finite, index-parity, tolerance and 1.1x speed gates.",
       "id": "acceleration",
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/acceleration_antigravity.py",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_acceleration_antigravity.py"
       ]
@@ -396,7 +431,7 @@
       "effect": "Writes only Exp480 evidence, deterministic results and HTML outputs.",
       "id": "runner",
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_antigravity.py",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_runner_antigravity.py"
       ]
@@ -406,7 +441,7 @@
       "effect": "Separates validate, smoke, official and verify-only modes.",
       "id": "cli",
       "path": "scratch/run_exp480_family_balanced_evidence_routing_antigravity.py",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_runner_antigravity.py"
       ]
@@ -420,6 +455,26 @@
       "tests": [
         "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_runner_antigravity.py",
         "HTML parser validation"
+      ]
+    },
+    {
+      "caller": "acceleration_antigravity.py and run_antigravity.py",
+      "effect": "Records the real-device parity and speed gate or the exact CPU fallback reason.",
+      "id": "mlx_assessment",
+      "path": "scratch/exp480_mlx_assessment_antigravity.json",
+      "planned": false,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_acceleration_antigravity.py"
+      ]
+    },
+    {
+      "caller": "run_antigravity.py and the user",
+      "effect": "Preserves the non-official eight-family end-to-end smoke evidence.",
+      "id": "smoke_results",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/smoke_results_antigravity.json",
+      "planned": false,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_runner_antigravity.py"
       ]
     },
     {

@@ -425,7 +425,7 @@ git commit -m "feat: evaluate Exp480 out of family"</code></pre>
   <p><strong>입력:</strong> Task 2 DB, Task 3 정책, Task 4 평가기.</p>
   <p><strong>출력:</strong> <code>choose_backend_antigravity()</code>, <code>assess_mlx_antigravity()</code>, <code>write_json_atomic_antigravity()</code>, <code>render_dashboard_antigravity()</code>, <code>run_validate_antigravity()</code>, <code>run_smoke_antigravity()</code>, CLI.</p>
 
-  <label><input type="checkbox" disabled>Step 1. MLX parity와 속도 gate가 하나라도 실패하면 CPU를 선택하는 테스트를 작성합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 1. MLX parity와 속도 gate가 하나라도 실패하면 CPU를 선택하는 테스트를 작성합니다.</label>
   <pre><code>def test_mlx_requires_indices_scores_and_speed_antigravity():
     result = choose_backend_antigravity(
         finite=True, indices_equal=True, max_abs_error=1e-12,
@@ -433,7 +433,7 @@ git commit -m "feat: evaluate Exp480 out of family"</code></pre>
     )
     assert result["selected_backend"] == "cpu_numpy"
     assert result["fallback_reason"] == "speedup_below_1_1x"</code></pre>
-  <label><input type="checkbox" disabled>Step 2. dashboard 완료 체크와 원자적 JSON의 실패 테스트를 작성합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 2. dashboard 완료 체크와 원자적 JSON의 실패 테스트를 작성합니다.</label>
   <pre><code>class CheckboxParserAntigravity(HTMLParser):
     def __init__(self):
         super().__init__()
@@ -452,7 +452,8 @@ def test_dashboard_checks_only_completed_tasks_antigravity():
     assert "Task 6 — 공식 1,117개 실행" in html
     task6 = html.split("Task 6 — 공식 1,117개 실행", 1)[0].rsplit("&lt;input", 1)[-1]
     assert "checked" not in task6</code></pre>
-  <label><input type="checkbox" disabled>Step 3. 동일 행렬과 질의로 CPU·MLX를 예열 후 반복 측정합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 3. 동일 행렬과 질의로 CPU·MLX의 정확 연산 가능 여부와 parity·속도 gate를 측정합니다.</label>
+  <p><strong>측정 결과:</strong> 실제 Metal GPU는 확인됐지만 MLX 0.32.0 GPU가 고정 알고리즘의 <code>float64</code>를 지원하지 않았습니다. 알고리즘을 바꾸지 않고 NumPy CPU로 되돌렸습니다.</p>
   <pre><code>assessment = {
     "cpu_seconds": cpu_seconds,
     "mlx_seconds": mlx_seconds,
@@ -465,18 +466,18 @@ def test_dashboard_checks_only_completed_tasks_antigravity():
     "mlx_metal_version": mlx_metal_version,
     "device": device,
 }</code></pre>
-  <label><input type="checkbox" disabled>Step 4. validate-only와 작은 실제 family smoke를 구현합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 4. validate-only와 작은 실제 family smoke를 구현합니다.</label>
   <pre><code>parser.add_argument("--validate-only", action="store_true")
 parser.add_argument("--smoke-families", type=int, default=0)
 parser.add_argument("--official", action="store_true")
 parser.add_argument("--verify-only", action="store_true")
 # --official은 Task 6 승인 전 실행하지 않습니다. smoke는 정렬된 앞 8 family만 평가합니다.</code></pre>
-  <label><input type="checkbox" disabled>Step 5. Task 1~5 단위 테스트와 CLI 검증을 실행합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 5. Task 1~5 단위 테스트와 CLI 검증을 실행합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp480_family_balanced_evidence_routing_antigravity/tests -q
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp480_family_balanced_evidence_routing_antigravity.py --validate-only
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp480_family_balanced_evidence_routing_antigravity.py --smoke-families 8
 # 예상: tests PASS, validate ready, smoke 8/8 family 성공</code></pre>
-  <label><input type="checkbox" disabled>Step 6. 기존 관련 회귀 테스트 82개를 폴더별로 다시 실행합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 6. 기존 관련 회귀 테스트 82개를 폴더별로 다시 실행합니다.</label>
   <pre><code>for suite in \
   experiments/exp_routing_label_free_antigravity/tests \
   experiments/exp474_conservative_fallback_routing_antigravity/tests \
@@ -487,7 +488,7 @@ parser.add_argument("--verify-only", action="store_true")
   /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest "$suite" -q || exit 1
 done
 # 예상: 총 82개 PASS, 실패 0</code></pre>
-  <label><input type="checkbox" disabled>Step 7. HTML 파싱, 코드맵 갱신과 Task 5 커밋을 수행합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 7. HTML 파싱, 코드맵 갱신과 Task 5 커밋을 수행합니다.</label>
   <pre><code>xmllint --html --noout docs/EXP480_DASHBOARD_antigravity.html
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp480_antigravity.py --write --validate
 git add experiments/exp480_family_balanced_evidence_routing_antigravity scratch/run_exp480_family_balanced_evidence_routing_antigravity.py scratch/exp480_mlx_assessment_antigravity.json docs/EXP480_DASHBOARD_antigravity.html docs/codemap/codemap_exp480_antigravity.*

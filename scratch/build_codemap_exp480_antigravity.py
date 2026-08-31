@@ -132,6 +132,20 @@ NODE_SPECS_ANTIGRAVITY = (
         (_test_antigravity("test_runner_antigravity.py"), "HTML parser validation"),
     ),
     (
+        "mlx_assessment",
+        "scratch/exp480_mlx_assessment_antigravity.json",
+        "acceleration_antigravity.py and run_antigravity.py",
+        "Records the real-device parity and speed gate or the exact CPU fallback reason.",
+        (_test_antigravity("test_acceleration_antigravity.py"),),
+    ),
+    (
+        "smoke_results",
+        _package_antigravity("smoke_results_antigravity.json"),
+        "run_antigravity.py and the user",
+        "Preserves the non-official eight-family end-to-end smoke evidence.",
+        (_test_antigravity("test_runner_antigravity.py"),),
+    ),
+    (
         "official_results",
         _package_antigravity("results_antigravity.json"),
         "run_antigravity.py and independent verification",
@@ -161,6 +175,8 @@ EDGE_SPECS_ANTIGRAVITY = (
     ("acceleration", "runner", "backend_gate"),
     ("cli", "runner", "execution_mode"),
     ("runner", "dashboard", "atomic_html"),
+    ("acceleration", "mlx_assessment", "parity_and_speed_evidence"),
+    ("runner", "smoke_results", "non_official_smoke_json"),
     ("runner", "official_results", "deterministic_json"),
     ("official_results", "implementation_report", "easy_summary"),
 )

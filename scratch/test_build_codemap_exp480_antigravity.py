@@ -60,3 +60,22 @@ def test_exp480_map_tracks_the_derived_database_flow_antigravity() -> None:
         "to": "family_policy",
         "type": "validated_training_evidence",
     } in graph["edges"]
+
+
+def test_exp480_map_tracks_smoke_and_mlx_assessment_artifacts_antigravity() -> None:
+    """Task 5 evidence must remain visible in the current code map."""
+    graph = _builder_antigravity().build_graph_antigravity()
+    by_id = {node["id"]: node for node in graph["nodes"]}
+
+    assert by_id["smoke_results"]["planned"] is False
+    assert by_id["mlx_assessment"]["planned"] is False
+    assert {
+        "from": "acceleration",
+        "to": "mlx_assessment",
+        "type": "parity_and_speed_evidence",
+    } in graph["edges"]
+    assert {
+        "from": "runner",
+        "to": "smoke_results",
+        "type": "non_official_smoke_json",
+    } in graph["edges"]
