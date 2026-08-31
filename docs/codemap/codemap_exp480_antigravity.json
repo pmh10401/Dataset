@@ -1,0 +1,403 @@
+{
+  "constraints": [
+    "Dataset names and source families never enter the runtime feature vector.",
+    "A source family is exactly the prefix before the first _normal_ marker.",
+    "The source database, frozen scores and official router remain read-only.",
+    "Task 6 official execution requires a separate explicit user approval.",
+    "Every newly created file contains antigravity in its filename."
+  ],
+  "edges": [
+    {
+      "from": "database",
+      "to": "evidence",
+      "type": "read_only_train_features"
+    },
+    {
+      "from": "frozen_scores_962",
+      "to": "evidence",
+      "type": "read_only_candidate_metrics"
+    },
+    {
+      "from": "frozen_scores_155",
+      "to": "evidence",
+      "type": "read_only_candidate_metrics"
+    },
+    {
+      "from": "proposal_source",
+      "to": "evidence",
+      "type": "read_only_control_proposals"
+    },
+    {
+      "from": "config",
+      "to": "evidence",
+      "type": "frozen_contract"
+    },
+    {
+      "from": "contracts",
+      "to": "evidence",
+      "type": "validated_rows"
+    },
+    {
+      "from": "evidence",
+      "to": "family_policy",
+      "type": "training_evidence"
+    },
+    {
+      "from": "family_policy",
+      "to": "evaluation",
+      "type": "candidate_decisions"
+    },
+    {
+      "from": "evaluation",
+      "to": "runner",
+      "type": "qualification_metrics"
+    },
+    {
+      "from": "acceleration",
+      "to": "runner",
+      "type": "backend_gate"
+    },
+    {
+      "from": "cli",
+      "to": "runner",
+      "type": "execution_mode"
+    },
+    {
+      "from": "runner",
+      "to": "dashboard",
+      "type": "atomic_html"
+    },
+    {
+      "from": "runner",
+      "to": "official_results",
+      "type": "deterministic_json"
+    },
+    {
+      "from": "official_results",
+      "to": "implementation_report",
+      "type": "easy_summary"
+    }
+  ],
+  "fingerprints": [
+    {
+      "path": "docs/EXP480_DASHBOARD_antigravity.html",
+      "sha256": "9b53c1e1d131bd523a4dba27a18aabca747ab7b4d777e5627293a820de16bb25",
+      "size": 4111
+    },
+    {
+      "path": "docs/codemap/codemap_exp479_antigravity.json",
+      "sha256": "00ecee886947d12ae426239e7f6d10f1ad9f0f65d536d8eb38d33c73075b408e",
+      "size": 9360
+    },
+    {
+      "path": "docs/codemap/codemap_exp479_antigravity.lock",
+      "sha256": "55cd1013325a124d21d1b4764a7524859399718066269e51d8203fbd04685255",
+      "size": 4009
+    },
+    {
+      "path": "docs/superpowers/plans/2026-08-31-exp480-family-balanced-evidence-routing-antigravity.html",
+      "sha256": "7d917674b938919eb28b42554299fb0cc9208ebd0b609f944bf26566e43cab6f",
+      "size": 39151
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-31-exp480-family-balanced-evidence-routing-antigravity-design.html",
+      "sha256": "0bbadfacc75c75657e9d05ebc899d4bce681bb77419b4c11294d5a1276ff1ae5",
+      "size": 10891
+    },
+    {
+      "path": "experiments/exp478_full_1117_official_routing_antigravity/results_antigravity.json",
+      "sha256": "7af31a8849c00af9a3021fea60f9cedc4e0b537b0a1ac483d4f5c5f7ec0d26cc",
+      "size": 513317
+    },
+    {
+      "path": "experiments/exp479_missing_score_recovery_antigravity/results_antigravity.json",
+      "sha256": "88680cf17487b87996aa729a7f5b3787e7d8e5013f0c672b32c26d49bf8d8110",
+      "size": 182520
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0000_antigravity.json",
+      "sha256": "a76777ddea0d7017bf371dabc9c3434f7025598606df452895e049c8808aae9d",
+      "size": 18805
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0001_antigravity.json",
+      "sha256": "9dca152d61d19776ee8c50e00e0620cad98a8ecf544d3377fe403ff96314d207",
+      "size": 11622
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0002_antigravity.json",
+      "sha256": "7e290e05333243073306dedfe3c1d64494a07dd7489d70813400e9b3cb32cb7d",
+      "size": 20293
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0003_antigravity.json",
+      "sha256": "0273dac3a3de419d3a374ce5c541b8f6a6ea72849f4ce472ec9a94d9e8abb359",
+      "size": 18012
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0004_antigravity.json",
+      "sha256": "65bc9754ab3c634481011500aed3e3d64f4ced6e62c0ca53c8d2d861f610417f",
+      "size": 21491
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0005_antigravity.json",
+      "sha256": "b7df27f06e7f4e523522989440efbd65a2bef43e0ad06b518638f1fcc55f4342",
+      "size": 20327
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0006_antigravity.json",
+      "sha256": "e1561dbcdb733d27d7ccc7e05235cb34733544a1da0c102137c76327e138656a",
+      "size": 20747
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0007_antigravity.json",
+      "sha256": "f61e8666111031c72fdd26a687a4f1a8775f07964adfd115c2fbe8ce1a3099dd",
+      "size": 8083
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0008_antigravity.json",
+      "sha256": "5363040c5f3e5da1003f5c1dc7e76eef5d33d40599f3acf6d6039b7552bd53b8",
+      "size": 4200
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0009_antigravity.json",
+      "sha256": "e29dc94586c34a7f151ebd6f60a0a45831160b59817926b6665a7073f45e7c0b",
+      "size": 21992
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0010_antigravity.json",
+      "sha256": "dcf456026948eb1643597bfb191c9905aa85cf2e8094fd8d9c8843cfca6b9ec4",
+      "size": 17213
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0011_antigravity.json",
+      "sha256": "4f90caf6bca2a3dcb9d7fd36261665dded396e59edf1f758b3c56331ae3ee105",
+      "size": 21013
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0012_antigravity.json",
+      "sha256": "3bd5d21410222b3babdeb0b3fe99ecc00f02db0fbe291cf29220f4f9f5b9bb37",
+      "size": 20645
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0013_antigravity.json",
+      "sha256": "7e528834297cff145b70b767199f3385ea477ebea3a964e68cf57f8c5883b0c8",
+      "size": 19520
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0014_antigravity.json",
+      "sha256": "f13ee1a25e0ac60e9051187661c6c4f20aee7564905e73f6a823b1d381689efe",
+      "size": 16658
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0015_antigravity.json",
+      "sha256": "2b7ea4965ddfefeaef512234d042d9fcdbe286d171b76f6a77176e384c1a4a22",
+      "size": 19985
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0016_antigravity.json",
+      "sha256": "43810e6ac65911f4d5d06385fb11fe5368040352795c2e4baedf22add0c9822f",
+      "size": 19334
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0017_antigravity.json",
+      "sha256": "4e970c28328f475b242c02d6065b03629a85a061e48361dc311de1ecc6932ae3",
+      "size": 20379
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0018_antigravity.json",
+      "sha256": "d5e43d9b22b829b4c24860dda7e4c64938a66d6654515c6f82ccc675ba484a7f",
+      "size": 17355
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0019_antigravity.json",
+      "sha256": "c17ac7ed11457b8d0015d7c56f42b1c7f06485a72a02b4e2e1490ff25b690322",
+      "size": 20538
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0020_antigravity.json",
+      "sha256": "87eadbd143db8ef8fba30730706b5b91265762e00e58811c5055869acbce9db8",
+      "size": 20848
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0021_antigravity.json",
+      "sha256": "b1c1afaf37a19c5ca0845b45587c4b70edb9189aaf218e8a8c7233738e18f3c6",
+      "size": 22200
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0022_antigravity.json",
+      "sha256": "6b5bb44d379988d0f669e61c88e3389e6f17c44397a173cb0b268b8771f5b68c",
+      "size": 8005
+    },
+    {
+      "path": "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py",
+      "sha256": "9d42dad06e92ae136a760db8771506377b3ccdca8615122ce1b0b43bca0b927c",
+      "size": 2292
+    },
+    {
+      "path": "scratch/build_codemap_exp480_antigravity.py",
+      "sha256": "b8453bb1c9fbb4b8060ed000a11ea54a46005c40fbf8f09791f8a6961ee4822f",
+      "size": 13876
+    },
+    {
+      "path": "scratch/test_build_codemap_exp480_antigravity.py",
+      "sha256": "a065eca3965db38baa6262b538437c5db8ff2773fbcea1702c5a5263760a7abc",
+      "size": 1325
+    }
+  ],
+  "nodes": [
+    {
+      "caller": "official feature loader through a read-only SQLite connection",
+      "effect": "Provides normal TRAIN values only; Exp480 never writes this database.",
+      "id": "database",
+      "path": "/Users/mac/Documents/Dataset/univariate_ts.db",
+      "planned": false,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evidence_antigravity.py"
+      ]
+    },
+    {
+      "caller": "evidence_antigravity.py",
+      "effect": "Provides the frozen four-method metrics for 962 datasets.",
+      "id": "frozen_scores_962",
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints",
+      "planned": false,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evidence_antigravity.py"
+      ]
+    },
+    {
+      "caller": "evidence_antigravity.py",
+      "effect": "Provides the frozen four-method metrics for the remaining 155 datasets.",
+      "id": "frozen_scores_155",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/results_antigravity.json",
+      "planned": false,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evidence_antigravity.py"
+      ]
+    },
+    {
+      "caller": "evidence_antigravity.py",
+      "effect": "Provides the frozen proposal for the row-KNN control on all 1117 datasets.",
+      "id": "proposal_source",
+      "path": "experiments/exp478_full_1117_official_routing_antigravity/results_antigravity.json",
+      "planned": false,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evidence_antigravity.py"
+      ]
+    },
+    {
+      "caller": "all Exp480 execution modules",
+      "effect": "Freezes paths, method order, feature order and qualification thresholds.",
+      "id": "config",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/config_antigravity.py",
+      "planned": true,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evidence_antigravity.py"
+      ]
+    },
+    {
+      "caller": "evidence_antigravity.py, policy_antigravity.py and evaluation_antigravity.py",
+      "effect": "Rejects malformed or non-finite candidate metrics and evidence rows.",
+      "id": "contracts",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/contracts_antigravity.py",
+      "planned": true,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evidence_antigravity.py"
+      ]
+    },
+    {
+      "caller": "run_antigravity.py",
+      "effect": "Builds the read-only-derived 1117-row SQLite evidence database.",
+      "id": "evidence",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py",
+      "planned": true,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evidence_antigravity.py"
+      ]
+    },
+    {
+      "caller": "evaluation_antigravity.py",
+      "effect": "Qualifies a candidate without modifying the official router.",
+      "id": "family_policy",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/policy_antigravity.py",
+      "planned": true,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_policy_antigravity.py"
+      ]
+    },
+    {
+      "caller": "run_antigravity.py",
+      "effect": "Compares MiniRocket, row-KNN and Exp480 under identical out-of-family splits.",
+      "id": "evaluation",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py",
+      "planned": true,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evaluation_antigravity.py"
+      ]
+    },
+    {
+      "caller": "run_antigravity.py before smoke and official execution",
+      "effect": "Selects MLX only after finite, index-parity, tolerance and 1.1x speed gates.",
+      "id": "acceleration",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/acceleration_antigravity.py",
+      "planned": true,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_acceleration_antigravity.py"
+      ]
+    },
+    {
+      "caller": "scratch/run_exp480_family_balanced_evidence_routing_antigravity.py",
+      "effect": "Writes only Exp480 evidence, deterministic results and HTML outputs.",
+      "id": "runner",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_antigravity.py",
+      "planned": true,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_runner_antigravity.py"
+      ]
+    },
+    {
+      "caller": "Codex after the applicable task gate",
+      "effect": "Separates validate, smoke, official and verify-only modes.",
+      "id": "cli",
+      "path": "scratch/run_exp480_family_balanced_evidence_routing_antigravity.py",
+      "planned": true,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_runner_antigravity.py"
+      ]
+    },
+    {
+      "caller": "run_antigravity.py and the user",
+      "effect": "Shows only measured state and checks completed tasks immediately.",
+      "id": "dashboard",
+      "path": "docs/EXP480_DASHBOARD_antigravity.html",
+      "planned": false,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_runner_antigravity.py",
+        "HTML parser validation"
+      ]
+    },
+    {
+      "caller": "run_antigravity.py and independent verification",
+      "effect": "Preserves deterministic 1117-row qualification evidence without changing the official router.",
+      "id": "official_results",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/results_antigravity.json",
+      "planned": true,
+      "tests": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_runner_antigravity.py"
+      ]
+    },
+    {
+      "caller": "run_antigravity.py and the user",
+      "effect": "Explains the preserved qualification result in easy Korean.",
+      "id": "implementation_report",
+      "path": "docs/EXP480_IMPLEMENTATION_REPORT_antigravity.html",
+      "planned": true,
+      "tests": [
+        "HTML parser validation"
+      ]
+    }
+  ],
+  "schema": "exp480_family_balanced_routing_codemap_v1",
+  "status": "task_1_boundary_frozen"
+}

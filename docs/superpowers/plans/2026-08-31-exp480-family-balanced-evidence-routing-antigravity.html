@@ -69,7 +69,7 @@
   <p><strong>입력:</strong> 최신 <code>codemap_exp479_antigravity.json/lock</code>, 승인된 설계서와 이 계획서.</p>
   <p><strong>출력:</strong> 이후 모든 Exp480 모듈에 대해 <code>caller</code>, <code>effect</code>, <code>tests</code>를 답하는 코드맵과 파일 해시.</p>
 
-  <label><input type="checkbox" disabled>Step 1. 코드맵 누락을 잡는 테스트를 작성합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 1. 코드맵 누락을 잡는 테스트를 작성합니다.</label>
   <pre><code>def test_exp480_map_answers_three_questions_antigravity():
     graph = build_graph_antigravity()
     by_id = {node["id"]: node for node in graph["nodes"]}
@@ -78,10 +78,10 @@
     assert by_id["family_policy"]["tests"] == [
         "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_policy_antigravity.py"
     ]</code></pre>
-  <label><input type="checkbox" disabled>Step 2. 테스트가 생성기 부재로 실패하는지 확인합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 2. 테스트가 생성기 부재로 실패하는지 확인합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest scratch/test_build_codemap_exp480_antigravity.py -q
 # 예상: ModuleNotFoundError 또는 build_graph_antigravity 부재로 FAIL</code></pre>
-  <label><input type="checkbox" disabled>Step 3. planned node를 포함한 코드맵 생성기를 구현하고 triplet을 생성합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 3. planned node를 포함한 코드맵 생성기를 구현하고 triplet을 생성합니다.</label>
   <pre><code>NODE_SPECS_ANTIGRAVITY = (
     ("evidence", "evidence_antigravity.py", "run_antigravity.py",
      "Builds the read-only-derived 1117-row SQLite evidence database.", "test_evidence_antigravity.py"),
@@ -111,11 +111,11 @@ def build_graph_antigravity():
             "edges": [("evidence", "family_policy"), ("family_policy", "evaluation"),
                       ("evaluation", "runner"), ("acceleration", "runner")],
             "constraints": ("source files are read-only", "official router unchanged")}</code></pre>
-  <label><input type="checkbox" disabled>Step 4. 생성기 테스트, JSON 파싱, HTML 파싱과 lock 해시 검증을 실행합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 4. 생성기 테스트, JSON 파싱, HTML 파싱과 lock 해시 검증을 실행합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp480_antigravity.py --write --validate
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest scratch/test_build_codemap_exp480_antigravity.py -q
 # 예상: PASS, stale paths 0</code></pre>
-  <label><input type="checkbox" disabled>Step 5. Task 1을 커밋합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 5. Task 1을 커밋합니다.</label>
   <pre><code>git add scratch/build_codemap_exp480_antigravity.py scratch/test_build_codemap_exp480_antigravity.py docs/codemap/codemap_exp480_antigravity.*
 git commit -m "docs: map Exp480 routing boundaries"</code></pre>
 
