@@ -111,8 +111,8 @@
   "fingerprints": [
     {
       "path": "docs/EXP481_DASHBOARD_antigravity.html",
-      "sha256": "de6e4ae3b1cd4c5b44f29c8bafc78843fae9d4f9bfd953748b5c34ccc3712777",
-      "size": 4205
+      "sha256": "af3594aabc28aafc82277433168ed23ee98ee29438900c237c79033ba121448b",
+      "size": 4240
     },
     {
       "path": "docs/codemap/codemap_exp480_antigravity.json",
@@ -126,8 +126,8 @@
     },
     {
       "path": "docs/superpowers/plans/2026-09-01-exp481-strict-evidence-residual-correction-antigravity.html",
-      "sha256": "a279aaf2faf6698f5d694010524d73660bd11252c1652ae1f40235415071c0c4",
-      "size": 40448
+      "sha256": "487532681669ca248a5a6c9ce61545f7274634da85c10cad174e2f0da3a5eddf",
+      "size": 40496
     },
     {
       "path": "docs/superpowers/specs/2026-09-01-exp481-strict-evidence-residual-correction-antigravity-design.html",
@@ -146,13 +146,18 @@
     },
     {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/config_antigravity.py",
-      "sha256": "9085332fc6d4987253f174837e757c7415f77e1d20ed44a108ab54e22e279bad",
-      "size": 2335
+      "sha256": "563f16ec57982bf1d98019ba9b1f33a18317f06d701e1b3f5ae887b24018fe62",
+      "size": 2674
     },
     {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/contracts_antigravity.py",
       "sha256": "2b0837481ada8758c034098f99500c0677d3c7015a53bc375725bc41895a15db",
       "size": 5885
+    },
+    {
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+      "sha256": "b681710d279158b7ba0ef48c30902be1141423f74608fe0a0c03ba5d0380fdfd",
+      "size": 20735
     },
     {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
@@ -166,13 +171,13 @@
     },
     {
       "path": "scratch/build_codemap_exp481_antigravity.py",
-      "sha256": "b3a19258b3414d0716da3fb89345df03277216e63d30d0195632c3c1c43a0f96",
-      "size": 15716
+      "sha256": "ed9a95d1fe244625bd2c7557c0aaf15683105a7209bf89d5b6167f4f10b2a9af",
+      "size": 15977
     },
     {
       "path": "scratch/test_build_codemap_exp481_antigravity.py",
-      "sha256": "67f5fd89277e5674cf10239b1e7bb138c8995e401534752732d1e4cc06800503",
-      "size": 11836
+      "sha256": "9c09d45ed751494a693cd352c69643b5d39adc4d27483736aecef1e4b46e35ee",
+      "size": 11837
     }
   ],
   "nodes": [
@@ -183,7 +188,8 @@
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.sqlite3",
       "planned": false,
       "tests": [
-        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py"
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_evaluation_antigravity.py"
       ]
     },
     {
@@ -223,7 +229,8 @@
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/config_antigravity.py",
       "planned": false,
       "tests": [
-        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py"
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_evaluation_antigravity.py"
       ]
     },
     {
@@ -233,7 +240,8 @@
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/contracts_antigravity.py",
       "planned": false,
       "tests": [
-        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py"
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_evaluation_antigravity.py"
       ]
     },
     {
@@ -251,7 +259,7 @@
       "effect": "Uses inner and outer family holdouts without score leakage.",
       "id": "nested_evaluation",
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_evaluation_antigravity.py"
       ]

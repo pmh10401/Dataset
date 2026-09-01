@@ -41,7 +41,10 @@ NODE_SPECS_ANTIGRAVITY = (
         f"{EXP480_PACKAGE_ANTIGRAVITY}/evidence_antigravity.sqlite3",
         "policy_antigravity.py and evaluation_antigravity.py",
         "Provides frozen Exp480 residual evidence without modification.",
-        (_test_antigravity("test_policy_antigravity.py"),),
+        (
+            _test_antigravity("test_policy_antigravity.py"),
+            _test_antigravity("test_evaluation_antigravity.py"),
+        ),
     ),
     (
         "exp480_official_result",
@@ -69,14 +72,20 @@ NODE_SPECS_ANTIGRAVITY = (
         _package_antigravity("config_antigravity.py"),
         "all Exp481 execution modules",
         "Freezes paths, residual thresholds, nested holdouts and qualification rules.",
-        (_test_antigravity("test_policy_antigravity.py"),),
+        (
+            _test_antigravity("test_policy_antigravity.py"),
+            _test_antigravity("test_evaluation_antigravity.py"),
+        ),
     ),
     (
         "contracts",
         _package_antigravity("contracts_antigravity.py"),
         "policy_antigravity.py and evaluation_antigravity.py",
         "Rejects malformed residual evidence and leaked family identifiers.",
-        (_test_antigravity("test_policy_antigravity.py"),),
+        (
+            _test_antigravity("test_policy_antigravity.py"),
+            _test_antigravity("test_evaluation_antigravity.py"),
+        ),
     ),
     (
         "strict_policy",

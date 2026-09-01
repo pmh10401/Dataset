@@ -67,6 +67,17 @@ ALTERNATIVE_METHODS_ANTIGRAVITY = METHODS_ANTIGRAVITY[1:]
 K_ANTIGRAVITY = 31
 INNER_MIN_CHANGED_FAMILIES_ANTIGRAVITY = 20
 AUC_QUANTILE_ANTIGRAVITY = 0.20
+EXP481_THRESHOLDS_ANTIGRAVITY = {
+    "zf_total": 2111,
+    "family_mean_zf": 2.9440228392325434,
+    "dataset_mean_auc": 0.9832866538430738,
+    "family_mean_auc": 0.9718432393318419,
+    "max_added_loss_0_05": 0,
+    "max_added_loss_0_10": 0,
+    "min_changed": 1,
+    "max_changed_tie_rate": 0.50,
+    "dominance_control_rate": 0.80,
+}
 
 
 __all__ = [name for name in globals() if name.endswith("_ANTIGRAVITY")]

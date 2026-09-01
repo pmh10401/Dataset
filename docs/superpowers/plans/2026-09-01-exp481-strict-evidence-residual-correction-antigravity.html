@@ -215,7 +215,7 @@ git commit -m "feat: add Exp481 strict residual policy"</code></pre>
   </ul>
   <p><strong>Consumes:</strong> Task 2 정책, Exp480 <code>iter_family_splits_antigravity()</code>, 공식 <code>MinimumZFGuardKNNPolicyAntigravity</code>.</p>
   <p><strong>Produces:</strong> <code>MeasuredDecisionAntigravity</code>, <code>qualify_inner_methods_antigravity()</code>, <code>evaluate_nested_out_of_family_antigravity()</code>, <code>apply_exp481_gates_antigravity()</code>.</p>
-  <label><input type="checkbox" disabled>Step 1. 안쪽/바깥 family 무중첩, held score 후읽기, 안쪽 20-family 조건과 row-KNN 기준 gate 테스트를 작성합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 1. 안쪽/바깥 family 무중첩, held score 후읽기, 안쪽 20-family 조건과 row-KNN 기준 gate 테스트를 작성합니다.</label>
   <pre><code>def test_nested_splits_never_expose_outer_family_antigravity(synthetic_rows_antigravity):
     for outer_family, outer_train, outer_test in iter_family_splits_antigravity(
         synthetic_rows_antigravity
@@ -234,10 +234,10 @@ def test_all_qualification_gates_compare_against_row_knn_antigravity():
     gates = apply_exp481_gates_antigravity(summary_fixture_antigravity())
     assert gates["zf_total"]["required"] == "&gt; 2111"
     assert gates["dataset_mean_auc"]["required"] == "&gt;= 0.9832866538430738"</code></pre>
-  <label><input type="checkbox" disabled>Step 2. 평가 모듈이 없어 테스트가 실패하는지 확인합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 2. 평가 모듈이 없어 테스트가 실패하는지 확인합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_evaluation_antigravity.py -q
 # 예상: ModuleNotFoundError로 FAIL</code></pre>
-  <label><input type="checkbox" disabled>Step 3. 후보별 안쪽 결과를 원본 family 단위로 합치는 gate를 구현합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 3. 후보별 안쪽 결과를 원본 family 단위로 합치는 gate를 구현합니다.</label>
   <pre><code>def aggregate_inner_gate_antigravity(method, selected_records):
     by_family = defaultdict(list)
     for record in selected_records:
@@ -257,7 +257,7 @@ def test_all_qualification_gates_compare_against_row_knn_antigravity():
         winning_families=wins, losing_families=losses, tied_families=ties,
         min_auc_gain=minimum, q20_auc_gain=q20,
     )</code></pre>
-  <label><input type="checkbox" disabled>Step 4. 안쪽 gate를 바깥 held family에 적용하되 점수는 결정이 끝난 뒤에만 읽도록 평가 순서를 고정합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 4. 안쪽 gate를 바깥 held family에 적용하되 점수는 결정이 끝난 뒤에만 읽도록 평가 순서를 고정합니다.</label>
   <pre><code>@dataclass(frozen=True)
 class MeasuredDecisionAntigravity:
     dataset: str
@@ -286,7 +286,7 @@ def evaluate_outer_row_antigravity(row, row_policy, residual_policy, enabled_met
         changed=residual_decision.changed, auc=selected.auc, zf=selected.zf,
         auc_gain=selected.auc - baseline.auc, zf_gain=selected.zf - baseline.zf,
     )</code></pre>
-  <label><input type="checkbox" disabled>Step 5. ZF, family 평균, AUC 꼬리 손실, 변경군 승·패, 80% 지배 대조군을 포함한 최종 gate를 구현합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 5. ZF, family 평균, AUC 꼬리 손실, 변경군 승·패, 80% 지배 대조군을 포함한 최종 gate를 구현합니다.</label>
   <pre><code>EXP481_THRESHOLDS_ANTIGRAVITY = {
     "zf_total": 2111,
     "family_mean_zf": 2.9440228392325434,
@@ -299,7 +299,7 @@ def evaluate_outer_row_antigravity(row, row_policy, residual_policy, enabled_met
     "max_changed_tie_rate": 0.50,
     "dominance_control_rate": 0.80,
 }</code></pre>
-  <label><input type="checkbox" disabled>Step 6. 평가 테스트를 통과시키고 코드맵·대시보드를 갱신한 뒤 커밋합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 6. 평가 테스트를 통과시키고 코드맵·대시보드를 갱신한 뒤 커밋합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_evaluation_antigravity.py -q
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp481_antigravity.py --write --validate
 git add experiments/exp481_strict_evidence_residual_correction_antigravity docs/codemap/codemap_exp481_antigravity.* docs/EXP481_DASHBOARD_antigravity.html

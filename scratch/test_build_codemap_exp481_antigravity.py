@@ -163,7 +163,7 @@ def test_exp481_map_contains_required_nodes_and_edges_antigravity() -> None:
     assert nodes["config"]["planned"] is False
     assert nodes["contracts"]["planned"] is False
     assert nodes["strict_policy"]["planned"] is False
-    assert nodes["nested_evaluation"]["planned"] is True
+    assert nodes["nested_evaluation"]["planned"] is False
     assert nodes["numba_kernels"]["planned"] is True
 
 
