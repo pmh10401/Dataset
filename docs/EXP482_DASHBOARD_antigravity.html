@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp482 게이트 실패 진단 대시보드</title><style>
+body{font-family:system-ui,-apple-system,sans-serif;max-width:900px;margin:30px auto;padding:0 20px 60px;line-height:1.65;color:#182230}
+.status{border-left:5px solid #175cd3;background:#eff8ff;padding:12px 16px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.card{border:1px solid #d8dee8;border-radius:9px;padding:14px}.big{font-size:1.5rem;font-weight:750}label{display:block;margin:8px 0}
+</style></head><body><h1>Exp482 게이트 실패 진단</h1>
+<p class="status"><strong>진단 완료</strong> — 라우팅 규칙과 임계값은 바꾸지 않았습니다.</p>
+<div class="cards"><div class="card"><div>데이터셋</div><div class="big">1117</div></div><div class="card"><div>family</div><div class="big">128</div></div><div class="card"><div>후보 평가 기록</div><div class="big">391926</div></div></div>
+<p>Exp481 결정 동일: <strong>예</strong></p>
+<p>후보 통과: <strong>0</strong>, 단일 조건 실패: <strong>1</strong>, 다중 조건 실패: <strong>391925</strong></p>
+<p><strong>다음 판단:</strong> 한 조건만 낮추지 않고, TRAIN 데이터에서 안전하게 좋아질 후보가 실제로 충분한지 먼저 확인합니다.</p>
+<p><strong>Grok·Codex 검토:</strong> 단일 조건 완화는 기각하고 K=31은 유지합니다. 안전한 개선 기회가 20개 family 이상일 때만 결과-오라클 이웃 검사를 진행합니다.</p>
+<h2>진행 체크</h2>
+<label><input type="checkbox" checked disabled> Task 1 — 코드맵과 기준 테스트 확인</label>
+<label><input type="checkbox" checked disabled> Task 2 — 실패 조건 센서스 구현</label>
+<label><input type="checkbox" checked disabled> Task 3 — 1,117개 TRAIN-side 전수 계측</label>
+<label><input type="checkbox" checked disabled> Task 4 — 결과 검증과 보고서 작성</label>
+<p><a href="EXP482_IMPLEMENTATION_REPORT_antigravity.html">상세 진단 보고서 보기</a></p>
+</body></html>
