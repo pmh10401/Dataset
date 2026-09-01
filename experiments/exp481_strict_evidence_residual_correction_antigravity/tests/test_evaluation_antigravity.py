@@ -162,6 +162,62 @@ def test_outer_row_reads_scores_only_after_both_routes_antigravity(monkeypatch) 
     assert measured.auc_gain == pytest.approx(0.01)
 
 
+def test_inner_qualification_rechecks_runner_up_under_actual_enabled_set_antigravity(
+    monkeypatch,
+) -> None:
+    from experiments.exp481_strict_evidence_residual_correction_antigravity import evaluation_antigravity
+
+    class FittedPolicy:
+        def fit(self, rows):
+            return self
+
+    monkeypatch.setattr(
+        evaluation_antigravity,
+        "_row_policy_antigravity",
+        lambda rows, kwargs: FittedPolicy(),
+    )
+    monkeypatch.setattr(
+        evaluation_antigravity,
+        "StrictResidualPolicyAntigravity",
+        lambda **kwargs: FittedPolicy(),
+    )
+
+    def measured_for_subset(row, row_policy, residual_policy, enabled_methods):
+        enabled = tuple(enabled_methods)
+        if "multirocket_local_gap" in enabled:
+            return _decision_antigravity(
+                row.source_family,
+                method="multirocket_local_gap",
+                auc_gain=-0.01,
+                zf_gain=1,
+            )
+        if "hydra_local_gap" in enabled:
+            return _decision_antigravity(
+                row.source_family,
+                method="hydra_local_gap",
+                auc_gain=0.01,
+                zf_gain=1,
+            )
+        return _decision_antigravity(
+            row.source_family,
+            method="hydra_multirocket_local_gap",
+            auc_gain=-0.01,
+            zf_gain=-1,
+        )
+
+    monkeypatch.setattr(
+        evaluation_antigravity,
+        "evaluate_outer_row_antigravity",
+        measured_for_subset,
+    )
+    rows = tuple(_row_antigravity(family, index) for index, family in enumerate(("A", "B", "C"), 1))
+    gates = evaluation_antigravity.qualify_inner_methods_antigravity(
+        rows, min_changed_families=1
+    )
+    enabled = tuple(gate.method for gate in gates if gate.enabled)
+    assert enabled == ("hydra_local_gap",)
+
+
 def test_final_gates_use_exact_strict_and_inclusive_boundaries_antigravity() -> None:
     passing = apply_exp481_gates_antigravity(_summary_antigravity())
     assert passing["overall_pass"] is True

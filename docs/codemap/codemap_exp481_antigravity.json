@@ -156,8 +156,8 @@
     },
     {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
-      "sha256": "b681710d279158b7ba0ef48c30902be1141423f74608fe0a0c03ba5d0380fdfd",
-      "size": 20735
+      "sha256": "ab0276178278ea9920ccac4e792dccb54d91870b476891f106f78262573b166a",
+      "size": 22168
     },
     {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
