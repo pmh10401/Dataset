@@ -111,8 +111,13 @@
   "fingerprints": [
     {
       "path": "docs/EXP481_DASHBOARD_antigravity.html",
-      "sha256": "7befc35e23313f6647ff78380e2007a606170e1619da92e52fd80d2a1220cf80",
-      "size": 2031
+      "sha256": "d48af860da9f5b1eddd244cd794f19a79db7cc44f10b974cc7e20922ab3e5d98",
+      "size": 2026
+    },
+    {
+      "path": "docs/EXP481_IMPLEMENTATION_REPORT_antigravity.html",
+      "sha256": "cc9567000eb23d7f62e8f16a01087b0072abee5bcd2678eee9aeb7334a7144e3",
+      "size": 1425
     },
     {
       "path": "docs/codemap/codemap_exp480_antigravity.json",
@@ -126,8 +131,8 @@
     },
     {
       "path": "docs/superpowers/plans/2026-09-01-exp481-strict-evidence-residual-correction-antigravity.html",
-      "sha256": "ad0cc6e54dab693b36a3717967a716e664c479c0edf879684c91c0827e81dbf9",
-      "size": 40602
+      "sha256": "077dfe2671d9c262c901034a151eb95a8b96bcca05b12c30161e3b9a4c2d7106",
+      "size": 40827
     },
     {
       "path": "docs/superpowers/specs/2026-09-01-exp481-strict-evidence-residual-correction-antigravity-design.html",
@@ -175,9 +180,19 @@
       "size": 12297
     },
     {
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/results_antigravity.json",
+      "sha256": "7038b994e422dc93a18927c810ce5e3bdb7601039ba01d2b388895444e09956f",
+      "size": 411419
+    },
+    {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/run_antigravity.py",
       "sha256": "b134ca088a31ca0be26afbbd1aa03fe59aad7731e6405fd0623cb0abe7d05546",
       "size": 21728
+    },
+    {
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/run_manifest_antigravity.json",
+      "sha256": "8223ecb37707121f66a7bf38c1e83c8d5b578be12757278aa0be8da30cf491a2",
+      "size": 1444
     },
     {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/smoke_results_antigravity.json",
@@ -370,7 +385,7 @@
       "effect": "Preserves the official 1117-row residual-correction result without changing row-KNN unless evidence passes.",
       "id": "official_results",
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/results_antigravity.json",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_runner_antigravity.py"
       ]
@@ -380,7 +395,7 @@
       "effect": "Records execution timing, Numba/MLX evidence and the deterministic result SHA outside the result bytes.",
       "id": "run_manifest",
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/run_manifest_antigravity.json",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_runner_antigravity.py"
       ]
@@ -390,7 +405,7 @@
       "effect": "Explains the residual-correction decision and unchanged row-KNN fallback in easy Korean.",
       "id": "implementation_report",
       "path": "docs/EXP481_IMPLEMENTATION_REPORT_antigravity.html",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_runner_antigravity.py",
         "HTML parser validation"
