@@ -1,0 +1,131 @@
+{
+  "answers": {
+    "callers": "The module CLI and focused tests call Exp483; Exp483 calls the frozen Exp481 row policy and strict statistics.",
+    "effects": "Only new Exp483 aggregate JSON and HTML are written. Exp481 and Exp482 artifacts and all router decisions remain unchanged.",
+    "tests": "The focused Exp483 tests cover row opportunities, distinct-family selection, K support, aggregation, the three-way decision, source-population rejection, and checked HTML output."
+  },
+  "baseline": {
+    "path": "docs/codemap/codemap_exp482_antigravity.json",
+    "sha256": "ac2705e0f3615ed53a27ebef0a8aca49008b5feee2645dcd3000d95070c0bcb3"
+  },
+  "edges": [
+    {
+      "from": "exp481_nested_row_policy",
+      "to": "exp483_diagnostic",
+      "type": "frozen_train_population"
+    },
+    {
+      "from": "exp481_strict_statistics",
+      "to": "exp483_diagnostic",
+      "type": "frozen_three_clause_gate"
+    },
+    {
+      "from": "exp482_population_pin",
+      "to": "exp483_diagnostic",
+      "type": "routing_identity_check"
+    },
+    {
+      "from": "exp483_diagnostic",
+      "to": "exp483_outputs",
+      "type": "aggregate_json_and_html"
+    }
+  ],
+  "fingerprints": [
+    {
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+      "sha256": "4b2f09e415c60a1dcd1dd5c4cb16d05b0a4956bed6ee6ca9af44c41fe6d8ac66",
+      "size": 21265
+    },
+    {
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
+      "sha256": "63fc99988bc82fb71068c831bc04b3e960587e7c2fcfbd43cee4d7a47b13e5fb",
+      "size": 12297
+    },
+    {
+      "path": "experiments/exp482_gate_failure_decomposition_antigravity/results_antigravity.json",
+      "sha256": "d35f28ebb5d441f5a654b21f8de8f4c93a771aabe39067c00449a582c68bfab1",
+      "size": 477043
+    },
+    {
+      "path": "experiments/exp483_train_opportunity_oracle_antigravity/diagnostic_antigravity.py",
+      "sha256": "b72de22bf496fa2a672cbdad164f6be2952f87c4662fa655e77165bad1592a9b",
+      "size": 26230
+    },
+    {
+      "path": "experiments/exp483_train_opportunity_oracle_antigravity/tests/test_exp483_diagnostic_antigravity.py",
+      "sha256": "32f068c7f3f4889e2b75d2bc0b6f24245a016dc037d8499900a38a76b34fdf90",
+      "size": 14845
+    },
+    {
+      "path": "experiments/exp483_train_opportunity_oracle_antigravity/results_antigravity.json",
+      "sha256": "09205ac93d4a4baa8fa0992a20d89d811d13fbbb2f2a55d51c9be758946ef9cc",
+      "size": 3844
+    },
+    {
+      "path": "docs/EXP483_DASHBOARD_antigravity.html",
+      "sha256": "3d176178f87ecd3b7220f79dd1d977df25102198fb523d6ee9e36d7655bd628f",
+      "size": 3104
+    },
+    {
+      "path": "docs/EXP483_IMPLEMENTATION_REPORT_antigravity.html",
+      "sha256": "3af7aa9ccaa2246ae0723e9b0b4859bf61c89b87a8fffa237f1220e11d32cf56",
+      "size": 5076
+    },
+    {
+      "path": "scratch/build_codemap_exp483_antigravity.py",
+      "sha256": "3dcb614fcd4fa129830bce6571e96310ef6d4a2061f8b0de5b4a413668720f7f",
+      "size": 9009
+    }
+  ],
+  "nodes": [
+    {
+      "caller": "Exp481 evaluation and the read-only Exp483 nested replay",
+      "effect": "Selects the 130,642 TRAIN rows where row-KNN preserves MiniRocket",
+      "id": "exp481_nested_row_policy",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+      "tests": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp483_train_opportunity_oracle_antigravity/tests/test_exp483_diagnostic_antigravity.py"
+      ]
+    },
+    {
+      "caller": "Exp481 policy and Exp483 outcome-oracle assessment",
+      "effect": "Applies the frozen wins, minimum-AUC, and q20-AUC clauses at K=31",
+      "id": "exp481_strict_statistics",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
+      "tests": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py",
+        "experiments/exp483_train_opportunity_oracle_antigravity/tests/test_exp483_diagnostic_antigravity.py"
+      ]
+    },
+    {
+      "caller": "Exp483 result identity gate",
+      "effect": "Pins the nested population and refuses a changed replay",
+      "id": "exp482_population_pin",
+      "path": "experiments/exp482_gate_failure_decomposition_antigravity/results_antigravity.json",
+      "tests": [
+        "experiments/exp483_train_opportunity_oracle_antigravity/tests/test_exp483_diagnostic_antigravity.py"
+      ]
+    },
+    {
+      "caller": "python -m experiments.exp483_train_opportunity_oracle_antigravity.diagnostic_antigravity",
+      "effect": "Measures F(m), the K=31 TRAIN-only upper bound, and the frozen next-step decision",
+      "id": "exp483_diagnostic",
+      "path": "experiments/exp483_train_opportunity_oracle_antigravity/diagnostic_antigravity.py",
+      "tests": [
+        "experiments/exp483_train_opportunity_oracle_antigravity/tests/test_exp483_diagnostic_antigravity.py"
+      ]
+    },
+    {
+      "caller": "Exp483 HTML renderers and Codex verification",
+      "effect": "Stores aggregate tables only and renders the checked dashboard and easy-language report",
+      "id": "exp483_outputs",
+      "path": "experiments/exp483_train_opportunity_oracle_antigravity/results_antigravity.json",
+      "tests": [
+        "experiments/exp483_train_opportunity_oracle_antigravity/tests/test_exp483_diagnostic_antigravity.py"
+      ]
+    }
+  ],
+  "schema": "exp483_train_opportunity_oracle_codemap_v1",
+  "unknown_relationships": []
+}
