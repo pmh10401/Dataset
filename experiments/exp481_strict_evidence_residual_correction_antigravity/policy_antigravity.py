@@ -138,10 +138,15 @@ def _unique_best_antigravity(
 class StrictResidualPolicyAntigravity:
     """Preserve row-KNN unless MiniRocket residual evidence uniquely passes."""
 
-    def __init__(self, *, k: int = K_ANTIGRAVITY) -> None:
+    def __init__(
+        self, *, k: int = K_ANTIGRAVITY, backend: str = "numpy_reference"
+    ) -> None:
         if type(k) is not int or k < 1:
             raise ValueError("k must be a positive integer")
+        if backend not in ("numpy_reference", "numba_cpu"):
+            raise ValueError("backend must be numpy_reference or numba_cpu")
         self.k = k
+        self.backend = backend
         self._fitted = False
 
     def fit(
@@ -171,6 +176,12 @@ class StrictResidualPolicyAntigravity:
         self._scale = scales
         self._matrix = (matrix - self._mean[None, :]) / self._scale[None, :]
         self._families = tuple(row.source_family for row in fitted)
+        family_codes = {
+            family: code for code, family in enumerate(dict.fromkeys(self._families))
+        }
+        self._family_codes = np.asarray(
+            [family_codes[family] for family in self._families], dtype=np.int64
+        )
         alternatives = []
         baseline_index = 0
         for method_index, method in enumerate(ALTERNATIVE_METHODS_ANTIGRAVITY, start=1):
@@ -202,15 +213,36 @@ class StrictResidualPolicyAntigravity:
         raw = np.where(np.isfinite(raw), raw, self._medians)
         query = (raw - self._mean) / self._scale
         distances = np.linalg.norm(self._matrix - query[None, :], axis=1)
-        neighbours = nearest_distinct_family_indices_reference_antigravity(
-            distances, self._families, self.k
-        )
+        if self.backend == "numba_cpu":
+            from .kernels_numba_antigravity import (
+                nearest_distinct_family_indices_numba_antigravity,
+            )
+
+            neighbours = nearest_distinct_family_indices_numba_antigravity(
+                distances, self._family_codes, self.k
+            )
+        else:
+            neighbours = nearest_distinct_family_indices_reference_antigravity(
+                distances, self._families, self.k
+            )
         neighbour_families = tuple(self._families[int(index)] for index in neighbours)
         assessments = []
         for method, auc_gains, zf_gains in self._alternatives:
-            stats = strict_statistics_reference_antigravity(
-                zf_gains[neighbours], auc_gains[neighbours]
-            )
+            if self.backend == "numba_cpu":
+                from .kernels_numba_antigravity import strict_statistics_numba_antigravity
+
+                raw_stats = strict_statistics_numba_antigravity(
+                    zf_gains[neighbours], auc_gains[neighbours], AUC_QUANTILE_ANTIGRAVITY
+                )
+                stats = ReferenceStatisticsAntigravity(
+                    passed=raw_stats[0], zf_wins=raw_stats[1],
+                    zf_losses=raw_stats[2], zf_ties=raw_stats[3],
+                    min_auc_gain=raw_stats[4], q20_auc_gain=raw_stats[5],
+                )
+            else:
+                stats = strict_statistics_reference_antigravity(
+                    zf_gains[neighbours], auc_gains[neighbours]
+                )
             assessments.append(
                 StrictCandidateAssessmentAntigravity(
                     method=method,

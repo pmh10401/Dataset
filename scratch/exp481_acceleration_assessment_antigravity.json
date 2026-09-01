@@ -1,0 +1,21 @@
+{
+  "candidate_index_parity": true,
+  "decision_parity": true,
+  "fallback_reason": "numba_no_full_stage_speed_benefit",
+  "finite_outputs": true,
+  "max_abs_error": 0.0,
+  "mlx_candidate_index_parity": false,
+  "mlx_eligible": false,
+  "mlx_speedup_including_transfer": 0.0,
+  "numba_execution_seconds": 0.0050532500026747584,
+  "numba_speed_gate_pass": false,
+  "numba_speedup_including_warmup": 0.36577392470952386,
+  "numba_total_seconds": 0.005162000001291744,
+  "numba_version": "0.63.1",
+  "numba_warmup_seconds": 0.00010874999861698598,
+  "numerical_agreement": true,
+  "numpy_seconds": 0.0018881249998230487,
+  "numpy_version": "2.3.5",
+  "selected_backend": "numpy_reference",
+  "statistics_parity": true
+}

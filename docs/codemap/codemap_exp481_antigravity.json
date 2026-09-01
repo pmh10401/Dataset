@@ -111,8 +111,8 @@
   "fingerprints": [
     {
       "path": "docs/EXP481_DASHBOARD_antigravity.html",
-      "sha256": "af3594aabc28aafc82277433168ed23ee98ee29438900c237c79033ba121448b",
-      "size": 4240
+      "sha256": "815719336da37e7a265282a22d7c53a0c627ab32d3f38d82b7ec965fbcb3ca98",
+      "size": 4244
     },
     {
       "path": "docs/codemap/codemap_exp480_antigravity.json",
@@ -126,8 +126,8 @@
     },
     {
       "path": "docs/superpowers/plans/2026-09-01-exp481-strict-evidence-residual-correction-antigravity.html",
-      "sha256": "487532681669ca248a5a6c9ce61545f7274634da85c10cad174e2f0da3a5eddf",
-      "size": 40496
+      "sha256": "7a957ddaed4af00c676f84beff437f1bcce57e58ef930e2f3db987828df069f9",
+      "size": 40544
     },
     {
       "path": "docs/superpowers/specs/2026-09-01-exp481-strict-evidence-residual-correction-antigravity-design.html",
@@ -145,6 +145,11 @@
       "size": 6379067
     },
     {
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/acceleration_antigravity.py",
+      "sha256": "dbb4b5978de0cb9b254c397cd8b2e573da070cfa553d058e4549d50586caabe7",
+      "size": 6995
+    },
+    {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/config_antigravity.py",
       "sha256": "563f16ec57982bf1d98019ba9b1f33a18317f06d701e1b3f5ae887b24018fe62",
       "size": 2674
@@ -160,9 +165,14 @@
       "size": 21265
     },
     {
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/kernels_numba_antigravity.py",
+      "sha256": "b59941fb8dce508b573a495b646a46d89475556d35c070b36ae2b602d14b99e6",
+      "size": 3542
+    },
+    {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
-      "sha256": "0ace70b9410c26802ed656e67deab50f245b07f50afb459e13869820e69c8567",
-      "size": 10868
+      "sha256": "63fc99988bc82fb71068c831bc04b3e960587e7c2fcfbd43cee4d7a47b13e5fb",
+      "size": 12297
     },
     {
       "path": "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py",
@@ -175,9 +185,14 @@
       "size": 15977
     },
     {
+      "path": "scratch/exp481_acceleration_assessment_antigravity.json",
+      "sha256": "2b329d459fec1c8fb7560ff6ceb1417a09cb68360e35ca5920f1a6fee943e2db",
+      "size": 717
+    },
+    {
       "path": "scratch/test_build_codemap_exp481_antigravity.py",
-      "sha256": "9c09d45ed751494a693cd352c69643b5d39adc4d27483736aecef1e4b46e35ee",
-      "size": 11837
+      "sha256": "bc8abe4e025ac7db32bbc88bd4344f748762515c13fc8ca0de392420827a27eb",
+      "size": 11891
     }
   ],
   "nodes": [
@@ -269,7 +284,7 @@
       "effect": "Provides optional Numba neighbour and strict statistics after parity and full-stage speed selection.",
       "id": "numba_kernels",
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/kernels_numba_antigravity.py",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_numba_antigravity.py"
       ]
@@ -279,7 +294,7 @@
       "effect": "Selects Numba only after parity plus full-stage speed benefit; otherwise retains NumPy and records the fallback reason, then gates optional MLX.",
       "id": "acceleration",
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/acceleration_antigravity.py",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_acceleration_antigravity.py"
       ]
@@ -320,7 +335,7 @@
       "effect": "Records Numba/NumPy parity, timing, selected backend, and the optional MLX gate or CPU fallback reason.",
       "id": "acceleration_assessment",
       "path": "scratch/exp481_acceleration_assessment_antigravity.json",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_acceleration_antigravity.py"
       ]
