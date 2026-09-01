@@ -46,10 +46,13 @@ def _backend_antigravity() -> dict[str, object]:
         "selected_backend": "numpy_reference",
         "fallback_reason": "numba_exact_frozen_stage_not_benchmarked",
         "candidate_index_parity": True,
+        "statistics_parity": True,
         "decision_parity": True,
+        "numerical_agreement": True,
         "finite_outputs": True,
         "exact_frozen_stage_benchmarked": False,
         "numba_cold_jit_verified": False,
+        "numba_speed_gate_pass": False,
     }
 
 
@@ -95,7 +98,9 @@ def test_manifest_keeps_runtime_outside_result_antigravity() -> None:
     assert manifest["result_sha256"] == sha256(result_bytes).hexdigest()
     assert manifest["elapsed_seconds"] == 1.0
     validate_run_manifest_antigravity(
-        manifest, expected_result_sha256=sha256(result_bytes).hexdigest()
+        manifest,
+        expected_result_sha256=sha256(result_bytes).hexdigest(),
+        expected_backend_assessment=_backend_antigravity(),
     )
 
 
@@ -112,6 +117,54 @@ def test_manifest_rejects_result_hash_drift_antigravity() -> None:
 
     with pytest.raises(RuntimeError, match="result SHA"):
         validate_run_manifest_antigravity(manifest, expected_result_sha256="0" * 64)
+
+
+def test_numba_selection_requires_every_gate_antigravity() -> None:
+    import pytest
+
+    invalid = {**_backend_antigravity(), "selected_backend": "numba_cpu"}
+    with pytest.raises(RuntimeError, match="every required gate"):
+        build_run_manifest_antigravity(
+            result_bytes=b"{}\n",
+            backend_assessment=invalid,
+            started_at_utc="2026-09-01T00:00:00+00:00",
+            completed_at_utc="2026-09-01T00:00:01+00:00",
+            elapsed_seconds=1.0,
+        )
+
+
+def test_manifest_backend_must_match_current_assessment_antigravity() -> None:
+    import pytest
+
+    current = _backend_antigravity()
+    manifest = build_run_manifest_antigravity(
+        result_bytes=b"{}\n",
+        backend_assessment=current,
+        started_at_utc="2026-09-01T00:00:00+00:00",
+        completed_at_utc="2026-09-01T00:00:01+00:00",
+        elapsed_seconds=1.0,
+    )
+    changed = {**current, "fallback_reason": "different"}
+    with pytest.raises(RuntimeError, match="not current"):
+        validate_run_manifest_antigravity(
+            manifest,
+            expected_result_sha256=manifest["result_sha256"],
+            expected_backend_assessment=changed,
+        )
+
+
+def test_unsupported_mlx_backend_is_rejected_antigravity() -> None:
+    import pytest
+
+    invalid = {**_backend_antigravity(), "selected_backend": "numba_plus_mlx"}
+    with pytest.raises(RuntimeError, match="selection is invalid"):
+        build_run_manifest_antigravity(
+            result_bytes=b"{}\n",
+            backend_assessment=invalid,
+            started_at_utc="2026-09-01T00:00:00+00:00",
+            completed_at_utc="2026-09-01T00:00:01+00:00",
+            elapsed_seconds=1.0,
+        )
 
 
 def test_dashboard_checks_task5_not_task6_after_smoke_antigravity() -> None:

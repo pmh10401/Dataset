@@ -44,6 +44,16 @@ _BACKEND_KEYS_ANTIGRAVITY = (
     "exact_frozen_stage_benchmarked",
     "numba_cold_jit_verified",
 )
+_NUMBA_GATE_KEYS_ANTIGRAVITY = (
+    "candidate_index_parity",
+    "statistics_parity",
+    "decision_parity",
+    "numerical_agreement",
+    "finite_outputs",
+    "exact_frozen_stage_benchmarked",
+    "numba_cold_jit_verified",
+    "numba_speed_gate_pass",
+)
 
 
 def json_bytes_antigravity(payload: object) -> bytes:
@@ -85,13 +95,7 @@ def _load_backend_assessment_antigravity(
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     if type(payload) is not dict:
         raise RuntimeError("backend assessment must be a JSON object")
-    missing = [key for key in _BACKEND_KEYS_ANTIGRAVITY if key not in payload]
-    if missing:
-        raise RuntimeError("backend assessment fields missing: " + ", ".join(missing))
-    if payload["selected_backend"] not in {"numpy_reference", "numba_cpu", "numba_plus_mlx"}:
-        raise RuntimeError("backend assessment selection is invalid")
-    if type(payload["fallback_reason"]) is not str or not payload["fallback_reason"]:
-        raise RuntimeError("backend assessment fallback reason is missing")
+    _validate_backend_payload_antigravity(payload)
     return payload
 
 
@@ -154,6 +158,21 @@ def _validate_evaluation_antigravity(evaluation: object) -> None:
     }
     if any(leakage.get(key) != value for key, value in expected.items()):
         raise RuntimeError("evaluation leakage boundary failed")
+
+
+def _validate_official_result_antigravity(result: Mapping[str, object]) -> None:
+    if (result.get("dataset_count"), result.get("family_count")) != (
+        EXPECTED_DATASETS_ANTIGRAVITY,
+        EXPECTED_FAMILIES_ANTIGRAVITY,
+    ):
+        raise RuntimeError("official evaluation population changed")
+    evaluation = result.get("evaluation")
+    _validate_evaluation_antigravity(evaluation)
+    assert isinstance(evaluation, Mapping)
+    if len(evaluation.get("decisions", ())) != EXPECTED_DATASETS_ANTIGRAVITY:
+        raise RuntimeError("official decision count changed")
+    if len(evaluation.get("inner_gates_by_outer_family", {})) != EXPECTED_FAMILIES_ANTIGRAVITY:
+        raise RuntimeError("official inner family count changed")
 
 
 def _result_antigravity(
@@ -233,16 +252,24 @@ def build_run_manifest_antigravity(
         "completed_at_utc": completed_at_utc,
         "elapsed_seconds": float(elapsed_seconds),
         "result_sha256": sha256(result_bytes).hexdigest(),
+        "backend_assessment_sha256": sha256(
+            json_bytes_antigravity(dict(backend_assessment))
+        ).hexdigest(),
         "backend_assessment": dict(backend_assessment),
     }
     validate_run_manifest_antigravity(
-        manifest, expected_result_sha256=manifest["result_sha256"]
+        manifest,
+        expected_result_sha256=manifest["result_sha256"],
+        expected_backend_assessment=backend_assessment,
     )
     return manifest
 
 
 def validate_run_manifest_antigravity(
-    manifest: object, *, expected_result_sha256: str
+    manifest: object,
+    *,
+    expected_result_sha256: str,
+    expected_backend_assessment: Mapping[str, object] | None = None,
 ) -> None:
     if type(manifest) is not dict or set(manifest) != {
         "schema",
@@ -250,6 +277,7 @@ def validate_run_manifest_antigravity(
         "completed_at_utc",
         "elapsed_seconds",
         "result_sha256",
+        "backend_assessment_sha256",
         "backend_assessment",
     }:
         raise RuntimeError("manifest fields are incomplete")
@@ -272,9 +300,34 @@ def validate_run_manifest_antigravity(
     if manifest["result_sha256"] != expected_result_sha256:
         raise RuntimeError("manifest result SHA does not match")
     assessment = manifest["backend_assessment"]
-    if not isinstance(assessment, Mapping):
+    if type(assessment) is not dict:
         raise RuntimeError("manifest backend assessment is invalid")
-    _backend_result_antigravity(assessment)
+    assessment_digest = sha256(json_bytes_antigravity(assessment)).hexdigest()
+    if manifest["backend_assessment_sha256"] != assessment_digest:
+        raise RuntimeError("manifest backend assessment SHA does not match")
+    _validate_backend_payload_antigravity(assessment)
+    if expected_backend_assessment is not None and assessment != dict(expected_backend_assessment):
+        raise RuntimeError("manifest backend assessment is not current")
+
+
+def _validate_backend_payload_antigravity(payload: dict[str, object]) -> None:
+    missing = [
+        key
+        for key in (*_BACKEND_KEYS_ANTIGRAVITY, *_NUMBA_GATE_KEYS_ANTIGRAVITY)
+        if key not in payload
+    ]
+    if missing:
+        raise RuntimeError("backend assessment fields missing: " + ", ".join(missing))
+    if payload["selected_backend"] not in {"numpy_reference", "numba_cpu"}:
+        raise RuntimeError("backend assessment selection is invalid")
+    if type(payload["fallback_reason"]) is not str or not payload["fallback_reason"]:
+        raise RuntimeError("backend assessment fallback reason is missing")
+    if any(type(payload[key]) is not bool for key in _NUMBA_GATE_KEYS_ANTIGRAVITY):
+        raise RuntimeError("backend assessment gate flags must be boolean")
+    if payload["selected_backend"] == "numba_cpu" and not all(
+        payload[key] for key in _NUMBA_GATE_KEYS_ANTIGRAVITY
+    ):
+        raise RuntimeError("Numba selected without every required gate")
 
 
 def render_dashboard_antigravity(result: Mapping[str, object]) -> str:
@@ -323,12 +376,7 @@ def run_official_antigravity() -> dict[str, object]:
     result = build_official_result_antigravity(
         _evaluate_antigravity(rows, assessment), backend_assessment=assessment
     )
-    if (result["dataset_count"], result["family_count"]) != (
-        EXPECTED_DATASETS_ANTIGRAVITY,
-        EXPECTED_FAMILIES_ANTIGRAVITY,
-    ):
-        raise RuntimeError("official evaluation population changed")
-    _validate_evaluation_antigravity(result["evaluation"])
+    _validate_official_result_antigravity(result)
     result_bytes = json_bytes_antigravity(result)
     completed_at = datetime.now(timezone.utc)
     manifest = build_run_manifest_antigravity(
@@ -352,13 +400,16 @@ def verify_official_antigravity() -> dict[str, object]:
     recomputed = build_official_result_antigravity(
         _evaluate_antigravity(rows, assessment), backend_assessment=assessment
     )
+    _validate_official_result_antigravity(recomputed)
     expected = json_bytes_antigravity(recomputed)
     stored = OFFICIAL_RESULT_PATH_ANTIGRAVITY.read_bytes()
     if stored != expected:
         raise RuntimeError("official result bytes do not match recomputation")
     manifest = json.loads(RUN_MANIFEST_PATH_ANTIGRAVITY.read_text(encoding="utf-8"))
     validate_run_manifest_antigravity(
-        manifest, expected_result_sha256=sha256(stored).hexdigest()
+        manifest,
+        expected_result_sha256=sha256(stored).hexdigest(),
+        expected_backend_assessment=assessment,
     )
     verified = dict(recomputed)
     verified["state"] = "official_verified"

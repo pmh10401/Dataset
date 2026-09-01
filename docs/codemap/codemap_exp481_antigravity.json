@@ -176,8 +176,8 @@
     },
     {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/run_antigravity.py",
-      "sha256": "3b7016eef53ee1001a810202210f0d6ca3fb1871b19873fccb74c1842475608f",
-      "size": 16973
+      "sha256": "4a442dfb1f424ee45fe8e6695c5815493672317fc58e33f19aa26214b7b9f06d",
+      "size": 19112
     },
     {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/smoke_results_antigravity.json",

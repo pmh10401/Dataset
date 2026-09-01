@@ -1,6 +1,6 @@
 {
   "map_html_sha256": "bfb9cb90a70ace186869272fb1fff5ac3ea407a853afb9a6d451f8e0ca3a086f",
-  "map_json_sha256": "30a49505f84f72d1ca8d55db44482f447faf164e84d3caecf32cb17507b51aa2",
+  "map_json_sha256": "d21b2c0e487d687649cf2089b2fe5b7c2f5a9c2e76d8f51a2719c7a52a2ad7b8",
   "schema": "exp481_strict_evidence_residual_correction_codemap_lock_v1",
   "status": "task_1_boundaries_mapped"
 }
