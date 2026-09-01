@@ -73,6 +73,52 @@ def test_numba_selected_only_when_all_gates_pass_antigravity(monkeypatch) -> Non
     )
     result = acceleration_antigravity.assess_acceleration_antigravity()
     assert result["selected_backend"] == "numba_cpu"
-    assert result["fallback_reason"] == "mlx_not_exact_for_sequential_family_selection"
+    assert result["fallback_reason"] in (
+        "mlx_unavailable_in_frozen_runtime",
+        "mlx_exact_stage_not_implemented",
+    )
     assert result["mlx_eligible"] is False
-    assert result["mlx_fallback_reason"] == "sequential_stable_family_dedup_not_exactly_expressible"
+    assert result["mlx_candidate_index_parity"] is None
+    assert "mlx" in result["mlx_fallback_reason"]
+    assert "mlx_metal_version" in result
+    assert result["mlx_device"]
+
+
+def test_complete_stage_benchmark_uses_nested_evaluator_antigravity(monkeypatch) -> None:
+    calls: list[str] = []
+    monkeypatch.setattr(
+        acceleration_antigravity,
+        "_nested_stage_antigravity",
+        lambda backend: calls.append(backend) or {},
+    )
+    result = acceleration_antigravity._benchmark_complete_stage_antigravity(repeats=2)
+    assert calls == [
+        "numpy_reference",
+        "numpy_reference",
+        "numba_cpu",
+        "numba_cpu",
+        "numba_cpu",
+    ]
+    assert result["numba_total_seconds"] == result["numba_warmup_seconds"]
+
+
+def test_assessment_benchmarks_before_parity_antigravity(monkeypatch) -> None:
+    order: list[str] = []
+    monkeypatch.setattr(
+        acceleration_antigravity,
+        "_benchmark_complete_stage_antigravity",
+        lambda repeats=1: order.append("benchmark") or {
+            "numpy_seconds": 1.0,
+            "numba_warmup_seconds": 2.0,
+            "numba_execution_seconds": 1.0,
+            "numba_total_seconds": 2.0,
+            "numba_speedup_including_warmup": 0.5,
+        },
+    )
+    monkeypatch.setattr(
+        acceleration_antigravity,
+        "_assess_parity_antigravity",
+        lambda: order.append("parity") or _parity_antigravity(),
+    )
+    acceleration_antigravity.assess_acceleration_antigravity()
+    assert order == ["benchmark", "parity"]
