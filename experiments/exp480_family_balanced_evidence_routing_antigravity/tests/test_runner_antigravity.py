@@ -80,6 +80,58 @@ def _qualification_result_antigravity(*, passed: bool = True) -> dict[str, objec
     }
 
 
+def _verified_dashboard_result_antigravity() -> dict[str, object]:
+    result = _qualification_result_antigravity(passed=False)
+    result["state"] = "official_verified"
+    evaluation = result["evaluation"]
+    assert isinstance(evaluation, dict)
+    evaluation["gates"] = {
+        "zf_total": {"actual": 99, "required": "> 101", "pass": False},
+        "family_mean_zf": {
+            "actual": 0.9,
+            "required": "> 1.1",
+            "pass": False,
+        },
+        "dataset_mean_auc": {
+            "actual": 0.78,
+            "required": ">= 0.81",
+            "pass": False,
+        },
+        "family_mean_auc": {
+            "actual": 0.77,
+            "required": ">= 0.80",
+            "pass": False,
+        },
+        "loss_over_0_05": {"actual": 4, "required": "<= 1", "pass": False},
+        "loss_over_0_10": {"actual": 2, "required": "<= 1", "pass": False},
+        "accepted_non_baseline": {
+            "actual": 2,
+            "required": ">= 1",
+            "pass": True,
+        },
+        "overall_pass": False,
+    }
+    evaluation["decisions"] = [
+        {
+            "exp480_accepted": True,
+            "exp480_reason": "family_evidence_accept",
+        },
+        {
+            "exp480_accepted": True,
+            "exp480_reason": "family_evidence_accept",
+        },
+        {
+            "exp480_accepted": False,
+            "exp480_reason": "candidate_gates_failed",
+        },
+        {
+            "exp480_accepted": False,
+            "exp480_reason": "insufficient_family_support",
+        },
+    ]
+    return result
+
+
 def _mlx_recommendation_antigravity() -> dict[str, object]:
     return {
         "schema": "exp480_mlx_assessment_v1",
@@ -152,6 +204,47 @@ def test_dashboard_checks_task5_but_not_task6_after_smoke_antigravity() -> None:
     assert '<input type="checkbox" disabled> Task 6 — 공식 1,117개 실행 승인' in html
     assert "공식 성능 결과가 아닙니다" in html
     assert "MLX 정확 연산 불가" in html
+
+
+def test_verified_dashboard_compares_all_controls_and_qualification_gates_antigravity() -> None:
+    """Dropping a control row or gate verdict must fail the verified dashboard."""
+    html = render_dashboard_antigravity(_verified_dashboard_result_antigravity())
+
+    for control in ("MiniRocket", "row-KNN", "Exp480"):
+        assert f"<td>{control}</td>" in html
+    for comparison_row in (
+        "<tr><td>MiniRocket</td><td>100</td><td>1</td><td>0.8</td><td>0.79</td></tr>",
+        "<tr><td>row-KNN</td><td>101</td><td>1.1</td><td>0.81</td><td>0.8</td></tr>",
+        "<tr><td>Exp480</td><td>99</td><td>0.9</td><td>0.78</td><td>0.77</td></tr>",
+    ):
+        assert comparison_row in html
+    assert "ZF 합계" in html
+    assert "family 평균 ZF" in html
+    assert "전체 평균 AUC" in html
+    assert "family 평균 AUC" in html
+    for gate_label in (
+        "ZF 합계",
+        "family 평균 ZF",
+        "전체 평균 AUC",
+        "family 평균 AUC",
+        "AUC 0.05 초과 손실",
+        "AUC 0.10 초과 손실",
+        "비기준 방법 선택",
+    ):
+        assert f"<td>{gate_label}</td>" in html
+    assert html.count('<td class="fail">실패</td>') == 6
+    assert html.count('<td class="pass">통과</td>') == 1
+
+
+def test_verified_dashboard_derives_selection_and_fallback_reasons_antigravity() -> None:
+    """Hard-coded audit counts must fail when the supplied decisions differ."""
+    html = render_dashboard_antigravity(_verified_dashboard_result_antigravity())
+
+    assert "비기준 선택</div><div class=\"big\">2</div>" in html
+    assert "MiniRocket fallback</div><div class=\"big\">2</div>" in html
+    assert "다른 family 근거 통과: 2" in html
+    assert "후보 기준 실패: 1" in html
+    assert "다른 family 근거 부족: 1" in html
 
 
 def test_validate_reports_the_exact_derived_population_antigravity() -> None:

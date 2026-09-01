@@ -115,16 +115,83 @@ def render_dashboard_antigravity(result: Mapping[str, object]) -> str:
     family_mean_zf = float(exp480.get("family_mean_zf", 0.0))
     dataset_mean_auc = float(exp480.get("dataset_mean_auc", 0.0))
     family_mean_auc = float(exp480.get("family_mean_auc", 0.0))
+    comparison_rows = "".join(
+        "<tr>"
+        f"<td>{label}</td>"
+        f"<td>{int(summary.get('zf_total', 0))}</td>"
+        f"<td>{float(summary.get('family_mean_zf', 0.0)):.6g}</td>"
+        f"<td>{float(summary.get('dataset_mean_auc', 0.0)):.6g}</td>"
+        f"<td>{float(summary.get('family_mean_auc', 0.0)):.6g}</td>"
+        "</tr>"
+        for key, label in (
+            ("mini", "MiniRocket"),
+            ("row_knn", "row-KNN"),
+            ("exp480", "Exp480"),
+        )
+        for summary in (
+            summaries.get(key, {})
+            if isinstance(summaries.get(key, {}), Mapping)
+            else {},
+        )
+    )
+    gate_labels = {
+        "zf_total": "ZF 합계",
+        "family_mean_zf": "family 평균 ZF",
+        "dataset_mean_auc": "전체 평균 AUC",
+        "family_mean_auc": "family 평균 AUC",
+        "loss_over_0_05": "AUC 0.05 초과 손실",
+        "loss_over_0_10": "AUC 0.10 초과 손실",
+        "accepted_non_baseline": "비기준 방법 선택",
+    }
+    gate_rows = ""
+    for key, label in gate_labels.items():
+        gate = gates.get(key, {})
+        if not isinstance(gate, Mapping):
+            gate = {}
+        gate_passed = bool(gate.get("pass", False))
+        gate_rows += (
+            "<tr>"
+            f"<td>{label}</td>"
+            f"<td>{escape(str(gate.get('actual', '—')))}</td>"
+            f"<td>{escape(str(gate.get('required', '—')))}</td>"
+            f'<td class="{"pass" if gate_passed else "fail"}">'
+            f"{'통과' if gate_passed else '실패'}</td>"
+            "</tr>"
+        )
+    decisions = evaluation.get("decisions", ())
+    if not isinstance(decisions, (list, tuple)):
+        decisions = ()
+    decision_rows = tuple(row for row in decisions if isinstance(row, Mapping))
+    accepted_count = sum(bool(row.get("exp480_accepted", False)) for row in decision_rows)
+    fallback_count = len(decision_rows) - accepted_count
+    reason_counts: dict[str, int] = {}
+    for row in decision_rows:
+        reason = str(row.get("exp480_reason", "이유 미기록"))
+        reason_counts[reason] = reason_counts.get(reason, 0) + 1
+    reason_labels = {
+        "family_evidence_accept": "다른 family 근거 통과",
+        "candidate_gates_failed": "후보 기준 실패",
+        "insufficient_family_support": "다른 family 근거 부족",
+    }
+    reason_items = "".join(
+        f"<li>{escape(reason_labels.get(reason, reason))}: {count}</li>"
+        for reason, count in sorted(reason_counts.items())
+    ) or "<li>결정 근거 없음</li>"
+    overall_label = "통과" if qualified else "실패"
+    overall_class = "pass" if qualified else "fail"
     return f"""<!doctype html>
 <html lang=\"ko\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">
 <title>Exp480 family 균형 라우팅 대시보드</title><style>
 body{{font-family:system-ui,-apple-system,sans-serif;max-width:1050px;margin:30px auto;padding:0 20px 60px;line-height:1.62;color:#182230}}
-.status{{border-left:5px solid #175cd3;background:#eff8ff;padding:12px 16px}}.cards{{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}}.card{{border:1px solid #d8dee8;border-radius:9px;padding:14px}}.big{{font-size:1.7rem;font-weight:750}}label{{display:block;margin:8px 0}}input{{margin-right:8px}}
+.status{{border-left:5px solid #175cd3;background:#eff8ff;padding:12px 16px}}.cards{{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}}.card{{border:1px solid #d8dee8;border-radius:9px;padding:14px}}.big{{font-size:1.7rem;font-weight:750}}table{{border-collapse:collapse;width:100%;margin:12px 0}}th,td{{border:1px solid #d8dee8;padding:8px;text-align:left}}th{{background:#eef2f7}}.pass{{color:#067647;font-weight:700}}.fail{{color:#b42318;font-weight:700}}label{{display:block;margin:8px 0}}input{{margin-right:8px}}
 </style></head><body><h1>Exp480 family 균형 경험 라우팅</h1>
 <p class=\"status\"><strong>{escape(status)}</strong></p>
 <div class=\"cards\"><div class=\"card\"><div>평가 family</div><div class=\"big\">{int(result.get('family_count', 0))}</div></div><div class=\"card\"><div>평가 데이터셋</div><div class=\"big\">{int(result.get('dataset_count', 0))}</div></div><div class=\"card\"><div>backend</div><div class=\"big\">{escape(str(result.get('selected_backend', '미판정')))}</div></div></div>
 <p><strong>가속 판정:</strong> {escape(backend_note)}</p>
 <h2>핵심 결과</h2><div class=\"cards\"><div class=\"card\"><div>ZF 합계</div><div class=\"big\">{zf_total}</div></div><div class=\"card\"><div>family 평균 ZF</div><div class=\"big\">{family_mean_zf:.6g}</div></div><div class=\"card\"><div>평균 AUC</div><div class=\"big\">{dataset_mean_auc:.6g}</div></div><div class=\"card\"><div>family 평균 AUC</div><div class=\"big\">{family_mean_auc:.6g}</div></div></div>
+<h2>세 방법 비교</h2><table><thead><tr><th>방법</th><th>ZF 합계</th><th>family 평균 ZF</th><th>전체 평균 AUC</th><th>family 평균 AUC</th></tr></thead><tbody>{comparison_rows}</tbody></table>
+<h2>자격 기준</h2><p>전체 자격 판정: <span class=\"{overall_class}\">{overall_label}</span></p><table><thead><tr><th>기준</th><th>실제 값</th><th>필요 조건</th><th>판정</th></tr></thead><tbody>{gate_rows}</tbody></table>
+<h2>선택과 fallback</h2><div class=\"cards\"><div class=\"card\"><div>비기준 선택</div><div class=\"big\">{accepted_count}</div></div><div class=\"card\"><div>MiniRocket fallback</div><div class=\"big\">{fallback_count}</div></div></div><ul>{reason_items}</ul>
 <h2>이름 사용 경계</h2><p>과거 family ID는 중복 투표 제거와 검증 분리에만 씁니다. 새 대상의 이름이나 family는 라우팅 입력이 아니며 TRAIN 데이터의 7개 숫자 특징만 사용합니다.</p>
 <h2>진행 체크</h2>
 <label><input type=\"checkbox\" checked disabled> 설계 및 구현 계획 승인</label>

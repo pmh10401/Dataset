@@ -50,4 +50,3 @@ def test_mlx_is_selected_only_when_every_gate_passes_antigravity() -> None:
         "fallback_reason": None,
         "speedup": 2.0,
     }
-

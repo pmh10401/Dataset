@@ -141,8 +141,8 @@
     },
     {
       "path": "docs/superpowers/specs/2026-08-31-exp480-family-balanced-evidence-routing-antigravity-design.html",
-      "sha256": "86e78250627a705e6223a83dcc73a02fb5d160de31fe71bd63506348a3d50a26",
-      "size": 10964
+      "sha256": "39b8a93422f93695df079f5129aa90ccbe7400dffeaba471880098805a1d7ec2",
+      "size": 11662
     },
     {
       "path": "experiments/exp478_full_1117_official_routing_antigravity/results_antigravity.json",
@@ -196,8 +196,8 @@
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_antigravity.py",
-      "sha256": "86e5c4e77b7f43eab9a7727a370d5cb9a28aeca4045de6d620c3e710c1aa2123",
-      "size": 26191
+      "sha256": "edf5fb388a6df02e869b31d7388f77531763700aaaf4ad95a8380de9ccef0e64",
+      "size": 29797
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_manifest_antigravity.json",
@@ -331,8 +331,8 @@
     },
     {
       "path": "scratch/build_codemap_exp480_antigravity.py",
-      "sha256": "5400df57fd8e183b9c5f45b0e9d7a028b41c7819375d86de8bb7446cc8580bd1",
-      "size": 16143
+      "sha256": "4a474b78477c09c55baec80c88801c37dc4f7cf114aaf6d2bec6720361874baf",
+      "size": 16271
     },
     {
       "path": "scratch/exp480_mlx_assessment_antigravity.json",
@@ -346,8 +346,8 @@
     },
     {
       "path": "scratch/test_build_codemap_exp480_antigravity.py",
-      "sha256": "eb43c9f0466589c2bf5a5b00b3d1fa37a89568cace0f630c354016c01f7cc31a",
-      "size": 4731
+      "sha256": "7016ecd8a582a7fc8e497b6ed4180b2010001ffc1af1cf9f4bbd681db7316c3f",
+      "size": 6166
     }
   ],
   "nodes": [
@@ -463,7 +463,7 @@
     },
     {
       "caller": "scratch/run_exp480_family_balanced_evidence_routing_antigravity.py",
-      "effect": "Writes only Exp480 evidence, deterministic results and HTML outputs.",
+      "effect": "Writes deterministic Exp480 results, execution metadata and atomic HTML outputs without changing frozen inputs.",
       "id": "runner",
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_antigravity.py",
       "planned": false,
@@ -483,7 +483,7 @@
     },
     {
       "caller": "run_antigravity.py and the user",
-      "effect": "Shows only measured state and checks completed tasks immediately.",
+      "effect": "Shows the verified failed qualification, all gates, comparisons and fallback reasons.",
       "id": "dashboard",
       "path": "docs/EXP480_DASHBOARD_antigravity.html",
       "planned": false,
@@ -514,7 +514,7 @@
     },
     {
       "caller": "run_antigravity.py and independent verification",
-      "effect": "Preserves deterministic 1117-row qualification evidence without changing the official router.",
+      "effect": "Preserves the verified 1117-row failed qualification without changing the official router.",
       "id": "official_results",
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/results_antigravity.json",
       "planned": false,
@@ -524,7 +524,7 @@
     },
     {
       "caller": "run_official_antigravity() and verify_official_antigravity()",
-      "effect": "Keeps time, device, CPU/MLX parity and speed evidence, and the deterministic result SHA outside the result bytes.",
+      "effect": "Records execution timing, device, CPU/MLX parity and speed evidence, and the deterministic result SHA outside the result bytes.",
       "id": "run_manifest",
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_manifest_antigravity.json",
       "planned": false,
@@ -534,7 +534,7 @@
     },
     {
       "caller": "CLI --verify-only",
-      "effect": "Recomputes with NumPy CPU, requires exact result bytes, exact manifest schema and SHA, then atomically publishes final HTML.",
+      "effect": "Independently recomputed NumPy CPU result bytes and required exact result bytes plus the exact manifest schema and SHA before publishing the final HTML.",
       "id": "official_verification",
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/run_antigravity.py",
       "planned": false,
@@ -544,7 +544,7 @@
     },
     {
       "caller": "verify_official_antigravity() after result bytes and manifest SHA match",
-      "effect": "Explains the preserved qualification result in easy Korean.",
+      "effect": "Explains the verified failed qualification and unchanged router in easy Korean.",
       "id": "implementation_report",
       "path": "docs/EXP480_IMPLEMENTATION_REPORT_antigravity.html",
       "planned": false,
@@ -555,5 +555,5 @@
     }
   ],
   "schema": "exp480_family_balanced_routing_codemap_v1",
-  "status": "task_6_preflight_hardened"
+  "status": "task_6_verified_failure_preserved"
 }

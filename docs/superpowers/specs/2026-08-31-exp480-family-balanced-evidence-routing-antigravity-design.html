@@ -43,15 +43,15 @@
   </ul>
 
   <h2>3. 파생 경험 데이터베이스</h2>
-  <p>원본 DB를 수정하지 않고 <code>experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.sqlite3</code>를 새로 만듭니다. 이 파일은 언제든 원본과 고정 결과에서 다시 만들 수 있는 파생 산출물입니다.</p>
+  <p>원본 DB를 수정하지 않고 <code>experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.sqlite3</code>를 새로 만듭니다. 이 문서의 초기 표보다 나중에 승인된 구현 계획의 <strong>Task 2 고정 schema가 구현 계약</strong>입니다. DB를 만든 뒤 canonical SHA256을 고정하며, 공식 평가가 끝난 뒤에는 이 입력 DB를 수정하거나 다시 만들지 않습니다.</p>
   <table>
     <tr><th>테이블</th><th>저장 내용</th><th>사용 목적</th></tr>
-    <tr><td><code>dataset_evidence</code></td><td>데이터셋 키, 원본 family, 출처 해시</td><td>중복 제거와 family 단위 검증에만 사용</td></tr>
+    <tr><td><code>dataset_evidence</code></td><td>데이터셋 키, 원본 family, proposal</td><td>입력 행과 family 단위 검증</td></tr>
     <tr><td><code>train_features</code></td><td>width, n_train, spectral entropy, skewness, kurtosis, diff ratio, zero crossing rate</td><td>배포 시에도 계산 가능한 TRAIN-only 입력</td></tr>
-    <tr><td><code>candidate_metrics</code></td><td>네 후보의 AUC, ZF-TP, 상태와 coverage</td><td>과거 데이터셋에서 후보별 이득 학습</td></tr>
-    <tr><td><code>oof_decisions</code></td><td>제외한 family, 선택 방법, 근거 family 수, 신뢰도, fallback 이유</td><td>누수 없는 재현과 대시보드</td></tr>
-    <tr><td><code>provenance</code></td><td>소스 파일·DB·코드 SHA256과 schema 버전</td><td>결과에 영향을 주는 입력 변경 감지</td></tr>
+    <tr><td><code>candidate_metrics</code></td><td>데이터셋·방법별 AUC와 ZF-TP</td><td>과거 데이터셋에서 후보별 이득 계산</td></tr>
+    <tr><td><code>provenance</code></td><td>Task 2에서 고정한 입력 출처 값과 schema 버전</td><td>결과에 영향을 주는 입력 변경 감지</td></tr>
   </table>
+  <p>이 SQLite는 공식 평가의 <strong>불변 입력 전용</strong>입니다. 1,117개별 선택, 후보 평가값, fallback 이유 같은 출력 감사 근거는 결정론적 <code>results_antigravity.json</code>에 둡니다. 실행 시간, 가속 근거, fallback 상세와 결과 SHA는 별도 <code>run_manifest_antigravity.json</code>에 두고, 구현 파일과 코드 해시는 scoped 코드맵 HTML/JSON/lock에 둡니다. 공식 결과 뒤 입력 DB에 출력 행을 추가하면 canonical SHA가 달라져 이미 검증한 결과의 입력 계약을 깨므로 허용하지 않습니다. 이 정리는 저장 위치 설명만 바로잡으며 측정 규칙, 기준값과 결과는 바꾸지 않습니다.</p>
   <p>원본 family는 데이터셋 키에서 첫 번째 <code>_normal_</code> 앞부분으로만 정합니다. 예를 들어 <code>ShapesAll_normal_1</code>과 <code>ShapesAll_normal_60</code>은 모두 <code>ShapesAll</code>입니다. 이름이 비슷한 다른 데이터셋을 사람이 추가로 묶는 alias 규칙은 Exp480에 넣지 않습니다. 따라서 확인된 family 수 120개와 전체 합집합 128개가 실행 중에도 바뀌지 않습니다. family 값은 검증 분리와 한 family 한 표 계산에만 쓰며 런타임 특징에는 포함하지 않습니다.</p>
 
   <h2>4. family 균형 라우팅</h2>

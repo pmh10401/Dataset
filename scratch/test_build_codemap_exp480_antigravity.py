@@ -94,8 +94,8 @@ def test_exp480_map_tracks_manifest_and_fail_closed_verification_flow_antigravit
         ),
         "caller": "run_official_antigravity() and verify_official_antigravity()",
         "effect": (
-            "Keeps time, device, CPU/MLX parity and speed evidence, and the "
-            "deterministic result SHA outside the result bytes."
+            "Records execution timing, device, CPU/MLX parity and speed evidence, "
+            "and the deterministic result SHA outside the result bytes."
         ),
         "tests": [
             "experiments/exp480_family_balanced_evidence_routing_antigravity/"
@@ -120,3 +120,36 @@ def test_exp480_map_tracks_manifest_and_fail_closed_verification_flow_antigravit
         "to": "implementation_report",
         "type": "verified_easy_korean_report",
     } in graph["edges"]
+
+
+def test_exp480_map_closes_the_verified_failed_result_in_present_tense_antigravity() -> None:
+    """A preflight or future-artifact map must fail after verified qualification."""
+    graph = _builder_antigravity().build_graph_antigravity()
+    by_id = {node["id"]: node for node in graph["nodes"]}
+
+    assert graph["status"] == "task_6_verified_failure_preserved"
+    assert by_id["official_results"]["effect"] == (
+        "Preserves the verified 1117-row failed qualification without changing "
+        "the official router."
+    )
+    assert by_id["dashboard"]["effect"] == (
+        "Shows the verified failed qualification, all gates, comparisons and "
+        "fallback reasons."
+    )
+    assert by_id["run_manifest"]["effect"].startswith("Records execution timing")
+    assert by_id["official_verification"]["effect"].startswith(
+        "Independently recomputed NumPy CPU result bytes"
+    )
+    assert by_id["implementation_report"]["effect"].startswith(
+        "Explains the verified failed qualification"
+    )
+    for artifact in (
+        "dashboard",
+        "official_results",
+        "run_manifest",
+        "implementation_report",
+    ):
+        assert by_id[artifact]["planned"] is False
+    rendered = _builder_antigravity()._render_html_antigravity(graph)
+    assert "자격 실패를 확인해 기존 라우터를 보존했습니다" in rendered
+    assert "예정 파일은" not in rendered
