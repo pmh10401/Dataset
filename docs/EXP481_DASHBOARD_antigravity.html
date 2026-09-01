@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp481 엄격 근거 잔여 보정 대시보드</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;max-width:1050px;margin:30px auto;padding:0 20px 60px;line-height:1.62;color:#182230}
+    .status{border-left:5px solid #175cd3;background:#eff8ff;padding:12px 16px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.card{border:1px solid #d8dee8;border-radius:9px;padding:14px}.big{font-size:1.55rem;font-weight:750}table{border-collapse:collapse;width:100%;margin:12px 0}th,td{border:1px solid #d8dee8;padding:8px;text-align:left;vertical-align:top}th{background:#eef2f7}.done{color:#067647;font-weight:700}.wait{color:#b54708;font-weight:700}label{display:block;margin:8px 0}input{margin-right:8px}a{color:#175cd3}
+  </style>
+</head>
+<body>
+  <h1>Exp481 엄격 근거 잔여 보정</h1>
+  <p class="status"><strong>현재 상태:</strong> 설계서 검토 대기. 구현 및 공식 실행은 시작하지 않았습니다.</p>
+  <div class="cards">
+    <div class="card"><div>기본 정책</div><div class="big">row-KNN</div></div>
+    <div class="card"><div>평가 데이터셋</div><div class="big">1,117</div></div>
+    <div class="card"><div>평가 family</div><div class="big">128</div></div>
+    <div class="card"><div>현재 기준 ZF</div><div class="big">2,111</div></div>
+  </div>
+  <h2>실험 질문</h2>
+  <p>동률을 성공에서 제외하고 안쪽 family 검증으로 AUC 위험을 막으면, row-KNN의 잔여 fallback 중 일부를 안전하게 교체해 ZF를 늘릴 수 있는가?</p>
+  <h2>바뀌는 규칙</h2>
+  <table>
+    <thead><tr><th>Exp480</th><th>Exp481</th></tr></thead>
+    <tbody>
+      <tr><td><code>gain &gt;= 0</code>을 성공으로 계산</td><td><code>gain &gt; 0</code>만 개선으로 계산</td></tr>
+      <tr><td>MiniRocket을 기본값으로 사용</td><td>현재 최선인 row-KNN 결정을 기본값으로 보존</td></tr>
+      <tr><td>local 이웃 통계만 사용</td><td>local gate와 안쪽 leave-family-out gate를 모두 사용</td></tr>
+      <tr><td>AUC 하위값 0도 통과</td><td>AUC 하위값은 0보다 커야 하며 최악값도 0 이상</td></tr>
+    </tbody>
+  </table>
+  <h2>공식 통과선</h2>
+  <ul>
+    <li>ZF 합계 &gt; 2,111</li>
+    <li>family 평균 ZF &gt; 2.9440228392325434</li>
+    <li>평균 AUC &gt;= 0.9832866538430738</li>
+    <li>family 평균 AUC &gt;= 0.9718432393318419</li>
+    <li>row-KNN 대비 AUC 0.05 이상 추가 손실 0건</li>
+    <li>실제 결정 변경 1건 이상, 변경군 ZF 개선 수 &gt; 악화 수</li>
+  </ul>
+  <h2>문서</h2>
+  <p><a href="superpowers/specs/2026-09-01-exp481-strict-evidence-residual-correction-antigravity-design.html"><strong>Exp481 상세 설계서 열기</strong></a></p>
+  <p><a href="EXP480_ROOT_CAUSE_RESEARCH_antigravity.html">Exp480 실패 원인 보고서</a></p>
+  <h2>진행 체크</h2>
+  <label><input type="checkbox" checked disabled> Exp480 실패 원인 상세 조사</label>
+  <label><input type="checkbox" checked disabled> Exp481 실험 방향 승인</label>
+  <label><input type="checkbox" checked disabled> Exp481 HTML 설계서 작성</label>
+  <label><input type="checkbox" disabled> 설계서 사용자 승인</label>
+  <label><input type="checkbox" disabled> 구현 계획 작성</label>
+  <label><input type="checkbox" disabled> Task 1 — 코드맵 및 경계 고정</label>
+  <label><input type="checkbox" disabled> Task 2 — strict evidence 계약</label>
+  <label><input type="checkbox" disabled> Task 3 — nested family 평가기</label>
+  <label><input type="checkbox" disabled> Task 4 — Numba parity와 가속 판정</label>
+  <label><input type="checkbox" disabled> Task 5 — smoke 및 재현성 검증</label>
+  <label><input type="checkbox" disabled> Task 6 — 공식 1,117개 실행</label>
+</body>
+</html>
