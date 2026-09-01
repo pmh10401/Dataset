@@ -5,6 +5,7 @@ from dataclasses import replace
 from contextlib import contextmanager
 from hashlib import sha256
 import json
+import math
 import multiprocessing
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -179,6 +180,29 @@ def _process_claim_worker_antigravity(root: str, record: dict[str, object], coun
     output.put(result.artifact_record()["evaluation_sha256"])
 
 class Exp472AuthorityEvaluationTestsAntigravity(unittest.TestCase):
+    def test_metric_validator_accepts_one_ulp_sklearn_upper_boundary_overshoot(self) -> None:
+        """A one-ULP sklearn metric overshoot remains valid scientific evidence."""
+
+        value = math.nextafter(1.0, math.inf)
+        rows = [{
+            "method": "E",
+            "dataset": "fixture",
+            "average_precision": value,
+            "average_precision_exclusion": None,
+            "auroc": value,
+            "auroc_exclusion": None,
+        }]
+
+        try:
+            validated = evaluation_module._validate_metric_rows_antigravity(
+                rows, ("fixture",), ("E",), "per_dataset",
+            )
+        except ValueError as error:
+            self.fail(f"one-ULP sklearn metric overshoot was rejected: {error}")
+
+        self.assertEqual(validated[("E", "fixture")]["average_precision"], value)
+        self.assertEqual(validated[("E", "fixture")]["auroc"], value)
+
     def test_evaluation_binds_the_verified_terminal_manifest_digest(self) -> None:
         """The manifest self-digest, not a hash of the full self-containing JSON, is authority."""
         bundle = _bundle(); context, catalog = _context_and_catalog(bundle); manifest = _manifest(bundle, context)

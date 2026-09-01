@@ -325,7 +325,10 @@ def _read_evaluation_marker_antigravity(root: Path, record: Mapping[str,object])
     if raw!=canonical_json_bytes_exp472_antigravity(marker) or marker!=_evaluation_marker_record_antigravity(record): raise ValueError("Exp472 evaluation completion marker differs")
 
 def _finite_probability_antigravity(value: object) -> bool:
-    return type(value) in (int,float) and math.isfinite(float(value)) and 0.0<=float(value)<=1.0
+    if type(value) not in (int,float) or not math.isfinite(float(value)):
+        return False
+    number=float(value)
+    return 0.0<=number<=1.0 or number==math.nextafter(1.0,math.inf)
 
 def _validate_metric_rows_antigravity(rows: object, order: tuple[str,...], methods: tuple[str,...], name: str) -> Mapping[tuple[str,str], Mapping[str,object]]:
     if not isinstance(rows,list) or len(rows)!=len(order)*len(methods): raise ValueError(f"Exp472 persisted {name} inventory differs")
