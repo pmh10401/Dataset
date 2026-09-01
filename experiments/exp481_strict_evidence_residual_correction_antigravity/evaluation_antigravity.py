@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
-from itertools import combinations
 import math
 from typing import Iterable, Mapping, Sequence
 
@@ -202,24 +201,36 @@ def evaluate_outer_row_antigravity(
     residual_decision = residual_policy.route(
         features,
         row_knn_method=row_decision.method,
-        enabled_methods=enabled,
+        enabled_methods=None,
     )
+    final_method = residual_decision.method
+    final_changed = residual_decision.changed
+    final_reason = residual_decision.reason
+    if (
+        residual_decision.changed
+        and residual_decision.selected_candidate not in enabled
+    ):
+        # The approved order is local rank first, then the inner safety gate.
+        # Never rerank a runner-up after the local winner fails the inner gate.
+        final_method = row_decision.method
+        final_changed = False
+        final_reason = "inner_candidate_gate_failed"
     scores = _score_mapping_after_decision_antigravity(row)
-    selected = scores[residual_decision.method]
+    selected = scores[final_method]
     baseline = scores[row_decision.method]
     return MeasuredDecisionAntigravity(
         dataset=row.dataset,
         held_family=row.source_family,
         row_knn_method=row_decision.method,
-        method=residual_decision.method,
-        changed=residual_decision.changed,
+        method=final_method,
+        changed=final_changed,
         auc=float(selected.auc),
         zf=int(selected.zf),
         row_knn_auc=float(baseline.auc),
         row_knn_zf=int(baseline.zf),
         auc_gain=float(selected.auc - baseline.auc),
         zf_gain=int(selected.zf - baseline.zf),
-        reason=residual_decision.reason,
+        reason=final_reason,
         inner_enabled_methods=enabled,
     )
 
@@ -233,58 +244,27 @@ def qualify_inner_methods_antigravity(
 ) -> tuple[InnerCandidateGateAntigravity, ...]:
     residual_kwargs = {"k": K_ANTIGRAVITY}
     residual_kwargs.update(residual_policy_kwargs or {})
-    subsets = tuple(
-        tuple(candidate_subset)
-        for size in range(1, len(ALTERNATIVE_METHODS_ANTIGRAVITY) + 1)
-        for candidate_subset in combinations(ALTERNATIVE_METHODS_ANTIGRAVITY, size)
-    )
-    selected_by_subset: dict[tuple[str, ...], list[MeasuredDecisionAntigravity]] = {
-        subset: [] for subset in subsets
-    }
+    selected: list[MeasuredDecisionAntigravity] = []
     for _inner_family, inner_train, inner_test in iter_family_splits_antigravity(
         outer_train_rows
     ):
         row_policy = _row_policy_antigravity(inner_train, row_policy_kwargs)
         residual_policy = StrictResidualPolicyAntigravity(**residual_kwargs).fit(inner_train)
         for row in inner_test:
-            for subset in subsets:
-                measured = evaluate_outer_row_antigravity(
-                    row, row_policy, residual_policy, subset
-                )
-                if measured.changed:
-                    selected_by_subset[subset].append(measured)
-
-    # A candidate must pass on the cases where it is actually adopted under the
-    # same enabled set used outside.  Trying all seven frozen non-empty subsets
-    # prevents a rejected joint winner from exposing an unqualified runner-up.
-    qualified: list[
-        tuple[tuple[str, ...], tuple[InnerCandidateGateAntigravity, ...]]
-    ] = []
-    for subset in subsets:
-        records = selected_by_subset[subset]
-        gates = tuple(
-            aggregate_inner_gate_antigravity(
-                method, records, min_changed_families=min_changed_families
+            measured = evaluate_outer_row_antigravity(
+                row,
+                row_policy,
+                residual_policy,
+                ALTERNATIVE_METHODS_ANTIGRAVITY,
             )
-            for method in ALTERNATIVE_METHODS_ANTIGRAVITY
+            if measured.changed:
+                selected.append(measured)
+    return tuple(
+        aggregate_inner_gate_antigravity(
+            method, selected, min_changed_families=min_changed_families
         )
-        if all(gate.enabled for gate in gates if gate.method in subset):
-            qualified.append((subset, gates))
-    if not qualified:
-        return tuple(
-            aggregate_inner_gate_antigravity(
-                method, (), min_changed_families=min_changed_families
-            )
-            for method in ALTERNATIVE_METHODS_ANTIGRAVITY
-        )
-    _selected_subset, selected_gates = sorted(
-        qualified,
-        key=lambda item: (
-            -len(item[0]),
-            tuple(ALTERNATIVE_METHODS_ANTIGRAVITY.index(method) for method in item[0]),
-        ),
-    )[0]
-    return selected_gates
+        for method in ALTERNATIVE_METHODS_ANTIGRAVITY
+    )
 
 
 def _summary_antigravity(

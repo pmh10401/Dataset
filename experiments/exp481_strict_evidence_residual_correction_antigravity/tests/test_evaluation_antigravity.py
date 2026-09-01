@@ -162,60 +162,36 @@ def test_outer_row_reads_scores_only_after_both_routes_antigravity(monkeypatch) 
     assert measured.auc_gain == pytest.approx(0.01)
 
 
-def test_inner_qualification_rechecks_runner_up_under_actual_enabled_set_antigravity(
+def test_disabled_joint_winner_falls_back_without_runner_up_rerank_antigravity(
     monkeypatch,
 ) -> None:
     from experiments.exp481_strict_evidence_residual_correction_antigravity import evaluation_antigravity
 
-    class FittedPolicy:
-        def fit(self, rows):
-            return self
+    class RowPolicy:
+        def route(self, features, proposal):
+            return type("Decision", (), {"method": "minirocket_local_gap"})()
 
-    monkeypatch.setattr(
-        evaluation_antigravity,
-        "_row_policy_antigravity",
-        lambda rows, kwargs: FittedPolicy(),
-    )
-    monkeypatch.setattr(
-        evaluation_antigravity,
-        "StrictResidualPolicyAntigravity",
-        lambda **kwargs: FittedPolicy(),
-    )
-
-    def measured_for_subset(row, row_policy, residual_policy, enabled_methods):
-        enabled = tuple(enabled_methods)
-        if "multirocket_local_gap" in enabled:
-            return _decision_antigravity(
-                row.source_family,
+    class ResidualPolicy:
+        def route(self, features, *, row_knn_method, enabled_methods):
+            assert enabled_methods is None
+            return ResidualDecisionAntigravity(
                 method="multirocket_local_gap",
-                auc_gain=-0.01,
-                zf_gain=1,
+                changed=True,
+                reason="strict_candidate_accept",
+                selected_candidate="multirocket_local_gap",
+                assessments=(),
             )
-        if "hydra_local_gap" in enabled:
-            return _decision_antigravity(
-                row.source_family,
-                method="hydra_local_gap",
-                auc_gain=0.01,
-                zf_gain=1,
-            )
-        return _decision_antigravity(
-            row.source_family,
-            method="hydra_multirocket_local_gap",
-            auc_gain=-0.01,
-            zf_gain=-1,
-        )
 
-    monkeypatch.setattr(
-        evaluation_antigravity,
-        "evaluate_outer_row_antigravity",
-        measured_for_subset,
+    measured = evaluation_antigravity.evaluate_outer_row_antigravity(
+        _row_antigravity("A", 1),
+        RowPolicy(),
+        ResidualPolicy(),
+        ("hydra_local_gap",),
     )
-    rows = tuple(_row_antigravity(family, index) for index, family in enumerate(("A", "B", "C"), 1))
-    gates = evaluation_antigravity.qualify_inner_methods_antigravity(
-        rows, min_changed_families=1
-    )
-    enabled = tuple(gate.method for gate in gates if gate.enabled)
-    assert enabled == ("hydra_local_gap",)
+    assert measured.method == "minirocket_local_gap"
+    assert measured.changed is False
+    assert measured.reason == "inner_candidate_gate_failed"
+    assert measured.inner_enabled_methods == ("hydra_local_gap",)
 
 
 def test_final_gates_use_exact_strict_and_inclusive_boundaries_antigravity() -> None:
