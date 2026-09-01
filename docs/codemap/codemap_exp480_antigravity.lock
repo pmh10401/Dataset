@@ -1,6 +1,6 @@
 {
   "map_html_sha256": "e68cc894ed39c6041443aa6d41f5af26217ac15c5616d6dd902bc61f32c178ce",
-  "map_json_sha256": "7efada76aa0a2ccf08634d80a4a3dd3270d1bb3f22a9ba0a11f4def0dc33b42a",
+  "map_json_sha256": "69aef08d4233f7424c8042ec1f686c1a4b123d41f249ea6dc8385999341c1850",
   "schema": "exp480_family_balanced_routing_codemap_lock_v1",
   "status": "task_6_verified_failure_preserved"
 }
