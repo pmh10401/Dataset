@@ -10,6 +10,7 @@ from experiments.exp481_strict_evidence_residual_correction_antigravity.run_anti
     build_run_manifest_antigravity,
     json_bytes_antigravity,
     render_dashboard_antigravity,
+    render_implementation_report_antigravity,
     run_smoke_antigravity,
     run_validate_antigravity,
     validate_run_manifest_antigravity,
@@ -23,8 +24,18 @@ def _evaluation_antigravity() -> dict[str, object]:
         "dataset_count": 8,
         "family_count": 8,
         "summaries": {
-            "row_knn": {"zf_total": 10, "dataset_mean_auc": 0.9},
-            "exp481": {"zf_total": 10, "dataset_mean_auc": 0.9},
+            "row_knn": {
+                "zf_total": 10,
+                "dataset_mean_auc": 0.9,
+                "family_mean_zf": 1.0,
+                "family_mean_auc": 0.89,
+            },
+            "exp481": {
+                "zf_total": 10,
+                "dataset_mean_auc": 0.9,
+                "family_mean_zf": 1.0,
+                "family_mean_auc": 0.89,
+            },
             "changed": {"count": 0},
         },
         "gates": {"overall_pass": False},
@@ -182,6 +193,17 @@ def test_dashboard_checks_task5_not_task6_after_smoke_antigravity() -> None:
     assert '<input type="checkbox" checked disabled> Task 5' in html
     assert '<input type="checkbox" disabled> Task 6' in html
     assert "공식 성능 결과가 아닙니다" in html
+
+
+def test_implementation_report_explains_verified_metrics_antigravity() -> None:
+    result = build_official_result_antigravity(
+        _evaluation_antigravity(), backend_assessment=_backend_antigravity()
+    )
+    html = render_implementation_report_antigravity(result)
+    assert "ZF 합계" in html
+    assert "평균 AUC" in html
+    assert "실제 변경" in html
+    assert "Task 6" in html
 
 
 def test_atomic_writer_leaves_no_temporary_file_antigravity(tmp_path: Path) -> None:

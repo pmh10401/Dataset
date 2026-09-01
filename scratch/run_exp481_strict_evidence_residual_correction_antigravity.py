@@ -48,6 +48,8 @@ def main_antigravity() -> None:
             "family_overlap_count": evaluation["leakage"]["family_overlap_count"],
             "route_input_key_count": evaluation["leakage"]["route_input_key_count"],
             "changed_count": evaluation["summaries"]["changed"]["count"],
+            "verified": result["state"] == "official_verified",
+            "result_sha_match": result["state"] == "official_verified",
         }
     print(json.dumps(result, ensure_ascii=False, sort_keys=True))
 

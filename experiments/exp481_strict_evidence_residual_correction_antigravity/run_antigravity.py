@@ -28,6 +28,7 @@ from .config_antigravity import (
     EXPECTED_FAMILIES_ANTIGRAVITY,
     EXP480_EVIDENCE_DATABASE_PATH_ANTIGRAVITY,
     EXP480_RESULT_PATH_ANTIGRAVITY,
+    IMPLEMENTATION_REPORT_PATH_ANTIGRAVITY,
     OFFICIAL_RESULT_PATH_ANTIGRAVITY,
     RUN_MANIFEST_PATH_ANTIGRAVITY,
     SMOKE_RESULT_PATH_ANTIGRAVITY,
@@ -366,6 +367,30 @@ body{{font-family:system-ui,-apple-system,sans-serif;max-width:960px;margin:30px
 </body></html>"""
 
 
+def render_implementation_report_antigravity(result: Mapping[str, object]) -> str:
+    evaluation = result.get("evaluation")
+    if not isinstance(evaluation, Mapping):
+        raise ValueError("official result requires evaluation")
+    summaries = evaluation.get("summaries")
+    gates = evaluation.get("gates")
+    if not isinstance(summaries, Mapping) or not isinstance(gates, Mapping):
+        raise ValueError("official result requires summaries and gates")
+    row_knn = summaries["row_knn"]
+    exp481 = summaries["exp481"]
+    changed = summaries["changed"]
+    passed = bool(gates.get("overall_pass", False))
+    return f"""<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp481 공식 결과 보고서</title><style>body{{font-family:system-ui,-apple-system,sans-serif;max-width:900px;margin:30px auto;padding:0 20px 60px;line-height:1.65;color:#182230}}.status{{border-left:5px solid #175cd3;background:#eff8ff;padding:12px 16px}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #d8dee8;padding:8px;text-align:left}}th{{background:#eef2f7}}</style></head><body>
+<h1>Exp481 Task 6 공식 결과</h1><p class="status"><strong>{'공식 기준 통과' if passed else '공식 기준 미통과 — 결과 그대로 보존'}</strong></p>
+<p>ZF는 거짓 경보 없이 잡은 이상 수라서 높을수록 좋고, AUC는 정상과 이상을 구분하는 정도라서 1에 가까울수록 좋습니다.</p>
+<table><thead><tr><th>방법</th><th>ZF 합계</th><th>평균 AUC</th><th>family 평균 ZF</th><th>family 평균 AUC</th></tr></thead><tbody>
+<tr><td>기존 row-KNN</td><td>{int(row_knn['zf_total'])}</td><td>{float(row_knn['dataset_mean_auc']):.9f}</td><td>{float(row_knn['family_mean_zf']):.9f}</td><td>{float(row_knn['family_mean_auc']):.9f}</td></tr>
+<tr><td>Exp481</td><td>{int(exp481['zf_total'])}</td><td>{float(exp481['dataset_mean_auc']):.9f}</td><td>{float(exp481['family_mean_zf']):.9f}</td><td>{float(exp481['family_mean_auc']):.9f}</td></tr>
+</tbody></table><p>실제 변경: <strong>{int(changed['count'])}건</strong>. backend: <code>{escape(str(result['selected_backend']))}</code>.</p>
+<p>이 문서는 검증된 공식 결과만 설명하며, 통과하지 못한 항목도 숨기지 않고 그대로 보존합니다.</p></body></html>"""
+
+
 def run_official_antigravity() -> dict[str, object]:
     """Task 6 entry point. Call only after the separate user approval."""
     run_validate_antigravity()
@@ -414,6 +439,10 @@ def verify_official_antigravity() -> dict[str, object]:
     verified = dict(recomputed)
     verified["state"] = "official_verified"
     _write_text_atomic_antigravity(DASHBOARD_PATH_ANTIGRAVITY, render_dashboard_antigravity(verified))
+    _write_text_atomic_antigravity(
+        IMPLEMENTATION_REPORT_PATH_ANTIGRAVITY,
+        render_implementation_report_antigravity(recomputed),
+    )
     return verified
 
 
@@ -422,6 +451,7 @@ __all__ = [
     "build_run_manifest_antigravity",
     "json_bytes_antigravity",
     "render_dashboard_antigravity",
+    "render_implementation_report_antigravity",
     "run_official_antigravity",
     "run_smoke_antigravity",
     "run_validate_antigravity",
