@@ -414,7 +414,7 @@ git commit -m "perf: add Exp481 Numba execution path"</code></pre>
   </ul>
   <p><strong>Consumes:</strong> Task 3 평가기, Task 4 backend 판정, Exp480 evidence SHA와 결과 기준값.</p>
   <p><strong>Produces:</strong> <code>run_validate_antigravity()</code>, <code>run_smoke_antigravity()</code>, <code>run_official_antigravity()</code>, <code>verify_official_antigravity()</code>.</p>
-  <label><input type="checkbox" disabled>Step 1. 공식 승인 경계, 원자적 쓰기, deterministic bytes, smoke 비공식 상태와 HTML 체크박스 테스트를 작성합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 1. 공식 승인 경계, 원자적 쓰기, deterministic bytes, smoke 비공식 상태와 HTML 체크박스 테스트를 작성합니다.</label>
   <pre><code>def test_smoke_never_writes_official_result_antigravity(tmp_path):
     result = run_smoke_antigravity(family_count=8, output_dir=tmp_path)
     assert result["state"] == "smoke_nonofficial"
@@ -429,16 +429,16 @@ def test_dashboard_checks_task5_not_task6_after_smoke_antigravity():
     html = render_dashboard_antigravity(smoke_result_antigravity())
     assert 'checked disabled&gt; Task 5' in html
     assert 'disabled&gt; Task 6' in html</code></pre>
-  <label><input type="checkbox" disabled>Step 2. 실행 모듈이 없어 테스트가 실패하는지 확인합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 2. 실행 모듈이 없어 테스트가 실패하는지 확인합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_runner_antigravity.py -q
 # 예상: ModuleNotFoundError로 FAIL</code></pre>
-  <label><input type="checkbox" disabled>Step 3. <code>--validate-only</code>, <code>--smoke-families</code>, <code>--official</code>, <code>--verify-only</code>가 서로 배타적인 CLI를 구현합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 3. <code>--validate-only</code>, <code>--smoke-families</code>, <code>--official</code>, <code>--verify-only</code>가 서로 배타적인 CLI를 구현합니다.</label>
   <pre><code>modes = parser.add_mutually_exclusive_group(required=True)
 modes.add_argument("--validate-only", action="store_true")
 modes.add_argument("--smoke-families", type=int)
 modes.add_argument("--official", action="store_true")
 modes.add_argument("--verify-only", action="store_true")</code></pre>
-  <label><input type="checkbox" disabled>Step 4. 결과 JSON에는 시각·장치·실행 시간을 넣지 않고, 별도 manifest에만 기록하도록 원자적 writer와 validator를 구현합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 4. 결과 JSON에는 시각·장치·실행 시간을 넣지 않고, 별도 manifest에만 기록하도록 원자적 writer와 validator를 구현합니다.</label>
   <pre><code>def json_bytes_antigravity(payload):
     return (json.dumps(payload, ensure_ascii=False, sort_keys=True,
                        separators=(",", ":"), allow_nan=False) + "\n").encode("utf-8")
@@ -447,11 +447,11 @@ def write_json_atomic_antigravity(path, payload):
     temporary = path.with_name(path.stem + "_temporary_antigravity" + path.suffix)
     temporary.write_bytes(json_bytes_antigravity(payload))
     temporary.replace(path)</code></pre>
-  <label><input type="checkbox" disabled>Step 5. validate와 8-family smoke를 실행하고 결과가 유한하며 측정된 선택 backend(numpy_reference, numba_cpu, 또는 numba_plus_mlx)와 선택/대체 이유, split 무중첩, 라우팅 입력 7개, 공식 파일 미생성을 만족하는지 확인합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 5. validate와 8-family smoke를 실행하고 결과가 유한하며 측정된 선택 backend(numpy_reference, numba_cpu, 또는 numba_plus_mlx)와 선택/대체 이유, split 무중첩, 라우팅 입력 7개, 공식 파일 미생성을 만족하는지 확인합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp481_strict_evidence_residual_correction_antigravity.py --validate-only
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp481_strict_evidence_residual_correction_antigravity.py --smoke-families 8
 # 예상: state=smoke_nonofficial, backend=numpy_reference 또는 numba_cpu 또는 numba_plus_mlx, 선택/대체 이유 기록, family_overlap_count=0</code></pre>
-  <label><input type="checkbox" disabled>Step 6. Exp480 50개 회귀 테스트와 Exp481 전체 테스트를 실행하고 대시보드·코드맵을 갱신한 뒤 커밋합니다.</label>
+  <label><input type="checkbox" checked disabled>Step 6. Exp480 50개 회귀 테스트와 Exp481 전체 테스트를 실행하고 대시보드·코드맵을 갱신한 뒤 커밋합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp480_family_balanced_evidence_routing_antigravity/tests experiments/exp481_strict_evidence_residual_correction_antigravity/tests -q
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp481_antigravity.py --write --validate
 git add experiments/exp481_strict_evidence_residual_correction_antigravity scratch/run_exp481_strict_evidence_residual_correction_antigravity.py docs/codemap/codemap_exp481_antigravity.* docs/EXP481_DASHBOARD_antigravity.html
