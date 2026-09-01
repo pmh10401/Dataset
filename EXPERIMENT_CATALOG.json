@@ -1,6 +1,6 @@
 {
   "schema": "experiment-catalog.v1",
-  "updated_at": "2026-08-12T02:10:53+09:00",
+  "updated_at": "2026-08-28T10:31:31+09:00",
   "scope": "Verified active lineage; add every future experiment before execution.",
   "experiments": [
     {
@@ -1179,6 +1179,84 @@
       "evaluation_sha256": null,
       "report_sha256": null,
       "notes": "Exp450 is an isolated four-condition label-free ablation. Smoke v1 is immutable after 70/92 successes and 22 C/D mixed-axis MPS adaptive-pool failures; Smoke v2 is verified evidence after a one-line MPS-only fallback recognizer repair. Smoke v3 independently verified the Exp450-only DB binding closure on 92/92 coordinates before the full run. No full score root, evaluation, report, or TEST-label access has started."
+    },
+    {
+      "id": "Exp472",
+      "kind": "makima_upsampling_ablation",
+      "status": "recovery_full_running",
+      "documents": [
+        "docs/superpowers/specs/2026-08-28-exp472-makima-upsampling-ablation-antigravity-design.md",
+        "docs/superpowers/plans/2026-08-28-exp472-makima-upsampling-ablation-antigravity.md"
+      ],
+      "predecessor": "immutable Exp471 condition D and contextual score authorities",
+      "database_path": "/Users/mac/Documents/Dataset/univariate_ts.db",
+      "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+      "dataset_count": 1117,
+      "test_row_count": 195900,
+      "smoke_dataset_count": 23,
+      "new_condition": {
+        "condition_id": "E",
+        "downsampling": "polyphase",
+        "upsampling": "makima",
+        "image_mode": "area"
+      },
+      "control_condition": "D",
+      "proposal_policy": "hard_plus_stable",
+      "score_threshold": 0.5,
+      "artifact_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831",
+      "smoke_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/smoke_antigravity",
+      "official_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/official_antigravity",
+      "evaluation_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/evaluation_antigravity",
+      "report_root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_recovery_antigravity_20260831/report_antigravity",
+      "exp471_reuse_root": "/Users/mac/Documents/Dataset/exp471_exp467_evaluation_recovery_antigravity_20260824",
+      "bootstrap_seed": 47220260828,
+      "bootstrap_draws": 20000,
+      "bootstrap_interval_method": "percentile",
+      "bootstrap_confidence_level": 0.95,
+      "tie_tolerance": 1e-12,
+      "mps_canonical_when_available": true,
+      "mlx_assessed_but_unsuitable_for_exact_scipy_interpolation": true,
+      "failed_official_attempt": {
+        "root": "/Users/mac/Documents/Dataset/exp472_makima_upsampling_ablation_antigravity_20260828",
+        "scored": 1101,
+        "failed": 16,
+        "remaining": 16,
+        "terminal_manifest_published": false,
+        "error": "Exp472 Makima endpoints differ",
+        "process_ended": true,
+        "test_labels_opened": false
+      },
+      "recovery": {
+        "approved_on": "2026-08-31",
+        "endpoint_repair": "canonicalize only first and last true-upsampling output slots to original float32 source knots",
+        "failed_dataset_memory_rescore_completed": 16,
+        "failed_dataset_memory_rescore_failed": 0,
+        "full_tests_passed": 134,
+        "recovery_smoke_pending": false,
+        "recovery_smoke_verified": true,
+        "recovery_smoke_completed": 23,
+        "recovery_smoke_failed": 0,
+        "recovery_smoke_manifest_sha256": "53b0d8d71f18ca10e70ee462952a1a9059dc1b9f27165a45c42a8f070182a248",
+        "recovery_smoke_context_sha256": "1221e84f0196b6bc71a2b58e9cf82216ebd9109c8669309f897e4267e5ae80b2"
+      },
+      "smoke_started": true,
+      "official_run_started": true,
+      "recovery_official_launch": {
+        "launchd_label": "com.openai.exp472.recovery.full.antigravity.20260831T032546Z",
+        "started_at_utc": "2026-08-31T03:25:46Z",
+        "initial_pid": 45509,
+        "initial_runs": 1,
+        "automatic_restart_policy": "none_one_shot_launchctl_submit",
+        "initial_stderr_bytes": 0
+      },
+      "evaluation_started": false,
+      "report_started": false,
+      "test_labels_opened": false,
+      "official_label_access_count": 0,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "report_sha256": null,
+      "notes": "The failed 20260828 context is preserved read-only after 1,101 scored and 16 endpoint-roundoff failures. The endpoint-only repair passed 134 tests and all 16 failed datasets in memory. The fresh 20260831 MPS recovery smoke completed 23/23 with zero failures and passed independent read-only verification. The clean 1,117-dataset values-only recovery run is active under a one-shot launchd job; evaluation, report, and TEST-label access remain unstarted."
     }
   ]
 }

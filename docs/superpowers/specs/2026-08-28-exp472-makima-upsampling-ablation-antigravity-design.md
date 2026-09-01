@@ -1,0 +1,281 @@
+# Exp472 Makima Upsampling Ablation Design
+
+## Status
+
+Approved by the user on 2026-08-28. Exp472 is an isolated supplementary
+ablation. It does not modify or supersede the completed Exp471 artifacts.
+
+### Recovery amendment approved on 2026-08-31
+
+The first full attempt under
+`exp472_makima_upsampling_ablation_antigravity_20260828` is retained as
+read-only failure evidence: 1,101 datasets produced shards and 16 stopped at
+`Exp472 Makima endpoints differ`, so no terminal manifest, evaluation, or
+report exists. All 16 failures came from SciPy polynomial roundoff at a zero
+endpoint, with absolute residuals no larger than approximately `2.08e-17`.
+
+Makima is an interpolator and its source knots are authoritative. After finite
+and exact-length validation, true upsampling therefore copies the original
+first and last `float32` knot values into the first and last output slots. No
+interior value, route, score, threshold, or backend changes. The repaired run
+uses the clean create-only root
+`exp472_makima_upsampling_ablation_recovery_antigravity_20260831`; it never
+mixes shards from the failed code context. The repaired 23-dataset smoke gates
+one fresh 1,117-dataset run in that root.
+
+## Purpose
+
+Exp472 tests whether replacing PCHIP with modified Akima (Makima) during
+time-series upsampling changes the proposed detector's ranking quality or
+shape behavior. The experiment adds exactly one score condition and reuses
+the frozen Exp471 evidence wherever identities match.
+
+## Scientific Question
+
+The primary question is whether Makima improves AP or AUROC relative to the
+otherwise identical Exp471 condition D. The secondary question is whether
+Makima changes overshoot and extrema behavior on rows that actually require
+upsampling.
+
+## Frozen Conditions
+
+| ID | Downsampling | Upsampling | Image construction | Authority |
+|---|---|---|---|---|
+| D | Polyphase | PCHIP | Area/local-mean pooling | Frozen Exp471 control |
+| E | Polyphase | Makima | Area/local-mean pooling | New Exp472 condition |
+
+Condition E differs from D only when a row is shorter than its frozen target
+length. Equal-length rows, singleton rows, downsampling, missing-value repair,
+target-length selection, image features, estimator, seeds, thresholds, routes,
+score orientation, dataset population, and TEST-row identities remain frozen.
+
+The existing Exp471 A--D results and eligible public baselines may be shown as
+context, but the preregistered primary contrast is E minus D. Exp472 does not
+select a new production method automatically.
+
+## Exact Makima Transform
+
+- Equal source and target lengths return the source unchanged.
+- A singleton finite source value is repeated to the target length.
+- Downsampling uses the existing `scipy.signal.resample_poly` definition with
+  the reduced integer ratio and exact-length validation.
+- Upsampling uses `scipy.interpolate.Akima1DInterpolator` with
+  `method="makima"` over normalized source positions `[0, 1]` and
+  `extrapolate=False`, evaluated only on normalized target positions `[0, 1]`.
+- Inputs with two or more finite points use Makima; the installed SciPy 1.17.1
+  supports finite endpoint-preserving output for source lengths 2 and above.
+- No clipping, smoothing, fallback to another interpolator, or label-dependent
+  choice is permitted.
+- Output must have the exact target length and be finite. For true upsampling,
+  the first and last output slots are canonicalized to the original `float32`
+  source knots and must then match them bit-for-bit.
+
+## Scope
+
+### Included
+
+- Pure Makima transform and routing tests.
+- Synthetic shape diagnostics and the frozen 23-dataset values-only smoke.
+- One new E score checkpoint for each of the 1,117 frozen datasets.
+- Reuse of independently verified Exp471 D and contextual A--C/public-baseline
+  artifacts without recomputation.
+- Full-population and actual-upsampling-subset AP/AUROC analysis.
+- Paired E-minus-D bootstrap intervals and win/tie/loss summaries.
+- Paper-ready tables, ROC/precision-recall curves, and a Korean interpretation.
+- Durable checkpoints, progress logs, resume, and remaining-time estimates.
+
+### Excluded
+
+- Akima, quadratic spline, conventional cubic spline, or global polynomial
+  candidates.
+- Modification of Exp471 code, score roots, reports, database, or provenance.
+- TEST-label access before the complete E score root is frozen and verified.
+- Hyperparameter search, per-dataset interpolation selection, result-based
+  fallback, or automatic champion promotion.
+- New security or operational machinery unrelated to result correctness,
+  resumability, or artifact authority.
+
+## Smoke and Promotion Gate
+
+The smoke is operational and shape-based; it never reads TEST labels or metric
+values.
+
+1. Fixed synthetic fixtures cover constant, monotone, peaked, oscillatory,
+   short, singleton, equal-length, upsampling, and downsampling cases.
+2. Record determinism, exact length, finite output, endpoint preservation,
+   source-range overshoot, and added extrema. Overshoot and extrema are
+   diagnostics rather than success-based selection criteria.
+3. Run E on the same frozen 23-dataset values-only smoke inventory used by
+   Exp450/Exp471.
+4. Promote only if every expected score is finite, every identity and shape
+   matches, the selected backend remains fixed, and resume verification passes.
+
+If the smoke fails, preserve the exact failure evidence and stop. Do not
+silently substitute PCHIP, linear interpolation, or CPU/MPS backends.
+
+## Full Execution and Reuse
+
+Exp472 computes only condition E. It does not recompute condition D or the
+public baselines. Before evaluation, the verifier must prove that reused
+artifacts match the frozen database digest, dataset keys, TEST-row identities,
+score orientation, and applicable source/evaluation digests.
+
+Each successful dataset E result is checkpointed immediately. A transient
+failure is recorded and the remaining datasets continue. Failed or unattempted
+datasets may be retried in one bounded recovery wave under the identical
+frozen context. Evaluation starts only after all 1,117 E datasets are complete
+and verified with zero unresolved failures.
+
+## Metrics and Analysis
+
+### Primary analysis
+
+- Macro AP and macro AUROC across eligible datasets.
+- Paired per-dataset E-minus-D changes with 20,000 bootstrap resamples and a
+  fixed Exp472 seed recorded in the implementation contract.
+- Win/tie/loss counts with absolute metric difference `<= 1e-12` treated as a
+  tie.
+
+### Secondary analysis
+
+- Micro AP and micro AUROC from pooled eligible TEST rows.
+- The same metrics restricted to a values-only, label-independent inventory of
+  datasets whose preprocessing actually invokes upsampling for at least one
+  scored row.
+- Overshoot magnitude and added-extrema diagnostics on upsampled rows.
+- Context tables containing A--E and every eligible frozen public baseline.
+
+Datasets lacking the required class support are reported in denominator audits
+and are never silently discarded.
+
+### Figures
+
+- ROC x-axis: false-positive rate; y-axis: true-positive rate.
+- Precision-recall x-axis: recall; y-axis: precision.
+- Canonical curve-coordinate tables are written before PNG, SVG, and HTML
+  figures.
+- D and E must be visually distinguishable; A--C and public baselines are
+  contextual rather than part of the primary claim.
+
+## Backend and Parallelism Assessment
+
+- Makima and polyphase are canonical SciPy CPU operations. They are not moved
+  to PyTorch, MLX, or MPS because reimplementing the exact SciPy algorithms
+  would change the frozen method and require a separate parity benchmark.
+- The unchanged area/local-mean image path uses the existing frozen PyTorch MPS
+  implementation when MPS is available at readiness time; otherwise it uses
+  the existing recorded CPU fallback. The backend is frozen for the score root.
+- MLX is assessed and recorded as unsuitable for the exact irregular 1-D SciPy
+  interpolation path. It becomes eligible only in a separate implementation
+  after exact index parity, finite output, numerical tolerance, and at least
+  1.1x end-to-end speed are demonstrated.
+- Run only one MPS-heavy process at a time.
+- CPU-parallel stages use `max(1, logical_cpu_count - 1)` workers and record the
+  detected logical CPU count and selected worker count. Inner numerical threads
+  remain one where required by the existing pipeline.
+
+## Isolation, Code Map, and Artifacts
+
+Implementation occurs on branch `codex/exp472-makima-ablation-antigravity` in
+the isolated worktree
+`/Users/mac/.codex/worktrees/e1be/Time Series/.worktrees/exp472-makima-ablation-antigravity`.
+
+Before the first scientific source edit, create and verify the complete Exp472
+triplet:
+
+- `docs/codemap/codemap_exp472_antigravity.html`
+- `docs/codemap/codemap_exp472_antigravity.json`
+- `docs/codemap/codemap_exp472_antigravity.lock`
+
+The map must identify the transform's callers, affected report/cache paths, and
+covering tests. All new repository and runtime filenames contain
+`antigravity`. Runtime outputs use a new Exp472 root and never overwrite an
+Exp471 artifact.
+
+Required runtime artifacts include the frozen config and values-only catalog,
+backend decision, per-dataset E checkpoints, progress JSONL, E score manifest,
+reuse-authority manifest, denominator audit, paired metric tables, canonical
+curve tables, figures, paper report, and a leaf-hash/evaluation-digest binding.
+
+## Verification
+
+Before smoke:
+
+- transform unit tests cover every routing and boundary case;
+- E is proven identical to D on equal-length and downsampling-only fixtures;
+- Makima is proven to be invoked only for true upsampling;
+- configuration, source authority, resume, logging, filename, and Exp472 code
+  map tests pass;
+- MPS readiness is checked when the frozen area path selects MPS.
+
+Before evaluation:
+
+- all 1,117 E checkpoints verify with zero unresolved failures;
+- the E manifest and every reused artifact pass independent identity checks;
+- no TEST-label module was imported before E score freeze;
+- score orientation and finite row counts match the frozen contract.
+
+Before reporting:
+
+- AP/AUROC are independently recomputed from canonical score/label tables;
+- ROC and precision-recall axes are checked from canonical curve tables;
+- report leaves are hash-bound to the verified evaluation digest;
+- the official Exp472 process has exited cleanly.
+
+## Interpretation Rule
+
+## Superseding evaluation/report durability ruling
+
+The single evaluation authority is the canonical regular file
+`evaluation_antigravity/exp472_evaluation_antigravity.json`, outside the
+15-leaf report root. It binds the verified Exp471 reuse authority, E terminal
+manifest digest, frozen context digest, all scientific tables/curves, and one
+`diagnostic_summary` entry per dataset. `evaluate` reopens this file first; a
+valid matching artifact is reused without label access, while a missing file is
+computed once, published create-or-identical, and reopened. `report` never
+evaluates or imports labels: it reopens E/Exp471 plus this persisted authority,
+then requires exact per-dataset matching of trace digest, unique slots, and
+Makima invocation exposures before any report leaf is published. Symlinks,
+nonregular files, noncanonical JSON, schema/key/digest drift, and missing or
+extra diagnostic datasets fail closed. A zero-invocation sealed trace remains a
+dataset-level summary but has zero call-level CSV rows.
+
+## Superseding actual-trace v3 ruling
+
+The retired v2/raw-replay aggregate is not admissible evidence.  Before any
+Exp450 alignment callback, the scorer supplies its exact shared-gate plan to a
+passive Exp472 observer.  A trace progresses only `open -> scoring(plan) ->
+score_completed -> sealed`; observer or scoring failures poison it.  Sealing
+requires the observed phase/source sequence to equal the plan exactly, then
+binds a label-free deterministic RawDataset identity and the canonical bytes
+digest of the exact returned Exp450 result.  Composition recomputes both
+identities and rejects a matching dataset name with different raw rows or a
+different result.  Input evidence describes the ragged collection as
+`[row_count]` with true cumulative boundaries; output evidence is actual
+little-endian `<f4`, C-contiguous `[row_count, target_len]` data.
+
+The actual-upsampling subset is derived only from the sealed v3 trace.
+`upsampled_rows` counts unique `(TRAIN|TEST, row_index)` slots, whereas
+`makima_row_invocation_count` counts every Makima exposure and can be larger
+when a slot is reached through multiple Exp450 phases. Reporting preserves both
+quantities and uses only the former for subset membership.
+
+## Superseding persisted-evaluation repair ruling
+
+The E-manifest binding is the terminal verifier's exact `manifest_sha256`, not
+a hash of a self-containing manifest JSON object. Reuse of a persisted
+evaluation requires strict validation of all 1,117 × 11 full rows, trace-derived
+subset rows, macro/micro summaries, paired statistics, denominators, curves,
+and all diagnostic summaries after canonical-byte and outer-digest validation.
+The first evaluator holds an advisory OS lock across the missing-artifact
+recheck, label read, no-clobber publication, and strict reopen. Final files are
+created by same-directory temporary-file fsync and atomic no-clobber linking;
+they are never replaced. Status therefore reports only observed presence, not
+scientific completion.
+
+Exp472 may conclude that Makima improves, degrades, or is statistically
+indistinguishable from PCHIP. Algorithmically valid numerical differences are
+accepted and reported. A confidence interval crossing zero is described as no
+decisive paired difference, not as proof of equivalence. Any adoption of
+Makima as the proposed default requires a separate explicit user decision
+after the frozen Exp472 results are reviewed.
