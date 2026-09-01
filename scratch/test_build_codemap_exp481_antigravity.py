@@ -209,6 +209,37 @@ class _TableCounterAntigravity(HTMLParser):
             self.tables += 1
 
 
+def test_exp481_validate_rejects_stale_html_matching_lock_antigravity() -> None:
+    builder = _builder_antigravity()
+    builder.write_triplet_antigravity()
+    html_path = builder.ROOT_ANTIGRAVITY / builder.TRIPLET_ANTIGRAVITY["html"]
+    lock_path = builder.ROOT_ANTIGRAVITY / builder.TRIPLET_ANTIGRAVITY["lock"]
+    stale_html = (
+        "<!DOCTYPE html>\n"
+        '<html lang="en"><head><meta charset="utf-8">'
+        "<title>stale Exp481 code map</title></head>"
+        "<body><table><tr><th>stale</th></tr></table></body></html>\n"
+    ).encode("utf-8")
+    try:
+        html_path.write_bytes(stale_html)
+        parser = _TableCounterAntigravity()
+        parser.feed(stale_html.decode("utf-8"))
+        assert parser.tables == 1
+        lock = json.loads(lock_path.read_text(encoding="utf-8"))
+        lock["map_html_sha256"] = sha256(stale_html).hexdigest()
+        lock_path.write_bytes(builder._json_bytes_antigravity(lock))
+        try:
+            builder.validate_triplet_antigravity()
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError(
+                "expected stale HTML rejection against current graph render"
+            )
+    finally:
+        builder.write_triplet_antigravity()
+
+
 def test_exp481_validate_rejects_stale_path_and_fingerprint_antigravity() -> None:
     builder = _builder_antigravity()
     builder.write_triplet_antigravity()

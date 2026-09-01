@@ -339,12 +339,18 @@ def validate_triplet_antigravity() -> None:
     lock_path = ROOT_ANTIGRAVITY / TRIPLET_ANTIGRAVITY["lock"]
     graph = json.loads(json_path.read_text(encoding="utf-8"))
     lock = json.loads(lock_path.read_text(encoding="utf-8"))
-    if graph != build_graph_antigravity():
+    current_graph = build_graph_antigravity()
+    if graph != current_graph:
         raise RuntimeError("Exp481 code-map JSON is stale")
     if lock.get("map_json_sha256") != sha256(json_path.read_bytes()).hexdigest():
         raise RuntimeError("Exp481 code-map JSON lock mismatch")
     if lock.get("map_html_sha256") != sha256(html_path.read_bytes()).hexdigest():
         raise RuntimeError("Exp481 code-map HTML lock mismatch")
+    expected_html_bytes = (
+        _render_html_antigravity(current_graph) + "\n"
+    ).encode("utf-8")
+    if html_path.read_bytes() != expected_html_bytes:
+        raise RuntimeError("Exp481 code-map HTML is stale")
     parser = _HTMLAuditAntigravity()
     parser.feed(html_path.read_text(encoding="utf-8"))
     if parser.tables != 1:
