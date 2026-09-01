@@ -126,8 +126,8 @@
     },
     {
       "path": "docs/superpowers/plans/2026-09-01-exp481-strict-evidence-residual-correction-antigravity.html",
-      "sha256": "2c85474e6aa3b9e7d16846e66eaa5352f91ce767039302cb0329d975c27d6e2a",
-      "size": 40165
+      "sha256": "e8290a6fc35f0f7f264701c782ee6a0d0ff1fe5c1ddc10e7c11537dafd2a9e25",
+      "size": 40436
     },
     {
       "path": "docs/superpowers/specs/2026-09-01-exp481-strict-evidence-residual-correction-antigravity-design.html",
@@ -151,8 +151,8 @@
     },
     {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/contracts_antigravity.py",
-      "sha256": "bcf28a00fced073a0277ff41a9fefee4cf287caff97af7b208bedd0e6d7ab176",
-      "size": 5230
+      "sha256": "2b0837481ada8758c034098f99500c0677d3c7015a53bc375725bc41895a15db",
+      "size": 5885
     },
     {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
@@ -171,8 +171,8 @@
     },
     {
       "path": "scratch/test_build_codemap_exp481_antigravity.py",
-      "sha256": "41aa790e51f4f1181c43520c4ea6fd19d61d7f74d2cdffb6db58746bcc40ef73",
-      "size": 11200
+      "sha256": "eaf69c86b997242d6522bd62784e99e8f833eadafe8bae073e6a54aa18e7ed0c",
+      "size": 11752
     }
   ],
   "nodes": [

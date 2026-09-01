@@ -298,6 +298,17 @@ def test_exp481_backend_selection_wording_antigravity() -> None:
     assert "Numba parity failure always stops execution" not in joined
     assert "Stops on Numba parity failure" not in joined
     assert "Numba is the future official execution path" not in joined
+    plan_text = (
+        ROOT_ANTIGRAVITY
+        / "docs/superpowers/plans/2026-09-01-exp481-strict-evidence-residual-correction-antigravity.html"
+    ).read_text(encoding="utf-8")
+    assert "numpy_reference" in plan_text
+    assert "numba_cpu" in plan_text
+    assert "numba_plus_mlx" in plan_text
+    assert "선택/대체 이유" in plan_text
+    assert "완전한 backend 평가" in plan_text
+    assert "Numba/NumPy parity·속도 선택과 MLX 조건 반영" in plan_text
+    assert "Numba 공식 경로와 MLX 조건 반영" not in plan_text
 
 
 def test_exp481_new_filenames_contain_antigravity() -> None:

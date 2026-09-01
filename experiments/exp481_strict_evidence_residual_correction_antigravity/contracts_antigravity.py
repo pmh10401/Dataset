@@ -5,12 +5,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 import math
 
-from .config_antigravity import METHODS_ANTIGRAVITY
+from .config_antigravity import ALTERNATIVE_METHODS_ANTIGRAVITY, METHODS_ANTIGRAVITY
 
 
 def _require_method_antigravity(method: object) -> None:
     if type(method) is not str or method not in METHODS_ANTIGRAVITY:
         raise ValueError("method must be one of the four frozen methods")
+
+
+def _require_alternative_method_antigravity(method: object, label: str) -> None:
+    if type(method) is not str or method not in ALTERNATIVE_METHODS_ANTIGRAVITY:
+        raise ValueError(f"{label} must be one of the three alternative methods")
 
 
 def _require_exact_bool_antigravity(value: object, label: str) -> None:
@@ -59,7 +64,7 @@ class StrictCandidateAssessmentAntigravity:
     neighbour_families: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        _require_method_antigravity(self.method)
+        _require_alternative_method_antigravity(self.method, "method")
         _require_exact_bool_antigravity(self.passed, "passed")
         _require_nonnegative_int_antigravity(self.support, "support")
         _require_nonnegative_int_antigravity(self.zf_wins, "zf_wins")
@@ -91,12 +96,18 @@ class InnerCandidateGateAntigravity:
     q20_auc_gain: float
 
     def __post_init__(self) -> None:
-        _require_method_antigravity(self.method)
+        _require_alternative_method_antigravity(self.method, "method")
         _require_exact_bool_antigravity(self.enabled, "enabled")
         _require_nonnegative_int_antigravity(self.changed_families, "changed_families")
         _require_nonnegative_int_antigravity(self.winning_families, "winning_families")
         _require_nonnegative_int_antigravity(self.losing_families, "losing_families")
         _require_nonnegative_int_antigravity(self.tied_families, "tied_families")
+        if self.changed_families != (
+            self.winning_families + self.losing_families + self.tied_families
+        ):
+            raise ValueError(
+                "changed_families must equal winning_families + losing_families + tied_families"
+            )
         _require_finite_float_antigravity(self.min_auc_gain, "min_auc_gain")
         _require_finite_float_antigravity(self.q20_auc_gain, "q20_auc_gain")
 
@@ -115,7 +126,9 @@ class ResidualDecisionAntigravity:
         if type(self.reason) is not str or not self.reason:
             raise ValueError("reason must be a non-empty string")
         if self.selected_candidate is not None:
-            _require_method_antigravity(self.selected_candidate)
+            _require_alternative_method_antigravity(
+                self.selected_candidate, "selected_candidate"
+            )
         if type(self.assessments) is not tuple:
             raise ValueError("assessments must be a tuple")
         if any(

@@ -447,10 +447,10 @@ def write_json_atomic_antigravity(path, payload):
     temporary = path.with_name(path.stem + "_temporary_antigravity" + path.suffix)
     temporary.write_bytes(json_bytes_antigravity(payload))
     temporary.replace(path)</code></pre>
-  <label><input type="checkbox" disabled>Step 5. validate와 8-family smoke를 실행하고 결과가 유한하며 Numba parity, split 무중첩, 라우팅 입력 7개, 공식 파일 미생성을 만족하는지 확인합니다.</label>
+  <label><input type="checkbox" disabled>Step 5. validate와 8-family smoke를 실행하고 결과가 유한하며 측정된 선택 backend(numpy_reference, numba_cpu, 또는 numba_plus_mlx)와 선택/대체 이유, split 무중첩, 라우팅 입력 7개, 공식 파일 미생성을 만족하는지 확인합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp481_strict_evidence_residual_correction_antigravity.py --validate-only
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp481_strict_evidence_residual_correction_antigravity.py --smoke-families 8
-# 예상: state=smoke_nonofficial, backend=numba_cpu 또는 numba_plus_mlx, family_overlap_count=0</code></pre>
+# 예상: state=smoke_nonofficial, backend=numpy_reference 또는 numba_cpu 또는 numba_plus_mlx, 선택/대체 이유 기록, family_overlap_count=0</code></pre>
   <label><input type="checkbox" disabled>Step 6. Exp480 50개 회귀 테스트와 Exp481 전체 테스트를 실행하고 대시보드·코드맵을 갱신한 뒤 커밋합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp480_family_balanced_evidence_routing_antigravity/tests experiments/exp481_strict_evidence_residual_correction_antigravity/tests -q
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp481_antigravity.py --write --validate
@@ -465,14 +465,14 @@ git commit -m "test: verify Exp481 smoke pipeline"</code></pre>
     <li>생성: <code>docs/EXP481_IMPLEMENTATION_REPORT_antigravity.html</code></li>
     <li>수정: <code>docs/EXP481_DASHBOARD_antigravity.html</code></li>
   </ul>
-  <label><input type="checkbox" disabled>Step 1. 작업 폴더가 깨끗하고 Task 1~5 체크박스가 완료되었으며 evidence SHA, Numba parity, smoke 상태가 고정되었는지 확인합니다.</label>
+  <label><input type="checkbox" disabled>Step 1. 작업 폴더가 깨끗하고 Task 1~5 체크박스가 완료되었으며 evidence SHA, 완전한 backend 평가(선택 backend와 선택/대체 이유), smoke 상태가 고정되었는지 확인합니다.</label>
   <pre><code>git status --short
 /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp481_strict_evidence_residual_correction_antigravity.py --validate-only
 # 예상: git 출력 없음, validation state=ready_for_official</code></pre>
   <label><input type="checkbox" disabled>Step 2. 사용자 승인 문구를 확인한 뒤 공식 1,117개·128 family 중첩 평가를 한 번 실행합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp481_strict_evidence_residual_correction_antigravity.py --official
 # 예상: datasets=1117, families=128, result와 manifest 원자적 생성</code></pre>
-  <label><input type="checkbox" disabled>Step 3. 별도 <code>--verify-only</code> 실행으로 입력 SHA, manifest schema, result SHA, 1,117개 결정, 128 family, 네 방법 점수, deterministic bytes를 다시 확인합니다.</label>
+  <label><input type="checkbox" disabled>Step 3. 별도 <code>--verify-only</code> 실행으로 입력 SHA, manifest schema, result SHA, 완전한 backend 평가(선택 backend와 선택/대체 이유), 1,117개 결정, 128 family, 네 방법 점수, deterministic bytes를 다시 확인합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp481_strict_evidence_residual_correction_antigravity.py --verify-only
 # 예상: verified=true, result_sha_match=true, family_overlap_count=0</code></pre>
   <label><input type="checkbox" disabled>Step 4. 공식 성공 기준을 기계적으로 판정하고 한 항목이라도 실패하면 실패 결과를 그대로 보존합니다.</label>
@@ -503,7 +503,7 @@ git commit -m "experiment: preserve Exp481 official qualification"</code></pre>
   <h2>계획 진행 체크</h2>
   <label><input type="checkbox" checked disabled> 승인 설계서를 구현 계약으로 변환</label>
   <label><input type="checkbox" checked disabled> 파일 책임과 Task 1~6 경계 정의</label>
-  <label><input type="checkbox" checked disabled> Numba 공식 경로와 MLX 조건 반영</label>
+  <label><input type="checkbox" checked disabled> Numba/NumPy parity·속도 선택과 MLX 조건 반영</label>
   <label><input type="checkbox" checked disabled> Task 6 별도 승인 경계 반영</label>
   <label><input type="checkbox" disabled> Task 1 구현 시작</label>
 </body>

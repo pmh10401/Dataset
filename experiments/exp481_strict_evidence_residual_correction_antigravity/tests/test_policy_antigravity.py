@@ -321,6 +321,71 @@ def test_missing_extra_keys_and_unknown_methods_are_rejected_antigravity() -> No
         )
 
 
+def test_contracts_reject_minirocket_candidates_and_inconsistent_gate_counts_antigravity() -> None:
+    with pytest.raises(ValueError):
+        _assessment_antigravity(method="minirocket_local_gap")
+    with pytest.raises(ValueError):
+        InnerCandidateGateAntigravity(
+            method="minirocket_local_gap",
+            enabled=True,
+            changed_families=1,
+            winning_families=1,
+            losing_families=0,
+            tied_families=0,
+            min_auc_gain=0.1,
+            q20_auc_gain=0.1,
+        )
+    with pytest.raises(ValueError):
+        ResidualDecisionAntigravity(
+            method="minirocket_local_gap",
+            changed=False,
+            reason="strict_local_gate_failed",
+            selected_candidate="minirocket_local_gap",
+            assessments=(),
+        )
+    with pytest.raises(ValueError):
+        InnerCandidateGateAntigravity(
+            method="hydra_local_gap",
+            enabled=True,
+            changed_families=3,
+            winning_families=1,
+            losing_families=0,
+            tied_families=0,
+            min_auc_gain=0.1,
+            q20_auc_gain=0.1,
+        )
+    gate = InnerCandidateGateAntigravity(
+        method="hydra_local_gap",
+        enabled=True,
+        changed_families=3,
+        winning_families=1,
+        losing_families=1,
+        tied_families=1,
+        min_auc_gain=0.1,
+        q20_auc_gain=0.1,
+    )
+    assert gate.changed_families == (
+        gate.winning_families + gate.losing_families + gate.tied_families
+    )
+    preserved = ResidualDecisionAntigravity(
+        method="minirocket_local_gap",
+        changed=False,
+        reason="strict_local_gate_failed",
+        selected_candidate=None,
+        assessments=(),
+    )
+    assert preserved.method == "minirocket_local_gap"
+    assert preserved.selected_candidate is None
+    accepted = ResidualDecisionAntigravity(
+        method="multirocket_local_gap",
+        changed=True,
+        reason="strict_candidate_accept",
+        selected_candidate="multirocket_local_gap",
+        assessments=(_assessment_antigravity(),),
+    )
+    assert accepted.selected_candidate == "multirocket_local_gap"
+
+
 def test_contracts_reject_nonfinite_duplicates_and_inconsistent_counts_antigravity() -> None:
     with pytest.raises(ValueError):
         _assessment_antigravity(min_auc_gain=float("nan"))
