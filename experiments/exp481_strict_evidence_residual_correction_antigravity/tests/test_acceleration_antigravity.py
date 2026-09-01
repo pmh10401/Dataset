@@ -33,6 +33,8 @@ def test_numba_parity_failure_keeps_numpy_reference_antigravity(monkeypatch) -> 
             "numba_execution_seconds": 0.5,
             "numba_total_seconds": 0.6,
             "numba_speedup_including_warmup": 3.0,
+            "exact_frozen_stage_benchmarked": True,
+            "numba_cold_jit_verified": True,
         },
     )
     result = acceleration_antigravity.assess_acceleration_antigravity()
@@ -51,6 +53,8 @@ def test_numba_needs_full_stage_speed_benefit_antigravity(monkeypatch) -> None:
             "numba_execution_seconds": 0.4,
             "numba_total_seconds": 1.2,
             "numba_speedup_including_warmup": 1.0 / 1.2,
+            "exact_frozen_stage_benchmarked": True,
+            "numba_cold_jit_verified": True,
         },
     )
     result = acceleration_antigravity.assess_acceleration_antigravity()
@@ -69,6 +73,8 @@ def test_numba_selected_only_when_all_gates_pass_antigravity(monkeypatch) -> Non
             "numba_execution_seconds": 0.5,
             "numba_total_seconds": 0.6,
             "numba_speedup_including_warmup": 2.0 / 0.6,
+            "exact_frozen_stage_benchmarked": True,
+            "numba_cold_jit_verified": True,
         },
     )
     result = acceleration_antigravity.assess_acceleration_antigravity()
@@ -100,6 +106,8 @@ def test_complete_stage_benchmark_uses_nested_evaluator_antigravity(monkeypatch)
         "numba_cpu",
     ]
     assert result["numba_total_seconds"] == result["numba_warmup_seconds"]
+    assert result["exact_frozen_stage_benchmarked"] is False
+    assert result["numba_cold_jit_verified"] is False
 
 
 def test_assessment_benchmarks_before_parity_antigravity(monkeypatch) -> None:
@@ -113,6 +121,8 @@ def test_assessment_benchmarks_before_parity_antigravity(monkeypatch) -> None:
             "numba_execution_seconds": 1.0,
             "numba_total_seconds": 2.0,
             "numba_speedup_including_warmup": 0.5,
+            "exact_frozen_stage_benchmarked": True,
+            "numba_cold_jit_verified": True,
         },
     )
     monkeypatch.setattr(
@@ -122,3 +132,27 @@ def test_assessment_benchmarks_before_parity_antigravity(monkeypatch) -> None:
     )
     acceleration_antigravity.assess_acceleration_antigravity()
     assert order == ["benchmark", "parity"]
+
+
+def test_diagnostic_workload_can_never_select_numba_antigravity(monkeypatch) -> None:
+    monkeypatch.setattr(
+        acceleration_antigravity,
+        "_assess_parity_antigravity",
+        _parity_antigravity,
+    )
+    monkeypatch.setattr(
+        acceleration_antigravity,
+        "_benchmark_complete_stage_antigravity",
+        lambda repeats=1: {
+            "numpy_seconds": 10.0,
+            "numba_warmup_seconds": 0.1,
+            "numba_execution_seconds": 0.1,
+            "numba_total_seconds": 0.1,
+            "numba_speedup_including_warmup": 100.0,
+            "exact_frozen_stage_benchmarked": False,
+            "numba_cold_jit_verified": False,
+        },
+    )
+    result = acceleration_antigravity.assess_acceleration_antigravity()
+    assert result["selected_backend"] == "numpy_reference"
+    assert result["fallback_reason"] == "numba_exact_frozen_stage_not_benchmarked"

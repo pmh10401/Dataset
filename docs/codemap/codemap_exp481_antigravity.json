@@ -146,8 +146,8 @@
     },
     {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/acceleration_antigravity.py",
-      "sha256": "d4bd68898f874b3b4cac2ae6ac68d723615db8b79d1a985062fe3fc7f53db666",
-      "size": 7721
+      "sha256": "dae52ef08af27979e294d759572a8d644b76524fe512fddc1544ef940c5d9a1b",
+      "size": 8451
     },
     {
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/config_antigravity.py",
@@ -186,8 +186,8 @@
     },
     {
       "path": "scratch/exp481_acceleration_assessment_antigravity.json",
-      "sha256": "c913bb10a3e80ed3627493cb2b8aeea6aef5ef9781246bd73b9435329fa06b8c",
-      "size": 906
+      "sha256": "e97d339e333d56b050179454dd6f61359b7a98eb346a6f93a72c62ee95b60179",
+      "size": 1195
     },
     {
       "path": "scratch/test_build_codemap_exp481_antigravity.py",

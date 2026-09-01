@@ -133,6 +133,12 @@ def _benchmark_complete_stage_antigravity(repeats: int = 1) -> dict[str, float]:
         "numba_speedup_including_warmup": float(
             numpy_seconds / cold_total if cold_total else 0.0
         ),
+        "benchmark_dataset_count": 5,
+        "benchmark_family_count": 5,
+        "benchmark_residual_k": 3,
+        "benchmark_inner_min_changed_families": 1,
+        "exact_frozen_stage_benchmarked": False,
+        "numba_cold_jit_verified": False,
     }
 
 
@@ -182,10 +188,18 @@ def assess_acceleration_antigravity(
             "finite_outputs",
         )
     )
+    exact_stage = bool(timing.get("exact_frozen_stage_benchmarked", False))
+    cold_jit = bool(timing.get("numba_cold_jit_verified", False))
     speed_pass = float(timing["numba_speedup_including_warmup"]) > 1.0
     if not parity_pass:
         selected_backend = "numpy_reference"
         fallback_reason = "numba_parity_failed"
+    elif not exact_stage:
+        selected_backend = "numpy_reference"
+        fallback_reason = "numba_exact_frozen_stage_not_benchmarked"
+    elif not cold_jit:
+        selected_backend = "numpy_reference"
+        fallback_reason = "numba_cold_jit_not_verified"
     elif not speed_pass:
         selected_backend = "numpy_reference"
         fallback_reason = "numba_no_full_stage_speed_benefit"
@@ -197,6 +211,7 @@ def assess_acceleration_antigravity(
         "numba_version": numba.__version__,
         **parity,
         **timing,
+        "benchmark_scope": "diagnostic_nested_smoke_not_official_1117",
         "numba_speed_gate_pass": speed_pass,
         **mlx,
         "selected_backend": selected_backend,
