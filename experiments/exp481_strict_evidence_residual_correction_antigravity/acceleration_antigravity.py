@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
+import platform
 from time import perf_counter
 
 import numba
@@ -128,8 +130,10 @@ def _benchmark_complete_stage_antigravity(repeats: int = 50) -> dict[str, float]
 def assess_acceleration_antigravity(
     *, output_path: Path | None = None, repeats: int = 50
 ) -> dict[str, object]:
-    parity = _assess_parity_antigravity()
+    # Benchmark first so the timed Numba warm-up is the first kernel dispatch in
+    # this assessment process; parity calls would otherwise precompile it.
     timing = _benchmark_complete_stage_antigravity(repeats=repeats)
+    parity = _assess_parity_antigravity()
     parity_pass = all(
         bool(parity[key])
         for key in (
@@ -147,6 +151,10 @@ def assess_acceleration_antigravity(
     else:
         selected_backend = "numba_cpu"
         fallback_reason = "mlx_not_exact_for_sequential_family_selection"
+    try:
+        mlx_version: str | None = version("mlx")
+    except PackageNotFoundError:
+        mlx_version = None
     result: dict[str, object] = {
         "numpy_version": np.__version__,
         "numba_version": numba.__version__,
@@ -154,8 +162,11 @@ def assess_acceleration_antigravity(
         **timing,
         "numba_speed_gate_pass": speed_pass,
         "mlx_eligible": False,
+        "mlx_version": mlx_version,
+        "mlx_device": platform.machine(),
         "mlx_candidate_index_parity": False,
         "mlx_speedup_including_transfer": 0.0,
+        "mlx_fallback_reason": "sequential_stable_family_dedup_not_exactly_expressible",
         "selected_backend": selected_backend,
         "fallback_reason": fallback_reason,
     }

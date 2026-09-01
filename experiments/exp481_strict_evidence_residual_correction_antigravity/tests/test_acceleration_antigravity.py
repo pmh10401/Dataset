@@ -75,3 +75,4 @@ def test_numba_selected_only_when_all_gates_pass_antigravity(monkeypatch) -> Non
     assert result["selected_backend"] == "numba_cpu"
     assert result["fallback_reason"] == "mlx_not_exact_for_sequential_family_selection"
     assert result["mlx_eligible"] is False
+    assert result["mlx_fallback_reason"] == "sequential_stable_family_dedup_not_exactly_expressible"
