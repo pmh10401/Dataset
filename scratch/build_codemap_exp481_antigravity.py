@@ -96,14 +96,14 @@ NODE_SPECS_ANTIGRAVITY = (
         "numba_kernels",
         _package_antigravity("kernels_numba_antigravity.py"),
         "policy_antigravity.py",
-        "Computes exact neighbour and strict statistics with Numba.",
+        "Provides optional Numba neighbour and strict statistics after parity and full-stage speed selection.",
         (_test_antigravity("test_numba_antigravity.py"),),
     ),
     (
         "acceleration",
         _package_antigravity("acceleration_antigravity.py"),
         "run_antigravity.py",
-        "Stops on Numba parity failure and gates optional MLX.",
+        "Selects Numba only after parity plus full-stage speed benefit; otherwise retains NumPy and records the fallback reason, then gates optional MLX.",
         (_test_antigravity("test_acceleration_antigravity.py"),),
     ),
     (
@@ -131,7 +131,7 @@ NODE_SPECS_ANTIGRAVITY = (
         "acceleration_assessment",
         "scratch/exp481_acceleration_assessment_antigravity.json",
         "acceleration_antigravity.py and run_antigravity.py",
-        "Records Numba parity evidence and the optional MLX gate or CPU fallback reason.",
+        "Records Numba/NumPy parity, timing, selected backend, and the optional MLX gate or CPU fallback reason.",
         (_test_antigravity("test_acceleration_antigravity.py"),),
     ),
     (
@@ -203,7 +203,7 @@ STATIC_FINGERPRINT_PATHS_ANTIGRAVITY = (
 CONSTRAINTS_ANTIGRAVITY = (
     "Dataset names and source families never enter the runtime feature vector.",
     "Exp480 evidence DB, Exp480 official result, original DB, and official row-KNN remain read-only.",
-    "Numba is the future official execution path; Task 1 only maps that boundary.",
+    "Numba is selected only after parity plus full-stage speed benefit; otherwise the simpler NumPy or official implementation is retained and the reason recorded.",
     "Task 6 official 1,117-dataset execution requires a separate explicit user approval.",
     "Every newly created file contains antigravity in its filename.",
 )

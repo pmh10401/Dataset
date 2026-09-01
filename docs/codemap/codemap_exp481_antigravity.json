@@ -2,7 +2,7 @@
   "constraints": [
     "Dataset names and source families never enter the runtime feature vector.",
     "Exp480 evidence DB, Exp480 official result, original DB, and official row-KNN remain read-only.",
-    "Numba is the future official execution path; Task 1 only maps that boundary.",
+    "Numba is selected only after parity plus full-stage speed benefit; otherwise the simpler NumPy or official implementation is retained and the reason recorded.",
     "Task 6 official 1,117-dataset execution requires a separate explicit user approval.",
     "Every newly created file contains antigravity in its filename."
   ],
@@ -111,8 +111,8 @@
   "fingerprints": [
     {
       "path": "docs/EXP481_DASHBOARD_antigravity.html",
-      "sha256": "2ead0189f8a3ba0f1a594783caa90f3e737ba87cbd971f82c4ad935fcbb44984",
-      "size": 4215
+      "sha256": "de6e4ae3b1cd4c5b44f29c8bafc78843fae9d4f9bfd953748b5c34ccc3712777",
+      "size": 4205
     },
     {
       "path": "docs/codemap/codemap_exp480_antigravity.json",
@@ -126,13 +126,13 @@
     },
     {
       "path": "docs/superpowers/plans/2026-09-01-exp481-strict-evidence-residual-correction-antigravity.html",
-      "sha256": "603171b5f2d5d71ab56f7e8174ef1ce04efd76ec24465d3ca5a784d612c07221",
-      "size": 38727
+      "sha256": "2c85474e6aa3b9e7d16846e66eaa5352f91ce767039302cb0329d975c27d6e2a",
+      "size": 40165
     },
     {
       "path": "docs/superpowers/specs/2026-09-01-exp481-strict-evidence-residual-correction-antigravity-design.html",
-      "sha256": "86858cd7de1855f05aff89e5a5338d54422f57be953310b9c9e189c3b91a8dc6",
-      "size": 14153
+      "sha256": "8050a887912fe5fb270551485eaf44d64df1f80836607a8438bc96f8d9be780c",
+      "size": 14424
     },
     {
       "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.sqlite3",
@@ -145,19 +145,34 @@
       "size": 6379067
     },
     {
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/config_antigravity.py",
+      "sha256": "9085332fc6d4987253f174837e757c7415f77e1d20ed44a108ab54e22e279bad",
+      "size": 2335
+    },
+    {
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/contracts_antigravity.py",
+      "sha256": "bcf28a00fced073a0277ff41a9fefee4cf287caff97af7b208bedd0e6d7ab176",
+      "size": 5230
+    },
+    {
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
+      "sha256": "0ace70b9410c26802ed656e67deab50f245b07f50afb459e13869820e69c8567",
+      "size": 10868
+    },
+    {
       "path": "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py",
       "sha256": "9d42dad06e92ae136a760db8771506377b3ccdca8615122ce1b0b43bca0b927c",
       "size": 2292
     },
     {
       "path": "scratch/build_codemap_exp481_antigravity.py",
-      "sha256": "f47ec7f67bab9635be02a32f5b1b6db2754185a15eda060456e290bc7983fba8",
-      "size": 15477
+      "sha256": "b3a19258b3414d0716da3fb89345df03277216e63d30d0195632c3c1c43a0f96",
+      "size": 15716
     },
     {
       "path": "scratch/test_build_codemap_exp481_antigravity.py",
-      "sha256": "32abd60771a38a584583283d41821fd8a6ab40d352d05709e3b2d9c2d7ef620b",
-      "size": 10085
+      "sha256": "41aa790e51f4f1181c43520c4ea6fd19d61d7f74d2cdffb6db58746bcc40ef73",
+      "size": 11200
     }
   ],
   "nodes": [
@@ -206,7 +221,7 @@
       "effect": "Freezes paths, residual thresholds, nested holdouts and qualification rules.",
       "id": "config",
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/config_antigravity.py",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py"
       ]
@@ -216,7 +231,7 @@
       "effect": "Rejects malformed residual evidence and leaked family identifiers.",
       "id": "contracts",
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/contracts_antigravity.py",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py"
       ]
@@ -226,7 +241,7 @@
       "effect": "Preserves row-KNN unless strict residual evidence passes.",
       "id": "strict_policy",
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
-      "planned": true,
+      "planned": false,
       "tests": [
         "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py"
       ]
@@ -243,7 +258,7 @@
     },
     {
       "caller": "policy_antigravity.py",
-      "effect": "Computes exact neighbour and strict statistics with Numba.",
+      "effect": "Provides optional Numba neighbour and strict statistics after parity and full-stage speed selection.",
       "id": "numba_kernels",
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/kernels_numba_antigravity.py",
       "planned": true,
@@ -253,7 +268,7 @@
     },
     {
       "caller": "run_antigravity.py",
-      "effect": "Stops on Numba parity failure and gates optional MLX.",
+      "effect": "Selects Numba only after parity plus full-stage speed benefit; otherwise retains NumPy and records the fallback reason, then gates optional MLX.",
       "id": "acceleration",
       "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/acceleration_antigravity.py",
       "planned": true,
@@ -294,7 +309,7 @@
     },
     {
       "caller": "acceleration_antigravity.py and run_antigravity.py",
-      "effect": "Records Numba parity evidence and the optional MLX gate or CPU fallback reason.",
+      "effect": "Records Numba/NumPy parity, timing, selected backend, and the optional MLX gate or CPU fallback reason.",
       "id": "acceleration_assessment",
       "path": "scratch/exp481_acceleration_assessment_antigravity.json",
       "planned": true,

@@ -160,7 +160,9 @@ def test_exp481_map_contains_required_nodes_and_edges_antigravity() -> None:
     assert nodes["dashboard"]["planned"] is False
     assert nodes["approved_spec"]["planned"] is False
     assert nodes["approved_plan"]["planned"] is False
-    assert nodes["strict_policy"]["planned"] is True
+    assert nodes["config"]["planned"] is False
+    assert nodes["contracts"]["planned"] is False
+    assert nodes["strict_policy"]["planned"] is False
     assert nodes["nested_evaluation"]["planned"] is True
     assert nodes["numba_kernels"]["planned"] is True
 
@@ -276,6 +278,26 @@ def test_exp481_validate_rejects_stale_path_and_fingerprint_antigravity() -> Non
         raise AssertionError("expected lock hash rejection")
     builder.write_triplet_antigravity()
     builder.validate_triplet_antigravity()
+
+
+def test_exp481_backend_selection_wording_antigravity() -> None:
+    graph = build_graph_antigravity()
+    nodes = {node["id"]: node for node in graph["nodes"]}
+    joined = " ".join(
+        [str(item) for item in graph["constraints"]]
+        + [str(node["effect"]) for node in graph["nodes"]]
+    )
+    assert "parity plus full-stage speed benefit" in nodes["acceleration"]["effect"]
+    assert "retains NumPy" in nodes["acceleration"]["effect"]
+    assert "parity plus full-stage speed benefit" in str(graph["constraints"])
+    assert "simpler NumPy or official implementation is retained" in str(
+        graph["constraints"]
+    )
+    assert "Records Numba/NumPy parity" in nodes["acceleration_assessment"]["effect"]
+    assert "after parity and full-stage speed selection" in nodes["numba_kernels"]["effect"]
+    assert "Numba parity failure always stops execution" not in joined
+    assert "Stops on Numba parity failure" not in joined
+    assert "Numba is the future official execution path" not in joined
 
 
 def test_exp481_new_filenames_contain_antigravity() -> None:
