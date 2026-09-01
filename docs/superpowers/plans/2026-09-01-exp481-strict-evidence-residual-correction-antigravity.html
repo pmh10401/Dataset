@@ -333,7 +333,7 @@ git commit -m "feat: add Exp481 nested family evaluation"</code></pre>
 def test_numba_parity_failure_keeps_numpy_reference_antigravity(monkeypatch):
     monkeypatch.setattr(acceleration_module_antigravity, "decision_parity_antigravity", lambda: False)
     assessment = assess_acceleration_antigravity()
-    assert assessment["selected_backend"] == "numpy_cpu"
+    assert assessment["selected_backend"] == "numpy_reference"
     assert "parity" in str(assessment["fallback_reason"]).lower()</code></pre>
   <label><input type="checkbox" disabled>Step 2. 새 kernel 부재 때문에 테스트가 실패하는지 확인합니다.</label>
   <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_numba_antigravity.py experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_acceleration_antigravity.py -q
@@ -383,7 +383,7 @@ elif numba_selected:
     selected_backend = "numba_cpu"
     fallback_reason = "mlx_gate_failed"
 else:
-    selected_backend = "numpy_cpu"
+    selected_backend = "numpy_reference"
     fallback_reason = "numba_parity_or_speed_failed"
 assessment = {
     "numba_version": numba.__version__,
