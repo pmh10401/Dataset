@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Iterable, Mapping, Sequence
 
 import numpy as np
+from sklearn.covariance import LedoitWolf
 
 from experiments.exp480_family_balanced_evidence_routing_antigravity.contracts_antigravity import (
     EvidenceRowAntigravity,
@@ -26,6 +27,13 @@ from .contracts_antigravity import (
     ReferenceStatisticsAntigravity,
     ResidualDecisionAntigravity,
     StrictCandidateAssessmentAntigravity,
+)
+
+
+DISTANCE_VARIANTS_ANTIGRAVITY = (
+    "standard_euclidean",
+    "robust_manhattan",
+    "robust_shrinkage_mahalanobis",
 )
 
 
@@ -139,14 +147,35 @@ class StrictResidualPolicyAntigravity:
     """Preserve row-KNN unless MiniRocket residual evidence uniquely passes."""
 
     def __init__(
-        self, *, k: int = K_ANTIGRAVITY, backend: str = "numpy_reference"
+        self,
+        *,
+        k: int = K_ANTIGRAVITY,
+        backend: str = "numpy_reference",
+        distance_backend: str | None = None,
+        distance_variant: str = "standard_euclidean",
     ) -> None:
         if type(k) is not int or k < 1:
             raise ValueError("k must be a positive integer")
         if backend not in ("numpy_reference", "numba_cpu"):
             raise ValueError("backend must be numpy_reference or numba_cpu")
+        if distance_variant not in DISTANCE_VARIANTS_ANTIGRAVITY:
+            raise ValueError("distance_variant must be a frozen Exp484 variant")
+        resolved_distance_backend = distance_backend or (
+            "numba_cpu"
+            if backend == "numba_cpu" and distance_variant != "standard_euclidean"
+            else "numpy_reference"
+        )
+        if resolved_distance_backend not in ("numpy_reference", "numba_cpu"):
+            raise ValueError("distance_backend must be numpy_reference or numba_cpu")
+        if (
+            resolved_distance_backend == "numba_cpu"
+            and distance_variant == "standard_euclidean"
+        ):
+            raise ValueError("standard Euclidean keeps its frozen NumPy distance")
         self.k = k
         self.backend = backend
+        self.distance_variant = distance_variant
+        self.distance_backend_used = resolved_distance_backend
         self._fitted = False
 
     def fit(
@@ -169,12 +198,40 @@ class StrictResidualPolicyAntigravity:
             dtype=np.float64,
         )
         matrix = np.where(finite, matrix, medians[None, :])
-        scales = matrix.std(axis=0)
+        if self.distance_variant == "standard_euclidean":
+            center = matrix.mean(axis=0)
+            scales = matrix.std(axis=0)
+        else:
+            center = np.median(matrix, axis=0)
+            mad = 1.4826 * np.median(np.abs(matrix - center[None, :]), axis=0)
+            iqr = np.subtract(
+                *np.quantile(matrix, (0.75, 0.25), axis=0)
+            ) / 1.349
+            std = matrix.std(axis=0)
+            scales = np.where(mad > 1e-12, mad, np.where(iqr > 1e-12, iqr, std))
         scales = np.where(scales > 1e-12, scales, 1.0)
         self._medians = medians
-        self._mean = matrix.mean(axis=0)
+        self._mean = center
         self._scale = scales
         self._matrix = (matrix - self._mean[None, :]) / self._scale[None, :]
+        self.distance_fallback_reason = None
+        self.precision_condition_number = None
+        if self.distance_variant == "robust_shrinkage_mahalanobis":
+            try:
+                precision = LedoitWolf().fit(self._matrix).precision_
+                condition = float(np.linalg.cond(precision))
+                if (
+                    not np.isfinite(precision).all()
+                    or not np.isfinite(condition)
+                    or condition > 1e8
+                ):
+                    raise ValueError("unstable shrinkage precision")
+            except (ValueError, np.linalg.LinAlgError):
+                precision = np.eye(self._matrix.shape[1], dtype=np.float64)
+                condition = 1.0
+                self.distance_fallback_reason = "robust_euclidean_precision_fallback"
+            self._precision = np.asarray(precision, dtype=np.float64)
+            self.precision_condition_number = condition
         self._families = tuple(row.source_family for row in fitted)
         family_codes = {
             family: code for code, family in enumerate(dict.fromkeys(self._families))
@@ -212,7 +269,23 @@ class StrictResidualPolicyAntigravity:
         )
         raw = np.where(np.isfinite(raw), raw, self._medians)
         query = (raw - self._mean) / self._scale
-        distances = np.linalg.norm(self._matrix - query[None, :], axis=1)
+        delta = self._matrix - query[None, :]
+        if self.distance_backend_used == "numba_cpu":
+            from .kernels_numba_antigravity import distance_values_numba_antigravity
+
+            distances = distance_values_numba_antigravity(
+                self._matrix,
+                query,
+                variant=self.distance_variant,
+                precision=getattr(self, "_precision", None),
+            )
+        elif self.distance_variant == "robust_manhattan":
+            distances = np.sum(np.abs(delta), axis=1)
+        elif self.distance_variant == "robust_shrinkage_mahalanobis":
+            squared = np.einsum("nd,df,nf->n", delta, self._precision, delta)
+            distances = np.sqrt(np.maximum(0.0, squared))
+        else:
+            distances = np.linalg.norm(delta, axis=1)
         if self.backend == "numba_cpu":
             from .kernels_numba_antigravity import (
                 nearest_distinct_family_indices_numba_antigravity,
@@ -312,6 +385,7 @@ class StrictResidualPolicyAntigravity:
 
 
 __all__ = [
+    "DISTANCE_VARIANTS_ANTIGRAVITY",
     "StrictResidualPolicyAntigravity",
     "nearest_distinct_family_indices_reference_antigravity",
     "strict_statistics_reference_antigravity",

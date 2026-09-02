@@ -58,6 +58,38 @@ def _strict_statistics_kernel_antigravity(
     return passed, wins, losses, ties, minimum, quantile
 
 
+@njit(cache=True)
+def _manhattan_distances_kernel_antigravity(
+    matrix: np.ndarray, query: np.ndarray
+) -> np.ndarray:
+    result = np.empty(matrix.shape[0], dtype=np.float64)
+    for row in range(matrix.shape[0]):
+        total = 0.0
+        for column in range(matrix.shape[1]):
+            total += abs(matrix[row, column] - query[column])
+        result[row] = total
+    return result
+
+
+@njit(cache=True)
+def _mahalanobis_distances_kernel_antigravity(
+    matrix: np.ndarray, query: np.ndarray, precision: np.ndarray
+) -> np.ndarray:
+    result = np.empty(matrix.shape[0], dtype=np.float64)
+    for row in range(matrix.shape[0]):
+        squared = 0.0
+        for left in range(matrix.shape[1]):
+            left_delta = matrix[row, left] - query[left]
+            for right in range(matrix.shape[1]):
+                squared += (
+                    left_delta
+                    * precision[left, right]
+                    * (matrix[row, right] - query[right])
+                )
+        result[row] = np.sqrt(max(0.0, squared))
+    return result
+
+
 def nearest_distinct_family_indices_numba_antigravity(
     distances: np.ndarray, family_codes: np.ndarray, k: int
 ) -> np.ndarray:
@@ -89,7 +121,37 @@ def strict_statistics_numba_antigravity(
     )
 
 
+def distance_values_numba_antigravity(
+    matrix: np.ndarray,
+    query: np.ndarray,
+    *,
+    variant: str,
+    precision: np.ndarray | None = None,
+) -> np.ndarray:
+    values = np.asarray(matrix, dtype=np.float64)
+    target = np.asarray(query, dtype=np.float64)
+    if (
+        values.ndim != 2
+        or target.shape != (values.shape[1],)
+        or not len(values)
+        or not np.isfinite(values).all()
+        or not np.isfinite(target).all()
+    ):
+        raise ValueError("matrix and query must be aligned finite values")
+    if variant == "robust_manhattan":
+        return _manhattan_distances_kernel_antigravity(values, target)
+    if variant != "robust_shrinkage_mahalanobis":
+        raise ValueError("variant must be a Numba-enabled Exp484 distance")
+    metric = np.asarray(precision, dtype=np.float64)
+    if metric.shape != (values.shape[1], values.shape[1]) or not np.isfinite(
+        metric
+    ).all():
+        raise ValueError("precision must be a finite square feature matrix")
+    return _mahalanobis_distances_kernel_antigravity(values, target, metric)
+
+
 __all__ = [
+    "distance_values_numba_antigravity",
     "nearest_distinct_family_indices_numba_antigravity",
     "strict_statistics_numba_antigravity",
 ]
