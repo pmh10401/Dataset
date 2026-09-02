@@ -1,0 +1,1795 @@
+{
+  "edges": [
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_operations_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_operations_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/backend_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/config_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_contracts_config_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_runner_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_scoring_imaging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp451_verified_accelerated_resume_antigravity/verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp467_numba_calibration_resume_antigravity/config_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp467_numba_calibration_resume_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp467_numba_calibration_resume_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp467_numba_calibration_resume_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp467_numba_calibration_resume_antigravity/hard_route_adapter_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp467_numba_calibration_resume_antigravity/hard_sources_adapter_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp467_numba_calibration_resume_antigravity/minirocket_adapter_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp467_numba_calibration_resume_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp467_numba_calibration_resume_antigravity/science_artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp467_numba_calibration_resume_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp467_numba_calibration_resume_antigravity/tests/test_contracts_config_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp467_numba_calibration_resume_antigravity/tests/test_runner_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp467_numba_calibration_resume_antigravity/tests/test_scoring_imaging_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp467_numba_calibration_resume_antigravity/verifier_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/authority_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/authority_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/authority_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/reporting_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/artifacts_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/config_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/config_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/config_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/artifacts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/runner_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/artifacts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/config_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/runner_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/config_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/artifacts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_artifacts_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/cli_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_artifacts_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_artifacts_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/runner_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_artifacts_cli_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/config_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_config_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/config_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/artifacts_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "paper/equipment_anomaly_detection/artifacts_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "paper/equipment_anomaly_detection/artifacts_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/calibration_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/config_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/data_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/hard_route_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/lineage_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/proposal_score_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "paper/equipment_anomaly_detection/proposal_score_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "paper/equipment_anomaly_detection/proposal_score_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "paper/equipment_anomaly_detection/proposal_score_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/routing_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "paper/equipment_anomaly_detection/routing_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/runner_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_calibration_adapter_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_low_frequency_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_low_frequency_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_minirocket_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/routing_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "caller": "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "caller": "scratch/diagnose_paper_r4_mechanism1_parity_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "caller": "scratch/run_exp450_resampling_image_ablation_antigravity.py",
+      "kind": "ast_import"
+    },
+    {
+      "callee": "experiments/exp473_contemporary_pchip_control_antigravity/cli_antigravity.py",
+      "caller": "scratch/run_exp473_contemporary_pchip_control_antigravity.py",
+      "kind": "ast_import"
+    }
+  ],
+  "flows": [
+    {
+      "from": "verified Exp467 values-only dataset bytes",
+      "name": "exp473_d_prime_score_flow",
+      "through": "current Exp450 condition-D polyphase/PCHIP/area scorer",
+      "to": "finite float64 hard-plus-stable Exp473 score shards"
+    },
+    {
+      "from": "frozen smoke or full catalog",
+      "name": "exp473_durable_execution_flow",
+      "through": "bounded two-wave CPU-minus-one or single-MPS runner",
+      "to": "create-only digest-bound terminal manifest"
+    }
+  ],
+  "nodes": [
+    {
+      "callers": [],
+      "effects": "Governance document: Exp472 D′ 후속 대조 실험 설계",
+      "module": "docs/EXP472_D_PRIME_FOLLOWUP_DESIGN_SOL_HIGH_antigravity_KO.md",
+      "path": "docs/EXP472_D_PRIME_FOLLOWUP_DESIGN_SOL_HIGH_antigravity_KO.md",
+      "sha256": "55e0b3c7cb24adce33b091a259579fbde8fea09e9126362e6f39a5b32bca4f4e",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Governance document: 시계열 이상 탐지에서 업샘플링 보간법의 민감도",
+      "module": "docs/EXP472_PAPER_DRAFT_SOL_HIGH_antigravity_KO.md",
+      "path": "docs/EXP472_PAPER_DRAFT_SOL_HIGH_antigravity_KO.md",
+      "sha256": "35900833ce22a8d7319395af66a070577ea12615cf107745226b09cdd0892976",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Retained Exp473 closure artifact: docs/codemap/codemap_exp472_antigravity.lock",
+      "module": "docs/codemap/codemap_exp472_antigravity.lock",
+      "path": "docs/codemap/codemap_exp472_antigravity.lock",
+      "sha256": "83b3dec68036e0849a49dd604e8fa0107e9994baf967e7948884d2e4ed0033d0",
+      "tests": []
+    },
+    {
+      "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/artifacts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/backend_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/reporting_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/runner_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/verifier_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/verifier_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/config_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py",
+        "scratch/run_exp450_resampling_image_ablation_antigravity.py"
+      ],
+      "effects": "Typed, label-free Exp450 score and backend contracts.",
+      "module": "experiments.exp450_resampling_image_ablation_antigravity.contracts_antigravity",
+      "path": "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+      "sha256": "236169084afb1a6b7d82461f8f71e7d50f8634f41aa97a9833433cf3b3220ae8",
+      "tests": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py"
+      ],
+      "effects": "Dataset-local A--D hard-score integration for the Exp450 ablation.\n\nCondition A calls the frozen Exp449-compatible paper closures directly.  The\nremaining conditions retain those closures' constants, fold plans, repair,\nand selector algebra, replacing only series alignment and Exp55/56 image\nconstruction with the approved factor pair.",
+      "module": "experiments.exp450_resampling_image_ablation_antigravity.scoring_antigravity",
+      "path": "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+      "sha256": "5a8e2c39cd4fc9551ddb0a9bb44358dc5c0da2f52f13e9f527a0a9d6169da673",
+      "tests": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp450_resampling_image_ablation_antigravity/imaging_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py"
+      ],
+      "effects": "Pure Exp450 length conversion and adaptive local-mean pooling primitives.\n\nThe ``linear`` mode delegates directly to the frozen paper control.  The only\nnew length rule is SciPy polyphase downsampling plus normalized-coordinate\nPCHIP upsampling.  These functions do not repair nonfinite source values.",
+      "module": "experiments.exp450_resampling_image_ablation_antigravity.transforms_antigravity",
+      "path": "experiments/exp450_resampling_image_ablation_antigravity/transforms_antigravity.py",
+      "sha256": "28b5fcf731fc7ed31546939bbbaa932e38770f3f6e77864fc353328ddaf059c7",
+      "tests": [
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_imaging_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_transforms_backend_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/score_cache_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/authority_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
+      ],
+      "effects": "Descriptor-bound reconstruction and publication of frozen Exp467 authority.",
+      "module": "experiments.exp471_exp467_evaluation_recovery_antigravity.source_authority_antigravity",
+      "path": "experiments/exp471_exp467_evaluation_recovery_antigravity/source_authority_antigravity.py",
+      "sha256": "a3f2c3688dd36c41adc61f7cf098f21cadb328290c9b1a4b2248dbf4beb524bf",
+      "tests": [
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_evaluation_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_score_cache_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_source_authority_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/authority_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/cli_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/config_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py"
+      ],
+      "effects": "Frozen Exp472 population, roots, scoring identity, and backend policy.",
+      "module": "experiments.exp472_makima_upsampling_ablation_antigravity.config_antigravity",
+      "path": "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+      "sha256": "cc9bb797770cf02b5bc1f30d94d89742955d6e5b3af95c6034b66ea85ac3c84b",
+      "tests": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/artifacts_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/authority_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/evaluation_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/reporting_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/runner_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py"
+      ],
+      "effects": "Frozen, label-free Exp472 configuration and score artifact contracts.",
+      "module": "experiments.exp472_makima_upsampling_ablation_antigravity.contracts_antigravity",
+      "path": "experiments/exp472_makima_upsampling_ablation_antigravity/contracts_antigravity.py",
+      "sha256": "eaf2acc726d4a372903094684278e7c54e9e9f0e8338da6d73aa68148f6213c2",
+      "tests": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py"
+      ],
+      "effects": "Thin, label-free condition-E scoring over Exp450's isolated aligner boundary.",
+      "module": "experiments.exp472_makima_upsampling_ablation_antigravity.scoring_antigravity",
+      "path": "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+      "sha256": "2988bb4dd0a02e376f09705a4b4967f4b9266a2c15f2c240af7dec6517f39438",
+      "tests": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py"
+      ],
+      "effects": "Exact SciPy Makima alignment and label-free shape evidence for Exp472.",
+      "module": "experiments.exp472_makima_upsampling_ablation_antigravity.transforms_antigravity",
+      "path": "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py",
+      "sha256": "d2d6e3fae5ec1f9364ef316427475bd7388fa049848bd66299e934c281711ba5",
+      "tests": [
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_artifacts_runner_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp473_contemporary_pchip_control_antigravity/runner_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_artifacts_cli_antigravity.py"
+      ],
+      "effects": "Create-only, digest-bound score artifacts for Exp473.",
+      "module": "experiments.exp473_contemporary_pchip_control_antigravity.artifacts_antigravity",
+      "path": "experiments/exp473_contemporary_pchip_control_antigravity/artifacts_antigravity.py",
+      "sha256": "69d2b6a1cd0177040038589fcbdc4c155fd22175676d44d37e727e017d0f9813",
+      "tests": [
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_artifacts_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_artifacts_cli_antigravity.py",
+        "scratch/run_exp473_contemporary_pchip_control_antigravity.py"
+      ],
+      "effects": "Closed, read-only observation surface for Exp473 D-prime.",
+      "module": "experiments.exp473_contemporary_pchip_control_antigravity.cli_antigravity",
+      "path": "experiments/exp473_contemporary_pchip_control_antigravity/cli_antigravity.py",
+      "sha256": "4010779f6c54ba1d205e7af9c45d1ddf25e354b612315e01341d9a71fb8a8d78",
+      "tests": [
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_artifacts_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp473_contemporary_pchip_control_antigravity/cli_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_config_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py"
+      ],
+      "effects": "Frozen Exp473 identity for the contemporary same-environment PCHIP control.",
+      "module": "experiments.exp473_contemporary_pchip_control_antigravity.config_antigravity",
+      "path": "experiments/exp473_contemporary_pchip_control_antigravity/config_antigravity.py",
+      "sha256": "3074519a3675e98c328865802b1c13e5bd3fff3784a49367cb2b91440f5ff087",
+      "tests": [
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_config_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp473_contemporary_pchip_control_antigravity/artifacts_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/cli_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/runner_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_artifacts_cli_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py"
+      ],
+      "effects": "Typed, label-free durable contracts for Exp473 D-prime scores.",
+      "module": "experiments.exp473_contemporary_pchip_control_antigravity.contracts_antigravity",
+      "path": "experiments/exp473_contemporary_pchip_control_antigravity/contracts_antigravity.py",
+      "sha256": "0a44eff1f0218058f1d8291da64e8ce60c99ddae674ebe447065092a523977db",
+      "tests": [
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_artifacts_cli_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_artifacts_cli_antigravity.py"
+      ],
+      "effects": "Bounded two-wave execution for label-free Exp473 D-prime scores.",
+      "module": "experiments.exp473_contemporary_pchip_control_antigravity.runner_antigravity",
+      "path": "experiments/exp473_contemporary_pchip_control_antigravity/runner_antigravity.py",
+      "sha256": "fec4b9a4e54f9a282818ee3dbe87fa858830b809c79904b28232df45487c097d",
+      "tests": [
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_artifacts_cli_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp473_contemporary_pchip_control_antigravity/cli_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py"
+      ],
+      "effects": "Typed Exp473 runtime over current verified values and official Exp472-E identities.",
+      "module": "experiments.exp473_contemporary_pchip_control_antigravity.runtime_antigravity",
+      "path": "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+      "sha256": "48f27985aa0e09a0bef437499ada91fc3c214c0573b2f897d6d9c57855d0962d",
+      "tests": [
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py"
+      ],
+      "effects": "Label-free Exp473 same-environment PCHIP control scoring boundary.",
+      "module": "experiments.exp473_contemporary_pchip_control_antigravity.scoring_antigravity",
+      "path": "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+      "sha256": "3d24f1023f71333b106df4a9efc84d6423e9c702f77945210e3e1d4be7b16f9a",
+      "tests": [
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py"
+      ]
+    },
+    {
+      "callers": [],
+      "effects": "Durable Exp473 shard, manifest, status, and verification contracts.",
+      "module": "experiments.exp473_contemporary_pchip_control_antigravity.tests.test_artifacts_cli_antigravity",
+      "path": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_artifacts_cli_antigravity.py",
+      "sha256": "3f337f990bb312f0dc13c56f5b3fd8b6e03c09e94943b83c972f0e990cc90137",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Frozen identity checks for the Exp473 contemporary PCHIP control.",
+      "module": "experiments.exp473_contemporary_pchip_control_antigravity.tests.test_config_antigravity",
+      "path": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_config_antigravity.py",
+      "sha256": "7ccaffcbc3f7260d97c0da94fab06336820aa95c03b70818c5fdce2c8af2383e",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Exp473 current values authority and Exp472-E input binding tests.",
+      "module": "experiments.exp473_contemporary_pchip_control_antigravity.tests.test_runtime_antigravity",
+      "path": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py",
+      "sha256": "639ead1cc6a9f370fd92d94e5eaea7c1d0797824157066efbde470a1aaef5a77",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Exp473 same-environment PCHIP control scoring contracts.",
+      "module": "experiments.exp473_contemporary_pchip_control_antigravity.tests.test_scoring_antigravity",
+      "path": "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py",
+      "sha256": "34b66a72f376a986fbae570ad3416d91a9b307d2355f149373873a2e3b73f244",
+      "tests": []
+    },
+    {
+      "callers": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_operations_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/operations_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/artifacts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/config_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/config_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/contracts_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/runner_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/scoring_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_contracts_config_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_runner_cli_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_scoring_imaging_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/config_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/contracts_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/hard_route_adapter_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/hard_sources_adapter_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/minirocket_adapter_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/runner_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/science_artifacts_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/scoring_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/tests/test_contracts_config_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/tests/test_runner_cli_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/tests/test_scoring_imaging_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/config_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/transforms_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/runtime_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py",
+        "paper/equipment_anomaly_detection/artifacts_paper.py",
+        "paper/equipment_anomaly_detection/calibration_paper.py",
+        "paper/equipment_anomaly_detection/config_paper.py",
+        "paper/equipment_anomaly_detection/data_paper.py",
+        "paper/equipment_anomaly_detection/hard_route_paper.py",
+        "paper/equipment_anomaly_detection/lineage_paper.py",
+        "paper/equipment_anomaly_detection/proposal_score_paper.py",
+        "paper/equipment_anomaly_detection/routing_paper.py",
+        "paper/equipment_anomaly_detection/runner_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/hard_sources_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/legacy_route_sources_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/minirocket_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/preprocessing_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_calibration_adapter_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_route_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_hard_sources_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_low_frequency_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_minirocket_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py",
+        "scratch/diagnose_paper_r4_mechanism1_parity_antigravity.py"
+      ],
+      "effects": "Immutable values shared by the paper rerun provenance boundary.",
+      "module": "paper.equipment_anomaly_detection.contracts_paper",
+      "path": "paper/equipment_anomaly_detection/contracts_paper.py",
+      "sha256": "ceb14c768ae5b04b58926178ed04d21bc19c0857fb055a779843395abf005b3a",
+      "tests": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_operations_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_smoke_remediation_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_execution_lifecycle_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_artifacts_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_contracts_config_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_runner_cli_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/tests/test_scoring_imaging_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/tests/test_contracts_config_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/tests/test_runner_cli_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/tests/test_scoring_imaging_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_authority_evaluation_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_config_contracts_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_reporting_cli_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_transforms_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_runtime_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/tests/test_scoring_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_operations_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/contracts_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/contracts_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+        "paper/equipment_anomaly_detection/artifacts_paper.py",
+        "paper/equipment_anomaly_detection/proposal_score_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py"
+      ],
+      "effects": "Exact four-policy proposal routes with continuous threshold-equivalent scores.",
+      "module": "paper.equipment_anomaly_detection.routing_paper",
+      "path": "paper/equipment_anomaly_detection/routing_paper.py",
+      "sha256": "c0cfd4bc57a568cadcb996c9c638dd3fc1ae0e713ae82d5f2c33311a030bac6a",
+      "tests": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_operations_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+        "paper/equipment_anomaly_detection/proposal_score_paper.py",
+        "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_low_frequency_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py"
+      ],
+      "effects": "Standalone full-TEST Exp440 low-frequency evidence and Exp441 selection.\n\nThis is the values-only scientific closure for the frozen Exp440 feature,\ncalibration, score, and strict two-depth decision, followed by Exp441's\nHard-empty one-per-dataset budget-30 rule.  It intentionally has no runtime\ndependency on ``experiments.exp440...`` or on historical artifacts.\n\nThis Task 6 source performs no full-dataset acceleration assessment.  Task 9\nmust establish exact CPU/device numerical and candidate parity plus an\nend-to-end 1.1x speed gate before any non-CPU backend can be authorized.",
+      "module": "paper.equipment_anomaly_detection.sources_paper.low_frequency_paper",
+      "path": "paper/equipment_anomaly_detection/sources_paper/low_frequency_paper.py",
+      "sha256": "8e531db02d3a79974c502bc95b4a62f88346db24cc1f96303d7ea4d8beb3a196",
+      "tests": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_numba_preprocessing_antigravity.py",
+        "experiments/exp471_exp467_evaluation_recovery_antigravity/tests/test_preprocessing_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/runner_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/contracts_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/runner_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+        "experiments/exp451_verified_accelerated_resume_antigravity/contracts_antigravity.py",
+        "experiments/exp467_numba_calibration_resume_antigravity/contracts_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/scoring_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py",
+        "experiments/exp473_contemporary_pchip_control_antigravity/scoring_antigravity.py",
+        "paper/equipment_anomaly_detection/artifacts_paper.py",
+        "paper/equipment_anomaly_detection/proposal_score_paper.py",
+        "paper/equipment_anomaly_detection/routing_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_artifacts_runner_paper.py",
+        "paper/equipment_anomaly_detection/tests_paper/test_stability_paper.py"
+      ],
+      "effects": "Standalone deterministic TRAIN-omission replay for selected paper candidates.\n\nThe numerical low-frequency calibration remains in ``low_frequency_paper``;\nthis module copies Exp444's pure mask, retained-TRAIN, survival, and partition\nclosure without importing the legacy Exp444 package at runtime.",
+      "module": "paper.equipment_anomaly_detection.sources_paper.stability_paper",
+      "path": "paper/equipment_anomaly_detection/sources_paper/stability_paper.py",
+      "sha256": "56d90cef14f37580c5bc5d126e7fac8637d27053f5876bccb95681b83136d25e",
+      "tests": [
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_full_route_parity_recovery_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_progress_logging_antigravity.py",
+        "experiments/exp448_exp447_text_label_boundary_repair_antigravity/tests/test_paper_r4_task5_task6_policy_identity_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_manifest_verifier_antigravity.py",
+        "experiments/exp449_reproducible_rebaseline_antigravity/tests/test_runner_recovery_antigravity.py",
+        "experiments/exp450_resampling_image_ablation_antigravity/tests/test_runner_verifier_antigravity.py",
+        "experiments/exp472_makima_upsampling_ablation_antigravity/tests/test_scoring_antigravity.py"
+      ]
+    },
+    {
+      "callers": [],
+      "effects": "Generate and verify the synchronized Exp473 code-map triplet.",
+      "module": "scratch.generate_exp473_codemap_antigravity",
+      "path": "scratch/generate_exp473_codemap_antigravity.py",
+      "sha256": "9a96e5d54de965e3f7cb8efdbb165720ad3a0c150c1cd124e830a524884824db",
+      "tests": []
+    },
+    {
+      "callers": [],
+      "effects": "Direct launcher for the closed Exp473 command surface.",
+      "module": "scratch.run_exp473_contemporary_pchip_control_antigravity",
+      "path": "scratch/run_exp473_contemporary_pchip_control_antigravity.py",
+      "sha256": "dc62abcb22f9b0a3b682cc96a546fabb1b2d6fa2b4298b8cb5db5c70d8c03db7",
+      "tests": []
+    }
+  ],
+  "schema": "exp473-codemap.v1",
+  "scope": {
+    "experiment": "Exp473",
+    "namespace": "experiments/exp473_contemporary_pchip_control_antigravity",
+    "node_count": 28,
+    "production_node_count": 7,
+    "questions": {
+      "what_calls_it": "nodes[].callers and edges",
+      "what_does_it_affect": "nodes[].effects and flows",
+      "which_tests_cover_it": "nodes[].tests"
+    },
+    "test_node_count": 4,
+    "version": "exp473"
+  }
+}
