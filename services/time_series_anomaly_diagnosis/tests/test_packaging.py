@@ -63,7 +63,7 @@ class PackagingTest(unittest.TestCase):
         self.assertEqual(
             command,
             [
-                "/opt/diagnosis/python",
+                str(Path("/opt/diagnosis/python")),
                 "-m",
                 "PyInstaller",
                 "--noconfirm",

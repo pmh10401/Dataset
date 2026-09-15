@@ -2,7 +2,7 @@ name: Windows diagnosis service
 on:
   push:
     branches: ['codex/windows-service-release-*']
-    paths: ['services/time_series_anomaly_diagnosis/**', '.github/workflows/windows_service_antigravity.yml']
+    paths: ['services/time_series_anomaly_diagnosis/**', '!services/time_series_anomaly_diagnosis/docs/**', '.github/workflows/windows_service_antigravity.yml']
 permissions:
   contents: read
 jobs:
@@ -36,4 +36,5 @@ jobs:
           name: windows-verified-application
           path: dist/windows/TimeSeriesAnomalyDiagnosis/
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 7
