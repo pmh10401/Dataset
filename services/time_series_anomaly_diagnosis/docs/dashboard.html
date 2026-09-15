@@ -155,13 +155,16 @@
 <main>
   <section id="windows-release">
     <h2>Windows 전체 데이터 배포 · 2026-09-15</h2>
-    <p>분석 모델을 유지하고 검색·결과 이동을 개선한 오프라인 실행본을 준비 중입니다.</p>
+    <p>분석 모델을 유지하고 검색·결과 이동을 개선한 Windows 오프라인 초기 배포본을 비공개 GitHub Releases에 게시했습니다.</p>
     <p><label><input type="checkbox" checked disabled> 검색·가용성 필터·완료 결과 바로 열기 구현</label><br>
     <label><input type="checkbox" checked disabled> 실제 DB 분석과 1440·1024·390px 화면 검증</label><br>
-    <label><input type="checkbox" checked disabled> 로컬 관련 테스트 37개 통과</label><br>
-    <label><input id="windows-build-done" type="checkbox" disabled> Windows 실행파일 빌드·분석·재시작 검증</label><br>
-    <label><input id="windows-upload-done" type="checkbox" disabled> 전체 DB 포함 분할 압축 검증·비공개 GitHub 배포</label></p>
-    <p><a href="https://github.com/pmh10401/Dataset/actions/runs/34920700445">Windows 빌드 진행 보기</a> · <a href="windows_release_guide.html">설치와 실행 안내</a></p>
+    <label><input type="checkbox" checked disabled> 로컬 관련 테스트 38개 통과</label><br>
+    <label><input id="windows-build-done" type="checkbox" checked disabled> Windows 실행파일 빌드·분석·재시작 검증</label><br>
+    <label><input id="windows-upload-done" type="checkbox" checked disabled> 전체 DB 포함 분할 압축 검증·비공개 GitHub 배포</label></p>
+    <p><a href="https://github.com/pmh10401/Dataset/actions/runs/34921847388">Windows 실행 검증 결과</a> · <a href="windows_release_guide.html">설치와 실행 안내</a></p>
+    <p><a href="https://github.com/pmh10401/Dataset/releases/tag/diagnosis-windows-2026.09.15">Windows 실행본과 전체 데이터 다운로드</a> — 500MiB 조각 2개 + 28.3MiB 조각 1개. 총 1,078,294,878바이트입니다. 조각 3개와 restore.cmd, restore.ps1, manifest.json을 같은 폴더에 받고 restore.cmd를 실행하세요. START_HERE.html을 포함한 첨부파일 7개 모두 GitHub 서버와 로컬의 SHA-256 일치를 확인했습니다.</p>
+    <p>검증: Windows Server 2025 x64에서 테스트 34개, 실행파일의 합성 데이터 분석·재시작 결과 보존 검사 통과. 로컬에서 분할 파일 재조립, ZIP 전체 CRC, DB SHA-256·무결성·행 수 검사 통과. UI는 Playwright로 1440·1024·390px 화면의 검색·필터·실제 Trace 분석·결과 열기·그래프 선택·기록 복귀를 확인했고 JavaScript 오류는 없었습니다. Windows 10/11 사용자 실기기 및 조직별 실행 정책은 미검증입니다.</p>
+    <p>전체 DB: 데이터셋 1,119개 / 시계열 레코드 396,737개. 서비스 분석 가능 항목은 956개이며 나머지도 DB에 포함합니다. Windows 패키지의 분석·재시작 검사는 합성 데이터로 수행했고, 실제 Trace 데이터의 UI 분석은 Mac에서 확인했습니다. 1,119개 전체의 성능을 새로 평가한 것은 아닙니다.</p>
     <p>원본 DB를 수정하지 않습니다. 개인 분석 기록·캐시는 배포하지 않습니다. Windows 사용자 PC의 조직별 실행 정책은 별도 확인이 필요합니다.</p>
   </section>
   <header>
