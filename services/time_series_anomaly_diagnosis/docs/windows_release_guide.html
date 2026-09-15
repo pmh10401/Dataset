@@ -1,0 +1,12 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Windows 시작 안내 · 시계열 이상 진단</title>
+<style>body{max-width:760px;margin:64px auto;padding:0 24px;font:16px/1.8 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1d1d1f}h1{letter-spacing:-.04em}code{background:#f5f5f7;padding:3px 6px;border-radius:5px}aside{padding:20px;background:#fff8e8;border-radius:12px}</style>
+<h1>데이터에서 이상을 찾으세요.</h1><p>Windows 10/11 64비트용 · CPU 실행 · Python 설치와 CUDA가 필요하지 않습니다.</p>
+<h2>처음 한 번</h2><ol><li>GitHub Releases의 <code>diagnosis-windows.zip.001</code>부터 마지막 조각까지 모두 같은 폴더에 내려받습니다.</li>
+<li><code>restore.cmd</code>, <code>restore.ps1</code>, <code>manifest.json</code>도 같은 폴더에 저장합니다.</li>
+<li><code>restore.cmd</code>를 더블클릭합니다. 파일 검사 → 압축 복원 → DB 검사가 순서대로 진행됩니다.</li>
+<li>열린 폴더의 <code>TimeSeriesAnomalyDiagnosis.exe</code>를 더블클릭합니다. 브라우저에 분석 화면이 열립니다.</li></ol>
+<h2>분석하기</h2><p>이름 검색 → 데이터 선택 → 분석 시작 → 작업 대기열의 결과 열기 → 이상 시계열 선택 순서로 확인합니다. 전체 DB가 포함되어 있으며, 분석 불가 항목도 필터를 해제하면 확인할 수 있습니다. 데이터가 포함되어 있다는 것이 모든 데이터의 분석 가능성을 뜻하지는 않습니다.</p>
+<aside>첫 분석은 계산 준비 때문에 시간이 더 걸릴 수 있습니다. 표본 수 제한으로 확정된 이상치에는 통계적 확신이 더 낮다는 경고가 표시됩니다. 모델의 판단은 연구팀이 검토해야 하며 의료 진단을 대신하지 않습니다.</aside>
+<h2>보관과 종료</h2><p>실행 중에는 검은 실행 창을 유지하고, 종료할 때는 해당 창에서 Ctrl+C를 누릅니다. DB와 분석 기록은 실행파일 옆 <code>data</code> 폴더에 저장됩니다. 새 버전을 받을 때 기존 폴더에 덮어쓰지 마세요. 압축 조각·복원 ZIP·실행 폴더가 동시에 존재하므로 여유 공간 12GB 이상을 권장합니다.</p>
+<h2>실행이 안 될 때</h2><p>모든 압축 조각을 받았는지 확인하세요. 이미 복원한 폴더에는 재복원하지 않습니다. 서명되지 않은 내부 배포본은 Windows에서 경고가 나올 수 있습니다. 조직의 실행 정책을 따르고, 보안 기능을 끄지 마세요. 8485 포트가 사용 중이면 기존 진단 프로그램을 확인하거나 관리자에게 문의하세요. 닫힌 망에서는 승인된 방법으로 배포 파일을 옮긴 뒤 사용할 수 있습니다.</p></html>

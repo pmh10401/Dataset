@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>시계열 이상 진단 · 새 분석</title>
+  <link rel="stylesheet" href="/service_styles.css">
+  <script src="/application.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="product-name">시계열 이상 진단</div>
+    <div class="connection" aria-live="polite">
+      <span class="connection-dot" aria-hidden="true"></span>
+      <span id="connection-state" role="status">연결 확인 중</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <nav class="sidebar" aria-label="주요 화면">
+      <p class="nav-label">분석 작업</p>
+      <button class="nav-button active" type="button" data-view="analysis-view" aria-current="page">새 분석</button>
+      <button class="nav-button" type="button" data-view="queue-view">작업 대기열</button>
+      <button class="nav-button" type="button" data-view="history-view">분석 기록</button>
+      <p class="sidebar-note">LOCAL WORKSPACE<br>등록된 DB에서 직접 분석합니다.<br>외부 업로드 없이, 이 컴퓨터에서.<br><br>계산 장치: CPU · Numba</p>
+    </nav>
+
+    <main>
+      <section class="view" id="analysis-view" aria-labelledby="analysis-title">
+        <p class="eyebrow">새 분석</p>
+        <h1 id="analysis-title" tabindex="-1">데이터에서 이상을 찾으세요.</h1>
+        <p class="lede">데이터 선택부터 이상치 확인까지, 한곳에서.<br>분석할 데이터를 고르면 정상 기준과 분석 조건을 확인할 수 있습니다.</p>
+
+        <div class="workspace">
+          <section aria-labelledby="dataset-heading">
+            <h2 class="section-title" id="dataset-heading">데이터셋</h2>
+            <label class="search-label" for="dataset-search">데이터셋 이름 검색</label>
+            <div class="search-toolbar">
+              <input class="search-input" id="dataset-search" type="search" placeholder="예: Trace 또는 ECG5000" autocomplete="off">
+              <button class="secondary-button" id="clear-search" type="button">초기화</button>
+            </div>
+            <label class="filter-toggle"><input id="available-only" type="checkbox" checked> 분석 가능한 데이터만 보기</label>
+            <div class="list-meta"><span id="result-count">불러오는 중</span><span id="total-count"></span></div>
+            <div class="dataset-list" id="dataset-list" role="listbox" aria-label="데이터셋 검색 결과">
+              <div class="empty-state">데이터셋 목록을 불러오는 중...</div>
+            </div>
+          </section>
+
+          <aside class="selection-panel" id="selected-dataset-info" aria-live="polite" aria-labelledby="selection-heading">
+            <p class="selection-kicker">선택한 데이터셋</p>
+            <h2 class="selection-name" id="selection-heading">아직 선택하지 않음</h2>
+            <p class="selection-help" id="selection-help">왼쪽 목록에서 분석할 데이터셋을 선택하세요.</p>
+            <dl class="facts">
+              <div class="fact"><dt>학습 시계열</dt><dd id="fact-train">—</dd></div>
+              <div class="fact"><dt>평가 시계열</dt><dd id="fact-eval">—</dd></div>
+              <div class="fact"><dt>시계열 길이</dt><dd id="fact-length">—</dd></div>
+              <div class="fact"><dt>정상 기준</dt><dd>학습 데이터의 최다 라벨</dd></div>
+              <div class="fact"><dt>분석 경로</dt><dd id="fact-route">—</dd></div>
+            </dl>
+            <button class="primary-button" id="start-analysis" type="button" disabled>분석 시작</button>
+            <div class="notice" id="analysis-notice" role="status" aria-live="polite"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="queue-view" aria-labelledby="queue-title" hidden>
+        <p class="eyebrow">작업 대기열</p>
+        <h1 id="queue-title" tabindex="-1">진행 중인 분석</h1>
+        <p class="lede" id="queue-summary" role="status">분석은 순서대로 실행됩니다. 첫 분석은 계산 준비로 시간이 더 걸릴 수 있습니다.</p>
+        <button id="latest-result" type="button" class="secondary-button result-shortcut" hidden></button>
+        <div class="plain-list" id="queue-list" aria-live="polite">
+          <p class="empty-state">작업 대기열을 불러오는 중입니다.</p>
+        </div>
+      </section>
+
+      <section class="view" id="history-view" aria-labelledby="history-title" hidden>
+        <p class="eyebrow">분석 기록</p>
+        <h1 id="history-title" tabindex="-1">최근 완료된 분석</h1>
+        <p class="lede">결과를 다시 열어 자동 탐지 이상과 검토 후보를 확인할 수 있습니다.</p>
+        <div class="plain-list" id="history-list">
+          <p class="empty-state">분석 기록을 불러오는 중입니다.</p>
+        </div>
+      </section>
+
+      <section class="view result-view" id="result-workspace" aria-labelledby="result-title" hidden>
+        <button id="back-to-history" type="button" class="secondary-button result-shortcut">← 분석 기록</button>
+        <p class="eyebrow">분석 기록</p>
+        <div class="result-heading">
+          <div>
+            <h1 id="result-title" tabindex="-1">분석 결과 검토</h1>
+            <p id="result-subtitle" class="lede">작업 상태 및 세부 진단 결과</p>
+          </div>
+          <div id="result-meta"></div>
+        </div>
+
+        <div class="chart-panel">
+          <div class="chart-toolbar">
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-swatch band"></span>정상 기준 범위 (q10–q90)</span>
+              <span class="legend-item"><span class="legend-swatch median"></span>학습 중앙값</span>
+              <span class="legend-item"><span class="legend-swatch series"></span>평가 시계열</span>
+            </div>
+            <span id="active-series-label" class="active-label">시계열을 선택해주세요</span>
+          </div>
+          <div class="canvas-wrapper">
+            <canvas id="series-chart" width="860" height="320" role="img" aria-label="선택한 시계열 그래프"></canvas>
+          </div>
+        </div>
+
+        <div id="detection-summary" role="status" class="detection-summary">분석 결과를 불러오는 중입니다.</div>
+        <div class="results-grid">
+          <section class="result-section">
+            <h2 class="section-title">자동 확정 이상</h2>
+            <p class="subtext">일반 기준을 통과했거나 표본 수 제한 규칙으로 확정한 이상치입니다.</p>
+            <div id="automatic-detections" class="candidate-list">
+              <span class="muted-text">자동 확정된 이상 시계열이 없습니다.</span>
+            </div>
+          </section>
+
+          <section class="result-section resolution-section">
+            <h2 class="section-title">표본 수 제한 자동 확정 경고</h2>
+            <p class="subtext">가능한 최소 p값에 도달해 자동 확정했지만, 정상 기준 자료가 적어 일반 자동 확정보다 통계적 확신이 낮습니다.</p>
+            <div id="resolution-limited-warning" class="candidate-list" role="status">
+              <span class="muted-text">표본 수 제한으로 확정된 이상치가 없습니다.</span>
+            </div>
+          </section>
+
+          <section class="result-section">
+            <h2 class="section-title">다중 근거 검토 후보</h2>
+            <p class="subtext">여러 독립 근거가 지목한 항목입니다. 자동 판정을 바꾸지 않으며 우선순위 순서로 검토합니다.</p>
+            <div id="multiple-evidence-review" class="candidate-list" role="status">
+              <span class="muted-text">다중 근거 검토 자료를 불러오는 중입니다.</span>
+            </div>
+          </section>
+
+          <section class="result-section">
+            <h2 class="section-title">현재 자동 판정 평가 (보조 지표)</h2>
+            <p class="subtext">표본 수 제한으로 자동 확정한 이상치까지 포함한 현재 판정 성능입니다.</p>
+            <div id="model-evaluation" class="evaluation-metrics">
+              <span class="muted-text">평가 정보를 불러올 수 없습니다.</span>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <div id="global-alert" role="alert" aria-live="assertive" class="alert-container" hidden></div>
+    </main>
+  </div>
+</body>
+</html>

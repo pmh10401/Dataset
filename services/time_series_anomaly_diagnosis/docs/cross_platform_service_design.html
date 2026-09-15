@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Windows·Mac 시계열 이상 진단 서비스 설계</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #f5f5f7;
+      --surface: #ffffff;
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --line: #d9d9de;
+      --blue: #0071e3;
+      --green: #248a3d;
+      --amber: #8a5a00;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    main { width: min(1040px, calc(100% - 32px)); margin: 48px auto 80px; }
+    header { padding: 16px 0 32px; border-bottom: 1px solid var(--line); }
+    section { padding: 32px 0; border-bottom: 1px solid var(--line); }
+    h1, h2, h3 { margin-top: 0; line-height: 1.22; letter-spacing: -.025em; }
+    h1 { max-width: 760px; margin-bottom: 14px; font-size: clamp(32px, 5vw, 52px); }
+    h2 { margin-bottom: 18px; font-size: 26px; }
+    h3 { margin-bottom: 8px; font-size: 17px; }
+    p { margin: 8px 0; }
+    ul, ol { margin: 10px 0; padding-left: 22px; }
+    li + li { margin-top: 7px; }
+    a { color: var(--blue); }
+    code { padding: 2px 5px; border-radius: 4px; background: #eeeeF2; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .92em; }
+    .kicker { margin-bottom: 8px; color: var(--blue); font-size: 13px; font-weight: 650; }
+    .lede { max-width: 760px; color: var(--muted); font-size: 18px; }
+    .status { margin-top: 20px; color: var(--muted); font-size: 13px; }
+    .decision { padding: 16px 18px; border-left: 3px solid var(--blue); background: var(--surface); }
+    .warning { border-left-color: var(--amber); }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 36px; }
+    .item { padding-top: 14px; border-top: 1px solid var(--line); }
+    .item p { color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 13px; font-weight: 650; }
+    .checklist { display: grid; gap: 10px; }
+    .checklist label { display: flex; gap: 9px; align-items: flex-start; }
+    input[type="checkbox"] { margin-top: 5px; accent-color: var(--green); }
+    .done { color: var(--green); font-weight: 650; }
+    .pending { color: var(--amber); font-weight: 650; }
+    .compact { color: var(--muted); font-size: 13px; }
+    @media (max-width: 720px) {
+      main { margin-top: 24px; }
+      section { padding: 26px 0; }
+      .grid { grid-template-columns: 1fr; gap: 18px; }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="kicker">교차 운영체제 서비스 설계</p>
+    <h1>Windows와 Mac에서 함께 쓰는 시계열 이상 진단 서비스</h1>
+    <p class="lede">한 대의 중앙 서버에서 프로그램을 실행하고, 연구팀은 Windows나 Mac의 브라우저로 접속합니다. 원본 데이터는 네트워크로 업로드하지 않고 서버에서 직접 등록합니다.</p>
+    <p class="status">갱신일 2026-09-09 · 구현·Mac 통합 검증 완료 · Windows 실기기 검증 대기</p>
+  </header>
+
+  <section>
+    <h2>1. 확정된 요구사항</h2>
+    <div class="checklist">
+      <label><input type="checkbox" checked disabled><span><strong>중앙 서버 방식</strong>을 사용한다.</span></label>
+      <label><input type="checkbox" checked disabled><span>Windows와 Mac 사용자는 같은 웹 화면으로 접속한다.</span></label>
+      <label><input type="checkbox" checked disabled><span>서버 프로그램은 관리자가 <strong>아이콘을 눌러 실행</strong>한다.</span></label>
+      <label><input type="checkbox" checked disabled><span>초기 동시 사용자는 연구팀 <strong>10명 이내</strong>로 본다.</span></label>
+      <label><input type="checkbox" checked disabled><span>네트워크를 통한 데이터 업로드 기능은 만들지 않는다.</span></label>
+      <label><input type="checkbox" checked disabled><span>관리자가 서버에 직접 접속해 데이터베이스를 등록한다.</span></label>
+      <label><input type="checkbox" checked disabled><span>CUDA가 없어도 CPU·Numba로 모든 필수 기능이 동작한다.</span></label>
+      <label><input type="checkbox" checked disabled><span>A안의 작업 중심 흐름과 절제된 Apple 계열 시각 원칙을 사용한다.</span></label>
+      <label><input type="checkbox" checked disabled><span>이 HTML 설계서의 최종 사용자 검토</span></label>
+      <label><input type="checkbox" checked disabled><span>HTML 구현 계획 작성</span></label>
+      <label><input type="checkbox" checked disabled><span>HTML 구현 계획 사용자 승인</span></label>
+      <label><input type="checkbox" checked disabled><span>Windows·Mac용 패키지 구성 구현</span></label>
+      <label><input type="checkbox" checked disabled><span>Mac 패키지 기동과 Hydra 분석 확인</span></label>
+      <label><input type="checkbox" checked disabled><span>자동 통합 검사와 최종 Mac 설치본 등록·분석·재시작 검증</span></label>
+      <label><input type="checkbox" disabled><span>Windows 실기기 빌드·실행 및 Mac과 판정 비교</span></label>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. 권장 구조</h2>
+    <div class="grid">
+      <div class="item"><h3>실행 프로그램</h3><p>Windows와 Mac에서 각각 만든 실행 아이콘이 서버를 시작하고 준비가 끝나면 브라우저를 엽니다. 운영체제 부팅 시 자동 실행은 하지 않습니다.</p></div>
+      <div class="item"><h3>웹 작업 공간</h3><p>새 분석, 작업 대기열, 분석 기록, 분석 결과를 제공합니다. 연구팀 PC에는 별도 분석 프로그램을 설치하지 않습니다.</p></div>
+      <div class="item"><h3>응용 서버</h3><p>현재 Python HTTP 서버와 API를 재사용합니다. 여러 브라우저 요청은 받을 수 있지만 실제 분석은 한 건씩 처리합니다.</p></div>
+      <div class="item"><h3>분석 엔진</h3><p>현재 검증된 점수, 라우팅, p값, 다중 증거 규칙을 그대로 사용합니다. 운영체제가 달라져도 판정 기준은 바꾸지 않습니다.</p></div>
+      <div class="item"><h3>원본 데이터 DB</h3><p>서비스는 읽기 전용으로 엽니다. 시계열 값은 현재 방식처럼 float32 이진 배열로 저장해 샘플마다 행을 만드는 낭비를 피합니다.</p></div>
+      <div class="item"><h3>분석 결과 DB</h3><p>대기·실행·완료·실패 상태와 결과를 별도 SQLite DB에 저장합니다. 서버를 다시 실행해도 분석 기록이 남습니다.</p></div>
+    </div>
+    <div class="decision"><strong>단순화 결정:</strong> 10명 이내에서는 현재의 <code>ThreadingHTTPServer</code>, 분석 작업자 1개, SQLite 두 개를 유지합니다. Redis, 별도 작업 서버, PostgreSQL, Electron은 지금 추가하지 않습니다.</div>
+  </section>
+
+  <section>
+    <h2>3. 실행 흐름</h2>
+    <ol>
+      <li>관리자가 Windows 또는 Mac 중앙 서버에서 실행 아이콘을 누릅니다.</li>
+      <li>프로그램은 DB와 모델 자료를 검사하고 내부 웹 서버를 시작합니다.</li>
+      <li>준비가 끝난 뒤 중앙 서버의 기본 브라우저를 자동으로 엽니다.</li>
+      <li>다른 연구원은 내부 네트워크 주소로 같은 화면에 접속합니다.</li>
+      <li>사용자가 DB에 등록된 데이터셋 이름을 검색하고 하나를 선택합니다.</li>
+      <li>사용자가 분석 시작을 누르면 요청이 공용 대기열에 저장됩니다.</li>
+      <li>분석 작업자는 원본 DB를 읽고, 사용 가능한 검증된 계산 경로로 결과를 만듭니다.</li>
+      <li>완료 결과를 별도 DB에 저장하고 웹 화면에 이상 시계열과 검토 후보를 표시합니다.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>4. 네트워크 업로드 없는 데이터 등록</h2>
+    <p>웹 서비스에는 파일 업로드 화면과 업로드 API를 두지 않습니다. 데이터 등록은 중앙 서버에서만 실행하는 로컬 등록 프로그램이 담당합니다.</p>
+    <ol>
+      <li>서비스를 종료합니다.</li>
+      <li>관리자가 승인된 원본 파일이나 DB를 서버의 <code>incoming</code> 폴더에 직접 복사합니다.</li>
+      <li>로컬 등록 프로그램이 데이터셋 이름, TRAIN·TEST 구분, 시계열 길이, 결측값, 무한값, 라벨 수를 검사합니다.</li>
+      <li>원본 TRAIN에서 가장 많이 등장하는 라벨을 정상 클래스로 정하고, 원래 라벨과 변환 규칙을 등록 기록에 남깁니다.</li>
+      <li>서비스가 사용하는 파생 DB에서는 정상 TRAIN을 표준 라벨 <code>0</code>으로 저장합니다. 서비스는 이 완성된 파생 DB를 읽으므로 숫자 0을 임의로 정상이라고 가정하지 않습니다.</li>
+      <li>새 DB를 별도 파일로 끝까지 만든 뒤 검사가 통과한 경우에만 현재 DB와 교체합니다.</li>
+      <li>서비스를 다시 실행하면 새 데이터셋 목록을 읽습니다.</li>
+    </ol>
+    <p>등록 성공과 분석 가능은 구분합니다. 현재 검증 자료에 적용 경로가 없는 새 데이터셋은 목록에는 표시하되 <strong>검증된 분석 경로 없음</strong>으로 표시합니다. 교차 운영체제 변환 과정에서 이름만 보고 임의의 방법을 배정하지 않습니다.</p>
+    <div class="decision warning"><strong>첫 버전의 의도적인 제한:</strong> DB 등록 중에는 서비스를 중지합니다. 무중단 교체가 실제로 필요해질 때만 버전 포인터와 자동 새로고침을 추가합니다.</div>
+  </section>
+
+  <section>
+    <h2>5. Windows·Mac 패키지</h2>
+    <table>
+      <thead><tr><th>항목</th><th>설계 결정</th></tr></thead>
+      <tbody>
+        <tr><td>빌드</td><td>Windows 패키지는 Windows에서, Mac 패키지는 Mac에서 각각 만듭니다. 다른 운영체제용 실행 파일을 교차 생성하지 않습니다.</td></tr>
+        <tr><td>설치 경험</td><td>Python을 따로 설치하지 않는 자체 포함 패키지를 제공합니다. 압축 해제 또는 설치 후 실행 아이콘을 누르는 방식입니다.</td></tr>
+        <tr><td>파일 위치</td><td>Mac은 <code>.app</code> 옆, Windows는 <code>.exe</code> 옆의 <code>data</code>를 사용합니다. 모델 자료와 화면은 패키지 내부에 포함됩니다. 데이터 위치는 <code>--data-dir</code>로 변경합니다.</td></tr>
+        <tr><td>로컬 등록</td><td>같은 실행 파일에 <code>--import-database</code>를 지정하면 기존 DB 등록기를 실행한 뒤 종료합니다. 별도 Python이나 HTTP 업로드 없이 등록할 수 있습니다.</td></tr>
+        <tr><td>모델 자료</td><td>서비스가 실험 폴더를 직접 찾지 않도록 검증된 라우팅·전처리 자료와 해시를 서비스의 <code>resources</code> 폴더에 묶습니다.</td></tr>
+        <tr><td>팀 접속</td><td>실행 아이콘은 내부 네트워크에서 사용할 서버 주소와 포트로 시작합니다. 준비가 끝나면 연구팀에 보여줄 접속 주소를 화면에 표시합니다.</td></tr>
+        <tr><td>실행 환경</td><td>두 패키지는 같은 Python·Numba·분석 라이브러리 버전과 모델 자료 해시를 기록한 manifest를 포함합니다.</td></tr>
+        <tr><td>업데이트</td><td>프로그램 파일과 <code>data</code> 폴더를 분리해 프로그램을 교체해도 원본 DB와 결과 DB가 지워지지 않게 합니다.</td></tr>
+        <tr><td>종료</td><td>실행 창이나 종료 메뉴에서 대기 중 작업을 정리한 뒤 서버를 닫습니다. 강제 종료된 작업은 다음 실행에서 중단 상태로 표시합니다.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>6. CPU와 선택적 가속</h2>
+    <p>CPU·Numba를 필수 기준 구현으로 둡니다. CUDA나 Apple Silicon 가속 장치가 있다는 이유만으로 자동 사용하지 않습니다.</p>
+    <ol>
+      <li>프로그램 시작 시 운영체제와 사용 가능한 장치를 확인합니다.</li>
+      <li>해당 분석 단계에 이미 검증된 CUDA 또는 MLX 구현이 있을 때만 후보로 둡니다.</li>
+      <li>같은 입력과 시드에서 CPU와 후보 가속 경로의 후보 인덱스가 같고, 수치 차이가 허용 범위 안인지 확인합니다.</li>
+      <li>전체 단계가 CPU보다 최소 1.1배 빠를 때만 가속 경로를 사용합니다.</li>
+      <li>가속 경로가 시작되지 않거나 실행 중 실패하면 그 작업을 CPU로 한 번 다시 실행하고 결과에 실제 사용 장치를 기록합니다.</li>
+    </ol>
+    <p class="compact">현재 공식 변환기가 CPU 전용이면 그대로 둡니다. GPU 사용을 위해 검증된 알고리즘을 다시 쓰지 않습니다.</p>
+  </section>
+
+  <section>
+    <h2>7. 사용성 중심 UI</h2>
+    <p><a href="cross_platform_service_ui_prototype.html">승인된 HTML UI 시안 열기</a></p>
+    <div class="grid">
+      <div class="item"><h3>한 화면, 한 목적</h3><p>새 분석 화면은 데이터셋 검색, 선택 내용 확인, 분석 시작만 강조합니다. 부가 지표는 결과 화면으로 보냅니다.</p></div>
+      <div class="item"><h3>빠른 검색</h3><p>현재 DB가 보고하는 전체 데이터셋을 이름으로 바로 좁힙니다. 개수는 DB 등록 결과에 따라 자동으로 갱신합니다.</p></div>
+      <div class="item"><h3>분명한 선택 상태</h3><p>선택한 데이터셋의 학습·평가 수, 길이, 정상 기준, 분석 경로를 분석 전에 보여줍니다.</p></div>
+      <div class="item"><h3>절제된 화면</h3><p>시스템 글꼴, 넓은 여백, 얇은 구분선, 하나의 파란 강조색을 사용합니다. 장식용 카드·그라데이션·배지를 반복하지 않습니다.</p></div>
+      <div class="item"><h3>상태를 말로 표시</h3><p>색만으로 정상·경고·실패를 구분하지 않습니다. 대기 순서와 실패 이유를 쉬운 문장으로 함께 표시합니다.</p></div>
+      <div class="item"><h3>결과 우선순위</h3><p>결과 화면은 자동 확정 이상, 표본 수 제한 경고, 다중 증거 검토 후보, 세부 성능 지표 순으로 보여줍니다.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>8. API와 데이터 경계</h2>
+    <table>
+      <thead><tr><th>경계</th><th>역할</th></tr></thead>
+      <tbody>
+        <tr><td><code>GET /api/datasets</code></td><td>등록 완료된 데이터셋 목록과 분석 가능 여부를 조회합니다.</td></tr>
+        <tr><td><code>POST /api/analysis-runs</code></td><td>원본 값을 보내지 않고 선택한 데이터셋 식별자만 전송해 분석을 요청합니다.</td></tr>
+        <tr><td><code>GET /api/analysis-runs</code></td><td>대기열과 최근 기록을 조회합니다.</td></tr>
+        <tr><td><code>GET /api/analysis-runs/{run_id}</code></td><td>작업 상태와 완료 결과를 조회합니다.</td></tr>
+        <tr><td><code>GET /api/analysis-runs/{run_id}/series/{series_index}</code></td><td>선택한 시계열과 정상 기준 범위를 그래프용으로 조회합니다.</td></tr>
+        <tr><td>로컬 등록 프로그램</td><td>HTTP API가 아닙니다. 중앙 서버의 로컬 파일과 DB에만 접근합니다.</td></tr>
+      </tbody>
+    </table>
+    <div class="decision"><strong>금지 경계:</strong> <code>POST /api/upload</code> 같은 네트워크 업로드 경로는 만들지 않습니다.</div>
+  </section>
+
+  <section>
+    <h2>9. 오류 처리</h2>
+    <ul>
+      <li>원본 DB나 검증 모델 자료가 없으면 분석 서버를 열지 않고, 누락된 파일 이름과 해결 방법을 표시합니다.</li>
+      <li>DB 등록 검사에 실패하면 기존 DB를 그대로 유지하고, 실패한 데이터셋과 이유를 HTML 보고서로 남깁니다.</li>
+      <li>분석 실패는 결과 DB에 저장하고 대기열 화면에서 이유와 다시 실행 버튼을 보여줍니다.</li>
+      <li>서버를 강제 종료했을 때 실행 중이던 작업은 다음 실행에서 중단됨으로 바꿉니다.</li>
+      <li>CUDA 또는 MLX 오류는 CPU 재실행으로 복구하되, 두 경로가 모두 실패하면 원인을 숨기지 않고 작업 실패로 저장합니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>10. 구현 시 변경 범위</h2>
+    <table>
+      <thead><tr><th>파일 또는 영역</th><th>필요한 변경</th></tr></thead>
+      <tbody>
+        <tr><td><code>dataset_repository.py</code></td><td>Mac 절대 경로를 제거하고 전달받은 DB 경로를 사용합니다.</td></tr>
+        <tr><td><code>model_resources.py</code></td><td>실험 폴더 대신 서비스에 포함된 검증 자료를 읽습니다.</td></tr>
+        <tr><td><code>application_server.py</code></td><td>데이터 폴더 인자, 서버 준비 상태, 브라우저 실행에 필요한 경계를 추가합니다.</td></tr>
+        <tr><td><code>dataset_importer.py</code></td><td>서버에서만 실행하는 로컬 DB 검사·변환 프로그램을 추가합니다.</td></tr>
+        <tr><td><code>service_launcher.py</code></td><td>DB 검사를 마친 뒤 서버를 시작하고 브라우저를 여는 작은 실행 진입점을 추가합니다.</td></tr>
+        <tr><td><code>web/</code></td><td>승인된 작업 중심 UI를 실제 API와 연결합니다.</td></tr>
+        <tr><td><code>tests/</code></td><td>경로, 로컬 등록, 실행 장치 선택, UI 흐름, 패키지 실행 검증을 추가합니다.</td></tr>
+        <tr><td><code>docs/code_map_v1.*</code></td><td>새 실행 진입점과 로컬 등록 흐름을 같은 변경에 반영합니다.</td></tr>
+      </tbody>
+    </table>
+    <p class="compact">가속 구현이 아직 하나뿐인 동안에는 별도 백엔드 인터페이스나 팩토리를 만들지 않습니다. 두 번째 검증 구현이 실제로 생길 때 가장 작은 공통 경계를 추가합니다.</p>
+  </section>
+
+  <section>
+    <h2>11. 완료 검증</h2>
+    <ul>
+      <li>실제 Windows와 실제 Mac에서 아이콘 실행 후 브라우저 화면이 열립니다.</li>
+      <li>Python이 설치되지 않은 시험 PC에서도 자체 포함 패키지가 시작됩니다.</li>
+      <li>Windows와 Mac의 CPU 경로가 같은 기준 데이터에서 같은 자동 이상 및 검토 후보 인덱스를 만듭니다.</li>
+      <li>로컬 등록 프로그램이 정상 클래스 원본 라벨을 최다 빈도로 결정하고 파생 DB에 정확히 기록합니다.</li>
+      <li>등록 실패 시 기존 DB가 바뀌지 않습니다.</li>
+      <li>검증된 분석 경로가 없는 새 데이터셋은 등록되지만 실행할 수 없는 이유가 분명하게 표시됩니다.</li>
+      <li>10명의 브라우저가 동시에 목록과 기록을 조회하고 분석 요청을 넣을 수 있습니다.</li>
+      <li>분석은 한 건씩 실행되며 대기 순서와 실패 상태가 모든 사용자에게 동일하게 보입니다.</li>
+      <li>웹 화면과 API 어디에도 데이터 업로드 기능이 존재하지 않습니다.</li>
+      <li>선택적 GPU 경로는 CPU 판정 일치와 1.1배 속도 기준을 통과한 단계에서만 활성화됩니다.</li>
+      <li>서버를 다시 실행해도 완료 기록이 유지되고 중단 작업이 올바르게 표시됩니다.</li>
+      <li>키보드 검색, 선택, 분석 시작, 대기열, 기록, 결과 확인을 엔드투엔드로 검증합니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>12. 나중에 확장하는 기준</h2>
+    <table>
+      <thead><tr><th>지금은 사용하지 않음</th><th>추가할 실제 조건</th></tr></thead>
+      <tbody>
+        <tr><td>PostgreSQL</td><td>여러 서버가 같은 결과 DB에 쓰거나 SQLite 잠금이 측정될 때</td></tr>
+        <tr><td>Redis 또는 별도 작업 서버</td><td>단일 분석 작업자로 대기 시간이 허용 범위를 넘을 때</td></tr>
+        <tr><td>무중단 DB 교체</td><td>데이터 등록 시간에도 서비스를 계속 제공해야 할 때</td></tr>
+        <tr><td>객체 저장소</td><td>한 서버 디스크와 SQLite 파일로 백업·복구가 어려워질 때</td></tr>
+        <tr><td>네이티브 데스크톱 UI</td><td>브라우저만으로 해결할 수 없는 운영체제 기능이 실제로 필요할 때</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>13. 최종 결정 요약</h2>
+    <p><strong>한 개의 Python 중앙 서비스와 한 개의 웹 UI를 유지하고, Windows와 Mac용 자체 포함 실행 패키지만 각각 만듭니다.</strong> 원본 데이터는 서버에서 로컬 등록하고, 분석 요청에는 데이터셋 식별자만 사용합니다. CPU·Numba는 항상 동작하며 GPU는 검증된 경우에만 선택적으로 사용합니다.</p>
+    <p class="done">UI 방향: A안 승인 완료</p>
+    <p class="done">설계서: 최종 승인 완료</p>
+    <p class="pending">현재 단계: <a href="cross_platform_service_implementation_plan.html#task-6">Task 6 통합 검증</a> · <a href="dashboard.html#cross-platform-verification">최신 검증 결과</a></p>
+  </section>
+</main>
+</body>
+</html>
