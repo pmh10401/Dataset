@@ -27,7 +27,7 @@ def smoke(executable, report):
             connection.execute('update datasets set series_length=64')
             connection.commit()
         subprocess.run([str(executable), '--import-database', str(raw), '--data-dir', str(data)],
-                       check=True, timeout=120)
+                       check=True, timeout=120, cwd=root)
         with socket.socket() as listener:
             listener.bind(('127.0.0.1', 0))
             port = listener.getsockname()[1]
@@ -42,7 +42,7 @@ def smoke(executable, report):
         for cycle in range(2):
             with (root / f'process-{cycle}.log').open('w') as log:
                 process = subprocess.Popen([str(executable), '--data-dir', str(data), '--host', '127.0.0.1',
-                                            '--port', str(port), '--public-host', '127.0.0.1'], stdout=log, stderr=log)
+                                            '--port', str(port), '--public-host', '127.0.0.1'], stdout=log, stderr=log, cwd=root)
                 try:
                     deadline = time.monotonic() + 120
                     while True:

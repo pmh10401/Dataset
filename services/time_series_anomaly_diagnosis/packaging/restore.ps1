@@ -36,12 +36,10 @@ try {
     }
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     [System.IO.Compression.ZipFile]::ExtractToDirectory($archive, $PSScriptRoot)
-    $database = Join-Path $destination 'data\univariate_ts.db'
     if ((Read-Sha256 'TimeSeriesAnomalyDiagnosis\data\univariate_ts.db') -ne $manifest.database_sha256) {
         throw 'Database checksum mismatch. Do not run the application.'
     }
     Write-Host 'Ready. Open TimeSeriesAnomalyDiagnosis.exe in the application folder.' -ForegroundColor Green
-    Start-Process explorer.exe -ArgumentList ('"' + $destination + '"')
 } catch {
     Write-Host $_.Exception.Message -ForegroundColor Red
     exit 1

@@ -152,7 +152,7 @@
       "effect": "Exercises offline database registration, analysis, and restart through the packaged executable",
       "id": "packaged_smoke",
       "path": "packaging/smoke_executable.py",
-      "sha256": "2803d59349289a9fa031a805328dd0f50f88bcaa3239817b94986000e3742d79",
+      "sha256": "af4232c8714bab6be74de1fd8ef1068d92e5a2e0d328c783eed4671898e16d1e",
       "tests": [
         "packaging/smoke_executable.py"
       ]

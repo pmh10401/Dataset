@@ -5,7 +5,7 @@
 <h2>처음 한 번</h2><ol><li>GitHub Releases의 <code>diagnosis-windows.zip.001</code>부터 마지막 조각까지 모두 같은 폴더에 내려받습니다.</li>
 <li><code>restore.cmd</code>, <code>restore.ps1</code>, <code>manifest.json</code>도 같은 폴더에 저장합니다.</li>
 <li><code>restore.cmd</code>를 더블클릭합니다. 파일 검사 → 압축 복원 → DB 검사가 순서대로 진행됩니다.</li>
-<li>열린 폴더의 <code>TimeSeriesAnomalyDiagnosis.exe</code>를 더블클릭합니다. 브라우저에 분석 화면이 열립니다.</li></ol>
+<li>생성된 <code>TimeSeriesAnomalyDiagnosis</code> 폴더 안의 <code>TimeSeriesAnomalyDiagnosis.exe</code>를 더블클릭합니다. 브라우저에 분석 화면이 열립니다.</li></ol>
 <h2>분석하기</h2><p>이름 검색 → 데이터 선택 → 분석 시작 → 작업 대기열의 결과 열기 → 이상 시계열 선택 순서로 확인합니다. 전체 DB가 포함되어 있으며, 분석 불가 항목도 필터를 해제하면 확인할 수 있습니다. 데이터가 포함되어 있다는 것이 모든 데이터의 분석 가능성을 뜻하지는 않습니다.</p>
 <aside>첫 분석은 계산 준비 때문에 시간이 더 걸릴 수 있습니다. 표본 수 제한으로 확정된 이상치에는 통계적 확신이 더 낮다는 경고가 표시됩니다. 모델의 판단은 연구팀이 검토해야 하며 의료 진단을 대신하지 않습니다.</aside>
 <h2>보관과 종료</h2><p>실행 중에는 검은 실행 창을 유지하고, 종료할 때는 해당 창에서 Ctrl+C를 누릅니다. DB와 분석 기록은 실행파일 옆 <code>data</code> 폴더에 저장됩니다. 새 버전을 받을 때 기존 폴더에 덮어쓰지 마세요. 압축 조각·복원 ZIP·실행 폴더가 동시에 존재하므로 여유 공간 12GB 이상을 권장합니다.</p>
