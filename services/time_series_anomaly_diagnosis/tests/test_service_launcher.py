@@ -23,6 +23,15 @@ from services.time_series_anomaly_diagnosis.tests.test_dataset_importer import (
 
 
 class ServiceLauncherTest(unittest.TestCase):
+    def test_import_message_works_with_english_windows_output_encoding(self) -> None:
+        from io import BytesIO, TextIOWrapper
+        buffer = BytesIO()
+        stream = TextIOWrapper(buffer, encoding='cp1252')
+        with redirect_stdout(stream), patch.object(service_launcher, 'install_database', return_value=SimpleNamespace(datasets=(1,))):
+            service_launcher.main(['--import-database', 'synthetic.db', '--data-dir', 'data'])
+        stream.flush()
+        self.assertIn('등록 성공', buffer.getvalue().decode('utf-8'))
+
     def test_default_data_directory_is_next_to_windows_executable(self) -> None:
         actual = resolve_data_directory(None, Path("C:/Diagnosis/Diagnosis.exe"), "win32")
         self.assertEqual(actual, Path("C:/Diagnosis/data"))

@@ -35,6 +35,9 @@ def resolve_resources_directory(
 
 
 def main(arguments: list[str] | None = None) -> None:
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="backslashreplace")
     parser = ArgumentParser(description="Time Series Anomaly Diagnosis")
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8485)

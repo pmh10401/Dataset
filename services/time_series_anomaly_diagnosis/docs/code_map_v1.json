@@ -309,7 +309,7 @@
       "effect": "Resolves portable paths, imports a local database on request, or prepares the Numba cache and starts the server and browser",
       "id": "service_launcher",
       "path": "service_launcher.py",
-      "sha256": "a0056f810b3a0c01bc505727647a8079de3ccd71769322ba0656f4ffe51595bf",
+      "sha256": "fe1b708bac89aac75152a27aed4710e60cd9bfbb46f5f431ea21ed0258df54b4",
       "tests": [
         "tests/test_service_launcher.py"
       ]
