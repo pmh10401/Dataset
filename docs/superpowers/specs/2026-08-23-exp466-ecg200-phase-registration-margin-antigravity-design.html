@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp466 ECG200 고정 위상 정렬 마진 설계</title>
+<style>
+body{max-width:1080px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}h1,h2{line-height:1.35}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}.box{padding:1rem;margin:1rem 0;background:#f5f7fa;border-left:6px solid #2457a6}.ok{border-left-color:#16794b}.stop{background:#fff4f2;border-left-color:#b42318}.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;align-items:center;text-align:center}.flow div{padding:.7rem;background:#eef2f7;border-radius:.4rem}.arrow{background:white!important}@media(max-width:760px){.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}}
+</style>
+</head>
+<body><main>
+<h1>Exp466 — ECG200 고정 위상 정렬 마진 자격 검증</h1>
+<div class="box ok"><strong>한 줄 목표:</strong> C8이 전혀 반응하지 못한 ECG200의 주기 변화를, 고정된 시간축 역정렬이 파형을 얼마나 더 잘 맞추는지로 찾아낸다.</div>
+
+<h2>1. 출발점</h2>
+<table>
+<tr><th>Exp465 결과</th><td>C8은 <code>0/10</code>, 최저 period-change AUC는 <code>0.6862244898</code>, 최저 평균 AUC는 <code>0.8679846939</code>였다.</td></tr>
+<tr><th>C8 실패 원인</th><td>period-change confirmation이 10개 fold에서 모두 0이었다. 따라서 period 점수는 C0와 정확히 같았다.</td></tr>
+<tr><th>임계값 하향</th><td>정상 cosine 최대 <code>0.8755</code>가 period 최대 <code>0.8289</code>보다 높다. 임계값을 낮추면 정상부터 반응하므로 기각한다.</td></tr>
+<tr><th>기존 주기 특징</th><td>Exp461의 120차원 FFT+자기상관 특징을 Exp465 보존 입력에 그대로 적용한 feasibility 결과는 단독 최저 period AUC <code>0.650888</code>, C0 rank-max 결합 <code>0.678571</code>, 결합 최저 평균 <code>0.866071</code>이었다. 모두 현재 결과보다 낮아 정식 후보에서 제외한다.</td></tr>
+</table>
+<p>Terra, Luna, Ox Alpha Ultra와 Sol이 위 증거를 교차 검토했다. 최종 합의는 기존 특징과 임계값을 다시 조정하지 않고, period 생성 구조에 직접 맞는 고정 위상 정렬 마진 하나만 검증하는 것이다.</p>
+
+<h2>2. 고정 입력</h2>
+<ul>
+<li>데이터는 ECG200 TRAIN의 정상 <code>+1</code> 69개만 사용한다. TEST 파일과 TEST 라벨은 열지 않는다.</li>
+<li>각 행은 Exp465의 정확한 선형 보간으로 <code>96→140</code> 변환한다.</li>
+<li>seed는 <code>20260721</code>, <code>20261721</code>, fold는 각각 5개로 고정한다.</li>
+<li>onset은 <code>56</code>, suffix 길이는 <code>84</code>다.</li>
+<li>level shift, gradual drift, amplitude scaling, period change 생성식과 크기·순서는 Exp465와 같게 유지한다.</li>
+<li>period change의 시간축 배율 <code>1.25</code>는 기존 생성식에서 가져온다. 다른 배율이나 grid를 탐색하지 않는다.</li>
+</ul>
+
+<h2>3. 비교 방법</h2>
+<table>
+<tr><th>방법</th><th>역할</th><th>설명</th></tr>
+<tr><td><code>C0</code></td><td>정확 대조군</td><td>Exp465의 C0 점수를 그대로 재생한다.</td></tr>
+<tr><td><code>P9</code></td><td>설명용 신호</td><td>고정 역정렬 전후의 template 거리가 얼마나 줄어드는지 나타내는 phase-registration margin과 정상 기준 순위를 기록한다.</td></tr>
+<tr><td><code>C9</code></td><td>유일한 주 후보</td><td>P9가 정상 기준을 엄격히 넘을 때만 <code>max(C0, P9 rank)</code>를 사용하고, 그렇지 않으면 C0로 돌아간다.</td></tr>
+</table>
+<p>C8, Exp461 120차원 특징, unconditional max, cosine 임계값 탐색, 여러 warp 후보는 Exp466에 포함하지 않는다.</p>
+
+<h2>4. 위상 정렬 마진</h2>
+<p>fit 행으로 만든 중앙값 template과 각 행의 suffix를 각각 중앙값과 MAD로 표준화한다. 표준화는 level과 amplitude 차이가 주기 신호로 잘못 보이는 것을 줄인다.</p>
+<ol>
+<li>기존 period 생성은 suffix를 <code>source / 1.25</code>에서 다시 읽어 시간축을 늘린다.</li>
+<li>Exp466은 공유 가능한 앞부분에서 관측 suffix를 <code>1.25 × source</code> 위치에서 읽어 이 변형을 한 번만 되돌린다.</li>
+<li><code>identity_error</code>는 정렬하지 않은 suffix와 template의 평균 제곱 거리다.</li>
+<li><code>undo_error</code>는 고정 역정렬한 suffix와 template의 평균 제곱 거리다.</li>
+<li><code>margin = identity_error - undo_error</code>로 고정한다. 역정렬이 실제로 도움이 될 때만 양수가 된다.</li>
+</ol>
+<p>fit 정상 margin은 각 행을 제외한 중앙값 template으로 계산한다. query margin은 전체 fit template으로 계산한다. P9 확인 조건은 <code>query_margin &gt; 0</code>이면서 <code>query_margin &gt; max(fit_normal_margins)</code>인 경우로 고정한다. 학습되는 threshold나 조정 가능한 alpha는 두지 않는다.</p>
+
+<div class="flow" aria-label="C9 점수 흐름">
+<div>정상 TRAIN fit</div><div class="arrow">→</div><div>정상 margin 최댓값</div><div class="arrow">→</div><div>고정 확인 기준</div>
+<div>query suffix</div><div class="arrow">→</div><div>1.25 역정렬 margin</div><div class="arrow">→</div><div>확실할 때만 C0와 max</div>
+</div>
+
+<h2>5. 결과 기록</h2>
+<p>각 seed-fold-method 행에는 다음 값을 저장한다.</p>
+<ul>
+<li>네 변화 유형 AUC, 네 AUC 평균, finite 여부</li>
+<li>normal과 네 변화 유형의 confirmation 수</li>
+<li>C0 대비 gradual/period AUC 차이와 fixed/broken pair 수</li>
+<li>fit/query margin 요약, 원시 margin 배열 또는 source-free replay가 가능한 canonical evidence</li>
+<li>통과 여부와 고정 failure reason</li>
+</ul>
+
+<h2>6. 합격 기준</h2>
+<p>C9은 다음 조건을 모두 만족해야 한다.</p>
+<ol>
+<li>10개 seed-fold가 모두 finite다.</li>
+<li>각 행의 네 변화 유형 AUC가 모두 <code>≥0.85</code>다.</li>
+<li>각 행의 네 AUC 평균이 <code>≥0.90</code>이다.</li>
+<li>period-change AUC가 10개 행 모두에서 C0보다 엄격히 높다.</li>
+<li>gradual-drift AUC가 10개 행 모두에서 C0보다 낮지 않다.</li>
+<li>period-change confirmation이 각 행에서 1개 이상이다.</li>
+<li>두 seed 각각의 OOF 정상 69개 confirmation 합계가 정확히 0이다.</li>
+<li>서로 다른 private root에서 두 번 순차 실행한 결과 파일·해시·판정이 완전히 같다.</li>
+</ol>
+
+<h2>7. 중단 규칙</h2>
+<div class="box stop">
+<ul>
+<li>조건 하나라도 실패하면 C9은 qualification 실패로 종료한다.</li>
+<li>실패 뒤 같은 실험에서 warp 배율, margin 식, threshold, onset, 보간, seed, fold 또는 합격선을 바꾸지 않는다.</li>
+<li>Exp466에서는 공식 실행, ECG200 TEST 접근, 라우팅, champion·pending·promotion 변경을 하지 않는다.</li>
+<li>C9이 10/10으로 통과할 때만 별도 승인을 받아 Exp467에서 실제 잔여 FN, FP와 F1을 평가한다.</li>
+<li>C9이 실패하면 ramp/phase 계열을 종료하고 국소 STFT 또는 wavelet 변화 점수 하나를 새 실험으로 사전등록한다.</li>
+</ul>
+</div>
+
+<h2>8. 구현과 검증 경계</h2>
+<ul>
+<li>Exp465 source, interpolation, C0 replay, qualification, publication 구조를 복사하지 말고 명시적인 Exp466 adapter와 새 P9 evidence 경계로 재사용한다.</li>
+<li>수식·결정성·scale/level 불변성·period 민감도·C0 exact parity·raw evidence replay를 단위 테스트한다.</li>
+<li>새 score source 전체 실행 전 CPU와 MLX의 동일 입력·seed parity 및 실제 속도를 확인한다. 후보 index가 같고 전체 단계가 <code>1.1×</code> 이상 빨라질 때만 MLX를 사용한다. 아니면 CPU로 고정한다.</li>
+<li>결과는 canonical 7 leaves와 HTML dashboard snapshot으로 남기고, 두 private 실행의 byte/hash equality를 확인한다.</li>
+</ul>
+
+<h2>9. 근거 자료</h2>
+<ul>
+<li><a href="../../EXP465_IMPLEMENTATION_REPORT_antigravity.html">Exp465 구현 보고서</a></li>
+<li><a href="../../EXP461_IMPLEMENTATION_REPORT_antigravity.html">Exp461 구현 보고서</a></li>
+<li><a href="https://doi.org/10.1007/s10994-024-06689-7">시간축 변형에 견디는 anomaly detection 연구</a> — ECG를 포함한 time-warp 정렬의 필요성을 다룬다.</li>
+<li><a href="https://proceedings.mlr.press/v235/demirel24b.html">ICML 2024 비지도 주기 탐지 연구</a> — 라벨 없이 주기 구조를 분리해 평가할 수 있음을 보여준다.</li>
+</ul>
+
+<p><strong>설계 상태:</strong> 사용자가 대화에서 설계 진행을 승인했다. Terra, Luna, Ox Alpha Ultra와 Sol의 교차 검토 결과를 반영했으며, 구현 전에 이 문서의 입력·수식·합격선·중단 규칙을 고정한다.</p>
+</main></body></html>

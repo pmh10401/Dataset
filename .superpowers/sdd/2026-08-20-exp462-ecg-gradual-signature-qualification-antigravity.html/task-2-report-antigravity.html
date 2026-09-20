@@ -1,0 +1,29 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>Exp462 Task 2 report antigravity</title></head><body>
+<h1>Exp462 Task 2 report — complete</h1>
+<p><strong>Status:</strong> Task 2 complete / Task 3 next. Task 2 heading and six steps are checked after independent review C/I/M 0; Tasks 3-6 remain unchecked.</p>
+<h2>Implemented boundary</h2>
+<ul>
+<li><code>config_antigravity.py</code> freezes Exp462 identity, TRAIN source contract, seeds/folds, method order, gates, and separated Exp461 code/closeout provenance.</li>
+<li><code>contracts_antigravity.py</code> freezes immutable Exp461 authority dataclasses and validator.</li>
+<li><code>predecessor_antigravity.py</code> exposes <code>capture_exp461_gradual_authority_antigravity()</code>.</li>
+<li><code>sources_antigravity.py</code> exposes <code>load_normal2_train_antigravity()</code> by reusing the reviewed Exp461 TRAIN loader and returning a defensive owned read-only copy.</li>
+</ul>
+<h2>Frozen Exp461 authority</h2>
+<table>
+<tr><th>reviewed code commit</th><td><code>3a306ff3e276dae13b28b9733db30e9934da7eb2</code> private TRAIN candidate execution/reproduction code</td></tr>
+<tr><th>terminal closeout commit</th><td><code>0340b6ee737da84777283668449738d0c1585566</code> terminal truth/docs closeout</td></tr>
+<tr><th>result</th><td>primary <code>hydra_period_rank_max</code> passed <code>9/10</code>; worst gradual_drift AUC <code>0.8402306222021025</code>; period min <code>0.907392736783864</code></td></tr>
+<tr><th>historical period folds</th><td>seed <code>20260721</code> fold <code>3</code> = <code>0.907392736783864</code>; seed <code>20261721</code> fold <code>4</code> = <code>0.9216148584075248</code></td></tr>
+<tr><th>private hashes</th><td>artifact map <code>8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be</code>; decision <code>27f6d8db82b71051a16b68d3ad2f69f6608f6a922d765b35029e594afc581315</code>; dashboard <code>e0e70dd42536f71aa736a8c178d14ed84b268f703623937dfe1f8663967bbabc</code>; summary <code>7500d2599060b257a171856fb68bed39a0ec0f4ddb26ca6084e606c911251e25</code></td></tr>
+</table>
+<h2>Verification</h2>
+<table>
+<tr><th>RED</th><td>focused Task 2 suite failed with <code>9</code> expected missing-module errors before production modules existed.</td></tr>
+<tr><th>GREEN twice</th><td>focused Task 2 suite passed twice: each run <code>Ran 9 tests</code>, <code>OK</code>.</td></tr>
+<tr><th>Governance</th><td>Task 1 governance regression passed: <code>Ran 2 tests</code>, <code>OK</code>.</td></tr>
+<tr><th>TRAIN smoke</th><td><code>(1413, 140)</code>, <code>float32</code>, owned <code>True</code>, C-contiguous <code>True</code>, writeable <code>False</code>, finite <code>True</code>.</td></tr>
+<tr><th>lifecycle guards</th><td>official root absent and non-symlink; label query count remains <code>0</code>; no Task 3 modules were created.</td></tr>
+<tr><th>map/compile</th><td>Exp462 map validation passed; <code>py_compile</code> passed for Task 2 modules and tests.</td></tr>
+<tr><th>fix round 1</th><td>RED caught ambiguous predecessor commit fields and stale ledger implementation status; GREEN preserves scientific values while splitting <code>reviewed_code_commit</code> and <code>terminal_closeout_commit</code>.</td></tr>
+</table>
+</body></html>

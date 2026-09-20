@@ -1,0 +1,231 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp491 결과</title>
+<style>body{font:16px/1.7 system-ui;max-width:1100px;margin:32px auto;padding:0 20px;color:#172033}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f5f8;padding:16px}</style>
+<h1>Exp491: 캐시된 이득 예측</h1>
+<p>고정 Ridge α=10, 출력 6개(대안−MiniRocket AUC 차이 3개와 ZF 차이 부호 3개). 소스 family 전체를 한 폴드씩 빼며, 결측 중앙값·표준화·Ridge는 donor에만 맞춥니다. 행 가중치는 1/가족행수라서 가족 합은 1입니다. 상수 비교는 같은 가중 평균입니다. 중앙값과 표준편차는 가중하지 않은 donor 행에 맞춥니다.</p>
+<p>행 12개, family 6개. 질의 목표는 예측 뒤에만 평가에 사용했습니다. 양쪽 클래스가 있을 때만 양-이득 AUROC를 보고합니다.</p>
+<pre>{
+  &quot;family_mean_squared_error&quot;: {
+    &quot;delta_auc_multirocket_local_gap&quot;: {
+      &quot;ridge&quot;: 0.0,
+      &quot;constant&quot;: 0.0,
+      &quot;delta_ridge_minus_constant&quot;: 0.0
+    },
+    &quot;delta_auc_hydra_local_gap&quot;: {
+      &quot;ridge&quot;: 0.0,
+      &quot;constant&quot;: 0.0,
+      &quot;delta_ridge_minus_constant&quot;: 0.0
+    },
+    &quot;delta_auc_hydra_multirocket_local_gap&quot;: {
+      &quot;ridge&quot;: 7.703719777548943e-34,
+      &quot;constant&quot;: 7.703719777548943e-34,
+      &quot;delta_ridge_minus_constant&quot;: 0.0
+    },
+    &quot;sign_delta_zf_multirocket_local_gap&quot;: {
+      &quot;ridge&quot;: 0.0,
+      &quot;constant&quot;: 0.0,
+      &quot;delta_ridge_minus_constant&quot;: 0.0
+    },
+    &quot;sign_delta_zf_hydra_local_gap&quot;: {
+      &quot;ridge&quot;: 0.0,
+      &quot;constant&quot;: 0.0,
+      &quot;delta_ridge_minus_constant&quot;: 0.0
+    },
+    &quot;sign_delta_zf_hydra_multirocket_local_gap&quot;: {
+      &quot;ridge&quot;: 0.0,
+      &quot;constant&quot;: 0.0,
+      &quot;delta_ridge_minus_constant&quot;: 0.0
+    }
+  },
+  &quot;block_mean_squared_error&quot;: {
+    &quot;delta_auc&quot;: {
+      &quot;ridge&quot;: 2.5679065925163143e-34,
+      &quot;constant&quot;: 2.5679065925163143e-34
+    },
+    &quot;sign_delta_zf&quot;: {
+      &quot;ridge&quot;: 0.0,
+      &quot;constant&quot;: 0.0
+    }
+  },
+  &quot;directional_accuracy&quot;: {
+    &quot;delta_auc_multirocket_local_gap&quot;: {
+      &quot;family_balanced&quot;: 1.0,
+      &quot;nonzero_target_family_balanced&quot;: 1.0
+    },
+    &quot;delta_auc_hydra_local_gap&quot;: {
+      &quot;family_balanced&quot;: 1.0,
+      &quot;nonzero_target_family_balanced&quot;: 1.0
+    },
+    &quot;delta_auc_hydra_multirocket_local_gap&quot;: {
+      &quot;family_balanced&quot;: 1.0,
+      &quot;nonzero_target_family_balanced&quot;: 1.0
+    },
+    &quot;sign_delta_zf_multirocket_local_gap&quot;: {
+      &quot;family_balanced&quot;: 1.0,
+      &quot;nonzero_target_family_balanced&quot;: 1.0
+    },
+    &quot;sign_delta_zf_hydra_local_gap&quot;: {
+      &quot;family_balanced&quot;: 1.0,
+      &quot;nonzero_target_family_balanced&quot;: 1.0
+    },
+    &quot;sign_delta_zf_hydra_multirocket_local_gap&quot;: {
+      &quot;family_balanced&quot;: 1.0,
+      &quot;nonzero_target_family_balanced&quot;: 1.0
+    }
+  },
+  &quot;positive_gain_auroc&quot;: {
+    &quot;delta_auc_multirocket_local_gap&quot;: {
+      &quot;auroc&quot;: null,
+      &quot;reason&quot;: &quot;all_same_class&quot;,
+      &quot;n_positive&quot;: 12,
+      &quot;n_negative&quot;: 0
+    },
+    &quot;delta_auc_hydra_local_gap&quot;: {
+      &quot;auroc&quot;: null,
+      &quot;reason&quot;: &quot;all_same_class&quot;,
+      &quot;n_positive&quot;: 12,
+      &quot;n_negative&quot;: 0
+    },
+    &quot;delta_auc_hydra_multirocket_local_gap&quot;: {
+      &quot;auroc&quot;: null,
+      &quot;reason&quot;: &quot;all_same_class&quot;,
+      &quot;n_positive&quot;: 12,
+      &quot;n_negative&quot;: 0
+    },
+    &quot;sign_delta_zf_multirocket_local_gap&quot;: {
+      &quot;auroc&quot;: null,
+      &quot;reason&quot;: &quot;all_same_class&quot;,
+      &quot;n_positive&quot;: 12,
+      &quot;n_negative&quot;: 0
+    },
+    &quot;sign_delta_zf_hydra_local_gap&quot;: {
+      &quot;auroc&quot;: null,
+      &quot;reason&quot;: &quot;all_same_class&quot;,
+      &quot;n_positive&quot;: 12,
+      &quot;n_negative&quot;: 0
+    },
+    &quot;sign_delta_zf_hydra_multirocket_local_gap&quot;: {
+      &quot;auroc&quot;: null,
+      &quot;reason&quot;: &quot;all_same_class&quot;,
+      &quot;n_positive&quot;: 12,
+      &quot;n_negative&quot;: 0
+    }
+  }
+}</pre>
+<h2>제한</h2>
+<p>실패한 선형 탐침이 모든 모형을 기각하지는 않습니다. 하이퍼파라미터 탐색, 지역 게이트 변경, 결과로 고른 이웃, 라우팅 승격은 없습니다. 역사적 TEST 파생 점수는 개발용 메타 라벨이며 깨끗한 검증이 아닙니다.</p>
+<h2>재현</h2>
+<pre>PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m experiments.exp491_gain_prediction_antigravity.run_antigravity smoke
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m experiments.exp491_gain_prediction_antigravity.run_antigravity official</pre>
+<pre>{
+  &quot;mode&quot;: &quot;smoke&quot;,
+  &quot;acceleration&quot;: {
+    &quot;schema&quot;: &quot;exp489_491_acceleration_v1&quot;,
+    &quot;versions&quot;: {
+      &quot;numpy&quot;: &quot;2.3.5&quot;,
+      &quot;scipy&quot;: &quot;1.17.1&quot;,
+      &quot;scikit-learn&quot;: &quot;1.8.0&quot;,
+      &quot;aeon&quot;: &quot;1.5.0&quot;,
+      &quot;numba&quot;: &quot;0.63.1&quot;,
+      &quot;torch&quot;: &quot;2.13.0&quot;,
+      &quot;mlx&quot;: &quot;0.32.0&quot;,
+      &quot;mlx-metal&quot;: &quot;0.32.0&quot;,
+      &quot;python&quot;: &quot;3.14.6&quot;,
+      &quot;architecture&quot;: &quot;arm64&quot;
+    },
+    &quot;device&quot;: &quot;arm64&quot;,
+    &quot;cpu_policy&quot;: {
+      &quot;logical_cpu_count&quot;: 12,
+      &quot;workers&quot;: 11,
+      &quot;inner_threads&quot;: 1
+    },
+    &quot;pytorch&quot;: {
+      &quot;tensor_eligible_stages&quot;: [
+        &quot;exp491_dense_ridge&quot;
+      ],
+      &quot;selected&quot;: false,
+      &quot;probe&quot;: {
+        &quot;available&quot;: true,
+        &quot;version&quot;: &quot;2.13.0&quot;,
+        &quot;mps_available&quot;: true,
+        &quot;cpu_float64&quot;: true,
+        &quot;mps_float64_finite&quot;: false,
+        &quot;fallback_reason&quot;: &quot;Cannot convert a MPS Tensor to float64 dtype as the MPS framework doesn&#x27;t support float64. Please use float32 instead.&quot;,
+        &quot;probe_seconds&quot;: 1.0938498750329018
+      },
+      &quot;fallback_reason&quot;: &quot;official_aeon_sklearn_cpu_remain_canonical_except_where_a_stage_is_tensor_eligible; dense_ridge_is_tensor_eligible_under_torch_but_not_promoted_without_float64_full_stage_parity_and_1.1x&quot;
+    },
+    &quot;mlx&quot;: {
+      &quot;tensor_eligible_stages&quot;: [
+        &quot;exp491_dense_ridge&quot;
+      ],
+      &quot;selected&quot;: false,
+      &quot;probe&quot;: {
+        &quot;available&quot;: true,
+        &quot;metal_available&quot;: true,
+        &quot;default_device&quot;: &quot;Device(gpu, 0)&quot;,
+        &quot;cpu_solve_seconds&quot;: 0.04239366599358618,
+        &quot;cpu_float64_finite&quot;: true,
+        &quot;probe_seconds&quot;: 0.0929746669717133
+      },
+      &quot;full_stage_seconds&quot;: null,
+      &quot;candidate_index_parity&quot;: null,
+      &quot;numerical_parity&quot;: null,
+      &quot;speedup&quot;: null,
+      &quot;fallback_reason&quot;: &quot;dense_ridge_not_promoted_without_float64_full_stage_parity_and_1.1x&quot;
+    },
+    &quot;mps&quot;: {
+      &quot;selected&quot;: false,
+      &quot;available&quot;: true,
+      &quot;fallback_reason&quot;: &quot;mps_not_canonical_for_frozen_aeon_sklearn_cpu_algorithms&quot;
+    },
+    &quot;stages&quot;: {
+      &quot;exp489_minirocket_lof&quot;: {
+        &quot;tensor_eligible&quot;: false,
+        &quot;pytorch_tensor_eligible&quot;: false,
+        &quot;canonical&quot;: &quot;aeon_minirocket_sklearn_lof_localgap_cpu&quot;,
+        &quot;selected_backend&quot;: &quot;sklearn_aeon_cpu&quot;,
+        &quot;warmup_seconds&quot;: 0.01500758295878768,
+        &quot;measured_stage_seconds&quot;: 0.001839625183492899,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;numba&quot;: {
+          &quot;selected&quot;: false,
+          &quot;fallback_reason&quot;: &quot;official_aeon_MiniRocket_and_sklearn_LocalOutlierFactor_have_no_supported_public_numba_rewrite; retain_existing_cpu_implementations&quot;
+        },
+        &quot;fallback_reason&quot;: &quot;official_aeon_MiniRocket_and_sklearn_LocalOutlierFactor_remain_canonical; do_not_rewrite_third_party_cpu_transformer&quot;
+      },
+      &quot;exp490_rank_quantile&quot;: {
+        &quot;tensor_eligible&quot;: true,
+        &quot;pytorch_tensor_eligible&quot;: true,
+        &quot;canonical&quot;: &quot;numpy_scipy_blas&quot;,
+        &quot;selected_backend&quot;: &quot;numpy_scipy&quot;,
+        &quot;warmup_seconds&quot;: 0.0023686671629548073,
+        &quot;measured_stage_seconds&quot;: 0.0008534998632967472,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;numba&quot;: {
+          &quot;selected&quot;: false,
+          &quot;fallback_reason&quot;: &quot;public_numba_compiler_path_for_scipy_spearmanr_and_numpy_quantile_orchestration is_unsupported_or_has_no_measured_speedup; retain_existing_numpy_scipy_blas&quot;
+        },
+        &quot;fallback_reason&quot;: &quot;public_numba_compiler_path_for_scipy_spearmanr_and_numpy_quantile_orchestration is_unsupported_or_has_no_measured_speedup; retain_existing_numpy_scipy_blas&quot;
+      },
+      &quot;exp491_ridge&quot;: {
+        &quot;tensor_eligible&quot;: true,
+        &quot;pytorch_tensor_eligible&quot;: true,
+        &quot;mlx_tensor_eligible&quot;: true,
+        &quot;canonical&quot;: &quot;sklearn_ridge_cholesky_cpu&quot;,
+        &quot;selected_backend&quot;: &quot;sklearn_cpu&quot;,
+        &quot;warmup_seconds&quot;: 0.0010421250481158495,
+        &quot;measured_stage_seconds&quot;: 0.0009463329333811998,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;numba&quot;: {
+          &quot;selected&quot;: false,
+          &quot;fallback_reason&quot;: &quot;sklearn_cholesky_ridge_retained; no_measured_numba_full_stage_float64_parity_and_1.1x&quot;
+        },
+        &quot;mlx_selected&quot;: false,
+        &quot;pytorch_selected&quot;: false,
+        &quot;fallback_reason&quot;: &quot;dense_ridge_acceleration_not_canonical_without_float64_full_stage_parity_and_1.1x; not_promoted&quot;
+      }
+    },
+    &quot;concurrent_gpu_jobs&quot;: 0
+  }
+}</pre>
+</html>

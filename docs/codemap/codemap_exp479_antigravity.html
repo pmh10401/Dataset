@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp479 155개 성능 복구 코드 맵</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 1040px; margin: 30px auto; padding: 0 20px 50px; color:#182230; line-height:1.6; }
+    h1,h2 { line-height:1.25; } table { width:100%; border-collapse:collapse; margin:12px 0 24px; }
+    th,td { border:1px solid #d8dee8; padding:9px 11px; text-align:left; vertical-align:top; } th { background:#eef2f7; }
+    code { background:#eef2f7; padding:2px 5px; border-radius:4px; } .flow { background:#f5f7fa; padding:14px; border-radius:8px; overflow-x:auto; }
+    .note { border-left:5px solid #175cd3; background:#eff8ff; padding:12px 16px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Exp479 155개 성능 복구 코드 맵</h1>
+    <p class="note">이 지도는 클래스 수 보고서와 성능 복구 실험을 분리하며, 데이터셋 이름의 원본 라벨 숫자는 라우팅에 사용하지 않습니다.</p>
+    <p><strong>현재 상태:</strong> Task 6 완료. 신규 155개 성공·실패 0개이며, 기존 962개와 합친 1,117개 집계를 독립 재검증했습니다.</p>
+    <h2>1. 전체 흐름</h2>
+    <p class="flow"><code>DB + Exp478 모집단 + 기존 962 점수</code> → <code>population_antigravity.py</code> → <code>정확한 155개</code> → <code>preprocessing_antigravity.py</code> → <code>evaluation_antigravity.py</code> → <code>run_antigravity.py</code> → <code>155 체크포인트 + 1,117 통합 결과 + HTML 대시보드·보고서</code></p>
+    <h2>2. 수정 전 세 질문</h2>
+    <table>
+      <tr><th>모듈</th><th>무엇이 호출하나?</th><th>무엇에 영향을 주나?</th><th>어떤 테스트가 덮나?</th></tr>
+      <tr><td><code>population</code></td><td>runner, Task 1 감사</td><td>155개 대상과 순서</td><td><code>test_population_antigravity.py</code></td></tr>
+      <tr><td><code>preprocessing</code></td><td>evaluation, runner</td><td>유한 행, 목표 길이, Numba 재표본화, 표준화</td><td><code>test_preprocessing_antigravity.py</code></td></tr>
+      <tr><td><code>evaluation</code></td><td>runner</td><td>네 후보 AUC·ZF-TP와 공식 방법 비교</td><td><code>test_evaluation_antigravity.py</code></td></tr>
+      <tr><td><code>acceleration</code></td><td>공식 실행 전 runner</td><td>MLX 사용 또는 Numba 유지 결정</td><td><code>test_acceleration_antigravity.py</code></td></tr>
+      <tr><td><code>runner</code></td><td>scratch CLI</td><td>체크포인트, 결과 JSON, HTML 대시보드, 1,117개 집계</td><td><code>test_runner_antigravity.py</code></td></tr>
+    </table>
+    <h2>3. 읽기 전용 경계</h2>
+    <ul>
+      <li><code>univariate_ts.db</code>: 값을 읽기만 합니다.</li>
+      <li>기존 962개 점수: 155개 차집합과 최종 통합 합계에만 사용합니다.</li>
+      <li>Exp474~Exp478 결과: 비교 근거로만 사용하며 덮어쓰지 않습니다.</li>
+      <li>TEST 라벨: 점수와 라우팅이 끝난 후 AUC·ZF-TP 계산에서만 엽니다.</li>
+    </ul>
+    <h2>4. 별도 보고서</h2>
+    <p><code>EXP479_CLASS_COUNT_REPORT_antigravity.html</code>은 파생 데이터셋 안의 정상 클래스와 원본 라벨 후보를 설명합니다. 이 보고서의 후보 674개는 누락 복구 대상 155개를 고르거나 방법을 라우팅하는 데 쓰지 않습니다.</p>
+    <h2>5. 완료된 산출물</h2>
+    <ul><li><code>checkpoint_antigravity.json</code>: 공식 155개 개별 결과</li><li><code>results_antigravity.json</code>: 신규 155개, 기존 962개, 전체 1,117개 정확 집계</li><li><code>EXP479_DASHBOARD_antigravity.html</code>: 실제 성능과 완료 체크</li><li><code>EXP479_IMPLEMENTATION_REPORT_antigravity.html</code>: 쉬운 결과 설명</li></ul>
+  </main>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp453 실행 규칙</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow:auto}li{margin:.45rem 0}.stop{border-left:4px solid #c0392b;background:#fff5f4;padding:1rem}</style></head><body><main>
+<h1>Exp453 실행 안내서</h1>
+<p><strong>현재 단계:</strong> 구현 전이다. 지금은 공식 명령과 TEST label을 사용하지 않는다.</p>
+<h2>무엇을 고치는가</h2><p>Launcher가 잘못된 Python 환경에서 시작되면, Exp453 모듈을 불러오기 전에 정확한 고정 실행 파일로 한 번만 다시 시작한다. 그 뒤 실행 파일 문자열, prefix 문자열과 네 패키지 버전을 모두 확인한다.</p>
+<h2>구현 완료 뒤의 명령 순서</h2><ol>
+<li><code>readiness --reviewed-commit LOWER40HEX</code></li>
+<li>readiness가 성공한 경우에만 <code>evaluate --reviewed-commit LOWER40HEX</code></li>
+<li>평가 결과 12개 파일이 완성된 경우에만 bare <code>inspect</code></li>
+</ol>
+<div class="stop">각 명령은 한 번만 실행한다. 어느 단계든 실패하면 다음 명령을 실행하지 않고 Exp453를 끝낸다. 같은 Exp453를 재시도하지 않는다.</div>
+<h2>결과 확인</h2><p>공식 evaluate에서만 48개 순서 고정 query와 72,300개 TEST row를 읽는다. 96개 ordered index 목록과 confusion, FN, FP, F1, bootstrap, decision, 12개 파일 SHA를 독립적으로 다시 계산한다. 계산 결과가 같을 때만 inspect를 실행한다.</p>
+<h2>역할 분담</h2><p>Grok 4.6/high는 읽기 전용으로 원인과 대안을 검토한다. Codex가 코드를 합치고 테스트하며 최종 결과를 판단한다. Grok에는 공식 실험 worktree 쓰기 권한을 주지 않는다.</p>
+</main></body></html>

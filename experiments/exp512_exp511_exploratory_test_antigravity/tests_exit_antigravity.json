@@ -1,0 +1,6 @@
+{
+  "exit_code": 0,
+  "xml_sha256": "97ff310ec89774f56fd31d85826d0a94c6e76a6ce784b5413a15251ac3e6cfb9",
+  "native_session_id": 38479,
+  "evidence": "Observed native pytest completion: 31 passed in 46.50s; exit code 0. tests_final XML copied unchanged to canonical tests_all XML."
+}

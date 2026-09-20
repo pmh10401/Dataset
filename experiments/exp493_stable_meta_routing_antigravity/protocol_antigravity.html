@@ -1,0 +1,8 @@
+<!doctype html><meta charset="utf-8"><title>Exp493 사전 규약</title>
+<h1>Exp493: 안정화 후 특징·목표·선택 성능 분리</h1>
+<p>125개 기존 대표 family의 개발 실험이다. 새로운 독립 검증 또는 자동 승격으로 해석하지 않는다. Pro 검토 반영: 과거 Exp480 목표에 Exp492 결과를 부분 대입하지 않는다. 77/250 과거/현재 affected-method 성능 불일치의 원인은 미확인이다.</p>
+<p>현재 old/stable 두 성능표는 동일 MiniRocket/신규 MultiRocket 결과를 공유하며 Hydra/hybrid만 Exp492 old/stable로 바뀐다. 원본 DB SHA, 코드, 버전, seed, TRAIN membership, TEST 순서를 검사한다. 모든 신규 점수 저장·검증 후 TEST 라벨을 읽는다. 이후 donor 성능만 학습하고 전체 held-family는 제외한다. 모든 예측/선택을 저장한 뒤 평가한다.</p>
+<p>24D, old42D, stable42D × current-old/current-stable 목표의 6개 Ridge 모델. alpha=10, cholesky, donor-only median/mean/std, family당 가중치합1. 목표는 Mini 대비 3개 AUC 차이와 3개 ZF 차이 부호. AUC 및 ZF-sign head를 각각 argmax([0,pred1,pred2,pred3])로 선택한다. 정확한 동률은 Mini/Multi/Hydra/hybrid 순서. ZF-sign은 ZF 개수의 기대이득 최적화가 아니다. 같은 선택을 두 성능표 모두에 평가한다. donor-constant 및 고정방법을 비교한다. 설정 탐색·로그 변환·결과 기반 head 선택은 없다.</p>
+<p>Exp490 18D 정의(IQR+1e-9)를 유지한다. Exp492 affected A와 Exp489 Mini A를 재사용하고 affected B를 5fold씩 paired 계산한다. affected A가 정확히 바뀐 TRAIN family에만 Multi A를 다시 계산한다. 기존 값과 복원 old 특징의 rtol=atol=1e-10 일치가 필수다. 실패 시 해석을 중단하고 의존 특징을 재구성한다. Mini/Multi 기존 6개 특징은 출처 확인 후 유지한다. 신규 Multi TEST는 전체125개에서 계산한다. 점수에는 TEST 라벨을 사용하지 않는다.</p>
+<p>주요 보고: family 평균 AUC, ZF 합계, Mini 대비 승패, 선택 빈도, MSE, 고정목표·고정평가표에서의 특징 효과, 고정특징·고정평가표에서의 재학습 효과, 고정선택에서의 점수 효과. end-to-end 비교는 old42/old-target/old-outcome → stable42/stable-target/stable-outcome 순서를 명시한다. 과거24D/42D 재현은 별도 기록한다.</p>
+<p>가속: 공식 aeon/sklearn CPU 정의 유지, 내부1 thread, 최대7 dataset worker. MLX/MPS float64 및 Numba 적용가능성을 확인한다. 동일수치/선택 및 시간 이득이 입증되지 않으면 CPU 유지. 합성 회귀와 실제 작은/변경 family smoke 후 본 실행한다. 기존 실험은 변경하지 않는다. 재시작은 코드·규약·입력 checksum 일치 시에만 허용한다.</p>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="0" tests="3" time="2.999" timestamp="2026-09-18T08:55:47.908305+09:00" hostname="macui-MacBookPro.local"><testcase classname="experiments.exp512_exp511_exploratory_test_antigravity.test_exp512_antigravity" name="test_no_rescoring_after_label_access_even_if_freeze_missing" time="2.899"><failure message="AssertionError: assert False&#10; +  where False = hasattr(&lt;module 'experiments.exp512_exp511_exploratory_test_antigravity.scoring_antigravity' from '/Users/mac/Documents/Time S...-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/scoring_antigravity.py'&gt;, 'assert_scoring_allowed')">tmp_path = PosixPath('/private/var/folders/th/yvv115s11t7glkfvzp688vsm0000gn/T/pytest-of-mac/pytest-270/test_no_rescoring_after_label_0')
+
+    def test_no_rescoring_after_label_access_even_if_freeze_missing(tmp_path):
+&gt;       m=module('scoring');assert hasattr(m,'assert_scoring_allowed')
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert False
+E        +  where False = hasattr(&lt;module 'experiments.exp512_exp511_exploratory_test_antigravity.scoring_antigravity' from '/Users/mac/Documents/Time S...-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/scoring_antigravity.py'&gt;, 'assert_scoring_allowed')
+
+experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py:58: AssertionError</failure></testcase><testcase classname="experiments.exp512_exp511_exploratory_test_antigravity.test_exp512_antigravity" name="test_wal_guard_rejects_unbound_changes_before_opening_database" time="0.001"><failure message="AssertionError: assert False&#10; +  where False = hasattr(&lt;module 'experiments.exp512_exp511_exploratory_test_antigravity.scoring_antigravity' from '/Users/mac/Documents/Time S...-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/scoring_antigravity.py'&gt;, 'database_snapshot')">tmp_path = PosixPath('/private/var/folders/th/yvv115s11t7glkfvzp688vsm0000gn/T/pytest-of-mac/pytest-270/test_wal_guard_rejects_unbound0')
+
+    def test_wal_guard_rejects_unbound_changes_before_opening_database(tmp_path):
+        import sqlite3
+&gt;       m=module('scoring');assert hasattr(m,'database_snapshot')
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert False
+E        +  where False = hasattr(&lt;module 'experiments.exp512_exp511_exploratory_test_antigravity.scoring_antigravity' from '/Users/mac/Documents/Time S...-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/scoring_antigravity.py'&gt;, 'database_snapshot')
+
+experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py:69: AssertionError</failure></testcase><testcase classname="experiments.exp512_exp511_exploratory_test_antigravity.test_exp512_antigravity" name="test_family_csv_includes_every_budget_and_unchanged_rows" time="0.001"><failure message="AssertionError: assert False&#10; +  where False = hasattr(&lt;module 'experiments.exp512_exp511_exploratory_test_antigravity.evaluation_antigravity' from '/Users/mac/Documents/Tim...te-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/evaluation_antigravity.py'&gt;, 'write_family_csv')">tmp_path = PosixPath('/private/var/folders/th/yvv115s11t7glkfvzp688vsm0000gn/T/pytest-of-mac/pytest-270/test_family_csv_includes_every0')
+
+    def test_family_csv_includes_every_budget_and_unchanged_rows(tmp_path):
+        import csv
+&gt;       m=module('evaluation');assert hasattr(m,'write_family_csv')
+                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: assert False
+E        +  where False = hasattr(&lt;module 'experiments.exp512_exp511_exploratory_test_antigravity.evaluation_antigravity' from '/Users/mac/Documents/Tim...te-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/evaluation_antigravity.py'&gt;, 'write_family_csv')
+
+experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py:78: AssertionError</failure></testcase></testsuite></testsuites>

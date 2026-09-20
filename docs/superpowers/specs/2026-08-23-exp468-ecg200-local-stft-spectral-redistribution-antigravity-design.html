@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp468 ECG200 국소 STFT 주파수 재분배 설계</title>
+<style>
+body{max-width:1080px;margin:2rem auto;padding:0 1rem;font:16px/1.72 system-ui;color:#172033;background:#fff}h1,h2{line-height:1.35}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.58rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}.box{padding:1rem;margin:1rem 0;background:#f5f7fa;border-left:6px solid #2457a6}.ok{border-left-color:#16794b}.warn{background:#fff9ed;border-left-color:#b7791f}.stop{background:#fff4f2;border-left-color:#b42318}.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;align-items:center;text-align:center}.flow div{padding:.72rem;background:#eef2f7;border-radius:.4rem}.arrow{background:white!important}.checklist{list-style:none;padding-left:0}.checklist li{margin:.45rem 0}input{width:1.05rem;height:1.05rem;vertical-align:-.15rem}@media(max-width:760px){.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg)}}
+</style>
+</head>
+<body><main>
+<h1>Exp468 — ECG200 국소 STFT 주파수 재분배 자격 검증</h1>
+<div class="box ok"><strong>한 줄 목표:</strong> ECG200 한 박동의 뒷부분에서 주파수 구성이 달라지는지를 찾고, 신호가 확실할 때만 기존 C0 점수를 보완한다.</div>
+<div class="box"><strong>현재 상태:</strong> 사용자가 작성된 HTML 설계서를 최종 승인했다. 구현 계획은 준비됐지만, 아직 코드 구현·점수 계산·공식 실험은 실행하지 않았다.</div>
+
+<h2>1. 왜 새 실험이 필요한가</h2>
+<table>
+<tr><th>Exp466 결과</th><td>C9 합격은 <code>0/10</code>이었다. period AUC는 모든 fold에서 <code>0.85</code>보다 낮았고 범위는 <code>0.6862244897959183</code>~<code>0.826530612244898</code>였다.</td></tr>
+<tr><th>C0보다 개선</th><td>period AUC가 C0보다 좋아진 fold는 <code>0/10</code>이었다. 8개는 같고 2개는 더 나빴다.</td></tr>
+<tr><th>확인 신호</th><td>period 확인 신호가 없던 fold가 <code>8/10</code>이었다. 낮은 문턱으로 바꾸는 대신 다른 신호 구조가 필요하다.</td></tr>
+<tr><th>다음 질문</th><td>파형 전체나 한 번의 위상 역정렬이 아니라, 뒷부분의 주파수 구성이 시간에 따라 달라졌는지를 보면 period 변화가 분리되는가?</td></tr>
+</table>
+
+<h2>2. 후보 비교와 최종 선택</h2>
+<table>
+<thead><tr><th>방법</th><th>장점</th><th>이번 판단</th></tr></thead>
+<tbody>
+<tr><td><strong>국소 STFT</strong></td><td>짧은 구간을 차례로 보며 주파수 변화 위치를 남긴다. 모든 값을 샘플 번호로 고정할 수 있다.</td><td><strong>선택</strong>. 숨은 조정값이 가장 적고, 공개 데이터에 없는 실제 Hz 정보를 가정하지 않는다.</td></tr>
+<tr><td>Morlet CWT</td><td>여러 크기의 파동을 동시에 보므로 시간축 확대에 자연스럽다.</td><td>보류. OpenRouter의 Ox Alpha와 Gemini 2.5 Pro가 추천했지만, 적절한 scale을 주파수로 해석하려면 sampling period가 필요하다. ECG200 공개 설명에는 그 값이 없다.</td></tr>
+<tr><td>Wavelet packet</td><td>주파수 띠별 에너지 비교가 쉽다.</td><td>보류. wavelet 기저, 분해 깊이와 트리 선택이 추가되어 이번 단일 후보 원칙보다 선택 자유도가 크다.</td></tr>
+</tbody>
+</table>
+<p>STFT는 이동 창마다 FFT를 계산해 시간에 따른 스펙트럼 변화를 수치화한다. Hann 창의 50% overlap은 전력 추정과 중복 계산 사이의 일반적인 절충이다. CWT는 유용한 후속 후보지만, PyWavelets 공식 설명도 wavelet과 sampling period에 맞춰 scale을 골라야 하며 너무 작은 scale은 aliasing을 만들 수 있다고 경고한다.</p>
+
+<h2>3. 고정 입력과 범위</h2>
+<ul>
+<li>실험 번호는 <code>Exp468</code>이다. 다른 작업에서 이미 사용 중인 Exp467을 건드리지 않는다.</li>
+<li>데이터는 ECG200 TRAIN 100개 중 정상 <code>+1</code> 69개만 사용한다. TEST 파일과 TEST 라벨은 열지 않는다.</li>
+<li>TRAIN 파일 MD5는 기존과 같은 <code>808875aeac1c358a90c630fe369327c4</code>여야 한다.</li>
+<li>각 행은 기존의 정확한 선형 보간으로 <code>96→140</code> 변환한다.</li>
+<li>seed는 <code>20260721</code>, <code>20261721</code>, fold는 각각 5개로 고정한다.</li>
+<li>onset은 <code>56</code>, 분석할 suffix는 <code>[56:140]</code>의 84개 값이다.</li>
+<li>level shift, gradual drift, amplitude scaling, period change의 생성식·크기·행 순서는 Exp466과 같게 유지한다.</li>
+<li>주목표는 period change다. 다른 세 변화는 C0 성능을 해치지 않는지 확인하는 보호 기준이다.</li>
+</ul>
+
+<h2>4. 유일한 새 점수 S10</h2>
+<p>한 행의 suffix 84개를 시작점 <code>0, 14, 28, 42, 56</code>에서 길이 28로 자른다. 따라서 완전한 창 다섯 개만 사용하고 경계 padding은 하지 않는다.</p>
+<ol>
+<li>각 창에서 평균을 빼 level 차이를 제거한다.</li>
+<li>길이 28의 대칭 Hann 창 <code>np.hanning(28)</code>을 곱하고, 길이 28의 one-sided real FFT를 계산한다.</li>
+<li>전력을 제곱 크기로 만들고 DC bin을 버린다. 남은 14개 값에는 Nyquist bin이 포함된다. 각 값에 <code>1e-12</code>를 더한 뒤 합이 1이 되도록 나눈다. amplitude 배율은 이 정규화에서 사라진다.</li>
+<li>각 시간 창마다 정상 fit 행들의 주파수 분포를 성분별 중앙값으로 합친 뒤 다시 합이 1이 되게 만든다.</li>
+<li>한 행의 각 창 분포와 정상 중앙값 분포 사이 Jensen–Shannon divergence를 계산한다.</li>
+<li>다섯 divergence의 <strong>중앙값</strong>을 그 행의 원시 <code>S10</code> 점수로 사용한다. 한 창의 우연한 변화가 전체 확인 신호가 되는 것을 막는다.</li>
+</ol>
+<pre>m = (p + q) / 2
+JS(p, q) = 0.5 * KL(p || m) + 0.5 * KL(q || m)  # 자연로그 사용
+S10(row) = median(JS(window_0), ..., JS(window_4))</pre>
+<p>fit 정상 점수는 각 행을 제외한 leave-one-out 중앙값 분포로 계산한다. query 정상과 네 합성 변화는 전체 fit 정상만으로 만든 중앙값 분포와 비교한다.</p>
+
+<h2>5. 순위, 확인, 보수적 결합</h2>
+<p>원시 점수는 기존과 같은 TRAIN-normal anomaly rank로 바꾼다.</p>
+<pre>S10_rank(query) = (1 + count(fit_score &lt;= query_score)) / (n_fit + 1)</pre>
+<p>확인 조건은 rank 이전의 원시 JS 발산에 대해 <code>S10_raw(query) &gt; 0</code>이면서 <code>S10_raw(query) &gt; max(fit_normal_S10_raw)</code>일 때로 고정한다. 학습 문턱, alpha, grid search는 없다.</p>
+<table>
+<tr><th>방법</th><th>역할</th><th>정의</th></tr>
+<tr><td><code>C0</code></td><td>대조군</td><td>검토가 끝난 기존 점수를 byte 단위로 그대로 재생한다.</td></tr>
+<tr><td><code>S10</code></td><td>설명 신호</td><td>국소 STFT 주파수 재분배의 TRAIN-normal rank와 원시 근거를 기록한다.</td></tr>
+<tr><td><code>C10</code></td><td>유일한 주 후보</td><td>확인된 행에서만 <code>max(C0, S10_rank)</code>. 확신이 낮으면 C0와 byte 단위로 같다.</td></tr>
+</table>
+<div class="flow" aria-label="C10 점수 흐름">
+<div>정상 TRAIN fit</div><div class="arrow">→</div><div>LOO S10 최댓값</div><div class="arrow">→</div><div>엄격한 확인 기준</div>
+<div>query suffix</div><div class="arrow">→</div><div>5창 STFT·JS 중앙값</div><div class="arrow">→</div><div>확실할 때만 C0와 max</div>
+</div>
+
+<h2>6. 합격 조건</h2>
+<p><code>C10</code>은 아래 조건을 모두 만족해야 한다.</p>
+<ol>
+<li>10개 seed-fold의 모든 원시 점수, 순위와 AUC가 finite다.</li>
+<li>period-change AUC가 10개 모두 <code>≥0.85</code>다. 이 값은 절대 법칙이 아니라 Exp460~466과 같은 난이도를 비교하기 위한 기준이다.</li>
+<li>period-change AUC가 10개 모두에서 같은 fold의 C0보다 엄격히 높다.</li>
+<li>period-change 확인 신호가 10개 fold 각각 1개 이상이다.</li>
+<li>level shift, gradual drift, amplitude scaling의 AUC가 어느 fold에서도 같은 C0보다 낮지 않다.</li>
+<li>두 seed 각각에서 OOF 정상 69개의 확인 합계가 정확히 0이다.</li>
+<li>서로 다른 private root의 두 순차 실행에서 결과 파일, 해시와 판정이 byte 단위로 같다.</li>
+</ol>
+<div class="box warn"><strong>평균 AUC 0.90을 별도 합격선으로 두지 않는 이유:</strong> 사용자가 이번 범위를 period 변화로 고정했다. 대신 period의 절대 성능·C0 개선과 나머지 세 유형의 무하락을 각각 직접 검사한다.</div>
+
+<h2>7. 중단 규칙</h2>
+<div class="box stop">
+<ul>
+<li>조건 하나라도 실패하면 <code>C10</code>은 qualification 실패로 종료한다.</li>
+<li>실패 뒤 같은 실험에서 창 길이 28, hop 14, Hann 창, FFT 길이, 집계 중앙값, 확인식, seed, fold 또는 합격선을 바꾸지 않는다.</li>
+<li>STFT가 실패해도 Exp468 안에서 CWT나 wavelet packet으로 바꾸지 않는다. 필요하면 새 실험으로 사전등록한다.</li>
+<li>Exp468이 통과하기 전에는 ECG200 TEST·실제 잔여 FN·FP·F1, 라우팅, champion·pending·promotion을 평가하거나 변경하지 않는다.</li>
+<li>통과할 때만 별도 사용자 승인을 받아 실제 잔여 FN 구조 검증으로 이동한다.</li>
+</ul>
+</div>
+
+<h2>8. 구현 전 검증 경계</h2>
+<ul>
+<li>새 score-source 전체 실행 전에 동일 입력·seed의 CPU와 MLX를 비교한다. 모든 후보 index가 같고 수치 차이가 허용 범위 안이며 전송·동기화 포함 <code>1.1×</code> 이상 빠를 때만 MLX를 사용한다.</li>
+<li>작은 5×28 STFT에서는 CPU가 유력하지만, 실제 benchmark 전에는 결론으로 기록하지 않는다.</li>
+<li>단위 검사는 정확한 창 위치, no-padding, DC 제거, amplitude·level 불변성, JS 수식, LOO 분리, strict confirmation, C0 fallback parity와 결정성을 확인한다.</li>
+<li>결과 대시보드는 설계·구현·private qualification 상태와 합격 기준을 같은 HTML에서 보여준다. 완료된 단계는 항상 체크한다.</li>
+</ul>
+
+<h2>9. 근거 자료</h2>
+<ul>
+<li><a href="../../EXP466_DASHBOARD_antigravity.html">Exp466 최종 대시보드</a> — 실패 수치와 다음 연구 경계</li>
+<li><a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.ShortTimeFFT.html">SciPy ShortTimeFFT 공식 문서</a> — 이동 창 FFT와 시간에 따른 스펙트럼 변화</li>
+<li><a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.csd.html">SciPy CSD 공식 문서</a> — Hann 창에서 50% overlap이 합리적인 절충이라는 설명</li>
+<li><a href="https://pywavelets.readthedocs.io/en/latest/ref/cwt.html">PyWavelets CWT 공식 문서</a> — scale·sampling period 관계와 낮은 scale aliasing 주의</li>
+<li><a href="https://www.timeseriesclassification.com/description.php?Dataset=ECG200">ECG200 공개 설명</a> — 길이 96의 한 박동 파형이며 실제 sampling frequency는 명시하지 않음</li>
+</ul>
+
+<h2>10. 진행 체크</h2>
+<ul class="checklist">
+<li><label><input type="checkbox" checked disabled> Exp466 실패 근거 재확인</label></li>
+<li><label><input type="checkbox" checked disabled> OpenRouter Ox Alpha·Gemini 독립 의견 비교</label></li>
+<li><label><input type="checkbox" checked disabled> STFT·CWT·wavelet packet 비교와 단일 후보 선택</label></li>
+<li><label><input type="checkbox" checked disabled> ECG200 period-only 범위 승인</label></li>
+<li><label><input type="checkbox" checked disabled> Exp468 HTML 설계서와 합격·중단 규칙 작성</label></li>
+<li><label><input type="checkbox" checked disabled> 사용자의 작성된 HTML 설계서 최종 승인</label></li>
+<li><label><input type="checkbox" checked disabled> 구현 계획 작성</label></li>
+<li><label><input type="checkbox" disabled> 구현 및 실험 실행</label></li>
+</ul>
+
+<p><strong>설계 상태:</strong> <code>written_design_approved_implementation_plan_ready</code>. 다음 단계는 구현 방식 선택이며, 별도 진행 지시 전에는 코드나 공식 실험을 실행하지 않는다.</p>
+</main></body></html>

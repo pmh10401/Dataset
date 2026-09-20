@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp459 사전등록</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
+<body><main>
+  <h1>Exp459 사전등록</h1>
+  <p>Exp459은 Exp458 <code>ECG5000_normal_2</code> candidate route의 blocked validation이다. Task 6 공식 evaluate/inspect가 각각 정확히 1회 완료됐고, 공식 상태는 <code>official_evaluation_inspected_complete_unstable_no_promotion</code>다.</p>
+  <table>
+    <tr><th>대상</th><td>ECG5000_normal_2 TRAIN 1413x140</td></tr>
+    <tr><th>fold</th><td>283/283/283/282/282 contiguous blocked folds, shuffle 금지</td></tr>
+    <tr><th>seeds</th><td>20260721, 20261721</td></tr>
+    <tr><th>criteria</th><td>per-type AUC >= 0.85, pooled AUC >= 0.90, normal Wilson upper <= 0.05, all 10 fold-seed records required for stable</td></tr>
+    <tr><th>official truth</th><td><code>unstable</code>, artifact map <code>a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d</code>, dashboard snapshot <code>c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350</code>, failed folds seed 20260721 fold 3 period_change AUC 0.8208339620743423; seed 20261721 fold 4 period_change AUC 0.8004124541019063</td></tr>
+    <tr><th>official boundary</th><td>evaluate 1, inspect 1, label query 0, official root present, champion/pending/routing/promotion unchanged</td></tr>
+  </table>
+  <p><strong>Wilson 검사의 한계:</strong> 각 fold에서는 정상 점수 282개 또는 283개를 자기 자신과 비교해 p값을 계산한다. 자기 자신 한 건이 항상 포함되고 계산식에서 1을 더하므로 가능한 가장 작은 p값은 <code>2/(n+1)</code>이다. n=283이면 약 0.00704, n=282이면 약 0.00707로 경보 기준 0.005보다 크다. 따라서 이 실험에서는 정상 경보 수가 항상 0이고, Wilson 값은 fold별 오경보 차이를 구분하지 못한다. 최종 <code>unstable</code> 판단은 seed 20260721의 fold 3과 seed 20261721의 fold 4에서 <code>period_change</code> AUC가 기준에 미달한 사실만으로 결정됐다.</p>
+  <p>Unstable truth is recorded without threshold tuning. Exp458 official result is preserved but is not used as an operational promotion basis.</p>
+</main></body></html>

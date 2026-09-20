@@ -1,6 +1,6 @@
-import ShadowValidation from "../ui/shadow-validation";
+import ShadowHub from "../ui/shadow-hub";
 import "./shadow.css";
 
 export default function ShadowPage() {
-  return <ShadowValidation />;
+  return <ShadowHub />;
 }

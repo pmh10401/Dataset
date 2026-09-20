@@ -1,0 +1,2274 @@
+{
+  "schema": "champion-ledger.v1",
+  "updated_at": "2026-08-22T00:00:00+09:00",
+  "prediction_firewall": "Entries are retrospective comparators only and may not be read by a prediction function or used for family-specific routing.",
+  "champion_status": "no_new_champion_verified_in_current_loop",
+  "verified_references": [
+    {
+      "name": "Exp404 Hard prediction audited by Exp416",
+      "role": "current_verified_full_population_reference_not_mandatory_code_base",
+      "prediction_sha256": "437dc63754a29d0d65c0b30bfee54102abdd9fb56d45d2c5b1c5a511b0448e70",
+      "evaluation_artifact": "/Users/mac/Documents/Dataset/exp416_exp404_hard_test_confusion_audit/exp416_confusion_matrix.json",
+      "dataset_count": 1117,
+      "prediction_coordinate_count": 2218,
+      "prediction_dataset_count": 888,
+      "micro": {
+        "tp": 1915,
+        "fp": 303,
+        "fn": 2003,
+        "tn": 191679,
+        "precision": 0.8633904418394951,
+        "recall": 0.4887697805002552,
+        "f1": 0.6241851368970013,
+        "false_positive_rate": 0.0015782729630902897
+      },
+      "dataset_balanced_macro": {
+        "precision": 0.8262807700918903,
+        "recall": 0.591448835046688,
+        "f1": 0.6089825086931719,
+        "false_positive_rate": 0.002196457972318159
+      },
+      "test_labels_loaded_after_prediction_freeze": true,
+      "operational_policy_changed": false
+    }
+  ],
+  "promotion_rule": {
+    "required": [
+      "new experiment number and preregistration before prediction",
+      "frozen prediction SHA256 before TEST labels",
+      "exact 1117-dataset paired evaluation",
+      "rescued previously missed datasets reported",
+      "false alarms and regressions on previously strong datasets reported",
+      "preregistered paired/bootstrap decision rule passes",
+      "no same-experiment TEST-informed reselection"
+    ],
+    "note": "The development base may be the current experiment or selected verified components; this ledger is a comparator, not a forced starting point."
+  },
+  "pending_candidate": {
+    "experiment": null,
+    "status": "none_exp446_publication_inspected_complete_not_pending_champion",
+    "prediction_sha256": null,
+    "evaluation": null
+  },
+  "history": [
+    {
+      "experiment": "Exp435",
+      "status": "failed_before_prediction_freeze",
+      "prediction_sha256": null,
+      "test_labels_opened": false,
+      "reason": "Dataset-wide TEST finite contract rejected known nonfinite raw values at progress count 179; no publication was created."
+    },
+    {
+      "experiment": "Exp441",
+      "status": "official_engineering_failed_prepublication_label_free",
+      "reason": "The official 1,117-record label-free replay completed with 1,117/1,117 success and zero errors, but publication failed closed on ValueError: attempt terminal progress is invalid because terminal eta_seconds=0.0 conflicted with the strict null contract. Exp404 Hard/Exp416 remains the verified reference; Exp441 is immutable review-only failure evidence and cannot become a champion or pending candidate.",
+      "reviewed_design_sha256": "c4d692297290869be90815d115c1fda7f71120326b4be504ebf685619b6545da",
+      "reviewed_commit": "f5df76e377a355eaf1613b7864186c7a618b7756",
+      "readiness_sha256": "9d433c59451f6121e11445d724a4f48497f744ecc0917b5b6fc6567449c8948a",
+      "terminal_authority_sha256": "726d50e831acdad6728503156137f72aba71c541af82b8b37e6f959d62b0e95b",
+      "prediction_sha256": null,
+      "evaluation": null,
+      "publication_exists": false,
+      "test_labels_opened": false,
+      "label_access_count": 0,
+      "official_run_purpose": "deterministic_retrospective_reproduction",
+      "bootstrap_interpretation": "descriptive_post_selection",
+      "adaptive_followup": true,
+      "independent_validation": false,
+      "external_generalization_supported": false,
+      "confirmatory_statistical_claim": false,
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false
+    },
+    {
+      "experiment": "Exp442",
+      "status": "official_completed_evaluated_review_only_paused_not_champion",
+      "reason": "공식 readiness, 1,117개 label-free new, inspect, prediction freeze, 그리고 freeze 후 evaluate가 모두 완료됐다. 후보 30개 중 TP 15/FP 15로 놓친 이상 15개를 복구했고 기존 강한 데이터셋 악화는 0개였다. micro F1은 0.624185에서 0.626014로, micro/macro paired bootstrap 95% 구간은 모두 0보다 컸다. 그러나 adaptive follow-up이고 independent validation이 아니며 review-only이므로 운영 경보와 scientific champion으로 승격하지 않는다. 결과를 기록한 채 방향 논의까지 일시정지한다.",
+      "reviewed_design_sha256": "cf0b6e916a85cdf21c8cc28c735894f927b63e4c33aa4d62e95753540bd06a7b",
+      "reviewed_preregistration_sha256": "ab909c35d0f4d0252d1a29fa80ea27d51d0ba56175c8cc0d8d3428092ec2746c",
+      "implementation_commit": "5747a47fa8d996e549c4b9536e5ecbfeea87dfcf",
+      "review_fix_commit": "5c946ba73d012760ba4309d46f3b4bcb499cf0cf",
+      "review_fix_codemap_commit": "04560d0d6ecaa43798e07369bea17968a70251dc",
+      "reviewed_commit": "c4783d695ab3d8b9e03d605a46143c3dcaeb7a6b",
+      "review_verdict": "ship",
+      "review_critical_findings": 0,
+      "review_important_findings": 0,
+      "review_minor_findings": 0,
+      "implementation_report": "docs/EXP442_IMPLEMENTATION_REPORT_antigravity.md",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp442_terminal_eta_publication_repair_antigravity_20260808",
+      "readiness_sha256": "0ea3da605eeb3ae08c719c20c895846799a79a52951881fbfccd4217ad25aa14",
+      "readiness_source_snapshot_sha256": "63a54512fbfbf7aef0db2c8ae12fe52af5f9d98a276095c2231e001c2c014f03",
+      "official_readiness": true,
+      "official_run_started": true,
+      "run_root_exists": true,
+      "pid": 32029,
+      "pid_os_live": false,
+      "completed": 1117,
+      "errors": 0,
+      "eta_seconds": null,
+      "prediction_sha256": "b79bad6012ad6bc07050ade9968e815796a2cc871b5c85d63f0bd7dbdf6f81f4",
+      "publication_artifact_map_sha256": "14e2662a8880bd20658bb849d476391654ee6283f5abc8149656cf73885c69c1",
+      "candidate_ranking_sha256": "d8d858cd74553aa64f6f0a5424064872b59f682fed1c8b2ace63fffba6ad20cc",
+      "source_audit_sha256": "36aa46b5c8bc07b7851d84739af7ba123c840a01c85893e56cf0eb4a6b5311ee",
+      "selection_sha256": "06004f18dbd9b0df3fa857bb8b1a9fd7eafd4d927f3736fb8cfb25db56b72408",
+      "evaluation_artifact_map_sha256": "e1155acf05e00935710243e875eaeb2d13047d6236d026ee93fe654fc33c670b",
+      "evaluation_sha256": "f432ffdf530b2e32bc7a62fec6c7d07cff2eff9f3049489b5e03136b445a33cf",
+      "test_labels_opened": true,
+      "pre_freeze_label_access_count": 0,
+      "evaluation_label_access_phase": "post_freeze_only",
+      "initial_sol_review_fix_status": "resolved",
+      "fresh_sol_high_review": "passed_ship_no_findings",
+      "codemap_sync": "complete_at_04560d0d6ecaa43798e07369bea17968a70251dc",
+      "evaluation_status": "retrospective_reproduction_complete",
+      "evaluation": {
+        "baseline_confusion": {
+          "tp": 1915,
+          "fp": 303,
+          "fn": 2003,
+          "tn": 191679
+        },
+        "union_confusion": {
+          "tp": 1930,
+          "fp": 318,
+          "fn": 1988,
+          "tn": 191664
+        },
+        "candidate_count": 30,
+        "candidate_tp": 15,
+        "candidate_fp": 15,
+        "candidate_precision": 0.5,
+        "rescued_dataset_count": 15,
+        "regressed_dataset_count": 0,
+        "maximum_strong_loss": 0.0,
+        "baseline_f1": 0.6241851368970013,
+        "union_f1": 0.6260136230943887,
+        "micro_delta": 0.0018284861973874023,
+        "macro_delta": 0.012444046553267682,
+        "micro_bootstrap_ci95": [
+          5.373870255999115e-05,
+          0.003814109586073529
+        ],
+        "macro_bootstrap_ci95": [
+          0.006535362578334826,
+          0.019158460161145925
+        ]
+      },
+      "adaptive_followup": true,
+      "independent_validation": false,
+      "confirmatory_statistical_claim": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "scientific_winner_selected": false,
+      "next_action": "paused_awaiting_direction_discussion_no_auto_next_experiment"
+    },
+    {
+      "experiment": "Exp443",
+      "status": "official_evaluated_no_retrospective_improvement_signal_not_promoted",
+      "reason": "세 정책의 frozen prediction을 1,117개 데이터셋에서 평가했다. control과 전체 결측행 제외 정책은 기준과 같았다. leave-one-out peer median은 MelbournePedestrian_normal_8에서 TP 1개를 FP 없이 복구하고 기존 강한 데이터셋을 악화시키지 않았지만, micro/macro paired-bootstrap 95% 하한이 모두 0이므로 사전등록 개선 신호를 통과하지 못했다. 좁은 결측 처리 근거로만 보존하고 champion이나 pending candidate로 승격하지 않는다.",
+      "reviewed_design_sha256": "b52142a0a48f9c557a56180ee96dc1a7a8e46760a15a547aa92f8b5999808f9b",
+      "reviewed_commit": "081b94b0485da7e59b1523d481031daf11d3fc65",
+      "prediction_sha256": {
+        "linear_edge_nearest_control": "2974d7da3967653c1530e4c2b830d8e689e8befb99e1339bf78b0dd88c60f965",
+        "exclude_nonfinite_row": "a304ba2deba886964e5487e15776e3fd36e0ecb0ea697cba1712107c79c37e3e",
+        "leave_one_out_peer_median": "1e5801fdd9f8eb60e4f1f0ab75f2cec697d7fa953aa1b78ec2efb7b003e1a07d"
+      },
+      "evaluation_sha256": "85a64e626aff1049a588c8013d1b6ff836502b5c0a619246347529236bc5d7a8",
+      "evaluation": {
+        "baseline_confusion": {
+          "tp": 1915,
+          "fp": 303,
+          "fn": 2003,
+          "tn": 191679
+        },
+        "peer_median_confusion": {
+          "tp": 1916,
+          "fp": 303,
+          "fn": 2002,
+          "tn": 191679
+        },
+        "added_tp": 1,
+        "added_fp": 0,
+        "rescued_datasets": [
+          "MelbournePedestrian_normal_8"
+        ],
+        "regressed_dataset_count": 0,
+        "micro_f1": 0.6244093205149096,
+        "micro_delta": 0.00022418361790832453,
+        "macro_delta": 0.00022381378692926113,
+        "micro_bootstrap_ci95": [
+          0.0,
+          0.0007423410221952668
+        ],
+        "macro_bootstrap_ci95": [
+          0.0,
+          0.0006714413607878246
+        ]
+      },
+      "terminal_cleanup_error": "pinned database close failed",
+      "database_pin_removed": true,
+      "database_nlink_after_run": 1,
+      "test_labels_opened_after_prediction_freeze": true,
+      "official_run_purpose": "controlled_missing_normal_train_policy_comparison",
+      "adaptive_followup": true,
+      "independent_validation": false,
+      "external_generalization_supported": false,
+      "confirmatory_statistical_claim": false,
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "test_informed_reselection_allowed": false,
+      "next_action": "paused_awaiting_direction_discussion_no_auto_exp444"
+    },
+    {
+      "experiment": "Exp444",
+      "status": "design_only_not_promoted",
+      "reason": "Exp444는 Exp442의 동결 30개 좌표만 deterministic normal-TRAIN omission view로 재계산하는 구현 전 review-only 계획이다. prediction/evaluation은 아직 없고 TEST label도 열지 않았으며, 과학적 성공 기준·승자·운영 경보·champion 또는 pending candidate를 만들지 않는다. Exp404/Exp416은 verified reference로 보존한다.",
+      "reviewed_design_sha256": "1bb76f19d07ef312d5ac5498414d0c914ce94b99c5912e0bbcf3f0197c1400e8",
+      "run_identity": "exp444-train-only-stability-precision-gate-antigravity-20260810",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp444_train_only_stability_precision_gate_antigravity_20260810",
+      "prediction_sha256": null,
+      "evaluation": null,
+      "test_labels_opened": false,
+      "label_access_count": 0,
+      "scientific_success_criterion": null,
+      "evaluation_status": "descriptive_complete_no_promotion",
+      "adaptive_followup": true,
+      "independent_validation": false,
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "same_experiment_reselection_allowed": false
+    },
+    {
+      "experiment": "Exp445",
+      "status": "official_engineering_failed_prepublication_label_free_not_promoted",
+      "reason": "Exp445는 CPU/11에서 30/30 label-free calculation과 wrapper/aggregate parity를 완료했고 runtime error는 0이었지만, publication은 `Exp444 original-control replay is invalid`로 실패했다. publication/evaluation은 없고 TEST label도 열지 않았으며 root는 immutable failed-publication evidence다. retry, resume, publication, evaluation, champion, pending candidate, scientific winner 또는 operational alert를 만들지 않는다. Exp404/Exp416 verified reference는 변경하지 않는다.",
+      "reviewed_design_sha256": "099c0d412d2375764a7e30440feca17d70a2a6bbfdd14e3e53999fe3c458d70d",
+      "reviewed_plan_sha256": "4b369f044456ce9e3cca0abad141beb28b5b3431691677f19a2900997dc5ac9a",
+      "run_identity": "exp445-exp444-publication-source-authority-repair-antigravity-20260810",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp445_exp444_publication_source_authority_repair_antigravity_20260810",
+      "clean_head_review": {
+        "reviewed_candidate_commit": "09903c608fb78508ae8fdd343594e3d99dfee660",
+        "verdict": "ship"
+      },
+      "prediction_sha256": null,
+      "publication_sha256": null,
+      "evaluation": null,
+      "test_labels_opened": false,
+      "label_access_count": 0,
+      "scientific_success_criterion": null,
+      "evaluation_status": "not_started_immutable_prepublication_failure",
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "same_experiment_reselection_allowed": false,
+      "test_informed_reselection_allowed": false
+    },
+    {
+      "experiment": "Exp446",
+      "status": "official_publication_inspected_complete_awaiting_discussion",
+      "reason": "Exp446의 공식 CPU/11 runtime과 create-only publication은 완료됐고 prediction/publication hash가 존재한다. 승인된 source-free, label-free, mutation-free official inspect 두 번은 모두 exit 0이며 output SHA256 937b46960ed0b611fc9d3c74bffa7b494ff306af6d78a92129217b0da691fdf0로 byte-identical이다. 원래 new CLI wrapper는 valid publication 반환 뒤 nested MappingProxyType serialization에서만 실패했다. earlier pre-mock focused test의 unintended inspect는 별도 disclosed evidence이며 승인된 pair를 대체하지 않는다. evaluation, champion, pending candidate, scientific winner, operational alert 및 promotion은 만들지 않고 discussion을 기다린다.",
+      "reviewed_design_sha256": "3fce139171efbfc0a85fffeb44ea201116053efbe76e5a190e7198a3bdf3d281",
+      "run_identity": "exp446-exp445-publication-materialization-repair-antigravity-20260811",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp446_exp445_publication_materialization_repair_antigravity_20260811",
+      "prediction_sha256": "602ed1b09da630a8eaf4caa9829c01ae1906450a3edff5c5cbd7cc4453866100",
+      "publication_sha256": "d28129dc6d6ca5097c31c26e44feadcabc422493fd9e2be7abbdaacc403f6d0d",
+      "publication_manifest_sha256": "bbaf9506e17045b90eb9f72c41fad19d0f8d5459084ead329c6441d8af303c11",
+      "authorized_inspect_pair_output_sha256": "937b46960ed0b611fc9d3c74bffa7b494ff306af6d78a92129217b0da691fdf0",
+      "authorized_inspect_pair_complete": true,
+      "evaluation": null,
+      "champion_sha256": null,
+      "promotion_sha256": null,
+      "test_labels_opened": false,
+      "label_access_count": 0,
+      "scientific_success_criterion": null,
+      "evaluation_status": "not_started_no_evaluation_command",
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "same_experiment_reselection_allowed": false,
+      "test_informed_reselection_allowed": false,
+      "promotion_allowed": false
+    },
+    {
+      "experiment": "Exp447",
+      "status": "official_readiness_passed_evaluation_failed_immutable_no_retry",
+      "reason": "Exp447 readiness passed once, but its one allowed evaluate invocation failed at the TEST-label boundary with ValueError: TEST label row is invalid. The root remains absent, inspect ran zero times, and Exp447 is permanently ineligible for retry, inspection, champion/pending-candidate change, scientific winner selection, alert promotion, dashboard payload, or same-experiment reselection.",
+      "reviewed_design_sha256": "043009941619335b658af99911b1463f66ea73e93d600fe1cfb884391afea868",
+      "reviewed_plan_sha256": "d137020a319ec004a6054744a215ffbce9ecef4b6bfb3f2bab5f6f71f0a921d3",
+      "preregistration_sha256": "a3400c9222c5f3d8e5f5a15a8e38222d62471e0d5d2f2a73a43072df9cb0e6bd",
+      "runbook_sha256": "55242be0502a3469549596bfbb4dc620c700c74788d3a62ba2d2def59c2193cb",
+      "pre_attempt_runbook_sha256": "2d5110b82322797fb01060db2e24f118cd0ab06aecb9dc9c8fd7fdb4c82dd86d",
+      "implementation_report_sha256": "910bbf353d544ea19b7be8f0a841ef2fe2b523609ab727582a7fc1bd2823e4a1",
+      "reviewed_implementation_candidate": "f0d5f696b23abb68097f9e1911ce197f3949066e",
+      "fresh_sol_high_review": {
+        "verdict": "ship",
+        "critical_findings": 0,
+        "important_findings": 0
+      },
+      "verification_tests": {
+        "exp447": [
+          66,
+          66
+        ],
+        "predecessors": {
+          "Exp444": 206,
+          "Exp445": 39,
+          "Exp446": 50
+        }
+      },
+      "run_identity": "exp447-exp446-postfreeze-performance-evaluation-antigravity-20260811",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp447_exp446_postfreeze_performance_evaluation_antigravity_20260811",
+      "prediction_sha256": null,
+      "evaluation": null,
+      "evaluation_sha256": null,
+      "champion_sha256": null,
+      "promotion_sha256": null,
+      "test_labels_opened": true,
+      "label_access_count": 0,
+      "scientific_success_criterion": null,
+      "evaluation_status": "failed_immutable_no_retry_no_result_artifact",
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "same_experiment_reselection_allowed": false,
+      "test_informed_reselection_allowed": false,
+      "automatic_champion_promotion": false,
+      "promotion_allowed": false,
+      "official_root_absent_non_symlink": true,
+      "database_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c",
+      "database_nlink": 1,
+      "official_lifecycle": {
+        "readiness_invocations": 1,
+        "readiness_exit_code": 0,
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 1,
+        "inspect_invocations": 0,
+        "label_boundary_entered": true,
+        "label_session_opened": true,
+        "query_attempts": 1,
+        "query_completions": 0,
+        "label_rows": 0,
+        "label_session_closed": true,
+        "error_type": "ValueError",
+        "error": "TEST label row is invalid",
+        "audit_path": "/Users/mac/Documents/Dataset/evaluation_audit_89aff47cdd7c43cd919a34f81982bc8b_antigravity.json",
+        "audit_sha256": "9f8f7d3d9b92670988ca1d0bb689711d12ef1536777881f18991143a090a2b97",
+        "audit_inode": 19812443,
+        "audit_nlink": 1,
+        "destination_state": "absent",
+        "retry_or_inspect_permitted": false
+      },
+      "post_freeze_forensic_storage_aggregate": {
+        "date": "2026-08-12",
+        "test_label_storage_type": "SQLite TEXT exact values",
+        "label_0_count": 221284,
+        "label_1_count": 4516,
+        "instance_index_storage_type": "integer",
+        "dataset_names_or_positions_used": false
+      },
+      "dashboard_presentation": "permanently_closed_no_exp447_export_only_separately_governed_Exp448_evidence_may_reach_dashboard",
+      "next_action": "design_and_preregister_Exp448_immutable_failure_analysis"
+    },
+    {
+      "experiment": "Exp449",
+      "status": "official_readiness_passed_evaluation_failed_immutable_no_retry",
+      "reason": "Exp449 readiness and zero-label prediction each completed once. Its sole evaluation opened one 48-query/72,300-row TEST-label session, retained local staging evidence, then failed prepublication replay with ValueError: frozen prediction indices differ from evidence. Receipt state is permanently stopped; inspect, retry, dashboard access, champion selection, pending-candidate change, promotion, routing, and operational alert are prohibited.",
+      "reviewed_design_sha256": "72fcfe799cedd8f3dfea730cb3d5d4fd38ac90c190849c3c4482565fd2936ae3",
+      "preregistration_sha256": "c30ece9886524a523ee7cfdc5c89f2462e5704c048c71c7264bd146fe27f767c",
+      "runbook_sha256": "106ca7b633ff11763aa4d70c5b17f8c71074790efc46f8b357ef10144f9492d7",
+      "run_identity": "exp449-residual-fn-method-qualification-antigravity-20260812",
+      "prediction_sha256": "a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d",
+      "evaluation": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "reviewed_implementation_candidate": "7815382ee8a155651286946951d30e0539bfc8ed",
+      "official_reviewed_commit": "4994d8f28127e8b6d5ba8b192af495392a1c669e",
+      "verification_test_counts": {
+        "Exp449": [
+          213,
+          213
+        ],
+        "Exp249_250": 13,
+        "Exp444": 206,
+        "Exp445": 39,
+        "Exp446": 50,
+        "Exp447": 66,
+        "Exp448": 62
+      },
+      "dashboard_access": "blocked",
+      "label_access_count": 1,
+      "test_labels_opened": true,
+      "official_readiness_started": true,
+      "official_predict_started": true,
+      "official_evaluate_started": true,
+      "official_inspect_started": false,
+      "official_lifecycle": {
+        "readiness_invocations": 1,
+        "readiness_exit_code": 0,
+        "predict_invocations": 1,
+        "predict_exit_code": 0,
+        "predict_candidate_count": 96,
+        "predict_dataset_count": 48,
+        "predict_label_access_count": 0,
+        "prediction_authority_validation": "independent_capture_authority_passed",
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 1,
+        "evaluate_error_type": "ValueError",
+        "evaluate_error": "frozen prediction indices differ from evidence",
+        "inspect_invocations": 0,
+        "label_sessions": 1,
+        "evaluate_label_access_count": 1,
+        "evaluate_label_query_count": 48,
+        "evaluate_label_row_count": 72300,
+        "staging_directory": "/Users/mac/Documents/Dataset/.exp449_residual_fn_method_qualification_evaluation_antigravity_20260812.staging_dfeedd9bf543d1e03a0667c814318413_antigravity",
+        "staging_inode": 21764083,
+        "staging_regular_leaf_count": 12,
+        "staging_artifact_map_sha256": "b7c19bd9fb74c99d8d6890a77e98a5cea89d74249f7a03d8851fd54cb177de7f",
+        "staging_evaluation_sha256": "fa1674f4a1d7fce88d0176008ac462f416dc6c737e2c1ce7424d9af42cd5fbbc",
+        "staging_dashboard_snapshot_sha256": "f115c6c69f76a5e48d0c6723f11b0eef82a40116846f0ede2b8d8090c49cd0d1",
+        "staging_dashboard_snapshot_status": "synthetic_complete",
+        "staging_qualified_candidate_count": 2,
+        "receipt_state": "stopped",
+        "permanent_stop": true,
+        "failure_audit_sha256": "bdbb09216fa1c23c63df6202b97e83867596c4da421a7f00687d70206bd4716e",
+        "recovery_state": "stopped",
+        "prediction_root": "exists_immutable",
+        "evaluation_root": "absent"
+      },
+      "scientific_winner_selected": false,
+      "promotion_allowed": false,
+      "routing_allowed": false,
+      "pending_candidate_changed": false
+    },
+    {
+      "experiment": "Exp448",
+      "status": "official_evaluation_inspected_complete_dashboard_published_owner_only_not_promoted",
+      "reason": "Exp448은 Exp447의 immutable TEXT-label boundary failure를 보존하고 converter 경계만 수리한 사전등록 engineering-only controlled fork다. reviewed commit 2f5229ccd471bba907562b3131d293b46b0b3afc에서 readiness, evaluate, bare inspect가 각각 정확히 한 번 exit 0으로 완료됐다. 결과는 descriptive_complete_no_promotion이다. Sanitized aggregate-only snapshot은 기존 owner-only dashboard에 게시됐지만 champion/pending candidate, scientific winner, operational alert, promotion, retry 또는 scientific artifact는 바뀌지 않았다.",
+      "reviewed_design_sha256": "ed2b6e5e8b8ee63ab41a15e54f679147f7e14aeca601f4d62f694ca104ed3ce4",
+      "reviewed_plan_sha256": "b79b3b7fc43aae7b15e3c7c52e648dd4404d50930f5bd71ce106c244d21fe934",
+      "run_identity": "exp448-exp447-text-label-boundary-repair-antigravity-20260812",
+      "artifact_root": "/Users/mac/Documents/Dataset/exp448_exp447_text_label_boundary_repair_antigravity_20260812",
+      "prediction_sha256": null,
+      "artifact_sha256": "ea9856c7de039697ed4f352864def0fde1c0d336714e68c9b0cd586d2c796f05",
+      "evaluation": {
+        "evaluation_sha256": "a58a74f69dcc13a64efb2a679ee7e93eca40ac8c5db87b29b12ed11ea068b21c",
+        "decision_sha256": "54ac58d89367ec5396dafdb180777f787384ffbd21ead1a96764bfe627bbddd5",
+        "dataset_count": 1117,
+        "label_rows": 195900,
+        "transition_counts": {
+          "source": 30,
+          "stable": 26,
+          "unstable": 4
+        },
+        "diagnostic_counts": {
+          "rescued": 15,
+          "false_alarm": 11,
+          "regressed": 0,
+          "strong_regression": 0
+        },
+        "evaluation_status": "descriptive_complete_no_promotion"
+      },
+      "evaluation_sha256": "a58a74f69dcc13a64efb2a679ee7e93eca40ac8c5db87b29b12ed11ea068b21c",
+      "decision_sha256": "54ac58d89367ec5396dafdb180777f787384ffbd21ead1a96764bfe627bbddd5",
+      "champion_sha256": null,
+      "promotion_sha256": null,
+      "test_labels_opened": true,
+      "label_access_count": 1117,
+      "scientific_success_criterion": null,
+      "evaluation_status": "descriptive_complete_no_promotion",
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "same_experiment_reselection_allowed": false,
+      "test_informed_reselection_allowed": false,
+      "automatic_champion_promotion": false,
+      "promotion_allowed": false,
+      "official_lifecycle": {
+        "readiness_invocations": 1,
+        "readiness_exit_code": 0,
+        "readiness_label_access_count": 0,
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 0,
+        "label_session_opened": true,
+        "label_sessions": 1,
+        "query_attempts": 1117,
+        "query_completions": 1117,
+        "label_rows": 195900,
+        "label_session_closed": true,
+        "failure_audit_created": false,
+        "inspect_invocations": 1,
+        "inspect_exit_code": 0,
+        "inspect_source_free": true
+      },
+      "dashboard_presentation": {
+        "status": "published_owner_only_snapshot",
+        "public_payload_schema": "exp448.public-evaluation.v1",
+        "published_at": "2026-08-12T05:15:11+09:00",
+        "site_url": "https://timeseries-research-observatory.pmh10401.chatgpt.site",
+        "site_version": 6,
+        "snapshot_not_live_connection": true,
+        "scientific_or_promotion_gate": false
+      },
+      "next_action": "await_result_discussion_no_scientific_rerun"
+    },
+    {
+      "experiment": "Exp451",
+      "status": "planned_not_started",
+      "reason": "Exp451 is a post-hoc RDST + LocalGap method qualification over the ordered eight-family, 48-dataset subset. It is registered as a planned sibling while Exp449 remains active but terminal immutable after its failed evaluation; Exp449 failed evidence is governance-only and not a scientific input. Exp451 scientific input is Exp448 stable-26 byte-authoritative aggregate truth. No Exp451 readiness, prediction, evaluation, inspect, TEST-label access, champion selection, pending-candidate change, promotion, routing, dashboard access, or operational alert has occurred.",
+      "reviewed_design_sha256": "63b8880afbfe09601c241e6c80ab7d2883bc554318f9b8489352021a1dbd7fc4",
+      "document_sha256": {
+        "preregistration": "2860a8f2d6a317b99bdcbaba152068b631671b6c447819421ff5de2d452e797a",
+        "runbook": "1778f118b687c078f737775a1ab2ac1bdf8b2522359309b374c69709435a9853",
+        "implementation_report": "60d232157e1f143444b3233230e009191da242752375b30bb60ef8bfb99fc8cb"
+      },
+      "run_identity": "exp451-rdst-local-gap-qualification-antigravity-20260813",
+      "prediction_sha256": null,
+      "evaluation": null,
+      "evaluation_sha256": null,
+      "label_access_count": 0,
+      "test_labels_opened": false,
+      "official_readiness_started": false,
+      "target_family_count": 8,
+      "target_dataset_count": 48,
+      "target_test_rows": 72300,
+      "post_hoc_method_qualification": true,
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "next_action": "remain_planned_until_separate_review_and_execution_approval"
+    },
+    {
+      "experiment": "Exp452",
+      "status": "official_readiness_failed_immutable_no_retry",
+      "reason": "The one authorized Exp452 readiness invocation stopped permanently before labels because the fixed interpreter exposed NumPy 2.4.6 instead of frozen 2.3.5. Exp449 qualified-2 staging results cannot guide Exp452 selection, thresholds, routing, candidate removal, champion, or promotion. Evaluate and inspect did not run; no champion selection, pending-candidate change, promotion, routing, dashboard access, or operational alert occurred.",
+      "reviewed_design_sha256": "59396a3619a9878e402bcdb2bb7598438ba44d28c125537c8f1902194d049075",
+      "document_sha256": {
+        "preregistration": "5d64cbb5ee2a2178ffe3b6099f4a5a370790baa345901e35d42f53d93df35bc2",
+        "runbook": "d4970438143fa3141c05c1d0c303668506775933b9dcb074b657fb053c185754",
+        "implementation_report": "ddc38f6c597ea1a819785ce0c426661480adef46ee9d25475ebae99a9bf7b7e2"
+      },
+      "run_identity": "exp452-exp449-index-order-repair-antigravity-20260813",
+      "prediction_sha256": null,
+      "result_sha256": null,
+      "evaluation": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "inspect_sha256": null,
+      "label_access_count": 0,
+      "test_labels_opened": false,
+      "official_readiness_started": true,
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_lifecycle": {
+        "readiness_invocations": 1,
+        "evaluate_invocations": 0,
+        "inspect_invocations": 0,
+        "label_sessions": 0,
+        "label_query_count": 0,
+        "label_row_count": 0,
+        "readiness_exit_code": 1,
+        "evaluate_exit_code": null,
+        "inspect_exit_code": null
+      },
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "promotion_allowed": false,
+      "routing_allowed": false,
+      "pending_candidate_changed": false,
+      "implementation_candidate_commit": "538bb932b61f42e7c56bd4e2c7dbdf9c24b4fca3",
+      "official_reviewed_commit": "96e42f78659d3b892f8c137dfa8f74f718982001",
+      "implementation_test_counts": {
+        "exp452_discovery_runs": [
+          81,
+          81
+        ],
+        "focused_cli_readiness_replay_runs": [
+          15,
+          15
+        ],
+        "exp449_corresponding": 32
+      },
+      "official_failure": {
+        "phase": "readiness",
+        "error": "ValueError: Exp452 requires the exact fixed Python and NumPy runtime",
+        "observed_python_version": "3.14.6",
+        "observed_numpy_version": "2.4.6",
+        "required_numpy_version": "2.3.5",
+        "stopped_receipt_sha256": "8f7238ea20499a4136ffa1aaa730c9d94e35670b45eb780ccbe9d5594aff97e2",
+        "failure_audit_sha256": "e55985a66d18561a403c4927bfcd45a1cd20fe5af74841b96997e9c6e59a5b86",
+        "evaluation_root_created": false,
+        "retry_permitted": false
+      },
+      "next_action": "preserve_immutable_readiness_stop_no_retry_no_champion_action"
+    },
+    {
+      "experiment": "Exp453",
+      "status": "official_readiness_passed_evaluation_failed_immutable_no_retry",
+      "reason": "Exp453 readiness passed, but evaluate failed before label access because the real Exp449 authority classes did not match copied Exp453 classes. No scientific result exists, so routing, champion, pending candidate, and promotion remain unchanged.",
+      "reviewed_design_sha256": "8f76c032c574dc17965a190f547dd51e41743f54cd13d5dbb8e74cdc527bc97a",
+      "document_sha256": {
+        "preregistration": "aef633ec4a34ad71f1ef9d936e89d4cd5c06018d625aa6632276e9cf4b66f879",
+        "runbook": "fcb5f796f3ed95ab5a2e05de1ac43e30c34046a01080983334a507f29301fe4a",
+        "implementation_report": "72a3ebefa1d9259e8ffd3e71069a8f8ea90b80efdf8967011617b731ce21ea32"
+      },
+      "run_identity": "exp453-exp452-fixed-interpreter-binding-repair-antigravity-20260813",
+      "fixed_executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
+      "fixed_prefix": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314",
+      "runtime_versions": {
+        "python": "3.14.6",
+        "numpy": "2.3.5",
+        "aeon": "1.4.0",
+        "scikit_learn": "1.7.2"
+      },
+      "predecessor_prediction_sha256": "a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d",
+      "target_dataset_count": 48,
+      "target_prediction_count": 96,
+      "target_family_method_pair_count": 16,
+      "alpha": 0.005,
+      "prediction_sha256": null,
+      "result_sha256": null,
+      "evaluation": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "inspect_sha256": null,
+      "label_access_count": 0,
+      "test_labels_opened": false,
+      "official_readiness_started": true,
+      "official_evaluate_started": true,
+      "official_inspect_started": false,
+      "official_readiness_invocations": 1,
+      "official_readiness_exit_code": 0,
+      "official_evaluate_invocations": 1,
+      "official_evaluate_exit_code": 1,
+      "official_inspect_invocations": 0,
+      "label_sessions": 0,
+      "label_queries": 0,
+      "label_rows": 0,
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "promotion_allowed": false,
+      "routing_allowed": false,
+      "pending_candidate_changed": false,
+      "official_failure": {
+        "reviewed_commit": "53c4cf16ba981b4177735fdf77081cf025fc0508",
+        "phase": "evaluate",
+        "error": "ValueError: Exp448 target identity differs",
+        "failure_audit_sha256": "97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276",
+        "evaluation_root_created": false,
+        "inspect_permitted": false,
+        "retry_permitted": false
+      },
+      "next_action": "design_new_experiment_with_exp449_authority_type_boundary_fix"
+    },
+    {
+      "experiment": "Exp454",
+      "status": "official_evaluation_complete_review_reinspection_failed_stopped_immutable",
+      "reason": "Exp454 repaired the Exp449 authority type boundary and produced a valid 12-leaf result. ECG5000 with Hydra LocalGap and ChlorineConcentration with MultiRocket LocalGap passed the frozen FN/FP/F1 gates. A review-time second inspect then failed on the exact-predecessor lifecycle gate and permanently stopped Exp454 without changing the result. This supports a new routing study, but does not select a scientific winner or change champion, pending candidate, automatic routing, or promotion.",
+      "reviewed_design_commit": "2a8486c42b385f4e589c7062a1c16f4be4372f4f",
+      "reviewed_design_sha256": "b76806b3ff9e89abfa4547f0ab5bb3ef707c28713b39675a2d1afad9e933f78f",
+      "document_sha256": {
+        "preregistration": "653968cd94836f4da38f97801f3e98091c7b9f0e33699fc792d50ef15c557da7",
+        "runbook": "aaa4b05303c50559795a4738f07e23f561eaa2b0c58ec9ddd6610dd618332081",
+        "implementation_report": "6976a2e5966f1489f4ac13fa2278b8b9340ea18c6b14abc15df6b78373a547de"
+      },
+      "official_reviewed_implementation_report_sha256": "9c85fd7b3a8fc648e6f169f0e96d58f1680f91e1f7ddb35660c543ecf30aaa10",
+      "run_identity": "exp454-exp453-exp449-authority-boundary-repair-antigravity-20260814",
+      "kind": "exp453_exp449_authority_boundary_repair",
+      "fixed_executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
+      "fixed_prefix": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314",
+      "runtime_versions": {
+        "python": "3.14.6",
+        "numpy": "2.3.5",
+        "aeon": "1.4.0",
+        "scikit_learn": "1.7.2"
+      },
+      "predecessor_prediction_sha256": "a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d",
+      "predecessor_failure_audit_sha256": "97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276",
+      "target_dataset_count": 48,
+      "target_prediction_count": 96,
+      "target_family_method_pair_count": 16,
+      "seeds": [
+        20260721,
+        20261721
+      ],
+      "alpha": 0.005,
+      "prediction_sha256": null,
+      "result_sha256": "748fdc62de555279640b4ce588b3155670ebe33e13e5997d40061d96011bff65",
+      "artifact_map_sha256": "748fdc62de555279640b4ce588b3155670ebe33e13e5997d40061d96011bff65",
+      "evaluation": {
+        "status": "descriptive_complete_routing_research_eligible",
+        "candidate_count": 16,
+        "qualified_count": 2,
+        "qualified_candidates": [
+          "ECG5000:hydra_local_gap",
+          "ChlorineConcentration:multirocket_local_gap"
+        ],
+        "baseline_fn": 1988,
+        "qualified_global_fn": 1987,
+        "routing_research_eligible": true
+      },
+      "evaluation_sha256": "c2b6321d18ba4c98e426be96ea3d3fb0824e75926fa54ba4600634dded68e1ac",
+      "decision_sha256": "3510a426d3ee083ccb3f8599c64d0c91cc56d0b902780c8b6a2136098cd9a595",
+      "dashboard_snapshot_sha256": "efa9a3b87032e77993fbffad3bb883c7183bec4667767febeee14583a2ef39ce",
+      "inspect_sha256": "e76cf5d55af3472fb98c4f0773fe722d3a910667bb068a5df102767c44b9b6c0",
+      "official_reviewed_commit": "32240c4e71776633249549a3d1d88b0e404d9463",
+      "label_access_count": 48,
+      "test_labels_opened": true,
+      "official_readiness_started": true,
+      "official_evaluate_started": true,
+      "official_inspect_started": true,
+      "official_readiness_invocations": 1,
+      "official_readiness_exit_code": 0,
+      "official_evaluate_invocations": 1,
+      "official_evaluate_exit_code": 0,
+      "official_inspect_invocations": 2,
+      "official_inspect_exit_codes": [
+        0,
+        1
+      ],
+      "official_inspect_successes": 1,
+      "official_inspect_failures": 1,
+      "label_sessions": 1,
+      "label_queries": 48,
+      "label_rows": 72300,
+      "qualified_count": 2,
+      "qualified_candidates": [
+        "ECG5000:hydra_local_gap",
+        "ChlorineConcentration:multirocket_local_gap"
+      ],
+      "routing_research_eligible": true,
+      "permanent_stop": true,
+      "stopped_receipt_sha256": "b6bab58bd99c8857b5476d578c4f8cf4719569b6e58e99cd82bd80628ebb3d3d",
+      "failure_audit_sha256": "3605405e08270bb7854e0e8d8a68e58760fd9f6f577634d37f029be0c8760b33",
+      "terminal_error": "ValueError: command does not have the exact predecessor",
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "promotion_allowed": false,
+      "routing_allowed": false,
+      "pending_candidate_changed": false,
+      "next_action": "design_new_routing_experiment_from_two_qualified_candidates"
+    },
+    {
+      "experiment": "Exp455",
+      "kind": "conservative_label_free_routing",
+      "status": "official_evaluation_failed_immutable_no_retry",
+      "implementation_status": "verified_implementation_official_evaluation_failed",
+      "reason": "The one approved official evaluate failed before performance aggregation because feature and authority target orders differed. No result or scientific winner exists. Exp455 cannot be retried and does not activate routing, change the champion or pending candidate, or promote anything.",
+      "run_identity": "exp455-exp454-conservative-label-free-routing-antigravity-20260817",
+      "qualified_candidates": [
+        "ECG5000:hydra_local_gap",
+        "ChlorineConcentration:multirocket_local_gap"
+      ],
+      "prediction_sha256": null,
+      "evaluation": null,
+      "test_labels_opened": false,
+      "label_access_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "independent_reviews": {
+        "terra_high": "clean",
+        "agy_gemini_3_7_flash_high": "clean"
+      },
+      "official_lifecycle": {
+        "reviewed_commit": "b1ac9c24eea25b1da055d7076240d3058ffce613",
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 1,
+        "evaluate_error_type": "ValueError",
+        "evaluate_error": "features must match authority targets in order",
+        "inspect_invocations": 0,
+        "label_access_count": 0,
+        "result_root_created": false
+      },
+      "review_only": true,
+      "operational_alert_eligible": false
+    },
+    {
+      "experiment": "Exp456",
+      "kind": "exp455_dataset_key_order_repair",
+      "status": "official_evaluation_inspected_complete_not_qualified",
+      "implementation_status": "task_5_official_evaluation_and_inspection_complete",
+      "reason": "Exp456 official evaluate and then inspect each ran exactly once with exit 0 at reviewed commit a45ff019e0736bbf895bb698b8eccfcbc69cd190 and emitted the same aggregate JSON. The immutable non-symlink result root has 8 leaves and exact artifact-map recomputation of its seven non-map leaves. family-wide methods slightly improve FN/FP/F1 and oracle shows theoretical room, but the learned LODO router is worse than baseline by FN +6 and lower F1; it is not qualified for external validation. Champion, pending candidate, routing, and promotion are unchanged.",
+      "run_identity": "exp456-exp455-dataset-key-order-repair-antigravity-20260817",
+      "prediction_sha256": null,
+      "evaluation_sha256": "6117a5f2ef28a3d543efcf4b499dd715508a4345a5e92679e1c14f0b5e1087cc",
+      "decision_sha256": "ea49b140475d4c9d8245a85ec0479a60f1ba6c46e8763b0c35877ec16ca6dc01",
+      "artifact_map_sha256": "3c1321f74016d363899b41357609edca62ecf410d71708a9c90a6b803a4445e0",
+      "dashboard_snapshot_sha256": "7a9196efdc8764b53a5810f169bcfd7b12d6bfab1bf383ff024421b791fea407",
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "official_evaluate_started": true,
+      "official_inspect_started": true,
+      "result_root_created": true,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "official_lifecycle": {
+        "reviewed_commit": "a45ff019e0736bbf895bb698b8eccfcbc69cd190",
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 0,
+        "inspect_invocations": 1,
+        "inspect_exit_code": 0,
+        "aggregate_json_equal": true,
+        "completed_folds": 8,
+        "passed": false,
+        "status": "routing_candidate_not_qualified_for_external_validation",
+        "label_access_count": 0,
+        "label_query_count": 0,
+        "result_root_created": true,
+        "result_root_leaf_count": 8,
+        "result_root_is_non_symlink_directory": true,
+        "artifact_map_non_map_leaf_recomputation": "exact_match"
+      },
+      "comparisons": [
+        {
+          "name": "always_baseline",
+          "fn": 837,
+          "fp": 66,
+          "f1": 0.5742574257425742
+        },
+        {
+          "name": "family_wide_local_gap",
+          "fn": 835,
+          "fp": 63,
+          "f1": 0.5764150943396227
+        },
+        {
+          "name": "oracle_per_dataset",
+          "fn": 828,
+          "fp": 64,
+          "f1": 0.5808270676691729
+        },
+        {
+          "name": "lodo_router",
+          "fn": 843,
+          "fp": 65,
+          "f1": 0.5704824976348155
+        }
+      ],
+      "family_fn_delta": {
+        "ECG5000": 6,
+        "ChlorineConcentration": 0
+      },
+      "review_only": true,
+      "operational_alert_eligible": false
+    },
+    {
+      "experiment": "Exp457",
+      "kind": "ecg_train_synthetic_confidence_routing",
+      "status": "stopped_before_official_evaluation_train_gate_failed",
+      "implementation_status": "task_5_candidate_verification_complete",
+      "reason": "Task 5 real TRAIN candidate flow was reproduced exactly twice: TP 610, FP 64, FN 836, TN 70790, F1 0.5754716981132075. All five ECG Gate 1 records failed and the FN/F1 criteria failed, so the user declined official TEST evaluation. No official command, root, result, or hash exists; champion, pending candidate, routing, and promotion are unchanged.",
+      "run_identity": "exp457-ecg-train-synthetic-confidence-routing-antigravity-20260818",
+      "approved_design_sha256": "3b702e0224dd86e1d0c93268b8a2e2691ea3858cbd30a4792f9c6539c0424e20",
+      "scientific_contract": {
+        "target_family": "ECG5000",
+        "candidate": "hydra_local_gap",
+        "chlorine_route": "multirocket_local_gap_for_all_three_datasets",
+        "hydra_seeds": [
+          20260721,
+          20261721
+        ],
+        "folds": 5,
+        "alpha": 0.005,
+        "knn_k": 3,
+        "kernels": 8,
+        "groups": 64,
+        "synthetic_primary_types": [
+          "level_shift",
+          "gradual_drift",
+          "amplitude_scaling",
+          "period_change"
+        ],
+        "normal_wilson_upper_max": 0.05,
+        "pooled_sensitivity_min": 0.7,
+        "per_type_sensitivity_min": 0.5,
+        "finite_required": true,
+        "structure_gate": "added_count > removed_count",
+        "final_fn_max": 834,
+        "final_fp_max": 66,
+        "final_f1_strictly_above": 0.5764150943396227,
+        "test_metrics_may_inform_routing": false
+      },
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_evaluate_invocations": 0,
+      "official_inspect_invocations": 0,
+      "result_root_created": false,
+      "official_result": null,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "artifact_map_sha256": null,
+      "dashboard_snapshot_sha256": null,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false
+    },
+    {
+      "experiment": "Exp458",
+      "kind": "ecg_normal2_rank_confidence_routing",
+      "status": "official_evaluation_inspected_complete_qualified_for_external_validation",
+      "implementation_status": "task_6_official_evaluation_and_inspection_complete",
+      "reason": "Exp458 Task 6 official evaluate and then inspect each ran exactly once with exit 0 at reviewed commit 2c836e371993b865b87d1b0b96595d0befd6ee3d and emitted the same aggregate JSON. The immutable non-symlink result root has 9 leaves, exact artifact-map recomputation, source-free semantic replay, normal_2 candidate route, all other ECG baseline routes, and all Chlorine candidate routes. Official metrics are TP 617, FP 66, FN 829, TN 70788, F1 0.5796148426491311, so all preregistered criteria pass for external validation candidacy. TEST labels remain unopened, label_query_count is 0, and champion, pending candidate, routing, promotion, and operational alert eligibility remain unchanged.",
+      "run_identity": "exp458-ecg-normal2-rank-confidence-routing-antigravity-20260818",
+      "approved_design": "docs/superpowers/specs/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity-design.html",
+      "approved_design_sha256": "52abe997c0e14badc2c886b888e3b2b2074cf002216891f173ab3b1dd6d7ea5d",
+      "scientific_contract": {
+        "target_dataset": "ECG5000_normal_2",
+        "hydra_seeds": [
+          20260721,
+          20261721
+        ],
+        "folds": 5,
+        "primary_types": [
+          "level_shift",
+          "gradual_drift",
+          "amplitude_scaling",
+          "period_change"
+        ],
+        "per_type_auc_min": 0.85,
+        "pooled_auc_min": 0.9,
+        "normal_wilson_upper_max": 0.05,
+        "structure_gate": "added_count > removed_count",
+        "projected_result": {
+          "tp": 617,
+          "fp": 66,
+          "fn": 829,
+          "tn": 70788,
+          "f1": 0.5796148426491311
+        },
+        "final_fn_max": 834,
+        "final_fp_max": 66,
+        "final_f1_strictly_above": 0.5764150943396227,
+        "test_metrics_may_inform_routing": false,
+        "runtime_contract": {
+          "executable": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python",
+          "prefix": "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314",
+          "python_version": "3.14.6",
+          "numpy_version": "2.3.5",
+          "aeon_version": "1.4.0"
+        }
+      },
+      "official_evaluate_started": true,
+      "official_inspect_started": true,
+      "official_evaluate_invocations": 1,
+      "official_inspect_invocations": 1,
+      "result_root_created": true,
+      "official_result": {
+        "status": "routing_candidate_qualified_for_external_validation",
+        "passed": true,
+        "tp": 617,
+        "fp": 66,
+        "fn": 829,
+        "tn": 70788,
+        "f1": 0.5796148426491311
+      },
+      "prediction_sha256": null,
+      "evaluation": {
+        "tp": 617,
+        "fp": 66,
+        "fn": 829,
+        "tn": 70788,
+        "f1": 0.5796148426491311
+      },
+      "evaluation_sha256": "e62292db1796fdafe4b4fbbc2f7b57ce0d65b82c8812694eba24108df2092230",
+      "decision_sha256": "afcfc86cd0dbd9bcc08e3c59d3da7e256e82e58403b98736c7cdd448f597e6b0",
+      "artifact_map_sha256": "7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9",
+      "dashboard_snapshot_sha256": "9b4f95d11766076b23bfa4b670f1dbc9768f6bf8257f11aa5750768ff1fb8eb1",
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "private_candidate_verification": {
+        "runs": 2,
+        "public_cli_evaluate_invocations": 0,
+        "public_cli_inspect_invocations": 0,
+        "official_root_absent_before_between_after": true,
+        "temporary_roots_cleaned": true,
+        "label_query_count_each_run": [
+          0,
+          0
+        ],
+        "candidate_payload_sha256": "0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8",
+        "leaf_sha256_equal": true,
+        "dashboard_equal": true,
+        "qualification_equal": true,
+        "route_equal": true,
+        "elapsed_seconds": [
+          98.6050003329292,
+          99.41886049997993
+        ],
+        "route": "candidate",
+        "result": {
+          "tp": 617,
+          "fp": 66,
+          "fn": 829,
+          "tn": 70788,
+          "f1": 0.5796148426491311
+        },
+        "criteria_passed": [
+          "final_fn",
+          "final_fp",
+          "final_f1"
+        ],
+        "official_hashes_remain_null": false
+      },
+      "official_lifecycle": {
+        "reviewed_commit": "2c836e371993b865b87d1b0b96595d0befd6ee3d",
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 0,
+        "inspect_invocations": 1,
+        "inspect_exit_code": 0,
+        "aggregate_json_equal": true,
+        "semantic_replay_equal": true,
+        "passed": true,
+        "status": "routing_candidate_qualified_for_external_validation",
+        "label_access_count": 0,
+        "label_query_count": 0,
+        "result_root_created": true,
+        "result_root_leaf_count": 9,
+        "result_root_is_non_symlink_directory": true,
+        "artifact_map_non_map_leaf_recomputation": "exact_match"
+      },
+      "comparisons": [
+        {
+          "name": "always_baseline",
+          "tp": 609,
+          "fp": 66,
+          "fn": 837,
+          "tn": 70788,
+          "f1": 0.5742574257425742
+        },
+        {
+          "name": "family_wide_local_gap",
+          "tp": 611,
+          "fp": 63,
+          "fn": 835,
+          "tn": 70791,
+          "f1": 0.5764150943396227
+        },
+        {
+          "name": "oracle_per_dataset",
+          "tp": 618,
+          "fp": 64,
+          "fn": 828,
+          "tn": 70790,
+          "f1": 0.5808270676691729
+        },
+        {
+          "name": "normal2_rank_router",
+          "tp": 617,
+          "fp": 66,
+          "fn": 829,
+          "tn": 70788,
+          "f1": 0.5796148426491311
+        }
+      ],
+      "effective_routes": {
+        "ChlorineConcentration_normal_1": "candidate",
+        "ChlorineConcentration_normal_2": "candidate",
+        "ChlorineConcentration_normal_3": "candidate",
+        "ECG5000_normal_1": "baseline",
+        "ECG5000_normal_2": "candidate",
+        "ECG5000_normal_3": "baseline",
+        "ECG5000_normal_4": "baseline",
+        "ECG5000_normal_5": "baseline"
+      },
+      "leaf_sha256": {
+        "artifact_sha256_antigravity.json": "7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9",
+        "comparison_metrics_antigravity.json": "e62292db1796fdafe4b4fbbc2f7b57ce0d65b82c8812694eba24108df2092230",
+        "context_antigravity.json": "b08051a5742479d6062367acd437683342d76e69a50faf8f7324a34b725c5f1d",
+        "dashboard_snapshot_antigravity.json": "9b4f95d11766076b23bfa4b670f1dbc9768f6bf8257f11aa5750768ff1fb8eb1",
+        "decision_antigravity.json": "afcfc86cd0dbd9bcc08e3c59d3da7e256e82e58403b98736c7cdd448f597e6b0",
+        "family_metrics_antigravity.json": "f046424622cd419cb4e439f04b655850cdbe49f7b85553e3432332b800f5b2c6",
+        "features_antigravity.jsonl": "bd0abbe0a086c994effb7aeae8b429919e414bc38069d6f71b49835ad62253b5",
+        "route_decisions_antigravity.jsonl": "d3f3469f509cc62f714ba274037cea6ba5a843d944a64a922523f6b98eaa78ed",
+        "train_qualification_antigravity.jsonl": "a770d2ddb3b5acd72ad370a4f7fc40072e6d31a50d9f6204e5cd72bd3f8da6e4"
+      },
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "next_action": "discuss_qualified_external_validation_candidate_no_automatic_routing_or_promotion"
+    },
+    {
+      "experiment": "Exp459",
+      "kind": "ecg_normal2_blocked_validation",
+      "status": "official_evaluation_inspected_complete_unstable_no_promotion",
+      "implementation_status": "task_6_official_unstable_preserved",
+      "reason": "Task 6 completed exactly one official evaluate and exactly one official bare inspect after approval. The official seven-leaf root matches the frozen validation authority byte-for-byte for all payload leaves, with authority digest f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee, artifact map sha256 a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d, dashboard sha256 c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350, decision sha256 527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716, and fold evidence sha256 a1b47f5595477b85bd078bb26dde3917c97996a48ca0d6d3818fae3f7f8c2364. The official decision is unstable because seed 20260721 fold 3 and seed 20261721 fold 4 fail period_change AUC. Label query count remained 0, champion and pending candidate are unchanged, no routing or promotion is allowed, and no threshold tuning is allowed in Exp459.",
+      "run_identity": "exp459-ecg-normal2-blocked-validation-antigravity-20260818",
+      "run_root": "/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818",
+      "package": "experiments/exp459_ecg_normal2_blocked_validation_antigravity",
+      "approved_design": "docs/superpowers/specs/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity-design.html",
+      "approved_design_sha256": "47d530a0cbe7f7cdb0b85f2c0c546b7ede158d8a85824eba8c8caece16b2e275",
+      "approved_plan": "docs/superpowers/plans/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity.html",
+      "approved_plan_sha256": "db1aaf8f959a55c8ee7758edb61b95e6f7bf8d9ee8ea821ca39733213692d994",
+      "predecessor": {
+        "experiment": "Exp458",
+        "reviewed_commit": "fc530cd2b392394aa7ffbd1408bc06d5b1b7c806",
+        "artifact_map_sha256": "7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9"
+      },
+      "scientific_contract": {
+        "target_dataset": "ECG5000_normal_2",
+        "hydra_seeds": [
+          20260721,
+          20261721
+        ],
+        "fold_sizes": [
+          283,
+          283,
+          283,
+          282,
+          282
+        ],
+        "fold_count": 5,
+        "primary_types": [
+          "level_shift",
+          "gradual_drift",
+          "amplitude_scaling",
+          "period_change"
+        ],
+        "per_type_auc_min": 0.85,
+        "pooled_auc_min": 0.9,
+        "normal_wilson_upper_max": 0.05,
+        "shuffle_allowed": false,
+        "final_decision_rule": "all_10_fold_seed_records_must_pass_for_stable"
+      },
+      "official_evaluate_started": true,
+      "official_inspect_started": true,
+      "official_evaluate_invocations": 1,
+      "official_inspect_invocations": 1,
+      "result_root_created": true,
+      "official_result": {
+        "status": "unstable",
+        "passed": false,
+        "fold_plan_rows": 5,
+        "fold_records": 10,
+        "seed_summaries": 2,
+        "failed_fold_count": 2,
+        "failed_folds": [
+          {
+            "seed": 20260721,
+            "fold_index": 3,
+            "period_change_auc": 0.8208339620743423,
+            "pooled_auc": 0.9160442130677531,
+            "normal_wilson_upper": 0.013439124039399194
+          },
+          {
+            "seed": 20261721,
+            "fold_index": 4,
+            "period_change_auc": 0.8004124541019063,
+            "pooled_auc": 0.9241518283788541,
+            "normal_wilson_upper": 0.013439124039399194
+          }
+        ]
+      },
+      "prediction_sha256": null,
+      "evaluation_sha256": "a1b47f5595477b85bd078bb26dde3917c97996a48ca0d6d3818fae3f7f8c2364",
+      "decision_sha256": "527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716",
+      "artifact_map_sha256": "a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d",
+      "dashboard_snapshot_sha256": "c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350",
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "review_only": true,
+      "operational_alert_eligible": false,
+      "frozen_validation_authority": "experiments/exp459_ecg_normal2_blocked_validation_antigravity/frozen_validation_authority_antigravity.py",
+      "frozen_validation_authority_digest": "f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee",
+      "private_validation": {
+        "run_count": 2,
+        "status": "unstable",
+        "passed": false,
+        "canonical_digest": "f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee",
+        "fold_plan_rows": 5,
+        "fold_evidence_rows": 10,
+        "seed_summary_rows": 2,
+        "leaf_count": 7,
+        "temporary_roots_cleaned": true,
+        "official_root_absent": true,
+        "failed_folds": [
+          {
+            "seed": 20260721,
+            "fold_index": 3,
+            "period_change_auc": 0.8208339620743423,
+            "pooled_auc": 0.9160442130677531,
+            "normal_wilson_upper": 0.013439124039399194
+          },
+          {
+            "seed": 20261721,
+            "fold_index": 4,
+            "period_change_auc": 0.8004124541019063,
+            "pooled_auc": 0.9241518283788541,
+            "normal_wilson_upper": 0.013439124039399194
+          }
+        ]
+      },
+      "notes": "Task 6 official evaluate and bare inspect each ran exactly once with exit 0 at reviewed commit 05bca7e3b03e14ddc9200e24174606bcb951827e and emitted exact-equal aggregate JSON. The official non-symlink result root has 7 leaves, exact artifact-map recomputation, and source-free authority payload equality. Official decision is unstable because seed 20260721 fold 3 and seed 20261721 fold 4 fail period_change AUC. TEST labels remain unopened, label_query_count is 0, and champion, pending candidate, routing, promotion, and operational alert eligibility remain unchanged. No threshold tuning is allowed in Exp459.",
+      "official_lifecycle": {
+        "reviewed_commit": "05bca7e3b03e14ddc9200e24174606bcb951827e",
+        "evaluate_invocations": 1,
+        "evaluate_exit_code": 0,
+        "evaluate_pid": 26273,
+        "evaluate_elapsed_seconds": 106,
+        "inspect_invocations": 1,
+        "inspect_exit_code": 0,
+        "inspect_pid": 27275,
+        "inspect_elapsed_seconds": 0,
+        "aggregate_json_equal": true,
+        "semantic_replay_equal": true,
+        "authority_payload_equal": true,
+        "passed": false,
+        "status": "unstable",
+        "label_access_count": 0,
+        "label_query_count": 0,
+        "result_root_created": true,
+        "result_root_leaf_count": 7,
+        "result_root_is_non_symlink_directory": true,
+        "artifact_map_non_map_leaf_recomputation": "exact_match",
+        "authority_digest": "f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee",
+        "evaluate_stdout_sha256": "c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350",
+        "inspect_stdout_sha256": "c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350",
+        "artifact_map_sha256": "a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d",
+        "dashboard_snapshot_sha256": "c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350",
+        "decision_sha256": "527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716",
+        "evaluation_sha256": "a1b47f5595477b85bd078bb26dde3917c97996a48ca0d6d3818fae3f7f8c2364",
+        "failed_folds": [
+          {
+            "seed": 20260721,
+            "fold_index": 3,
+            "period_change_auc": 0.8208339620743423,
+            "pooled_auc": 0.9160442130677531,
+            "normal_wilson_upper": 0.013439124039399194
+          },
+          {
+            "seed": 20261721,
+            "fold_index": 4,
+            "period_change_auc": 0.8004124541019063,
+            "pooled_auc": 0.9241518283788541,
+            "normal_wilson_upper": 0.013439124039399194
+          }
+        ]
+      },
+      "leaf_sha256": {
+        "artifact_sha256_antigravity.json": "a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d",
+        "context_antigravity.json": "757f1af091ce7efba11d9dfb4ab6fc9ad5b53a6527a0da102033ed5a71b556be",
+        "dashboard_snapshot_antigravity.json": "c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350",
+        "decision_antigravity.json": "527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716",
+        "fold_evidence_antigravity.jsonl": "a1b47f5595477b85bd078bb26dde3917c97996a48ca0d6d3818fae3f7f8c2364",
+        "fold_plan_antigravity.jsonl": "7e2b60c31ff493077fbe6e501f25704d5b527b3cea8496e8b265e66b71191985",
+        "seed_summary_antigravity.jsonl": "f530e4c411085f3406be896f1802357b5ce67a53b5e1a4f753ac02fdf2b061d7"
+      }
+    },
+    {
+      "experiment": "Exp460",
+      "kind": "ecg_strict_fallback",
+      "status": "official_evaluation_inspected_complete_fallback_no_performance_improvement",
+      "implementation_status": "task_6_official_evaluation_inspected_complete",
+      "reason": "Task 6 official evaluate and bare inspect each invoked the reviewed Python launcher exactly once with exits 0/0 at commit ca51813450f26b8a3fada6f39cf810452467297e. Their stdout, the six-leaf dashboard snapshot, and independent replay are exact-equal. Strict 10/10 falls back to baseline with status fallback_triggered_performance_not_improved, joint success false, two failed period-change folds, and worst AUC 0.8004124541019063. A separately retained literal-PY wrapper exit 127 occurred before Python/launcher/CLI startup and is not an official invocation under the controller ruling. TEST labels remain unopened, label query count is 0, and champion, pending candidate, routing, promotion, and operational alert eligibility remain unchanged. Do not rerun or retry Exp460.",
+      "run_identity": "exp460-ecg-strict-fallback-antigravity-20260819",
+      "run_root": "/Users/mac/Documents/Dataset/exp460_ecg_strict_fallback_antigravity_20260820",
+      "package": "experiments/exp460_ecg_strict_fallback_antigravity",
+      "approved_design": "docs/superpowers/specs/2026-08-20-exp460-ecg-strict-fallback-antigravity-design.html",
+      "approved_plan": "docs/superpowers/plans/2026-08-20-exp460-ecg-strict-fallback-antigravity.html",
+      "scientific_contract": {
+        "target_dataset": "ECG5000_normal_2",
+        "rule_order": [
+          "always_baseline",
+          "always_candidate",
+          "majority_8_of_10",
+          "strict_10_of_10"
+        ],
+        "official_decision_rule": "strict_10_of_10_only",
+        "strict_failure_route": "baseline",
+        "failed_folds": [
+          {
+            "seed": 20260721,
+            "fold_index": 3,
+            "period_change_auc": 0.8208339620743423
+          },
+          {
+            "seed": 20261721,
+            "fold_index": 4,
+            "period_change_auc": 0.8004124541019063
+          }
+        ],
+        "exp459_status": "unstable"
+      },
+      "official_evaluate_started": true,
+      "official_inspect_started": true,
+      "official_evaluate_invocations": 1,
+      "official_inspect_invocations": 1,
+      "result_root_created": true,
+      "official_result": {
+        "reviewed_commit": "ca51813450f26b8a3fada6f39cf810452467297e",
+        "status": "fallback_triggered_performance_not_improved",
+        "strict_route": "baseline",
+        "joint_success": false,
+        "passed_record_count": 8,
+        "failed_fold_count": 2,
+        "worst_period_change_auc": 0.8004124541019063,
+        "leaf_sha256": {
+          "context_antigravity.json": "1c30f92d60ca76214f680c4452b1a4418764da84fe5ec1f8a5156f743b84db9f",
+          "rule_comparisons_antigravity.jsonl": "3ed3f05f5359cbe4d1a0dbcad371bb3ed951679c1b153d59ff591933fc13dc75",
+          "failed_folds_antigravity.jsonl": "880d67769d8e4e40b3b504a0573878bdb31a364a33fdd48d70af0fe2b2a7b198",
+          "decision_antigravity.json": "0859be73fb8b7c77cc803d67745ecd1bd42766ea5e3c005ce1bb9d2d3e6342c1",
+          "dashboard_snapshot_antigravity.json": "fea8b4e43d256feddef48545e201f674bfe39fe85559050ed405f4e996709ee5",
+          "artifact_sha256_antigravity.json": "8286c4da86d3f180e8b5e20cf54fc6f0011a26cf54d92b1a4867f68e5f44d916"
+        }
+      },
+      "prediction_sha256": null,
+      "evaluation_sha256": "3ed3f05f5359cbe4d1a0dbcad371bb3ed951679c1b153d59ff591933fc13dc75",
+      "decision_sha256": "0859be73fb8b7c77cc803d67745ecd1bd42766ea5e3c005ce1bb9d2d3e6342c1",
+      "artifact_map_sha256": "8286c4da86d3f180e8b5e20cf54fc6f0011a26cf54d92b1a4867f68e5f44d916",
+      "dashboard_snapshot_sha256": "fea8b4e43d256feddef48545e201f674bfe39fe85559050ed405f4e996709ee5",
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "private_validation": {
+        "run_count": 2,
+        "payload_exact_equal": true,
+        "leaf_hashes_exact_equal": true,
+        "leaf_count": 6,
+        "temporary_roots_cleaned": true,
+        "official_root_absent": true,
+        "passed_record_count": 8,
+        "failed_fold_count": 2,
+        "worst_period_change_auc": 0.8004124541019063,
+        "strict_route": "baseline",
+        "status": "fallback_triggered_performance_not_improved",
+        "joint_success": false
+      },
+      "review_only": true,
+      "operational_alert_eligible": false
+    },
+    {
+      "experiment": "Exp461",
+      "kind": "ecg_period_signature_qualification",
+      "status": "stopped_before_official_evaluation_qualification_failed",
+      "implementation_status": "task_5_private_train_reproducibility_complete_qualification_failed",
+      "reason": "Task 5 private TRAIN campaign ran exactly two sequential evaluate-to-inspect cycles in temporary non-official roots at clean reviewed commit 3a306ff3e276dae13b28b9733db30e9934da7eb2. The two runs were exact-equal for all 30 metric rows, three summaries, decision, dashboard, failed rows, and seven leaf hashes. The primary hydra_period_rank_max candidate passed 9/10, not the frozen 10/10 requirement, because one primary row failed a preregistered gate; minimum gradual_drift AUC was 0.8402306222021025 below 0.85. Both historical period_change failures strictly improved, but qualification still failed. Official evaluate/inspect counts remain 0, the official root is absent, label_query_count is 0, and Task 6 is forbidden unless a new experiment is designed. Champion, pending candidate, routing, and promotion are unchanged.",
+      "run_identity": "exp461-ecg-period-signature-qualification-antigravity-20260820",
+      "run_root": "/Users/mac/Documents/Dataset/exp461_ecg_period_signature_qualification_antigravity_20260820",
+      "package": "experiments/exp461_ecg_period_signature_qualification_antigravity",
+      "approved_design": "docs/superpowers/specs/2026-08-20-exp461-ecg-period-signature-qualification-antigravity-design.html",
+      "approved_plan": "docs/superpowers/plans/2026-08-20-exp461-ecg-period-signature-qualification-antigravity.html",
+      "approved_design_sha256": "3b1d6bc519a4acc000f45f30ba8ae5d610dcd0d2aa5e1cb61bd53837ba28f2c2",
+      "documents": {
+        "preregistration": "docs/EXP461_PREREGISTRATION_antigravity.html",
+        "runbook": "docs/EXP461_RUNBOOK_antigravity.html",
+        "implementation_report": "docs/EXP461_IMPLEMENTATION_REPORT_antigravity.html",
+        "dashboard": "docs/EXP461_DASHBOARD_antigravity.html"
+      },
+      "predecessor": {
+        "experiment": "Exp460",
+        "truth_commit": "67d39f5c0a75e061e2d107fc9a9f58f52e76c2f1",
+        "artifact_map_sha256": "8286c4da86d3f180e8b5e20cf54fc6f0011a26cf54d92b1a4867f68e5f44d916",
+        "status": "fallback_triggered_performance_not_improved",
+        "failed_period_change_folds": [
+          {
+            "seed": 20260721,
+            "fold_index": 3,
+            "period_change_auc": 0.8208339620743423
+          },
+          {
+            "seed": 20261721,
+            "fold_index": 4,
+            "period_change_auc": 0.8004124541019063
+          }
+        ]
+      },
+      "scientific_contract": {
+        "target_dataset": "ECG5000_normal_2",
+        "data_split": "TRAIN_only",
+        "label_query_count_must_remain": 0,
+        "official_command_invocations_must_remain": 0,
+        "method_order": [
+          "hydra_local_gap",
+          "period_signature_local_gap",
+          "hydra_period_rank_max"
+        ],
+        "primary_candidate": "hydra_period_rank_max",
+        "seed_pair": [
+          20260721,
+          20261721
+        ],
+        "blocked_fold_count": 5,
+        "per_type_auc_min": 0.85,
+        "pooled_auc_min": 0.9,
+        "normal_wilson_upper_max": 0.05
+      },
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_evaluate_invocations": 0,
+      "official_inspect_invocations": 0,
+      "result_root_created": false,
+      "official_result": null,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "artifact_map_sha256": null,
+      "dashboard_snapshot_sha256": null,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "review_only": false,
+      "official_root_present": false,
+      "task5_private_train_result": {
+        "reviewed_commit": "3a306ff3e276dae13b28b9733db30e9934da7eb2",
+        "runs": [
+          {
+            "run": 1,
+            "evaluate_elapsed_seconds": 116.7199521670118,
+            "inspect_elapsed_seconds": 0.19575291709043086
+          },
+          {
+            "run": 2,
+            "evaluate_elapsed_seconds": 113.66284816595726,
+            "inspect_elapsed_seconds": 0.1888656672090292
+          }
+        ],
+        "temporary_roots_removed": true,
+        "exact_equality": {
+          "rows_exact_equal": true,
+          "summaries_exact_equal": true,
+          "decision_exact_equal": true,
+          "dashboard_exact_equal": true,
+          "failed_rows_exact_equal": true,
+          "leaf_hashes_exact_equal": true,
+          "artifact_map_hash_equal": true,
+          "all_leaf_bytes_hash_equal": true
+        },
+        "leaf_sha256": {
+          "context_antigravity.json": "8d84c32bab344b8c69c7c147fe5d3d835d65523aac25692eb13159a15a7c091e",
+          "method_fold_metrics_antigravity.jsonl": "b2611d95eeb90debd1adc001f560898422c85e3cfea32861725aa91526e75e60",
+          "failed_folds_antigravity.jsonl": "4d896b265542e72fe5a0b9b7db8089ba2b2e5946e64f55caaa794bb9929e88b7",
+          "method_summary_antigravity.json": "7500d2599060b257a171856fb68bed39a0ec0f4ddb26ca6084e606c911251e25",
+          "decision_antigravity.json": "27f6d8db82b71051a16b68d3ad2f69f6608f6a922d765b35029e594afc581315",
+          "dashboard_snapshot_antigravity.json": "e0e70dd42536f71aa736a8c178d14ed84b268f703623937dfe1f8663967bbabc",
+          "artifact_sha256_antigravity.json": "8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be"
+        },
+        "artifact_map_sha256": "8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be",
+        "method_pass_counts": {
+          "hydra_local_gap": {
+            "passed_count": 8,
+            "fold_count": 10,
+            "failed_count": 2,
+            "passed": false
+          },
+          "period_signature_local_gap": {
+            "passed_count": 0,
+            "fold_count": 10,
+            "failed_count": 10,
+            "passed": false
+          },
+          "hydra_period_rank_max": {
+            "passed_count": 9,
+            "fold_count": 10,
+            "failed_count": 1,
+            "passed": false
+          }
+        },
+        "method_gate_extrema": {
+          "hydra_local_gap": {
+            "min_period_change_auc": 0.8004124541019063,
+            "min_pooled_auc": 0.9160442130677531,
+            "max_normal_wilson_upper": 0.013439124039399194,
+            "all_scores_finite": true
+          },
+          "period_signature_local_gap": {
+            "min_period_change_auc": 0.857158910711833,
+            "min_pooled_auc": 0.700277191624318,
+            "max_normal_wilson_upper": 0.013439124039399194,
+            "all_scores_finite": true
+          },
+          "hydra_period_rank_max": {
+            "min_period_change_auc": 0.907392736783864,
+            "min_pooled_auc": 0.9212266108344651,
+            "max_normal_wilson_upper": 0.013439124039399194,
+            "all_scores_finite": true
+          }
+        },
+        "primary_candidate": "hydra_period_rank_max",
+        "primary_passed_count": 9,
+        "primary_required_count": 10,
+        "primary_min_per_type_auc": {
+          "level_shift": 0.9411749911976258,
+          "gradual_drift": 0.8402306222021025,
+          "amplitude_scaling": 0.9722347970424023,
+          "period_change": 0.907392736783864
+        },
+        "primary_min_pooled_auc": 0.9212266108344651,
+        "primary_max_normal_wilson_upper": 0.013439124039399194,
+        "decision": {
+          "status": "qualification_failed_blocked_before_routing_research",
+          "eligible_for_routing_research": false,
+          "failure_reasons": [
+            "primary_candidate_not_10_of_10"
+          ],
+          "routing_applied": false,
+          "test_labels_opened": false,
+          "label_query_count": 0
+        },
+        "historical_improvements": [
+          {
+            "seed": 20260721,
+            "fold_index": 3,
+            "previous_period_change_auc": 0.8208339620743423,
+            "candidate_period_change_auc": 0.907392736783864,
+            "strictly_improved": true
+          },
+          {
+            "seed": 20261721,
+            "fold_index": 4,
+            "previous_period_change_auc": 0.8004124541019063,
+            "candidate_period_change_auc": 0.9216148584075248,
+            "strictly_improved": true
+          }
+        ],
+        "label_query_count": 0,
+        "official_root_exists_after": false
+      }
+    },
+    {
+      "experiment": "Exp462",
+      "kind": "ecg_gradual_signature_qualification",
+      "status": "stopped_before_official_evaluation_qualification_failed",
+      "implementation_status": "task_5_complete_qualification_failed_task_6_forbidden",
+      "reason": "Task 5 closed CLI and exactly two sequential private TRAIN evaluate-to-inspect reproductions completed at clean reviewed commit ff57925ae2d5542fe6ec34131686ffa0bc37fe0c. The two roots matched exactly for all 30 rows, failed rows, three summaries, decision, dashboard, seven leaf bytes, and hashes. The primary hydra_period_gradual_rank_max candidate passed 3/10; minimum gradual_drift AUC 0.7953196519289775 and minimum period_change AUC 0.8960376741612595 failed frozen gates. Final review is SHIP with Critical/Important/Major 0, completing Task 5 (7/7 checked). Official evaluate/inspect, official root, TEST labels, routing, champion, pending candidate, and promotion remain absent; Task 6 is forbidden and there is no next official action.",
+      "run_identity": "exp462-ecg-gradual-signature-qualification-antigravity-20260820",
+      "run_root": "/Users/mac/Documents/Dataset/exp462_ecg_gradual_signature_qualification_antigravity_20260820",
+      "package": "experiments/exp462_ecg_gradual_signature_qualification_antigravity",
+      "approved_design": "docs/superpowers/specs/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity-design.html",
+      "approved_plan": "docs/superpowers/plans/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html",
+      "approved_design_sha256": "34a950e619b7ddd1accc7cc41281a476611010f27ef02b1a73fa46523d064829",
+      "documents": {
+        "preregistration": "docs/EXP462_PREREGISTRATION_antigravity.html",
+        "runbook": "docs/EXP462_RUNBOOK_antigravity.html",
+        "implementation_report": "docs/EXP462_IMPLEMENTATION_REPORT_antigravity.html",
+        "dashboard": "docs/EXP462_DASHBOARD_antigravity.html"
+      },
+      "predecessor": {
+        "experiment": "Exp461",
+        "reviewed_code_commit": "3a306ff3e276dae13b28b9733db30e9934da7eb2",
+        "terminal_closeout_commit": "0340b6ee737da84777283668449738d0c1585566",
+        "artifact_map_sha256": "8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be",
+        "decision_sha256": "27f6d8db82b71051a16b68d3ad2f69f6608f6a922d765b35029e594afc581315",
+        "status": "qualification_failed_before_official_evaluation",
+        "primary_candidate": "hydra_period_rank_max",
+        "primary_passed_count": 9,
+        "primary_required_count": 10,
+        "failed_gradual_drift_auc": 0.8402306222021025,
+        "period_min_auc": 0.907392736783864,
+        "historical_period_folds": [
+          {
+            "seed": 20260721,
+            "fold_index": 3,
+            "period_change_auc": 0.907392736783864
+          },
+          {
+            "seed": 20261721,
+            "fold_index": 4,
+            "period_change_auc": 0.9216148584075248
+          }
+        ]
+      },
+      "scientific_contract": {
+        "target_dataset": "ECG5000_normal_2",
+        "data_split": "TRAIN_only",
+        "train_shape": [
+          1413,
+          140
+        ],
+        "label_query_count_must_remain": 0,
+        "official_command_invocations_must_remain": 0,
+        "method_order": [
+          "hydra_period_rank_max",
+          "gradual_signature_local_gap",
+          "hydra_period_gradual_rank_max"
+        ],
+        "primary_candidate": "hydra_period_gradual_rank_max",
+        "seed_pair": [
+          20260721,
+          20261721
+        ],
+        "blocked_fold_count": 5,
+        "per_type_auc_min": 0.85,
+        "pooled_auc_min": 0.9,
+        "normal_wilson_upper_max": 0.05,
+        "gradual_drift_auc_min": 0.85,
+        "period_change_auc_global_min": 0.907392736783864,
+        "historical_period_fold_thresholds": [
+          {
+            "seed": 20260721,
+            "fold_index": 3,
+            "period_change_auc_min": 0.907392736783864
+          },
+          {
+            "seed": 20261721,
+            "fold_index": 4,
+            "period_change_auc_min": 0.9216148584075248
+          }
+        ],
+        "test_metrics_may_inform_routing": false
+      },
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_evaluate_invocations": 0,
+      "official_inspect_invocations": 0,
+      "result_root_created": false,
+      "official_result": null,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "artifact_map_sha256": null,
+      "dashboard_snapshot_sha256": null,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "official_root_present": false,
+      "task5_private_train_result": {
+        "reviewed_commit": "ff57925ae2d5542fe6ec34131686ffa0bc37fe0c",
+        "runs": [{"run": 1, "evaluate_exit": 0, "inspect_exit": 0}, {"run": 2, "evaluate_exit": 0, "inspect_exit": 0}],
+        "temporary_roots_removed": true,
+        "exact_equality": {"rows_exact_equal": true, "failed_rows_exact_equal": true, "summaries_exact_equal": true, "decision_exact_equal": true, "dashboard_exact_equal": true, "leaf_bytes_exact_equal": true, "leaf_hashes_exact_equal": true, "artifact_map_hash_equal": true},
+        "row_count": 30,
+        "failed_row_count": 18,
+        "leaf_count": 7,
+        "leaf_sha256": {"context_antigravity.json": "fd5a5271ae68183d9a121ba46f8dfb18aab8a8399140ee9d224e87af7bfd1291", "method_fold_metrics_antigravity.jsonl": "f3d0eab11fa3902c9e4ea30a4d83b19cb5cff52cc3f51a20034c9b3b553ccf0b", "failed_folds_antigravity.jsonl": "e7848e96f5380448eb38a21ecfe6e9a19fcca830fead0058b85a285f13da90ea", "method_summary_antigravity.json": "0f63f0ee9d1788810fddb27fcb576225c73301098e3ddbf24704710a627eb0a9", "decision_antigravity.json": "6eec416030c0b01f945feee824468dc0766dfd036945b1e9e7307e9498d0d58b", "dashboard_snapshot_antigravity.json": "d2f1ed5c289aa4eb061c04065cc7b49420f3ca4ebe894b269853703bb36a558b", "artifact_sha256_antigravity.json": "5bfdeaeb04013f26987131980f8681afb4eaec2d1aab086cc5ee1220aee69c50"},
+        "artifact_map_sha256": "5bfdeaeb04013f26987131980f8681afb4eaec2d1aab086cc5ee1220aee69c50",
+        "method_pass_counts": {"hydra_period_rank_max": {"passed_count": 9, "fold_count": 10, "failed_count": 1, "passed": false}, "gradual_signature_local_gap": {"passed_count": 0, "fold_count": 10, "failed_count": 10, "passed": false}, "hydra_period_gradual_rank_max": {"passed_count": 3, "fold_count": 10, "failed_count": 7, "passed": false}},
+        "primary_candidate": "hydra_period_gradual_rank_max",
+        "primary_passed_count": 3,
+        "primary_required_count": 10,
+        "primary_min_per_type_auc": {"level_shift": 0.9377483526985564, "gradual_drift": 0.7953196519289775, "amplitude_scaling": 0.9574971077913585, "period_change": 0.8960376741612595},
+        "primary_min_pooled_auc": 0.9010220185101353,
+        "primary_max_normal_wilson_upper": 0.013439124039399194,
+        "decision": {"status": "qualification_failed_blocked_before_routing_research", "eligible_for_routing_research": false, "failure_reasons": ["gradual_drift_auc_below_min", "gradual_drift_not_strictly_improved_over_exp461", "historical_period_change_below_min:20260721:3", "period_change_auc_below_global_min", "primary_candidate_not_10_of_10", "primary_gradual_drift_min_below_0.85", "primary_gradual_drift_not_strictly_improved_over_exp461", "primary_period_change_min_below_exp461_global_floor"], "routing_applied": false, "test_labels_opened": false, "label_query_count": 0},
+        "historical_improvements": [{"seed": 20260721, "fold_index": 3, "previous_period_change_auc": 0.907392736783864, "candidate_period_change_auc": 0.8960376741612595, "strictly_improved": false}, {"seed": 20261721, "fold_index": 4, "previous_period_change_auc": 0.9216148584075248, "candidate_period_change_auc": 0.9285624465570143, "strictly_improved": true}],
+        "label_query_count": 0,
+        "official_root_exists_after": false
+      },
+      "review_only": false
+    },
+    {
+      "experiment": "Exp463",
+      "kind": "ecg_prefix_ramp_gated_qualification",
+      "status": "stopped_before_official_evaluation_qualification_failed",
+      "implementation_status": "task_5_review_ship_qualification_failed_task_6_forbidden",
+      "reason": "Task 5 private TRAIN campaign completed exactly two immutable evaluate-to-inspect reproductions at clean reviewed CLI commit 923cc4ad6dd6737f84f4ea2c4f621eb652ac54b4. Both roots matched exactly for 70 metric rows, 30 failed rows, seven summaries, decision, dashboard, and all seven leaf bytes/hashes. M0 and M6 controls reproduced; primary M2 hydra_period_ramp_gated_max passed 7/10 with minimum gradual_drift AUC 0.83450279161008 and period_change AUC 0.8984897640963734, so frozen qualification failed. Final review is SHIP (spec PASS, quality APPROVED, C/I/M0), completing Task 5 (7/7 checked). The exact private roots /private/tmp/exp463_task5_private_run1_antigravity and /private/tmp/exp463_task5_private_run2_antigravity were removed after review; aggregate logs/report and hashes remain retained. Official evaluate/inspect counts remain 0, the official root is absent, label_query_count is 0, official result hashes remain null, and champion, pending candidate, routing, and promotion remain unchanged. A disclosed overlapping wrapper retry hit the create-only root-exists guard and produced no result; no further private run occurred. MLX evidence records CPU fallback because exact float64 numeric parity was not established. Task 6 is permanently forbidden and there is no next official action.",
+      "run_identity": "exp463-ecg-prefix-ramp-gated-qualification-antigravity-20260821",
+      "run_root": "/Users/mac/Documents/Dataset/exp463_ecg_prefix_ramp_gated_qualification_antigravity_20260821",
+      "package": "experiments/exp463_ecg_prefix_ramp_gated_qualification_antigravity",
+      "approved_design": "docs/superpowers/specs/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity-design.html",
+      "approved_plan": "docs/superpowers/plans/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity.html",
+      "approved_design_sha256": "d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb",
+      "documents": {
+        "preregistration": "docs/EXP463_PREREGISTRATION_antigravity.html",
+        "runbook": "docs/EXP463_RUNBOOK_antigravity.html",
+        "implementation_report": "docs/EXP463_IMPLEMENTATION_REPORT_antigravity.html",
+        "dashboard": "docs/EXP463_DASHBOARD_antigravity.html"
+      },
+      "predecessor": {
+        "experiment": "Exp462",
+        "terminal_closeout_commit": "040422f62406e3ca19038b9609903c4ba76e1694",
+        "status": "stopped_before_official_evaluation_qualification_failed",
+        "primary_candidate": "hydra_period_gradual_rank_max",
+        "primary_passed_count": 3,
+        "primary_required_count": 10,
+        "period_min_auc": 0.8960376741612595,
+        "historical_period_folds": [
+          {"seed": 20260721, "fold_index": 3, "period_change_auc": 0.8960376741612595},
+          {"seed": 20261721, "fold_index": 4, "period_change_auc": 0.9285624465570143}
+        ]
+      },
+      "scientific_contract": {
+        "target_dataset": "ECG5000_normal_2",
+        "data_split": "TRAIN_only",
+        "train_shape": [1413, 140],
+        "label_query_count_must_remain": 0,
+        "official_command_invocations_must_remain": 0,
+        "method_order": ["M0", "M1", "M2", "M3", "M4", "M5", "M6"],
+        "method_definitions": {
+          "M0": "Exp461 reviewed hydra_period_rank_max score",
+          "M1": "prefix median/MAD normalized one-dimensional ramp from onset 56",
+          "M2": "same M1 ramp; if rramp >= 0.995, max(r461, rramp); otherwise exactly r461 (M0/Exp461 semantics)",
+          "M3": "same M1 ramp; always max(r461, rramp) against M0",
+          "M4": "TRAIN-fit per-time median template residual ramp; 0.995-gated max against M0",
+          "M5": "whole-series median/MAD normalized ramp; 0.995-gated max against M0",
+          "M6": "Exp462 24D signature + LocalGap replay control; always max against M0"
+        },
+        "primary_candidate": "hydra_period_ramp_gated_max",
+        "seed_pair": [20260721, 20261721],
+        "blocked_fold_count": 5,
+        "onset": 56,
+        "alpha": 0.005,
+        "gate": 0.995,
+        "per_type_auc_min": 0.85,
+        "pooled_auc_min": 0.9,
+        "normal_wilson_upper_max": 0.05,
+        "gradual_drift_auc_min": 0.85,
+        "gradual_drift_auc_strictly_above_exp462": 0.8402306222021025,
+        "period_change_auc_global_min": 0.907392736783864,
+        "historical_period_fold_thresholds": [
+          {"seed": 20260721, "fold_index": 3, "period_change_auc_min": 0.907392736783864},
+          {"seed": 20261721, "fold_index": 4, "period_change_auc_min": 0.9216148584075248}
+        ],
+        "test_metrics_may_inform_routing": false
+      },
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_evaluate_invocations": 0,
+      "official_inspect_invocations": 0,
+      "result_root_created": false,
+      "official_result": null,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "artifact_map_sha256": null,
+      "dashboard_snapshot_sha256": null,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "official_root_present": false,
+      "task5_private_train_result": {
+        "reviewed_commit": "923cc4ad6dd6737f84f4ea2c4f621eb652ac54b4",
+        "runs": [{"run": 1, "evaluate_exit": 0, "inspect_exit": 0, "evaluate_seconds": 246.13, "inspect_seconds": 0.73}, {"run": 2, "evaluate_exit": 0, "inspect_exit": 0, "evaluate_seconds": 238.66, "inspect_seconds": 1.79}],
+        "temporary_roots_removed": true,
+        "row_count": 70,
+        "failed_row_count": 30,
+        "summary_count": 7,
+        "leaf_count": 7,
+        "exact_equality": {"rows": true, "failed_rows": true, "summaries": true, "decision": true, "dashboard": true, "leaf_bytes": true, "leaf_hashes": true, "artifact_map_hash": true},
+        "leaf_sha256": {"context_antigravity.json": "881fc1347726a88bd4c366d4ab651bfc51b6dca56308dbdd27890a1e45e64827", "method_fold_metrics_antigravity.jsonl": "84f610e437c59cb6dce4bd73e2ae8ec09c056d7a41178c3f7b790c0f01803fa6", "failed_folds_antigravity.jsonl": "22791cf9205aeb467c55acb46c097d10b84c7e9c852d0ad2d374986d4c254419", "method_summary_antigravity.jsonl": "a000057dc0e823074d72144ba777900c2864c15b249f07a5fb2f3e2c5ff51de5", "decision_antigravity.json": "73a8b5cc77a9db13f4b8d552c97c165f4b48db33dfb619fe49ee4b944b1b785f", "dashboard_snapshot_antigravity.json": "6d9c20890da8fe8ee142ff787884ae1041f4b39502f81c3df7e121b7f06f47b1", "artifact_sha256_antigravity.json": "25fb4ab237ae8f2601c2bc03b05f4e6a2d0cb9889876a83fa0f2c4ee7c4f0ea5"},
+        "artifact_map_sha256": "25fb4ab237ae8f2601c2bc03b05f4e6a2d0cb9889876a83fa0f2c4ee7c4f0ea5",
+        "primary_candidate": "hydra_period_ramp_gated_max",
+        "primary_passed_count": 7,
+        "primary_required_count": 10,
+        "status": "qualification_failed_blocked_before_routing_research",
+        "label_query_count": 0,
+        "official_root_exists_after": false,
+        "overlap_nonresult": {"publisher_error": "publication destination must be a new private path", "writes": false}
+      },
+      "review_only": false
+    },
+    {
+      "experiment": "Exp464",
+      "kind": "ecg_residual_centered_ramp_confirmation_qualification",
+    "status": "stopped_before_official_evaluation_qualification_failed",
+    "implementation_status": "task_5_review_ship_qualification_failed_task_6_forbidden",
+    "reason": "Task 5 private TRAIN campaign completed exactly two sequential evaluate-to-inspect reproductions at clean reviewed commit b8646d0fa9bd57dcb1f6ab5e251064d34911a41c. The two roots matched exactly for all 90 metric rows, 30 failed rows, nine summaries, decision, dashboard, seven leaf bytes/hashes, and canonical stdout payload. Primary C6 template_residual_centered_ramp_confirmed_max passed 9/10 because the sole failed record was seed 20261721 fold 3 gradual_drift AUC 0.8402557718424627 below 0.85, so frozen qualification failed and status remains stopped_before_official_evaluation_qualification_failed. C8 passed 10/10 but remains a non-promotable clue only. Final review is SHIP (spec PASS, quality APPROVED, C/I/M0), completing Task 5 (7/7 checked). The explicit private roots were removed after review into the recoverable directory /private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821; aggregate logs, report, and hashes remain retained. Official evaluate/inspect counts remain 0, the official root is absent, label_query_count is 0, official result hashes remain null, and champion, pending candidate, routing, and promotion remain unchanged. Two earlier pre-science wrapper failures remain disclosed and non-scientific. Task 6 is permanently forbidden and there is no next official action.",
+      "run_identity": "exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821",
+      "run_root": "/Users/mac/Documents/Dataset/exp464_ecg_residual_centered_ramp_confirmation_antigravity_20260821",
+      "package": "experiments/exp464_ecg_residual_centered_ramp_confirmation_antigravity",
+      "approved_design": "docs/superpowers/specs/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity-design.html",
+      "approved_plan": "docs/superpowers/plans/2026-08-21-exp464-ecg-residual-centered-ramp-confirmation-antigravity.html",
+      "approved_design_sha256": "d0e36ae176598810289fbd5693a5e582ca6f0821a8b8fcd52edd1bcb96ec1f9f",
+      "documents": {
+        "dashboard": "docs/EXP464_DASHBOARD_antigravity.html",
+        "preregistration": "docs/EXP464_PREREGISTRATION_antigravity.html",
+        "runbook": "docs/EXP464_RUNBOOK_antigravity.html",
+        "implementation_report": "docs/EXP464_IMPLEMENTATION_REPORT_antigravity.html"
+      },
+      "predecessor": {
+        "experiment": "Exp463",
+        "terminal_closeout_commit": "147225831e9c13e9df5043fa88757bb03e01b79a",
+        "status": "stopped_before_official_evaluation_qualification_failed",
+        "primary_candidate": "hydra_period_ramp_gated_max",
+        "primary_passed_count": 7,
+        "primary_required_count": 10,
+        "gradual_min_auc": 0.83450279161008,
+        "period_min_auc": 0.8984897640963734,
+        "historical_period_folds": [
+          {"seed": 20260721, "fold_index": 3, "period_change_auc": 0.907392736783864},
+          {"seed": 20261721, "fold_index": 4, "period_change_auc": 0.9216148584075248}
+        ]
+      },
+      "scientific_contract": {
+        "target_dataset": "ECG5000_normal_2",
+        "data_split": "TRAIN_only",
+        "train_shape": [1413, 140],
+        "label_query_count_must_remain": 0,
+        "official_command_invocations_must_remain": 0,
+        "method_order": ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8"],
+        "primary_candidate": "template_residual_centered_ramp_confirmed_max",
+        "seed_pair": [20260721, 20261721],
+        "blocked_fold_count": 5,
+        "onset": 56,
+        "cosine_min": 0.95,
+        "per_type_auc_min": 0.85,
+        "pooled_auc_min": 0.9,
+        "normal_wilson_upper_max": 0.05,
+        "gradual_drift_auc_min": 0.85,
+        "gradual_drift_auc_strictly_above_exp463": 0.8402306222021025,
+        "period_change_auc_global_min": 0.907392736783864,
+        "historical_period_fold_thresholds": [
+          {"seed": 20260721, "fold_index": 3, "period_change_auc_min": 0.907392736783864},
+          {"seed": 20261721, "fold_index": 4, "period_change_auc_min": 0.9216148584075248}
+        ],
+        "test_metrics_may_inform_routing": false
+      },
+      "method_definitions": {
+        "C0": "Exp463 M0 exact replay control",
+        "C1": "Exp463 M2 exact replay control",
+        "C2": "Exp463 M4 exact replay control",
+        "C3": "template residual centered ramp rank only without M0 max or cosine gate",
+        "C4": "same C3 rank with unconditional max against C0 and no cosine gate",
+        "C5": "centered ramp confirmation without template subtraction",
+        "C6": "template residual centered ramp rank with cosine >= 0.95 confirmed max against C0",
+        "C7": "Exp463 M6 exact replay control",
+        "C8": "template residual ramp confirmation without centering"
+      },
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_evaluate_count": 0,
+      "official_inspect_count": 0,
+      "official_evaluate_invocations": 0,
+      "official_inspect_invocations": 0,
+      "private_run_count": 2,
+      "result_root_created": false,
+      "official_result": null,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "artifact_map_sha256": null,
+      "dashboard_snapshot_sha256": null,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "official_root_present": false,
+      "review_only": false,
+      "task5_private_train_result": {
+        "reviewed_commit": "b8646d0fa9bd57dcb1f6ab5e251064d34911a41c",
+        "runs": [
+          {"run": 1, "evaluate_exit": 0, "inspect_exit": 0, "evaluate_seconds": 269.67, "inspect_seconds": 6.62},
+          {"run": 2, "evaluate_exit": 0, "inspect_exit": 0, "evaluate_seconds": 261.50, "inspect_seconds": 6.64}
+        ],
+        "temporary_roots_removed": true,
+        "private_roots": null,
+        "removed_private_roots_recoverable_parent": "/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821",
+        "removed_private_roots_entries": [
+          "/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821/exp464_task5_private_run1_antigravity",
+          "/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821/exp464_task5_private_run2_antigravity"
+        ],
+        "final_review_ship": {
+          "spec": "PASS",
+          "quality": "APPROVED",
+          "critical": 0,
+          "important": 0,
+          "minor": 0
+        },
+        "row_count": 90,
+        "failed_row_count": 30,
+        "summary_count": 9,
+        "leaf_count": 7,
+        "exact_equality": {"rows": true, "failed_rows": true, "summaries": true, "decision": true, "dashboard": true, "leaf_bytes": true, "leaf_hashes": true, "artifact_map_hash": true, "stdout_payload": true},
+        "leaf_sha256": {
+          "context_antigravity.json": "577a8a989abaf7b64d69968578e3d15b2b597acb97618c7d71eeaaf45fc46653",
+          "method_fold_metrics_antigravity.jsonl": "51073f3caf4793a2a70602547d6f249e42bcc7dcd64709ab5a62ccfeba791bcf",
+          "failed_folds_antigravity.jsonl": "54eefdbb8bbc3d2495bfa1cd0d444c04ffa9845c5f12f4e79f6bc6e25717bff3",
+          "method_summary_antigravity.jsonl": "3f7ad67d51c7dd63a31e9f373b14eb2ce2ffc616a81a611db2dd599e083f5540",
+          "decision_antigravity.json": "d66a23ef0749833220700f7d6b3ec56422722a9167d443cf2f58d327ce9593cd",
+          "dashboard_snapshot_antigravity.json": "da1e2333728b2886cea918f4c34ad6d084d10e1811b48c8903c0946ad167e1cb",
+          "artifact_sha256_antigravity.json": "8e0cc3391f5acf970fb73a322a2ec313538cd2c4d153114e07b2d480f845bbca"
+        },
+        "leaf_bytes": {
+          "context_antigravity.json": 1180,
+          "method_fold_metrics_antigravity.jsonl": 53043215,
+          "failed_folds_antigravity.jsonl": 5511663,
+          "method_summary_antigravity.jsonl": 3899,
+          "decision_antigravity.json": 428,
+          "dashboard_snapshot_antigravity.json": 3839,
+          "artifact_sha256_antigravity.json": 605
+        },
+        "stdout_sha256": "f41151e67a07b33bae607437501317e61c79d8f5508b62d0886b210b63180111",
+        "artifact_map_sha256": "8e0cc3391f5acf970fb73a322a2ec313538cd2c4d153114e07b2d480f845bbca",
+        "primary_candidate": "template_residual_centered_ramp_confirmed_max",
+        "primary_passed_count": 9,
+        "primary_required_count": 10,
+        "primary_min_per_type_auc": {
+          "amplitude_scaling": 0.9722347970424023,
+          "gradual_drift": 0.8402557718424627,
+          "level_shift": 0.9411749911976258,
+          "period_change": 0.907392736783864
+        },
+        "sole_failed_record": {
+          "seed": 20261721,
+          "fold_index": 3,
+          "type": "gradual_drift",
+          "auc": 0.8402557718424627,
+          "threshold": 0.85
+        },
+        "non_promotable_clue": {
+          "method": "C8",
+          "passed_count": 10,
+          "required_count": 10,
+          "promotable": false
+        },
+        "method_pass_counts": {
+          "C0": {"passed_count": 9, "failed_count": 1},
+          "C1": {"passed_count": 8, "failed_count": 2},
+          "C2": {"passed_count": 9, "failed_count": 1},
+          "C3": {"passed_count": 0, "failed_count": 10},
+          "C4": {"passed_count": 3, "failed_count": 7},
+          "C5": {"passed_count": 9, "failed_count": 1},
+          "C6": {"passed_count": 9, "failed_count": 1},
+          "C7": {"passed_count": 3, "failed_count": 7},
+          "C8": {"passed_count": 10, "failed_count": 0}
+        },
+        "decision": {
+          "eligible_for_routing_research": false,
+          "failure_reasons": [
+            "primary_candidate_not_10_of_10",
+            "primary_gradual_drift_auc_below_min",
+            "primary_gradual_drift_min_below_0.85"
+          ],
+          "label_query_count": 0,
+          "primary_candidate": "template_residual_centered_ramp_confirmed_max",
+          "primary_passed_count": 9,
+          "primary_required_count": 10,
+          "routing_applied": false,
+          "status": "qualification_failed_blocked_before_routing_research",
+          "test_labels_opened": false
+        },
+        "status": "qualification_failed_blocked_before_routing_research",
+        "label_query_count": 0,
+        "official_root_exists_after": false,
+        "pre_science_failures_retained": [
+          {
+            "name": "reviewed_commit_mismatch",
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "8a3a459348603f9c79fd68fdd39cd39594dd87e63547e539a147bad29a4657cf",
+            "time_sha256": "e4a4cb4a2aa2fb6d1f64f82e137be621de64c2b92de18d41d25572d8949b90db",
+            "root_created": false
+          },
+          {
+            "name": "duplicate_process_false_positive",
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr_sha256": "e67bee7ce606726713bd7aaa6df6a2cf978094c3d68123372b4f3d9bb23be1a4",
+            "time_sha256": "539f1596e3b178a02613d497aadf76b6bf99d0df3bab746117cc74e40e28b68a",
+            "root_created": false
+          }
+        ],
+        "overlap_nonresult": {"pre_science_failures_retained": 2, "writes": false}
+      }
+    }
+    ,
+    {
+      "experiment": "Exp465",
+      "kind": "ecg200_c8_external_train_qualification",
+      "status": "private_qualification_failed_blocked_before_routing_research",
+      "implementation_status": "task_5_reviewed_closeout_qualification_failed",
+      "reason": "Task 5 private qualification reproduced exactly twice, but C8 passed 0/10 because period-change AUC and mean AUC missed the frozen gates. Champion, pending candidate, routing, promotion, and official result remain unchanged.",
+      "run_identity": "exp465-ecg200-c8-external-validation-antigravity-20260822",
+      "run_root": "/Users/mac/Documents/Dataset/exp465_ecg200_c8_external_validation_antigravity_20260822",
+      "package": "experiments/exp465_ecg200_c8_external_validation_antigravity",
+      "approved_design": "docs/superpowers/specs/2026-08-22-exp465-ecg200-c8-external-validation-antigravity-design.html",
+      "approved_plan": "docs/superpowers/plans/2026-08-22-exp465-ecg200-c8-external-validation-antigravity.html",
+      "approved_design_sha256": "a5f5f43e1787ad2942c883761ee95478e8cf5fcdcc958722a22fe0e1ad98d904",
+      "documents": {
+        "dashboard": "docs/EXP465_DASHBOARD_antigravity.html",
+        "preregistration": "docs/EXP465_PREREGISTRATION_antigravity.html",
+        "runbook": "docs/EXP465_RUNBOOK_antigravity.html",
+        "implementation_report": "docs/EXP465_IMPLEMENTATION_REPORT_antigravity.html"
+      },
+      "predecessor": {
+        "experiment": "Exp464",
+        "terminal_closeout_commit": "1fdc8422996fe7e85325987f7543e00db79e22d9"
+      },
+      "scientific_contract": {
+        "dataset": "ECG200",
+        "data_split": "TRAIN_only",
+        "train_shape": [100, 96],
+        "normal_label_plus_one_count": 69,
+        "interpolated_width": 140,
+        "label_query_count_must_remain": 0,
+        "official_command_invocations_must_remain": 0,
+        "method_order": ["C0", "C6", "C8"],
+        "primary_candidate": "C8",
+        "seed_pair": [20260721, 20261721],
+        "fold_count": 5,
+        "onset": 56,
+        "cosine_min": 0.95,
+        "per_type_auc_min": 0.85,
+        "mean_auc_min": 0.9,
+        "required_stability_records": 10,
+        "seed_normal_confirmation_count_must_remain_zero": true,
+        "test_metrics_may_inform_routing": false
+      },
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_evaluate_count": 0,
+      "official_inspect_count": 0,
+      "private_run_count": 2,
+      "private_qualification": {
+        "status": "qualification_failed_blocked_before_routing_research",
+        "exact_reproduction": true,
+        "stdout_sha256": "0436fbbd727815daf2cecdac353b380d0624b923ff74f43a03197536f894f891",
+        "artifact_map_sha256": "0532bf2d09adb4b2086d0ccf109a204c0e6e0fec4dc260889fb733072b29536f",
+        "c8_passed_count": 0,
+        "c8_required_count": 10,
+        "failure_reasons": ["c8_not_10_of_10"]
+      },
+      "result_root_created": false,
+      "official_result": null,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "artifact_map_sha256": null,
+      "dashboard_snapshot_sha256": null,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "official_root_present": false,
+      "review_only": false
+    },
+    {
+      "experiment": "Exp466",
+      "kind": "ecg200_phase_registration_margin_qualification",
+      "status": "qualification_failed_blocked_before_fn_validation",
+      "implementation_status": "task_6_complete_qualification_failed_no_rerun",
+      "reason": "Task 6 is complete as a terminal failed qualification, never a performance pass. Terra returned SPEC PASS and SCIENCE APPROVED with C0/I0/M1 for the fully disclosed preserved provenance wording only. Fresh Sol returned SHIP with C0/I0/M0 new and authorized final checkbox closeout. C9 remains reproducibly 0 of 10 and blocked before FN validation. Exp466 must not be rerun and is not eligible for current Exp467 FN validation. Champion, pending candidate, routing, promotion, TEST/labels, and official result remain unchanged.",
+      "run_identity": "exp466-ecg200-phase-registration-margin-antigravity-20260823",
+      "run_root": "/Users/mac/Documents/Dataset/exp466_ecg200_phase_registration_margin_antigravity_20260823",
+      "package": "experiments/exp466_ecg200_phase_registration_margin_antigravity",
+      "approved_design": "docs/superpowers/specs/2026-08-23-exp466-ecg200-phase-registration-margin-antigravity-design.html",
+      "approved_plan": "docs/superpowers/plans/2026-08-23-exp466-ecg200-phase-registration-margin-antigravity.html",
+      "approved_design_sha256": "eddb057724e0ef21402c07b9f362bc6b260fc917a9f6bfdcb130f118b30a5c66",
+      "documents": {
+        "dashboard": "docs/EXP466_DASHBOARD_antigravity.html",
+        "preregistration": "docs/EXP466_PREREGISTRATION_antigravity.html",
+        "runbook": "docs/EXP466_RUNBOOK_antigravity.html",
+        "implementation_report": "docs/EXP466_IMPLEMENTATION_REPORT_antigravity.html"
+      },
+      "predecessor": {
+        "experiment": "Exp465",
+        "status": "private_qualification_failed_blocked_before_routing_research"
+      },
+      "scientific_contract": {
+        "dataset": "ECG200",
+        "data_split": "TRAIN_only",
+        "train_md5": "808875aeac1c358a90c630fe369327c4",
+        "train_shape": [100, 96],
+        "normal_label_plus_one_count": 69,
+        "interpolated_width": 140,
+        "seed_pair": [20260721, 20261721],
+        "fold_count": 5,
+        "onset": 56,
+        "suffix_length": 84,
+        "warp_factor": 1.25,
+        "shared_length": 67,
+        "method_order": ["C0", "P9", "C9"],
+        "primary_candidate": "C9",
+        "p9_explanatory_only": true,
+        "per_type_auc_min": 0.85,
+        "mean_auc_min": 0.9,
+        "required_fold_results": 10,
+        "period_auc_strictly_above_c0_every_fold": true,
+        "gradual_auc_not_below_c0_every_fold": true,
+        "period_confirmation_min_per_fold": 1,
+        "normal_trials_per_seed": 69,
+        "seed_normal_confirmation_count_must_remain_zero": true,
+        "private_reproduction_count_required": 2,
+        "label_query_count_must_remain": 0,
+        "official_command_invocations_must_remain": 0,
+        "test_metrics_may_inform_routing": false
+      },
+      "official_evaluate_started": false,
+      "official_inspect_started": false,
+      "official_evaluate_count": 0,
+      "official_inspect_count": 0,
+      "private_run_count": 2,
+      "private_evaluate_count": 2,
+      "private_inspect_count": 2,
+      "private_result_roots": [
+        "/private/tmp/exp466_task6_private_run1_antigravity",
+        "/private/tmp/exp466_task6_private_run2_antigravity"
+      ],
+      "private_stdout_sha256": {
+        "run1_evaluate": "7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1",
+        "run1_inspect": "7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1",
+        "run2_evaluate": "7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1",
+        "run2_inspect": "7a33a54dd6ad2d03415b567b079d8dbb37a0d1006ae4260a37b00439d9dbf9a1"
+      },
+      "private_leaf_sha256": {
+        "artifact_sha256_antigravity.json": "50bee8c512f6fed258062ac462c9921932ca234c4add09991037d66fd4241d0f",
+        "context_antigravity.json": "21771cf942b19811f416a2be6d5e31d3b27ef20d2a382e373f3932b4f57faa4d",
+        "dashboard_snapshot_antigravity.json": "29c79e275942afa28285a429d0787678dfbe9706955767da10e3bea728d3409d",
+        "decision_antigravity.json": "ee50e2e92481dd69d6cb38a19b4411e6079d84d23f422f0fe2d02272ded199aa",
+        "failed_folds_antigravity.jsonl": "766b4704453f68f60754830c7bb96bc8369b67c8f9318cbe88e822bc18ec9fc5",
+        "method_fold_metrics_antigravity.jsonl": "f5eb24cbd86b1c424abab9dd6b37df94d115c5717a95d4e53f6f8fd39fc194fe",
+        "method_summary_antigravity.jsonl": "7c83f3cad3c013ed376d491310f4818fffeba87869610a00b6b05c76173251cb"
+      },
+      "private_sequence_state": {
+        "path": "/private/tmp/exp466_task6_private_sequence_state_antigravity.json",
+        "schema": "exp466_task6_private_sequence_antigravity_v1",
+        "reviewed_commit": "0aed6d753a3f4cc6f52efc6c573f5f73e4cd522a",
+        "stage": "run2_inspected",
+        "sha256": "19c4896ea55b415c9a546ff9d3d49eeab982d146df3acacc5bb15ea287f982bd"
+      },
+      "private_qualification": {
+        "status": "qualification_failed_blocked_before_fn_validation",
+        "exact_reproduction": true,
+        "stdout_and_all_seven_leaves_byte_equal": true,
+        "all_scores_finite": true,
+        "c9_passed_count": 0,
+        "c9_required_count": 10,
+        "period_auc_below_0_85_fold_count": 10,
+        "period_auc_min": 0.6862244897959183,
+        "period_auc_max": 0.826530612244898,
+        "mean_auc_below_0_90_fold_count": 7,
+        "mean_auc_min": 0.8628826530612246,
+        "mean_auc_max": 0.9056122448979591,
+        "period_auc_improved_over_c0_fold_count": 0,
+        "period_auc_equal_to_c0_fold_count": 8,
+        "period_auc_below_c0_fold_count": 2,
+        "period_auc_delta_min": -0.0535714285714286,
+        "period_auc_delta_max": 0,
+        "period_confirmation_missing_fold_count": 8,
+        "gradual_auc_below_c0_fold_count": 2,
+        "gradual_auc_delta_min": -0.0357142857142857,
+        "normal_trial_counts": {
+          "20260721": 69,
+          "20261721": 69
+        },
+        "normal_confirmation_counts": {
+          "20260721": 1,
+          "20261721": 1
+        },
+        "failure_reasons": [
+          "c9_not_10_of_10",
+          "period_change_auc_below_0.85",
+          "mean_auc_below_0.90",
+          "period_auc_not_strictly_above_c0",
+          "period_confirmation_missing",
+          "gradual_auc_below_c0",
+          "normal_confirmation_present",
+          "seed_20260721_normal_confirmations_not_zero",
+          "seed_20261721_normal_confirmations_not_zero"
+        ],
+        "preserved_artifact_provenance_valid_for_downstream": false,
+        "preserved_artifact_provenance_caveat": "The preserved canonical leaves contain obsolete Task5, actual=false, and synthetic-only wording. That wording must not be used as Task6 provenance. The scientific scores, failed decision, and byte reproducibility remain valid. Exp466 will not be rerun; clean provenance artifacts require a separately approved experiment and new roots."
+      },
+      "step_6_verification": {
+        "status": "complete",
+        "initial_full_suite_after_private_results": {
+          "passed": false,
+          "failure_count": 1,
+          "cause": "one CLI unit test still assumed the two fixed private roots were absent, which was true only before the private lifecycle completed",
+          "science_or_result_code_failure": false
+        },
+        "lifecycle_fix_commit": "bf3a75e647c45a8311d89e5b2a3ad59d7735251f",
+        "lifecycle_fix": "the CLI unit test now exercises only current-working-directory and arbitrary-capability rejection; the existing governance test retains exact fixed-root and evaluate-inspect order coverage",
+        "post_fix_focused_passed": 17,
+        "post_fix_focused_required": 17,
+        "post_fix_direct_passed": 2,
+        "post_fix_direct_required": 2,
+        "full_exp466_runs": [
+          {
+            "passed": 56,
+            "required": 56,
+            "seconds": 123.424
+          },
+          {
+            "passed": 56,
+            "required": 56,
+            "seconds": 125.787
+          }
+        ],
+        "exp465_lower_passed": 7,
+        "exp465_lower_required": 7,
+        "exp465_lower_seconds": 29.391,
+        "compileall_passed": true,
+        "map_validate_passed": true,
+        "json_html_diff_static_exact_checks_passed": true,
+        "private_roots_stdout_leaves_sequence_decision_reverified": true,
+        "official_root_absence_reverified": true,
+        "final_reviews_pending": [],
+        "final_reviews": {
+          "terra": {
+            "spec_verdict": "PASS",
+            "science_verdict": "APPROVED",
+            "qualification_disposition": "terminal_failed_qualification",
+            "critical": 0,
+            "important": 0,
+            "minor": 1,
+            "minor_finding": "preserved canonical Task5, actual=false, and synthetic-only provenance wording",
+            "minor_disposition": "fully_disclosed_invalid_for_downstream_use_no_rerun"
+          },
+          "fresh_sol": {
+            "verdict": "SHIP",
+            "critical_new": 0,
+            "important_new": 0,
+            "minor_new": 0,
+            "authorized_checkboxes": [
+              "task_6_heading",
+              "task_6_step_6",
+              "dashboard_final_review"
+            ]
+          }
+        },
+        "final_reviewed_parent_commit": "2f8fc1fa8dd4fdb2b8a021f420b59b9b6d59d4cf",
+        "task_6_complete": true,
+        "qualification_passed": false,
+        "performance_passed": false,
+        "terminal_failed_qualification": true
+      },
+      "result_root_created": false,
+      "official_result": null,
+      "prediction_sha256": null,
+      "evaluation_sha256": null,
+      "decision_sha256": null,
+      "artifact_map_sha256": null,
+      "dashboard_snapshot_sha256": null,
+      "test_labels_opened": false,
+      "label_query_count": 0,
+      "routing_allowed": false,
+      "promotion_allowed": false,
+      "pending_candidate_changed": false,
+      "scientific_winner_selected": false,
+      "eligible_for_exp467_design": false,
+      "eligible_for_exp467_fn_validation": false,
+      "official_root_present": false,
+      "review_only": false,
+      "next_action": "design_separate_local_stft_or_wavelet_change_score_experiment",
+      "exact_next_command": "none_until_separate_design_is_preregistered_and_approved"
+    }
+  ]
+}

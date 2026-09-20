@@ -1,0 +1,107 @@
+{
+  "schema": "exp474_conservative_fallback_codemap_v1",
+  "current_commit": "82daefaeac56ecc2391fd9457c6ded1ecf9b1787",
+  "nodes": [
+    {
+      "id": "feature_extractor",
+      "path": "experiments/exp_routing_label_free_antigravity/feature_extractor_antigravity.py",
+      "caller": "official_router and Exp474 feature table builder",
+      "effect": "Produces eight TRAIN-only dataset features; changing it changes every routing decision.",
+      "tests": ["experiments/exp_routing_label_free_antigravity/tests/test_feature_extractor_antigravity.py"]
+    },
+    {
+      "id": "routing_rules",
+      "path": "experiments/exp_routing_label_free_antigravity/routing_rules_antigravity.py",
+      "caller": "official_router and Exp474 proposal stage",
+      "effect": "Produces the current MiniRocket, MultiRocket, or Hydra proposal.",
+      "tests": ["experiments/exp_routing_label_free_antigravity/tests/test_official_router_antigravity.py"]
+    },
+    {
+      "id": "official_router",
+      "path": "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py",
+      "caller": "pipeline_integration",
+      "effect": "Loads TRAIN majority rows and exposes the current official method recommendation.",
+      "tests": ["experiments/exp_routing_label_free_antigravity/tests/test_official_router_antigravity.py"]
+    },
+    {
+      "id": "pipeline_integration",
+      "path": "experiments/exp_routing_label_free_antigravity/pipeline_integration_antigravity.py",
+      "caller": "official experiment pipeline",
+      "effect": "Uses the official router for unseen families; must remain unchanged during Exp474 qualification.",
+      "tests": ["experiments/exp_routing_label_free_antigravity/tests/test_pipeline_integration_antigravity.py"]
+    },
+    {
+      "id": "checkpoints",
+      "path": "experiments/exp_routing_label_free_antigravity/checkpoints",
+      "caller": "Exp474 evaluation only",
+      "effect": "Supplies frozen per-method AUC and zero-FP true-positive outcomes for 962 valid datasets.",
+      "tests": []
+    },
+    {
+      "id": "exp474_policy",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/policy_antigravity.py",
+      "caller": "Exp474 family-blocked evaluator",
+      "effect": "Accepts a non-MiniRocket proposal only when TRAIN-only evidence is sufficiently confident; otherwise returns MiniRocket.",
+      "tests": ["experiments/exp474_conservative_fallback_routing_antigravity/tests/test_policy_antigravity.py"]
+    },
+    {
+      "id": "exp474_ragged_features",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/ragged_features_antigravity.py",
+      "caller": "Exp474 TRAIN feature cache builder",
+      "effect": "Preserves the frozen feature formulas for fixed-width data and applies the same row-wise formulas to the 15 variable-width datasets.",
+      "tests": ["experiments/exp474_conservative_fallback_routing_antigravity/tests/test_ragged_features_antigravity.py"]
+    },
+    {
+      "id": "exp474_evaluation",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/evaluation_antigravity.py",
+      "caller": "Exp474 runner",
+      "effect": "Runs family-blocked validation and computes preregistered AUC, zero-FP TP, and severe-loss gates.",
+      "tests": ["experiments/exp474_conservative_fallback_routing_antigravity/tests/test_evaluation_antigravity.py"]
+    },
+    {
+      "id": "exp474_runner",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/run_antigravity.py",
+      "caller": "Exp474 approved experiment operator",
+      "effect": "Reads frozen checkpoints and TRAIN rows, resumes the feature cache, runs qualification, and writes JSON plus HTML evidence.",
+      "tests": [
+        "experiments/exp474_conservative_fallback_routing_antigravity/tests/test_ragged_features_antigravity.py",
+        "experiments/exp474_conservative_fallback_routing_antigravity/tests/test_evaluation_antigravity.py"
+      ]
+    },
+    {
+      "id": "exp474_results",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/results_antigravity.json",
+      "caller": "dashboard and deterministic replay",
+      "effect": "Preserves all 962 family-held-out decisions, metrics, leakage checks, and failed ZF gate.",
+      "tests": []
+    },
+    {
+      "id": "exp474_dashboard",
+      "path": "docs/EXP474_DASHBOARD_antigravity.html",
+      "caller": "user",
+      "effect": "Shows experiment progress, checked completed steps, qualification metrics, and hold decision in simple language.",
+      "tests": []
+    }
+  ],
+  "edges": [
+    {"from": "pipeline_integration", "to": "official_router", "type": "calls"},
+    {"from": "official_router", "to": "feature_extractor", "type": "calls"},
+    {"from": "official_router", "to": "routing_rules", "type": "calls"},
+    {"from": "exp474_evaluation", "to": "exp474_ragged_features", "type": "reads_features_built_by"},
+    {"from": "exp474_ragged_features", "to": "feature_extractor", "type": "preserves_formula"},
+    {"from": "exp474_evaluation", "to": "routing_rules", "type": "calls"},
+    {"from": "exp474_evaluation", "to": "checkpoints", "type": "reads"},
+    {"from": "exp474_evaluation", "to": "exp474_policy", "type": "calls"},
+    {"from": "exp474_runner", "to": "exp474_ragged_features", "type": "calls"},
+    {"from": "exp474_runner", "to": "exp474_evaluation", "type": "calls"},
+    {"from": "exp474_runner", "to": "exp474_results", "type": "writes"},
+    {"from": "exp474_results", "to": "exp474_dashboard", "type": "renders"}
+  ],
+  "constraints": [
+    "Exp474 does not modify official_router, routing_rules, feature_extractor, or pipeline_integration.",
+    "Dataset names are used only to form family-blocked evaluation groups, never as inference features.",
+    "TEST labels and TEST-derived metrics are not available to the fitted policy.",
+    "MLX is ineligible because reproducing the frozen NumPy FFT, skewness, and kurtosis feature path exactly would change the extractor; CPU is retained."
+  ],
+  "future_declared_paths": []
+}

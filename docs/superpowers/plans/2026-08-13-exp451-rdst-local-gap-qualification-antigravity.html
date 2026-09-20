@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp451 RDST + LocalGap 자격검증 구현 계획</title>
+<style>
+:root{color-scheme:light dark;--bg:#f6f8fb;--panel:#fff;--text:#162033;--muted:#5d687c;--line:#d8deea;--accent:#3159d6;--code:#eef2f8}@media(prefers-color-scheme:dark){:root{--bg:#101522;--panel:#19202e;--text:#edf2fb;--muted:#adb8ca;--line:#354055;--accent:#91aaff;--code:#222b3b}}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.66 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.layout{display:grid;grid-template-columns:minmax(220px,280px) minmax(0,980px);gap:26px;max-width:1320px;margin:auto;padding:26px}nav{position:sticky;top:18px;align-self:start;max-height:calc(100vh - 36px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:17px}nav a{display:block;color:var(--muted);text-decoration:none;padding:3px 0}main{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:34px 42px;min-width:0}h1,h2,h3{line-height:1.28;scroll-margin-top:18px}h1{margin-top:0}h2{margin-top:38px;padding-top:26px;border-top:1px solid var(--line)}h3{margin-top:32px}code{font-family:"SFMono-Regular",Consolas,monospace;background:var(--code);padding:.12em .35em;border-radius:5px}pre{background:var(--code);padding:15px;border:1px solid var(--line);border-radius:10px;overflow:auto}blockquote{margin:18px 0;border-left:4px solid var(--accent);padding:5px 16px;color:var(--muted)}table{width:100%;border-collapse:collapse;display:block;overflow:auto}th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}th{background:var(--code)}li{margin:.3em 0}.meta{color:var(--muted)}input{margin-right:.45em}@media(max-width:850px){.layout{display:block;padding:10px}nav{position:static;margin-bottom:10px}main{padding:24px 18px}}
+</style></head>
+<body><div class="layout"><nav aria-label="목차"><strong>목차</strong><div id="toc"></div></nav><main>
+<p class="meta">Exp451 · self-contained HTML · 2026-08-13 · 구현 완료 후에만 체크</p>
+<h1>Exp451 RDST + LocalGap 자격검증 구현 계획</h1>
+<blockquote><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use <code>superpowers:subagent-driven-development</code> (recommended) or <code>superpowers:executing-plans</code> to implement this plan task-by-task. Steps use checkbox syntax for tracking.</blockquote>
+<p><strong>Goal:</strong> 정상 TRAIN에서 공식 aeon RDST 특징을 만들고 기존 LocalGap 점수기로 48개 대상 데이터셋을 label-free 평가하여, Exp448 기준보다 FN을 줄이면서 FP를 늘리지 않는지 검증한다.</p>
+<p><strong>Architecture:</strong> Exp451은 Exp448 publication과 source DB를 읽기 전용으로 고정하고, aeon 1.4.0 <code>RandomDilatedShapeletTransform(y=None)</code>을 fold마다 새로 학습한다. Exp449의 검증된 LocalGap·경험적 보정·bootstrap·저수준 원자 저장만 읽기 전용으로 재사용하고 Exp451 고유 prediction/evaluation root는 분리한다.</p>
+<p><strong>Tech Stack:</strong> Python 3.14.6, aeon 1.4.0, NumPy 2.3.5, scikit-learn 1.7.2, Numba 기반 공식 RDST, SQLite immutable read, <code>unittest</code>, canonical JSON/JSONL, versioned HTML/JSON/lock code map.</p>
+
+<h2>Global Constraints</h2>
+<ul>
+<li>승인 설계: <code>docs/superpowers/specs/2026-08-13-exp451-rdst-local-gap-qualification-antigravity-design.html</code>; SHA256 <code>63b8880afbfe09601c241e6c80ab7d2883bc554318f9b8489352021a1dbd7fc4</code>.</li>
+<li>새 파일 이름은 모두 <code>antigravity</code>를 포함한다. 새 사람이 읽는 문서는 HTML만 만들고 Markdown 사본은 만들지 않는다.</li>
+<li>Exp448·Exp449 코드, 공식 root, artifact, 결과, dashboard bytes를 수정하지 않는다.</li>
+<li>Exp449가 현재 active experiment이므로 Exp451 구현 중 <code>active_experiment</code>를 덮어쓰지 않는다. Exp451은 planned sibling으로 등록하고, 사용자가 전환을 승인할 때만 active identity를 바꾼다.</li>
+<li>identity: <code>Exp451</code>; schema <code>exp451</code>; kind <code>rdst_local_gap_qualification</code>; run identity <code>exp451-rdst-local-gap-qualification-antigravity-20260813</code>.</li>
+<li>prediction root: <code>/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_antigravity_20260813</code>; evaluation root: <code>/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_evaluation_antigravity_20260813</code>.</li>
+<li>readiness receipt: <code>/Users/mac/Documents/Dataset/exp451_readiness_receipt_antigravity.json</code>; failure audit: <code>/Users/mac/Documents/Dataset/exp451_failure_audit_antigravity.json</code>. Readiness receipt는 두 official root 바깥의 create-only canonical JSON이며 reviewed commit, document/method/source hashes, backend decision, environment/device, logical CPUs와 worker rule을 다음 process에 전달한다. Prediction/evaluation lifecycle receipts는 각 Exp451 root의 <code>lifecycle_receipts_antigravity/</code>에 둔다.</li>
+<li>기준선: Exp448 stable-26, TP 1,930, FP 314, FN 1,988, TN 191,668, F1 <code>0.6264199935</code>.</li>
+<li>대상은 Exp449와 같은 ordered 8 families, 실제 48 datasets, 72,300 TEST rows다. Exp448 TEST 잔여 FN을 보고 선정된 post-hoc method qualification임을 기록한다.</li>
+<li>나머지 1,069 datasets는 Exp448 confusion을 byte-authoritative하게 재사용한다.</li>
+<li>공식 RDST source SHA256은 <code>900397653dd89bb4f04b33182d87e0f682555568f7f50690ef9a78ba946334f2</code>.</li>
+<li>RDST: <code>max_shapelets=1024</code>, 나머지 생성자 기본값, seed를 <code>random_state</code>로 사용, <code>n_jobs=1</code>, <code>fit(X,y=None)</code>.</li>
+<li>seeds <code>(20260721,20261721)</code>; TRAIN OOF와 TEST를 각각 위치별 중앙값으로 합친다.</li>
+<li>LocalGap: Exp449 exact implementation, 5 folds, k=3, 최대 TRAIN reference=1,000, query chunk=128.</li>
+<li>reference seed: fold는 <code>seed+1009*(fold_index+1)+1024</code>, full은 <code>seed+7919+1024</code>; 선택 index는 정렬한다.</li>
+<li>TEST 중앙점수의 empirical upper p-value를 TRAIN-OOF 중앙점수 기준으로 계산하고 <code>p&lt;=0.005</code>만 선택한다. <code>attainable_p=1/(n_train+1)</code>가 0.005보다 크면 후보를 비우고 <code>resolution_blocked=true</code>를 기록한다.</li>
+<li>prediction 단계 TEST label 접근은 0. 모든 prediction leaf/inventory/aggregate SHA 동결 뒤 정확히 한 번의 ordered label session만 연다.</li>
+<li>자격 조건: global FN &lt;1,988, FP ≤314, F1 ≥0.6264199935, target 8-family FN 합계 감소.</li>
+<li>paired bootstrap은 Exp449 <code>paired_delta_antigravity</code>를 exact import한다: PCG64 seed <code>44920260812</code>, 20,000 draws, population 48, int64, endpoint false, linear 2.5/97.5 percentiles, draw SHA256 <code>264c780d7e5949994f1de3053158ea20a7cc3d0ae858f29770d9849b18ad4d6a</code>.</li>
+<li>공식 readiness에서 CPU를 다시 감지하고 outer workers=<code>max(1,logical_cpus-1)</code>; inner threads와 RDST <code>n_jobs=1</code>.</li>
+<li>RDST는 공식 CPU 구현을 유지한다. LocalGap 거리만 tensor eligible로 평가하며 finite, 동일 후보, normalized max error ≤1e-5, 포함 비용 speedup ≥1.1을 모두 통과해야 가속 backend를 선택한다.</li>
+<li>각 Task는 focused RED → 최소 GREEN → 관련 Exp449 regression → map validation → bounded commit → fresh Sol/High review 순서다.</li>
+<li>공식 장시간 실행은 clean final review 뒤에도 사용자의 별도 전체 실행 승인 전에는 시작하지 않는다.</li>
+</ul>
+
+<h2>모든 코드 Task의 map·commit 규칙</h2>
+<p>Git commit의 자기 hash를 같은 commit 안의 lock에 미리 쓸 수 없으므로 저장소의 Exp449 self-reference 회피 방식을 그대로 쓴다. 먼저 정확한 기능·테스트 파일만 commit하고, 깨끗한 그 기능 commit을 <code>source_parent_commit</code>으로 Exp451 map 세 파일을 함께 재생성한 뒤 map-only child commit을 만든다. Fresh review는 map-only child의 exact clean HEAD를 검토한다.</p>
+<pre>FUNCTIONAL_COMMIT="$(git rev-parse HEAD)"
+"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" scratch/build_codemap_exp451_antigravity.py --source-commit "$FUNCTIONAL_COMMIT"
+"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" scratch/build_codemap_exp451_antigravity.py --validate-only
+git add docs/codemap/codemap_exp451_antigravity.html docs/codemap/codemap_exp451_antigravity.json docs/codemap/codemap_exp451_antigravity.lock
+git commit -m "docs(codemap): refresh exp451 map"
+git status --short</pre>
+<p>각 Task 시작 시 Exp451 map JSON에서 수정할 node의 inbound callers, outbound effects, tests를 task report에 적는다. Task 1만 Exp451 map이 아직 없으므로 Exp449 map에서 predecessor/source/scoring/evaluation 경계를 읽고, Exp451 관계는 source가 생기기 전 <code>unknown</code>으로 생성한다.</p>
+
+<h2>File Structure</h2>
+<table><thead><tr><th>영역</th><th>파일</th><th>책임</th></tr></thead><tbody>
+<tr><td>거버넌스</td><td><code>docs/EXP451_PREREGISTRATION_antigravity_KO.html</code><br><code>docs/EXP451_RUNBOOK_antigravity_KO.html</code><br><code>docs/EXP451_IMPLEMENTATION_REPORT_antigravity.html</code></td><td>과학 계약, 명령, 검증 증거</td></tr>
+<tr><td>코드맵</td><td><code>docs/codemap/codemap_exp451_antigravity.{html,json,lock}</code><br><code>scratch/build_codemap_exp451_antigravity.py</code></td><td>노드·흐름·테스트·fingerprint</td></tr>
+<tr><td>과학</td><td><code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>method_audit_antigravity.py</code>, <code>rdst_antigravity.py</code>, <code>scoring_antigravity.py</code>, <code>backend_gate_antigravity.py</code></td><td>고정 설정, 공식 RDST, cross-fit LocalGap, backend gate</td></tr>
+<tr><td>입력</td><td><code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code></td><td>Exp448 기준선과 DB values/label session 경계</td></tr>
+<tr><td>prediction</td><td><code>artifacts_antigravity.py</code>, <code>progress_antigravity.py</code>, <code>prediction_antigravity.py</code></td><td>create-only leaf, checkpoint, 로그, label-free freeze</td></tr>
+<tr><td>평가</td><td><code>evaluation_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></td><td>한 번의 label 평가, replay, 공개 요약</td></tr>
+<tr><td>명령</td><td><code>readiness_antigravity.py</code>, <code>lifecycle_antigravity.py</code>, <code>cli_antigravity.py</code>, launcher</td><td>readiness/predict/evaluate/inspect</td></tr>
+</tbody></table>
+<p>모든 product/test 파일은 <code>experiments/exp451_rdst_local_gap_qualification_antigravity/</code> 아래에 둔다. launcher는 <code>scratch/run_exp451_rdst_local_gap_qualification_antigravity.py</code>다.</p>
+
+<h3>Task 1: 거버넌스 동결과 Exp451 코드맵</h3>
+<p><strong>Files:</strong> Create three Exp451 governance HTML files, map triplet, map builder, governance test. Modify <code>EXPERIMENT_CATALOG.json</code>, <code>RESEARCH_STATE.json</code>, <code>CHAMPION_LEDGER.json</code>.</p>
+<p><strong>Interfaces:</strong> Consumes approved design SHA and current Exp448/449 truth. Produces document hashes, planned state with label count 0, and <code>build_map_antigravity(source_commit,generated_at)</code>.</p>
+<ol>
+<li><label><input type="checkbox" disabled>현재 map과 변경 모듈을 확인한다.</label><pre>git status --short
+git rev-parse HEAD
+"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m json.tool docs/codemap/codemap_exp449_antigravity.json &gt;/dev/null
+"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m json.tool docs/codemap/codemap_exp449_antigravity.lock &gt;/dev/null</pre></li>
+<li><label><input type="checkbox" disabled>RED governance test를 작성한다.</label><pre>PROTECTED_EXP449_KEYS = ("active_experiment","active_phase","status","active_documents","pending_candidate","exp449","next_action","exact_next_command","official_readiness_command_after_fresh_sol_ship","approval_scope")
+
+def protected_exp449_state_sha256(state: dict[str, object]) -&gt; str:
+    payload = {key: state[key] for key in PROTECTED_EXP449_KEYS}
+    data = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+    return hashlib.sha256(data).hexdigest()
+
+def test_exp451_planned_truth_antigravity(self):
+    state = strict_json_antigravity(Path("RESEARCH_STATE.json"))
+    self.assertEqual(state["active_experiment"], "Exp449")
+    self.assertEqual(state["exp451"]["status"], "planned_not_started")
+    self.assertEqual(protected_exp449_state_sha256(state), "e8e1114bc0c837a68f83464f4f92ddcb08945d95a67f09ebb1dea3d82c0886aa")
+    self.assertEqual(state["exp451"]["label_access_count"], 0)
+    self.assertFalse(state["exp451"]["official_readiness_started"])
+    self.assertEqual(state["exp451"]["target_dataset_count"], 48)
+    self.assertEqual(state["exp451"]["target_test_rows"], 72300)</pre></li>
+<li><label><input type="checkbox" disabled>RED를 실행한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_governance_antigravity -v</pre><p>Expected: 문서와 ledger record가 없어 FAIL.</p></li>
+<li><label><input type="checkbox" disabled>사전등록·runbook·report와 ledger record를 만든다.</label><p>Global Constraints의 수치, post-hoc 성격, label firewall, 동적 worker, LocalGap backend gate, no-promotion을 모두 포함한다. Champion/pending candidate는 바꾸지 않는다.</p></li>
+<li><label><input type="checkbox" disabled>map generator와 triplet을 만든다.</label><p><code>build_map_antigravity(source_commit: str, generated_at: str) -&gt; tuple[dict[str, object], dict[str, object], str]</code>는 graph, lock, self-contained HTML을 반환한다. <code>validate_map_antigravity(graph: object, lock: object, html: str) -&gt; None</code>는 누락 evidence, 잘못된 reference, 30개 초과 primary node, HTML/JSON 차이, fingerprint drift를 거부한다. source evidence가 없는 미래 관계는 <code>unknown</code>으로 표시한다.</p></li>
+<li><label><input type="checkbox" disabled>GREEN, JSON, map을 검증한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_governance_antigravity -v
+"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" scratch/build_codemap_exp451_antigravity.py --validate-only
+"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m json.tool EXPERIMENT_CATALOG.json &gt;/dev/null
+"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m json.tool RESEARCH_STATE.json &gt;/dev/null
+git diff --check</pre></li>
+<li><label><input type="checkbox" disabled>bounded functional commit, map-only child, fresh review를 완료한다.</label><pre>git add docs/EXP451_PREREGISTRATION_antigravity_KO.html docs/EXP451_RUNBOOK_antigravity_KO.html docs/EXP451_IMPLEMENTATION_REPORT_antigravity.html scratch/build_codemap_exp451_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_governance_antigravity.py EXPERIMENT_CATALOG.json RESEARCH_STATE.json CHAMPION_LEDGER.json
+git commit -m "docs(exp451): freeze RDST qualification governance"</pre><p>그 다음 공통 map·commit 규칙을 실행한다.</p></li>
+</ol>
+
+<h3>Task 2: 고정 설정·계약·공식 RDST audit</h3>
+<p><strong>Files:</strong> Create <code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>method_audit_antigravity.py</code> and focused tests. Update map.</p>
+<p><strong>Interfaces:</strong> Produces <code>FROZEN_CONFIG_ANTIGRAVITY</code>, <code>DatasetBundleAntigravity</code>, <code>CandidateScoresAntigravity</code>, <code>FrozenPredictionAuthorityAntigravity</code>, <code>audit_rdst_antigravity()</code>.</p>
+<ol>
+<li><label><input type="checkbox" disabled>RED exact identity/signature test를 작성한다.</label><pre>self.assertEqual(FROZEN_CONFIG_ANTIGRAVITY["max_shapelets"], 1024)
+self.assertEqual(FROZEN_CONFIG_ANTIGRAVITY["seeds"], (20260721, 20261721))
+self.assertEqual(FROZEN_CONFIG_ANTIGRAVITY["alpha"], 0.005)
+self.assertEqual(FROZEN_CONFIG_ANTIGRAVITY["source_sha256"], "900397653dd89bb4f04b33182d87e0f682555568f7f50690ef9a78ba946334f2")</pre></li>
+<li><label><input type="checkbox" disabled>RED를 실행한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_config_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_contracts_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_method_audit_antigravity -v</pre></li>
+<li><label><input type="checkbox" disabled>exact-type immutable 계약을 구현한다.</label><pre>@dataclass(frozen=True, slots=True)
+class CandidateScoresAntigravity:
+    train_oof: np.ndarray
+    test_scores: np.ndarray
+    feature_dimension: int
+    retained_shapelets: int
+    seed: int</pre><p>bool-as-int, NaN/Inf, extra/missing key, 잘못된 ordered identity를 거부한다.</p></li>
+<li><label><input type="checkbox" disabled>subprocess RDST audit를 구현한다.</label><p>고정 interpreter에서 class path/version/signature/source SHA를 읽고 작은 finite fixture를 <code>y=None</code>으로 두 번 변환해 feature bytes와 <code>3*retained_shapelets</code> 열을 확인한다.</p></li>
+<li><label><input type="checkbox" disabled>GREEN과 Exp449 contract regression을 실행한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_config_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_contracts_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_method_audit_antigravity experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_config_antigravity experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_contracts_antigravity -v</pre></li>
+<li><label><input type="checkbox" disabled>functional commit, map-only child, review를 완료한다.</label><pre>git add experiments/exp451_rdst_local_gap_qualification_antigravity/config_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/contracts_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/method_audit_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_config_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_contracts_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_method_audit_antigravity.py
+git commit -m "feat(exp451): bind RDST scientific contracts"</pre><p>그 다음 공통 map·commit 규칙을 실행한다.</p></li>
+</ol>
+
+<h3>Task 3: 정상-only RDST와 LocalGap 점수</h3>
+<p><strong>Files:</strong> Create <code>rdst_antigravity.py</code>, <code>scoring_antigravity.py</code>, <code>backend_gate_antigravity.py</code> and focused tests. Update map.</p>
+<p><strong>Interfaces:</strong> Produces <code>make_rdst_antigravity(seed: int) -&gt; RDSTRepresentationAntigravity</code>, <code>score_candidate_antigravity(train_rows: np.ndarray, test_rows: np.ndarray, seed: int, backend_name: BackendNameAntigravity) -&gt; CandidateScoresAntigravity</code>, <code>aggregate_seed_scores_antigravity(results: Sequence[CandidateScoresAntigravity]) -&gt; AggregatedScoresAntigravity</code>, <code>decide_backend_antigravity(probe: BackendProbeAntigravity) -&gt; BackendDecisionAntigravity</code>.</p>
+<ol>
+<li><label><input type="checkbox" disabled>RED representation/scoring tests를 작성한다.</label><pre>representation = make_rdst_antigravity(20260721)
+features = representation.fit_transform(train, y=None)
+self.assertEqual(features.shape[1], 3 * representation.retained_shapelets)
+self.assertTrue(np.isfinite(features).all())
+with self.assertRaises(ValueError):
+    representation.fit_transform(train, y=np.zeros(len(train)))</pre><p>fold별 새 transformer, exact reference seed/index, self-excluded OOF, 두 seed TRAIN/TEST median, resolution block도 검사한다.</p></li>
+<li><label><input type="checkbox" disabled>핵심 과학 경계의 RED test body를 고정한다.</label><pre>def test_crossfit_excludes_each_query_and_uses_exact_reference_seed_antigravity(self):
+    folds = crossfit_plan_antigravity(25, seed=20260721)
+    self.assertEqual(len(folds), 5)
+    self.assertEqual(sorted(np.concatenate([query for _, query in folds]).tolist()), list(range(25)))
+    for fold_index, (fit_indices, query_indices) in enumerate(folds):
+        self.assertFalse(set(fit_indices) &amp; set(query_indices))
+        expected_seed = 20260721 + 1009 * (fold_index + 1) + 1024
+        self.assertEqual(reference_indices_antigravity(fit_indices, seed=expected_seed), manual_reference_indices_antigravity(fit_indices, seed=expected_seed, limit=1000))
+
+def test_one_seed_builds_five_fold_models_plus_one_full_model_antigravity(self):
+    with patch(MAKE_RDST_PATH, side_effect=recording_factory) as factory:
+        score_candidate_antigravity(train, test, 20260721, "cpu")
+    self.assertEqual(factory.call_count, 6)
+    self.assertEqual([item.random_state for item in created_transformers], [20260721] * 6)
+
+def test_two_seed_median_and_resolution_block_are_exact_antigravity(self):
+    aggregated = aggregate_seed_scores_antigravity((seed_result([1.0, 9.0], [2.0]), seed_result([3.0, 5.0], [6.0])))
+    np.testing.assert_array_equal(aggregated.train_oof, np.array([2.0, 7.0]))
+    np.testing.assert_array_equal(aggregated.test_scores, np.array([4.0]))
+    blocked = empirical_candidates(np.arange(100, dtype=float), np.array([200.0]), 0.005)
+    self.assertEqual(blocked.attainable_p, 1.0 / 101.0)
+    self.assertTrue(blocked.resolution_blocked)
+    self.assertEqual(blocked.indices, ())</pre></li>
+<li><label><input type="checkbox" disabled>RED를 실행한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_rdst_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_scoring_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_backend_gate_antigravity -v</pre></li>
+<li><label><input type="checkbox" disabled>공식 RDST adapter를 구현한다.</label><pre>transformer = RandomDilatedShapeletTransform(
+    max_shapelets=1024,
+    random_state=seed,
+    n_jobs=1,
+)
+features = transformer.fit_transform(rows[:, None, :], y=None)</pre><p>finite float32 2D만 허용한다. 결측치와 train/test 길이 불일치를 임의 대체하지 않는다.</p></li>
+<li><label><input type="checkbox" disabled>wrapper의 fitted property를 exact하게 정의한다.</label><pre>class RDSTRepresentationAntigravity:
+    @property
+    def retained_shapelets(self) -&gt; int:
+        value = getattr(self._transformer, "n_shapelets_", None)
+        if type(value) is not int or value &lt; 1:
+            raise ValueError("RDST is not fitted")
+        return value</pre></li>
+<li><label><input type="checkbox" disabled>cross-fit score를 구현한다.</label><p>Exp449 <code>LocalGapModelAntigravity</code>와 Exp239 <code>empirical_candidates</code>를 import한다. fold마다 capped reference로 RDST와 LocalGap을 새로 fit하고 query는 128개 chunk로 처리한다.</p></li>
+<li><label><input type="checkbox" disabled>LocalGap backend와 gate를 실제 scoring에 연결한다.</label><pre>class LocalGapBackendAntigravity(Protocol):
+    name: Literal["cpu", "mlx", "mps"]
+    def fit(self, reference: np.ndarray, neighbors: int) -&gt; "LocalGapBackendAntigravity":
+        raise NotImplementedError
+    def score(self, query: np.ndarray) -&gt; np.ndarray:
+        raise NotImplementedError</pre><p>CPU adapter는 Exp449 <code>LocalGapModelAntigravity</code>를 감싼다. MLX/MPS adapter는 같은 RobustScaler 결과와 Euclidean LocalGap 식만 tensor로 계산한다. Gate는 same-input fixture로 finite, candidate identity, max error ≤1e-5, 포함 비용 speedup ≥1.1을 기록한다. 그 결과에서는 mutable backend instance가 아니라 <code>BackendNameAntigravity</code> 값만 scoring과 ProcessPool worker에 전달한다. RDST는 CPU 고정이다.</p></li>
+<li><label><input type="checkbox" disabled>process-safe backend construction을 고정한다.</label><pre>BackendNameAntigravity = Literal["cpu", "mlx", "mps"]
+
+def backend_name_from_decision_antigravity(decision: BackendDecisionAntigravity) -&gt; BackendNameAntigravity:
+    return decision.backend
+
+def build_local_gap_backend_antigravity(name: BackendNameAntigravity) -&gt; LocalGapBackendAntigravity:
+    if name == "cpu":
+        return CpuLocalGapBackendAntigravity()
+    if name == "mlx":
+        return MlxLocalGapBackendAntigravity()
+    if name == "mps":
+        return MpsLocalGapBackendAntigravity()
+    raise ValueError("unknown backend")</pre><p>ProcessPool에는 mutable backend 객체가 아니라 picklable backend name만 전달한다. Worker는 각 fold마다 <code>build_local_gap_backend_antigravity(name)</code>을 호출해 fresh unfitted model을 만들고, full fit에도 새 model을 만든다.</p></li>
+<li><label><input type="checkbox" disabled>fresh model과 decision conversion RED→GREEN test를 추가한다.</label><pre>decision = passing_cpu_decision_antigravity()
+self.assertEqual(backend_name_from_decision_antigravity(decision), "cpu")
+first = build_local_gap_backend_antigravity("cpu")
+second = build_local_gap_backend_antigravity("cpu")
+self.assertIsNot(first, second)
+self.assertEqual(pickle.loads(pickle.dumps("cpu")), "cpu")
+with patch(BUILD_LOCAL_GAP_BACKEND_PATH, wraps=build_local_gap_backend_antigravity) as backend_factory:
+    score_candidate_antigravity(train, test, 20260721, "cpu")
+self.assertEqual(backend_factory.call_count, 6)</pre><p>다섯 fold와 full fit이 각각 factory를 호출해 fresh backend model을 하나씩 만든다. scoring 함수는 fitted backend를 인자로 받지 않는다.</p></li>
+<li><label><input type="checkbox" disabled>focused GREEN과 Exp449 scoring parity를 실행한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_rdst_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_scoring_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_backend_gate_antigravity experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_scoring_antigravity experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_mlx_gate_antigravity -v</pre></li>
+<li><label><input type="checkbox" disabled>functional commit, map-only child, scientific review를 완료한다.</label><pre>git add experiments/exp451_rdst_local_gap_qualification_antigravity/rdst_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/scoring_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/backend_gate_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_rdst_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_scoring_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_backend_gate_antigravity.py
+git commit -m "feat(exp451): score official RDST with LocalGap"</pre><p>그 다음 공통 map·commit 규칙을 실행한다.</p></li>
+</ol>
+
+<h3>Task 4: Exp448 predecessor와 source 경계</h3>
+<p><strong>Files:</strong> Create <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code> and focused tests. Update map.</p>
+<p><strong>Interfaces:</strong> Produces <code>verify_exp448_predecessor_antigravity()</code>, <code>load_target_bundle_antigravity(dataset)</code>, public production wrapper <code>open_ordered_label_session_antigravity(authority)</code>, private fixture seam <code>_open_ordered_label_session_with_dependencies_antigravity(authority, dependencies)</code>.</p>
+<ol>
+<li><label><input type="checkbox" disabled>RED no-label values API test를 작성한다.</label><pre>bundle = load_target_bundle_antigravity(dataset)
+self.assertEqual(set(bundle.__dataclass_fields__), {"dataset", "train", "test"})
+self.assertNotIn("label", repr(bundle).lower())
+self.assertEqual(authority.target_dataset_count, 48)
+self.assertEqual(authority.target_test_rows, 72300)</pre></li>
+<li><label><input type="checkbox" disabled>RED를 실행한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_predecessor_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_sources_antigravity -v</pre></li>
+<li><label><input type="checkbox" disabled>Exp448 publication과 DB를 descriptor-pinned read-only로 인증한다.</label><p>stable-26 confusion, ordered membership, DB SHA/inode/single-link를 pre/post read에서 확인한다.</p></li>
+<li><label><input type="checkbox" disabled>values-only SQL과 one-use label API를 분리한다.</label><p>prediction authorizer는 split/index/value bytes/dataset name만 허용한다. label SQL은 frozen prediction authority를 받은 evaluation 함수에서만 한 번 연다. 공개 wrapper만 production DB connection factory를 조립한다. 단위 테스트는 아래 private dependency seam과 합성 label fixture만 사용하며 실제 DB opener를 호출하지 않는다.</p><pre>@dataclass(frozen=True, slots=True)
+class LabelSourceDependenciesAntigravity:
+    connection_factory: Callable[[], LabelConnectionAntigravity]
+    prediction_validator: Callable[[FrozenPredictionAuthorityAntigravity], tuple[str, ...]]
+    session_guard: OneUseSessionGuardAntigravity
+
+def _open_ordered_label_session_with_dependencies_antigravity(
+    authority: FrozenPredictionAuthorityAntigravity,
+    dependencies: LabelSourceDependenciesAntigravity,
+) -&gt; LabelSnapshotAntigravity:</pre></li>
+<li><label><input type="checkbox" disabled>source 공격 test body를 고정한다.</label><pre>def test_prediction_source_rejects_label_and_namespace_attacks_antigravity(self):
+    for attack in ("label_select", "database_symlink", "database_hardlink", "inode_change", "mtime_change", "unordered_dataset", "extra_dataset"):
+        with self.subTest(attack=attack), self.assertRaises(ValueError):
+            load_with_attack_antigravity(attack)
+
+def test_label_session_is_exactly_one_ordered_72300_row_session_antigravity(self):
+    dependencies = fixture_label_dependencies_antigravity(row_count=72300)
+    with patch(PRODUCTION_LABEL_CONNECTION_FACTORY_PATH) as production_opener:
+        snapshot = _open_ordered_label_session_with_dependencies_antigravity(
+            frozen_synthetic_prediction_authority_antigravity(), dependencies
+        )
+        self.assertEqual(snapshot.dataset_order, EXPECTED_EXP448_TARGET_ORDER)
+        self.assertEqual(snapshot.row_count, 72300)
+        with self.assertRaises(ValueError):
+            _open_ordered_label_session_with_dependencies_antigravity(
+                frozen_synthetic_prediction_authority_antigravity(), dependencies
+            )
+    production_opener.assert_not_called()</pre><p>이 테스트는 production wrapper를 호출하지 않고 synthetic authority와 메모리 fixture로 ordered 72,300-row/one-use 계약만 검증한다.</p></li>
+<li><label><input type="checkbox" disabled>adversarial GREEN과 Exp449 source regressions을 실행한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_predecessor_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_sources_antigravity experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_predecessor_antigravity experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_sources_antigravity -v</pre><p>symlink/hardlink/identity change, label read, second label session, wrong 72,300 count를 거부한다.</p></li>
+<li><label><input type="checkbox" disabled>functional commit, map-only child, review를 완료한다.</label><pre>git add experiments/exp451_rdst_local_gap_qualification_antigravity/predecessor_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/sources_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_predecessor_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_sources_antigravity.py
+git commit -m "feat(exp451): pin predecessor and source boundaries"</pre><p>그 다음 공통 map·commit 규칙을 실행한다.</p></li>
+</ol>
+
+<h3>Task 5: prediction freeze, checkpoint, 로그</h3>
+<p><strong>Files:</strong> Create <code>artifacts_antigravity.py</code>, <code>progress_antigravity.py</code>, <code>prediction_antigravity.py</code> and focused tests. Update map.</p>
+<p><strong>Interfaces:</strong> Produces public <code>run_prediction_antigravity(reviewed_commit: str) -&gt; FrozenPredictionAuthorityAntigravity</code>, private test seam <code>_run_prediction_with_dependencies_antigravity(reviewed_commit: str, dependencies: PredictionDependenciesAntigravity) -&gt; PredictionRunResultAntigravity</code>, <code>validate_frozen_prediction_authority_antigravity(authority)</code>, and atomic progress JSON/text.</p>
+<p><strong>Frozen prediction identity:</strong> every ordered leaf freezes dataset identity, target length, candidate indices, and canonical bytes together. The aggregate preserves that exact sequence; it may not derive identity from a set, frozenset, sorting pass, or a value-only digest.</p>
+<ol>
+<li><label><input type="checkbox" disabled>RED exact 48 leaf와 label-free schema test를 작성한다.</label><pre>ALLOWED_PREDICTION_KEYS = {"sequence","dataset","family","target_length","train_count","test_count","indices","score_identities","alpha","attainable_p","resolution_blocked"}
+self.assertEqual(len(rows), 48)
+self.assertEqual([row["sequence"] for row in rows], list(range(48)))
+self.assertTrue(all(set(row) == ALLOWED_PREDICTION_KEYS for row in rows))
+self.assertTrue(all(not has_forbidden_key_antigravity(row, {"label","labels","test_label","actual_anomaly","truth"}) for row in rows))</pre><p><code>has_forbidden_key_antigravity</code>는 dict key를 재귀 검사하며 값 문자열의 우연한 <code>label</code> 부분문자열은 검사하지 않는다.</p></li>
+<li><label><input type="checkbox" disabled>RED를 실행한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_artifacts_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_progress_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_prediction_antigravity -v</pre></li>
+<li><label><input type="checkbox" disabled>create-only leaf와 dataset-level recovery를 구현한다.</label><p>leaf는 exact allowed keys만 포함하며 aggregate는 ordered leaf SHA를 포함한다. 같은 <code>predict --reviewed-commit SHA</code>를 다시 호출하면 terminal state가 없는 interrupted root에 한해 descriptor 검증된 contiguous leaf prefix 다음 dataset부터 자동 재개한다. 별도 <code>--resume</code> flag는 없다. terminal failed/complete root, commit 불일치, non-contiguous prefix는 재개하지 않는다.</p></li>
+<li><label><input type="checkbox" disabled>private dependency seam과 progress type을 정의한다.</label><pre>@dataclass(frozen=True, slots=True)
+class PredictionDependenciesAntigravity:
+    fault_hook: Callable[[str, int], None] | None
+    prefix_reader: Callable[[], CommittedPrefixAntigravity]
+    backend_decision: BackendDecisionAntigravity
+
+@dataclass(frozen=True, slots=True)
+class PredictionProgressAntigravity:
+    completed: int
+    reused: int
+    recomputed: int
+    terminal: bool
+
+@dataclass(frozen=True, slots=True)
+class PredictionRunResultAntigravity:
+    authority: FrozenPredictionAuthorityAntigravity
+    progress: PredictionProgressAntigravity</pre><p>Public function은 production dependencies를 구성해 private seam을 호출하고 <code>result.authority</code>만 반환한다. Test만 injected fault hook과 temporary prefix reader를 사용한다.</p></li>
+<li><label><input type="checkbox" disabled>프로세스 자체 progress를 구현한다.</label><pre>{"pid":123,"dataset":"Crop_example_antigravity","family":"Crop","train_rows":1000,"test_rows":1500,"series_length":96,"seed":20260721,"fold":3,"stage":"rdst_transform","backend":"cpu","completed":12,"total":48,"success":12,"error":0,"reused":0,"datasets_per_second":0.08,"elapsed_seconds":150.0,"eta_seconds":450.0,"checkpoint":"checkpoint_antigravity.json","latest_error":null}</pre></li>
+<li><label><input type="checkbox" disabled>backend 결정과 scheduler를 연결한다.</label><pre>if backend_decision.backend == "cpu":
+    outer_workers = max(1, logical_cpus - 1)
+else:
+    outer_workers = 1</pre><p>CPU backend는 dataset outer pool을 사용한다. MLX/MPS backend는 한 process에서 dataset을 순차 처리하고 Task 3의 picklable backend name을 scoring에 전달한다. scoring은 fold/full fit마다 factory로 fresh backend를 만든다. 따라서 GPU와 CPU outer pool은 겹치지 않는다. manifest에는 logical CPUs, selected outer workers, inner threads=1, backend와 gate evidence를 기록한다.</p></li>
+<li><label><input type="checkbox" disabled>fault-injection GREEN을 실행한다.</label><p>write/fsync/rename/progress/worker death/duplicate/mismatched commit/nonfinite 실패가 terminal evidence와 inactive PID를 남기고 성공으로 오인되지 않아야 한다.</p></li>
+<li><label><input type="checkbox" disabled>recovery/backend/fault GREEN을 구체적으로 검증한다.</label><pre>def test_interrupted_prefix_resumes_with_same_command_antigravity(self):
+    with self.assertRaises(InjectedInterruptionAntigravity):
+        _run_prediction_with_dependencies_antigravity(REVIEWED_COMMIT, interruption_dependencies_antigravity(sequence=11))
+    self.assertEqual(test_prefix_reader_antigravity().completed, 12)
+    resumed = _run_prediction_with_dependencies_antigravity(REVIEWED_COMMIT, recovery_dependencies_antigravity())
+    self.assertEqual(resumed.progress.completed, 48)
+    self.assertEqual(resumed.progress.recomputed, 36)
+    self.assertEqual(resumed.progress.reused, 12)
+
+def test_accelerated_backend_disables_outer_pool_antigravity(self):
+    schedule = schedule_for_backend_antigravity(logical_cpus=12, backend="mps")
+    self.assertEqual(schedule.outer_workers, 1)
+
+def test_terminal_failure_rejects_same_command_antigravity(self):
+    write_terminal_failure_fixture_antigravity(REVIEWED_COMMIT, failed_sequence=12)
+    with self.assertRaises(ValueError):
+        _run_prediction_with_dependencies_antigravity(REVIEWED_COMMIT, recovery_dependencies_antigravity())</pre></li>
+<li><label><input type="checkbox" disabled>regression, functional commit, map-only child, review를 완료한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_artifacts_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_progress_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_prediction_antigravity experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_artifacts_antigravity experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_progress_antigravity -v
+git add experiments/exp451_rdst_local_gap_qualification_antigravity/artifacts_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/progress_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/prediction_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_artifacts_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_progress_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_prediction_antigravity.py
+git commit -m "feat(exp451): freeze resumable RDST predictions"</pre><p>그 다음 공통 map·commit 규칙을 실행한다.</p></li>
+</ol>
+
+<h3>Task 6: 단일 label 평가와 replay</h3>
+<p><strong>Files:</strong> Create <code>evaluation_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code> and focused tests. Update map.</p>
+<p><strong>Interfaces:</strong> Produces <code>evaluate_antigravity(prediction_authority,reviewed_commit)</code>, <code>inspect_replay_antigravity(evaluation_root)</code>, <code>public_result_antigravity(result)</code>.</p>
+<p><strong>Pre-label evidence gate:</strong> before constructing or calling the label opener, evaluation must compare frozen prediction indices with evaluation evidence by exact value, exact length, and exact ordered dataset/index pairing. It must reject missing, extra, duplicate, reordered, and dataset-pair mismatch fixtures with opener count 0; only the normal fixture may open exactly one session for 48 queries and 72,300 rows. Set/frozenset comparison, independent sorting, or order-insensitive matching is forbidden.</p>
+<ol>
+<li><label><input type="checkbox" disabled>RED qualification tests를 작성한다.</label><pre>self.assertTrue(qualifies_antigravity(Confusion(tp=1931,fp=314,fn=1987,tn=191668), target_fn_delta=-1))
+self.assertFalse(qualifies_antigravity(Confusion(tp=1931,fp=315,fn=1987,tn=191667), target_fn_delta=-1))
+self.assertFalse(qualifies_antigravity(Confusion(tp=1930,fp=314,fn=1988,tn=191668), target_fn_delta=0))</pre></li>
+<li><label><input type="checkbox" disabled>RED를 실행한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_evaluation_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_replay_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_dashboard_export_antigravity -v</pre></li>
+<li><label><input type="checkbox" disabled>한 번의 ordered label snapshot과 1,117 counterfactual을 구현한다.</label><p>48개는 RDST prediction, 나머지 1,069개는 Exp448 confusion을 합친다. dataset별 confusion, 신규 탐지, 탐지 손실, paired bootstrap을 저장한다.</p></li>
+<li><label><input type="checkbox" disabled>정확한 replacement/reuse/label 범위 RED→GREEN test를 추가한다.</label><pre>result = evaluate_with_fixture_antigravity(prediction_rows, label_rows, exp448_rows)
+self.assertEqual(result.replaced_dataset_count, 48)
+self.assertEqual(result.reused_dataset_count, 1069)
+self.assertEqual(result.global_dataset_count, 1117)
+self.assertEqual(result.label_session_count, 1)
+self.assertEqual(result.label_row_count, 72300)
+self.assertEqual(result.bootstrap_dataset_pairs, 48)
+self.assertEqual(result.target_order, EXPECTED_EXP448_TARGET_ORDER)</pre><p>Exp448 reuse row 하나의 byte가 달라지거나 target order/label row count가 달라지면 평가를 거부한다.</p></li>
+<li><label><input type="checkbox" disabled>source-free replay를 구현한다.</label><p>DB 없이 frozen leaves/hashes만으로 global/target confusion, qualification, bootstrap input을 재계산한다.</p></li>
+<li><label><input type="checkbox" disabled>Exp449 bootstrap authority와 replay parity를 고정한다.</label><pre>bootstrap = paired_delta_antigravity(baseline_counts_48x4, candidate_counts_48x4)
+self.assertEqual(bootstrap["seed"], 44920260812)
+self.assertEqual(bootstrap["samples"], 20000)
+self.assertEqual(bootstrap["population"], 48)
+self.assertEqual(bootstrap["draw_sha256"], "264c780d7e5949994f1de3053158ea20a7cc3d0ae858f29770d9849b18ad4d6a")
+self.assertEqual(replay.bootstrap, bootstrap)</pre></li>
+<li><label><input type="checkbox" disabled>aggregate-only dashboard payload를 구현한다.</label><p>raw label/index/dataset list/local path/hash/log/DB detail을 거부한다.</p></li>
+<li><label><input type="checkbox" disabled>GREEN, functional commit, map-only child, review를 완료한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_evaluation_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_replay_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_dashboard_export_antigravity experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_evaluation_antigravity experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_replay_antigravity -v
+git add experiments/exp451_rdst_local_gap_qualification_antigravity/evaluation_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/replay_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/dashboard_export_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_evaluation_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_replay_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_dashboard_export_antigravity.py
+git commit -m "feat(exp451): evaluate frozen RDST counterfactual"</pre><p>그 다음 공통 map·commit 규칙을 실행한다.</p></li>
+</ol>
+
+<h3>Task 7: readiness, lifecycle, CLI</h3>
+<p><strong>Files:</strong> Create <code>readiness_antigravity.py</code>, <code>lifecycle_antigravity.py</code>, <code>cli_antigravity.py</code>, launcher, tests. Update map.</p>
+<p><strong>Interfaces:</strong> Exact commands: <code>readiness --reviewed-commit SHA</code>, <code>predict --reviewed-commit SHA</code>, <code>evaluate --reviewed-commit SHA</code>, <code>inspect</code>. Public API는 <code>run_readiness_antigravity(reviewed_commit: str) -&gt; ReadinessReceiptAuthorityAntigravity</code>, <code>write_readiness_receipt_antigravity(authority: ReadinessAuthorityAntigravity) -&gt; ReadinessReceiptAuthorityAntigravity</code>, <code>verify_readiness_receipt_antigravity(reviewed_commit: str) -&gt; ReadinessReceiptAuthorityAntigravity</code>다. Private test API는 <code>_run_readiness_with_dependencies_antigravity(reviewed_commit: str, dependencies: ReadinessDependenciesAntigravity) -&gt; ReadinessReceiptAuthorityAntigravity</code>, <code>_write_readiness_receipt_at_antigravity(path, authority)</code>, <code>_verify_readiness_receipt_at_antigravity(path, reviewed_commit)</code>다. Public wrappers만 고정 official path를 사용하며 CLI override는 없다.</p>
+<ol>
+<li><label><input type="checkbox" disabled>RED command-surface test를 작성한다.</label><pre>self.assertEqual(set(subcommands), {"readiness","predict","evaluate","inspect"})
+for forbidden in ("--workers","--seed","--alpha","--shapelets","--backend","--root","--resume"):
+    self.assertNotIn(forbidden, help_text)</pre></li>
+<li><label><input type="checkbox" disabled>RED를 실행한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_readiness_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_lifecycle_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_cli_antigravity -v</pre></li>
+<li><label><input type="checkbox" disabled>root 생성 전 live readiness를 구현한다.</label><p>exact clean reviewed HEAD, 문서 hashes, fixed interpreter/package/source audit, CPU/worker/thread env/backend decision, DB/Exp448 authority, label 0, 두 root 부재를 확인한다.</p></li>
+<li><label><input type="checkbox" disabled>별도 create-only readiness receipt를 구현하고 검증한다.</label><p>readiness 성공 후에도 prediction/evaluation roots는 absent다. 대신 고정 readiness receipt file을 mode 0600, canonical bytes, fsync+rename, no-follow/single-link로 한 번만 만든다. Predict는 root 생성 전에 receipt의 reviewed commit, document/RDST/source hashes, backend decision, package versions/device, logical CPU와 worker rule을 descriptor-pinned read로 재검증한다. 현재 package/device가 receipt와 다르면 predict를 거부한다.</p><pre>@dataclass(frozen=True, slots=True)
+class ReadinessDependenciesAntigravity:
+    receipt_path: Path
+    failure_audit_path: Path
+    prediction_root: Path
+    evaluation_root: Path
+    probes: ReadinessProbesAntigravity</pre><p>테스트는 네 path를 모두 <code>TemporaryDirectory</code> 아래로 주입한다. Public wrapper는 고정 official path와 production probes만 조립한다.</p></li>
+<li><label><input type="checkbox" disabled>receipt collision/replay/backend 전달 test body를 고정한다.</label><pre>with tempfile.TemporaryDirectory() as directory:
+    dependencies = fixture_readiness_dependencies_antigravity(Path(directory))
+    with patch(PRODUCTION_READINESS_RECEIPT_PATH), patch(PRODUCTION_READINESS_PROBES_PATH) as production:
+        receipt = _run_readiness_with_dependencies_antigravity(REVIEWED_COMMIT, dependencies)
+    production.assert_not_called()
+    self.assertFalse(dependencies.prediction_root.exists())
+    self.assertFalse(dependencies.evaluation_root.exists())
+    self.assertEqual(stat.S_IMODE(dependencies.receipt_path.stat().st_mode), 0o600)
+    verified = _verify_readiness_receipt_at_antigravity(dependencies.receipt_path, REVIEWED_COMMIT)
+    self.assertEqual(verified.backend_decision, receipt.backend_decision)
+    with self.assertRaises(ValueError):
+        _run_readiness_with_dependencies_antigravity(REVIEWED_COMMIT, dependencies)</pre><p>별도 table-driven test는 canonical receipt byte mutation, receipt symlink, receipt hardlink, wrong reviewed commit, create-only collision/replay를 각각 거부한다. Predict dependency fixture에는 forged package version을 주입해 receipt backend/environment 재검증 실패도 확인한다. 어떤 단위 테스트도 public readiness wrapper나 official receipt/audit/root를 만들지 않는다.</p></li>
+<li><label><input type="checkbox" disabled>단방향 lifecycle을 구현한다.</label><p><code>readiness→predict→evaluate→inspect</code>만 허용한다. prediction complete 전 evaluate, evaluation 전 label read, failed root retry, collision/symlink를 금지한다.</p></li>
+<li><label><input type="checkbox" disabled>interrupted recovery와 terminal failure를 구분한다.</label><p>OS 종료처럼 terminal record가 없는 root는 동일 reviewed commit의 같은 <code>predict</code> command가 Task 5의 verified contiguous prefix에서 자동 재개한다. <code>--resume</code>나 경로 override는 없다. 명시적 terminal failure 또는 terminal complete가 있으면 같은 command를 거부한다. failure audit는 고정 path에 create-only로 남긴다.</p></li>
+<li><label><input type="checkbox" disabled>launcher가 import 전 일곱 thread env를 1로 고정하게 한다.</label><pre>OMP_NUM_THREADS OPENBLAS_NUM_THREADS MKL_NUM_THREADS VECLIB_MAXIMUM_THREADS NUMEXPR_NUM_THREADS BLIS_NUM_THREADS AEON_NUM_THREADS</pre></li>
+<li><label><input type="checkbox" disabled>GREEN과 outside-CWD help를 실행한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_readiness_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_lifecycle_antigravity experiments.exp451_rdst_local_gap_qualification_antigravity.tests.test_cli_antigravity -v
+(cd /tmp &amp;&amp; "/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" "/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence/scratch/run_exp451_rdst_local_gap_qualification_antigravity.py" --help)</pre></li>
+<li><label><input type="checkbox" disabled>functional commit, map-only child, review를 완료한다.</label><pre>git add experiments/exp451_rdst_local_gap_qualification_antigravity/readiness_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/lifecycle_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/cli_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_readiness_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_lifecycle_antigravity.py experiments/exp451_rdst_local_gap_qualification_antigravity/tests/test_cli_antigravity.py scratch/run_exp451_rdst_local_gap_qualification_antigravity.py
+git commit -m "feat(exp451): close RDST qualification lifecycle"</pre><p>그 다음 공통 map·commit 규칙을 실행한다.</p></li>
+</ol>
+
+<h3>Task 8: 전체 회귀와 clean candidate</h3>
+<p><strong>Files:</strong> Modify only Exp451 tests/docs/ledgers/map. Scientific settings와 official roots는 바꾸지 않는다.</p>
+<p><strong>Interfaces:</strong> Produces clean reviewed commit eligible for readiness. Official command는 실행하지 않는다.</p>
+<ol>
+<li><label><input type="checkbox" disabled>full discovery 전 official path 네 곳이 모두 absent인지 read-only로 확인한다.</label><pre>OFFICIAL_PATHS = (
+    Path("/Users/mac/Documents/Dataset/exp451_readiness_receipt_antigravity.json"),
+    Path("/Users/mac/Documents/Dataset/exp451_failure_audit_antigravity.json"),
+    Path("/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_antigravity_20260813"),
+    Path("/Users/mac/Documents/Dataset/exp451_rdst_local_gap_qualification_evaluation_antigravity_20260813"),
+)
+self.assertTrue(all(not path.exists() and not path.is_symlink() for path in OFFICIAL_PATHS))</pre><p><code>Path.is_symlink()</code>을 함께 검사해 dangling symlink도 존재로 취급한다.</p></li>
+<li><label><input type="checkbox" disabled>Exp451 full discovery를 두 번 실행한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest discover -s experiments/exp451_rdst_local_gap_qualification_antigravity/tests -p "test_*_antigravity.py" -v
+"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest discover -s experiments/exp451_rdst_local_gap_qualification_antigravity/tests -p "test_*_antigravity.py" -v</pre><p>두 실행의 test count 동일, exit 0, roots absent, label 0을 확인한다.</p></li>
+<li><label><input type="checkbox" disabled>두 full discovery 뒤 같은 official path 네 곳이 여전히 absent인지 다시 확인한다.</label><pre>self.assertTrue(all(not path.exists() and not path.is_symlink() for path in OFFICIAL_PATHS))</pre><p>단위 테스트가 readiness receipt, failure audit, prediction/evaluation root 또는 dangling symlink를 남기면 verification 실패다.</p></li>
+<li><label><input type="checkbox" disabled>관련 Exp449 회귀를 실행한다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m unittest experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_scoring_antigravity experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_sources_antigravity experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_predecessor_antigravity experiments.exp449_residual_fn_method_qualification_antigravity.tests.test_evaluation_antigravity -v</pre></li>
+<li><label><input type="checkbox" disabled>implementation report와 planned state에 tests/hashes/backend/CPU/label0/roots absent를 기록하고 functional docs commit을 만든다.</label><pre>"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m json.tool RESEARCH_STATE.json &gt;/dev/null
+"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" -m json.tool EXPERIMENT_CATALOG.json &gt;/dev/null
+git diff --check
+git add docs/EXP451_IMPLEMENTATION_REPORT_antigravity.html RESEARCH_STATE.json EXPERIMENT_CATALOG.json CHAMPION_LEDGER.json
+git commit -m "docs(exp451): close implementation verification"</pre><p>Exp449 protected-state SHA는 여전히 <code>e8e1114bc0c837a68f83464f4f92ddcb08945d95a67f09ebb1dea3d82c0886aa</code>여야 한다.</p></li>
+<li><label><input type="checkbox" disabled>방금 만든 clean docs commit을 기준으로 map-only child를 만든다.</label><pre>FUNCTIONAL_COMMIT="$(git rev-parse HEAD)"
+"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" scratch/build_codemap_exp451_antigravity.py --source-commit "$FUNCTIONAL_COMMIT"
+"/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python" scratch/build_codemap_exp451_antigravity.py --validate-only
+git add docs/codemap/codemap_exp451_antigravity.html docs/codemap/codemap_exp451_antigravity.json docs/codemap/codemap_exp451_antigravity.lock
+git commit -m "docs(codemap): bind final exp451 implementation"
+git status --short</pre><p>Expected: empty status; lock의 source parent가 docs functional commit이고 dirty=false다.</p></li>
+<li><label><input type="checkbox" disabled>fresh Sol/High exact clean HEAD final review에서 <code>ship</code>을 받는다.</label></li>
+<li><label><input type="checkbox" disabled>사용자에게 공식 전체 실행 승인을 요청하고 중단한다.</label></li>
+</ol>
+
+<h2>공식 실행 승인 후 명령 순서</h2>
+<pre>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+RUN="/Users/mac/Documents/Time Series/.worktrees/exp438-frequency-complexity-evidence/scratch/run_exp451_rdst_local_gap_qualification_antigravity.py"
+SHA="$(git rev-parse HEAD)"
+
+"$PY" "$RUN" readiness --reviewed-commit "$SHA"
+"$PY" "$RUN" predict --reviewed-commit "$SHA"
+"$PY" "$RUN" evaluate --reviewed-commit "$SHA"
+"$PY" "$RUN" inspect</pre>
+<p>각 명령이 nonzero이면 다음 명령을 실행하지 않는다. predict 중 Codex는 반복 감시하지 않으며 <code>progress_antigravity.json</code>과 <code>progress_antigravity.log</code>가 진행 상황을 기록한다.</p>
+
+<h2>Self-Review Checklist</h2>
+<ul>
+<li>48/1,069/72,300 범위, RDST 1,024, 두 seed, cross-fit/LocalGap, p-value 해상도, 성공 기준을 Task에 연결했다.</li>
+<li>RDST CPU와 LocalGap tensor gate를 분리했다.</li>
+<li>prediction label 0과 단 한 번의 evaluation session을 분리했다.</li>
+<li>Exp448/449 수정 금지와 검증된 공용 과학 코드의 읽기 전용 재사용을 명시했다.</li>
+<li>모든 새 파일명에 <code>antigravity</code>가 들어가며 사람 문서는 HTML이다.</li>
+<li>각 Task에 RED, GREEN, regression, map, commit, review가 있다.</li>
+<li>공식 장시간 실행은 별도 사용자 승인 전 중단한다.</li>
+</ul>
+</main></div><script>const toc=document.getElementById('toc');document.querySelectorAll('main h2,main h3').forEach(function(h,i){h.id=h.id||'section-'+i;const a=document.createElement('a');a.href='#'+h.id;a.textContent=h.textContent;a.style.paddingLeft=h.tagName==='H3'?'12px':'0';toc.appendChild(a)});</script></body></html>

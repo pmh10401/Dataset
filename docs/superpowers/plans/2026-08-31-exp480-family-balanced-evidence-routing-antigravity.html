@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp480 family 균형 경험 라우팅 구현 계획</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 1080px; margin: 32px auto; padding: 0 20px 70px; line-height: 1.65; color: #182230; }
+    h1,h2,h3 { line-height: 1.28; } h2 { margin-top: 34px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0 24px; }
+    th,td { border: 1px solid #d8dee8; padding: 9px 11px; text-align: left; vertical-align: top; }
+    th { background: #eef2f7; } code { background: #eef2f7; padding: 2px 5px; border-radius: 4px; }
+    pre { background: #111827; color: #e5e7eb; padding: 14px; border-radius: 9px; overflow-x: auto; line-height: 1.45; }
+    pre code { background: transparent; padding: 0; } blockquote { border-left: 5px solid #175cd3; background: #eff8ff; margin: 16px 0; padding: 10px 16px; }
+    .constraint { border-left: 5px solid #667085; background: #f8fafc; padding: 11px 16px; }
+    .gate { border-left: 5px solid #b54708; background: #fff8f0; padding: 11px 16px; }
+    label { display: block; margin: 8px 0; } input { margin-right: 8px; }
+    .files li { margin: 5px 0; }
+  </style>
+</head>
+<body>
+  <h1>Exp480 family 균형 경험 라우팅 구현 계획</h1>
+  <blockquote><strong>Agentic workers:</strong> 이 계획을 구현할 때는 <code>superpowers:subagent-driven-development</code> 또는 <code>superpowers:executing-plans</code>를 사용하고, 각 체크박스를 실제 완료 직후에만 체크합니다.</blockquote>
+
+  <p><strong>목표:</strong> 데이터셋 이름을 방법 선택 특징으로 쓰지 않으면서, 같은 원본 family의 파생 데이터셋이 KNN 투표를 반복 지배하지 못하게 하고 잔여 FN을 성능 기준으로 줄일 수 있는지 검증합니다.</p>
+  <p><strong>구조:</strong> 고정된 1,117개 데이터셋의 네 후보 점수와 TRAIN-only 7개 특징을 읽어 별도 SQLite 파생 경험 데이터베이스를 만듭니다. 라우터는 각 후보를 MiniRocket과 독립 비교하고, 가까운 데이터 중 family마다 가장 가까운 한 행만 투표에 남깁니다. 모든 판정은 out-of-family 방식으로 다시 계산하며 통과 전에는 공식 라우터를 수정하지 않습니다.</p>
+  <p><strong>기술:</strong> Python 3.14, NumPy, SQLite, pytest, 선택적 MLX/MLX-Metal, 정적 HTML.</p>
+  <p><strong>설계서:</strong> <a href="../specs/2026-08-31-exp480-family-balanced-evidence-routing-antigravity-design.html">2026-08-31 Exp480 설계서</a></p>
+
+  <h2>전체 제약</h2>
+  <div class="constraint">
+    <ul>
+      <li>family는 데이터셋 키의 첫 번째 <code>_normal_</code> 앞부분으로만 정합니다. 이름이 비슷한 데이터셋을 추가로 묶지 않습니다.</li>
+      <li>방법 선택 입력은 <code>width</code>, <code>n_train</code>, <code>spectral_entropy</code>, <code>skewness</code>, <code>kurtosis</code>, <code>diff_std_ratio</code>, <code>zero_crossing_rate</code>뿐입니다.</li>
+      <li>MiniRocket, MultiRocket, Hydra, Hydra+MultiRocket의 기존 1,117개 점수를 재사용합니다. 점수 계산 방식과 전처리는 바꾸지 않습니다.</li>
+      <li>원본 DB, Exp474~479 결과, 기존 체크포인트와 공식 라우터는 읽기 전용입니다.</li>
+      <li>Exp480 파일 이름에는 모두 <code>antigravity</code>를 포함합니다.</li>
+      <li>Task 6 공식 실행은 별도 사용자 승인 전에는 실행하지 않습니다.</li>
+      <li>MLX는 동일 입력·시드에서 유한 출력, 후보 이웃 인덱스 완전 일치, 수치 허용오차 충족, 전송·동기화 포함 1.1배 이상 속도 향상을 모두 만족할 때만 사용합니다. 아니면 CPU를 사용하며 worker는 최대 7개입니다. MLX/MPS-heavy 프로세스는 한 번에 하나만 실행하고 MLX와 외부 다중 프로세스를 겹치지 않습니다.</li>
+      <li>공식 결과 JSON에는 시각과 실행 시간을 넣지 않아 반복 실행의 결과 bytes가 같게 합니다. 시각·장치·실행 시간은 별도 실행 manifest에 기록합니다.</li>
+    </ul>
+  </div>
+
+  <h2>파일 구조</h2>
+  <table>
+    <tr><th>파일</th><th>책임</th></tr>
+    <tr><td><code>scratch/build_codemap_exp480_antigravity.py</code></td><td>호출자, 영향, 테스트와 파일 해시를 HTML/JSON/lock 코드맵으로 생성합니다.</td></tr>
+    <tr><td><code>experiments/exp480_family_balanced_evidence_routing_antigravity/config_antigravity.py</code></td><td>방법 순서, 7개 특징, k=31, 최소 family=20, 90%, 하위 20%, 경로와 입력 해시를 고정합니다.</td></tr>
+    <tr><td><code>.../contracts_antigravity.py</code></td><td>후보 점수, 데이터셋 근거, 라우팅 결정을 불변 dataclass로 검증합니다.</td></tr>
+    <tr><td><code>.../evidence_antigravity.py</code></td><td>962개 고정 체크포인트, Exp479의 155개 결과, Exp478의 proposal과 7개 TRAIN 특징을 합쳐 파생 SQLite DB를 만듭니다.</td></tr>
+    <tr><td><code>.../policy_antigravity.py</code></td><td>family당 한 표인 candidate-wise KNN과 정확한 MiniRocket fallback을 구현합니다.</td></tr>
+    <tr><td><code>.../evaluation_antigravity.py</code></td><td>Mini 고정, 기존 row-KNN, Exp480을 동일한 out-of-family 조건에서 비교하고 사전 기준을 판정합니다.</td></tr>
+    <tr><td><code>.../acceleration_antigravity.py</code></td><td>CPU와 MLX 거리 계산의 parity, 후보 이웃 인덱스, 속도를 측정합니다.</td></tr>
+    <tr><td><code>.../run_antigravity.py</code></td><td>validate, smoke, official, verify 모드와 원자적 결과·대시보드 작성을 담당합니다.</td></tr>
+    <tr><td><code>scratch/run_exp480_family_balanced_evidence_routing_antigravity.py</code></td><td>사용자 승인 경계를 드러내는 명령행 진입점입니다.</td></tr>
+    <tr><td><code>docs/EXP480_DASHBOARD_antigravity.html</code></td><td>실행 상태, 비교 지표, fallback 이유, 완료 체크박스를 표시합니다.</td></tr>
+    <tr><td><code>docs/EXP480_IMPLEMENTATION_REPORT_antigravity.html</code></td><td>공식 결과를 쉬운 한국어로 설명합니다.</td></tr>
+  </table>
+
+  <h2>Task 1: Exp480 코드맵과 변경 경계 고정</h2>
+  <p><strong>파일:</strong></p>
+  <ul class="files">
+    <li>생성: <code>scratch/build_codemap_exp480_antigravity.py</code></li>
+    <li>생성: <code>scratch/test_build_codemap_exp480_antigravity.py</code></li>
+    <li>생성: <code>docs/codemap/codemap_exp480_antigravity.html</code></li>
+    <li>생성: <code>docs/codemap/codemap_exp480_antigravity.json</code></li>
+    <li>생성: <code>docs/codemap/codemap_exp480_antigravity.lock</code></li>
+  </ul>
+  <p><strong>입력:</strong> 최신 <code>codemap_exp479_antigravity.json/lock</code>, 승인된 설계서와 이 계획서.</p>
+  <p><strong>출력:</strong> 이후 모든 Exp480 모듈에 대해 <code>caller</code>, <code>effect</code>, <code>tests</code>를 답하는 코드맵과 파일 해시.</p>
+
+  <label><input type="checkbox" checked disabled>Step 1. 코드맵 누락을 잡는 테스트를 작성합니다.</label>
+  <pre><code>def test_exp480_map_answers_three_questions_antigravity():
+    graph = build_graph_antigravity()
+    by_id = {node["id"]: node for node in graph["nodes"]}
+    assert by_id["family_policy"]["caller"] == "evaluation_antigravity.py"
+    assert "official router" in by_id["family_policy"]["effect"].lower()
+    assert by_id["family_policy"]["tests"] == [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_policy_antigravity.py"
+    ]</code></pre>
+  <label><input type="checkbox" checked disabled>Step 2. 테스트가 생성기 부재로 실패하는지 확인합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest scratch/test_build_codemap_exp480_antigravity.py -q
+# 예상: ModuleNotFoundError 또는 build_graph_antigravity 부재로 FAIL</code></pre>
+  <label><input type="checkbox" checked disabled>Step 3. planned node를 포함한 코드맵 생성기를 구현하고 triplet을 생성합니다.</label>
+  <pre><code>NODE_SPECS_ANTIGRAVITY = (
+    ("evidence", "evidence_antigravity.py", "run_antigravity.py",
+     "Builds the read-only-derived 1117-row SQLite evidence database.", "test_evidence_antigravity.py"),
+    ("family_policy", "policy_antigravity.py", "evaluation_antigravity.py",
+     "Qualifies a candidate without modifying the official router.", "test_policy_antigravity.py"),
+    ("evaluation", "evaluation_antigravity.py", "run_antigravity.py",
+     "Compares Mini, row-KNN and Exp480 out of family.", "test_evaluation_antigravity.py"),
+    ("acceleration", "acceleration_antigravity.py", "run_antigravity.py",
+     "Chooses MLX only after parity and 1.1x speed gates.", "test_acceleration_antigravity.py"),
+    ("runner", "run_antigravity.py", "scratch CLI",
+     "Writes Exp480-only evidence, results and HTML.", "test_runner_antigravity.py"),
+)
+
+def _node_antigravity(node_id, path, caller, effect, tests, planned):
+    return {"id": node_id, "path": path, "caller": caller,
+            "effect": effect, "tests": list(tests), "planned": planned}
+
+def build_graph_antigravity():
+    nodes = [
+        _node_antigravity(node_id, "experiments/exp480_family_balanced_evidence_routing_antigravity/" + path,
+                          caller, effect,
+                          ("experiments/exp480_family_balanced_evidence_routing_antigravity/tests/" + test,),
+                          not (ROOT_ANTIGRAVITY / "experiments/exp480_family_balanced_evidence_routing_antigravity" / path).exists())
+        for node_id, path, caller, effect, test in NODE_SPECS_ANTIGRAVITY
+    ]
+    return {"schema": "exp480_codemap_v1", "nodes": nodes,
+            "edges": [("evidence", "family_policy"), ("family_policy", "evaluation"),
+                      ("evaluation", "runner"), ("acceleration", "runner")],
+            "constraints": ("source files are read-only", "official router unchanged")}</code></pre>
+  <label><input type="checkbox" checked disabled>Step 4. 생성기 테스트, JSON 파싱, HTML 파싱과 lock 해시 검증을 실행합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp480_antigravity.py --write --validate
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest scratch/test_build_codemap_exp480_antigravity.py -q
+# 예상: PASS, stale paths 0</code></pre>
+  <label><input type="checkbox" checked disabled>Step 5. Task 1을 커밋합니다.</label>
+  <pre><code>git add scratch/build_codemap_exp480_antigravity.py scratch/test_build_codemap_exp480_antigravity.py docs/codemap/codemap_exp480_antigravity.*
+git commit -m "docs: map Exp480 routing boundaries"</code></pre>
+
+  <h2>Task 2: 읽기 전용 근거 병합과 SQLite 파생 DB</h2>
+  <p><strong>파일:</strong></p>
+  <ul class="files">
+    <li>생성: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/config_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/contracts_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evidence_antigravity.py</code></li>
+    <li>생성 산출물: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.sqlite3</code></li>
+  </ul>
+  <p><strong>입력:</strong> Exp474 체크포인트 962개, Exp479 결과 155개, Exp478 proposal 1,117개, 공식 TRAIN 특징 추출기.</p>
+  <p><strong>출력:</strong> <code>CandidateMetricAntigravity</code>, <code>EvidenceRowAntigravity</code>, <code>family_from_dataset_antigravity()</code>, <code>load_evidence_rows_antigravity()</code>, <code>build_evidence_database_antigravity()</code>.</p>
+
+  <label><input type="checkbox" checked disabled>Step 1. family 규칙과 1,117개 완전 병합의 실패 테스트를 작성합니다.</label>
+  <pre><code>def test_family_is_only_prefix_before_first_normal_antigravity():
+    assert family_from_dataset_antigravity("ShapesAll_normal_60") == "ShapesAll"
+    assert family_from_dataset_antigravity("FreezerRegularTrain_normal_1") == "FreezerRegularTrain"
+    with pytest.raises(ValueError, match="_normal_"):
+        family_from_dataset_antigravity("ShapesAll")
+
+def test_real_sources_cover_exactly_1117_and_128_families_antigravity():
+    rows = load_evidence_rows_antigravity()
+    assert len(rows) == 1117
+    assert len({row.dataset for row in rows}) == 1117
+    assert len({row.source_family for row in rows}) == 128
+    assert all(len(row.scores) == 4 for row in rows)</code></pre>
+  <label><input type="checkbox" checked disabled>Step 2. 테스트가 새 모듈 부재로 실패하는지 확인합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evidence_antigravity.py -q
+# 예상: ModuleNotFoundError로 FAIL</code></pre>
+  <label><input type="checkbox" checked disabled>Step 3. 고정 설정, 불변 계약과 family 함수를 구현합니다.</label>
+  <pre><code>METHODS_ANTIGRAVITY = (
+    "minirocket_local_gap", "multirocket_local_gap",
+    "hydra_local_gap", "hydra_multirocket_local_gap",
+)
+FEATURE_KEYS_ANTIGRAVITY = (
+    "width", "n_train", "spectral_entropy", "skewness", "kurtosis",
+    "diff_std_ratio", "zero_crossing_rate",
+)
+FAMILY_POLICY_CONFIG_ANTIGRAVITY = {
+    "k": 31, "min_support": 20, "positive_rate_threshold": 0.90,
+    "lower_quantile": 0.20, "min_auc_gain": 0.0, "min_zf_gain": 0.0,
+}
+ROW_POLICY_CONFIG_ANTIGRAVITY = {
+    "k": 31, "min_support": 20, "positive_rate_threshold": 0.90,
+    "lower_quantile": 0.20, "min_auc_gain": 0.0, "min_zf_gain": 0.0,
+    "min_lower_zf_gain": 0.0,
+}
+
+@dataclass(frozen=True)
+class CandidateMetricAntigravity:
+    method: str
+    auc: float
+    zf: int
+
+@dataclass(frozen=True)
+class EvidenceRowAntigravity:
+    dataset: str
+    source_family: str
+    proposal: str
+    features: tuple[float, ...]
+    scores: tuple[CandidateMetricAntigravity, ...]
+
+def family_from_dataset_antigravity(dataset: str) -&gt; str:
+    if "_normal_" not in dataset:
+        raise ValueError("dataset key must contain _normal_")
+    return dataset.split("_normal_", 1)[0]</code></pre>
+  <label><input type="checkbox" checked disabled>Step 4. 원본을 read-only로 병합하고 아래 고정 schema의 SQLite를 임시 파일에서 완성한 뒤 원자적으로 교체합니다.</label>
+  <pre><code>SCHEMA_ANTIGRAVITY = """
+PRAGMA foreign_keys=ON;
+CREATE TABLE dataset_evidence(
+  dataset TEXT PRIMARY KEY, source_family TEXT NOT NULL, proposal TEXT NOT NULL
+);
+CREATE TABLE train_features(
+  dataset TEXT PRIMARY KEY REFERENCES dataset_evidence(dataset),
+  width REAL NOT NULL, n_train REAL NOT NULL, spectral_entropy REAL NOT NULL,
+  skewness REAL NOT NULL, kurtosis REAL NOT NULL,
+  diff_std_ratio REAL NOT NULL, zero_crossing_rate REAL NOT NULL
+);
+CREATE TABLE candidate_metrics(
+  dataset TEXT NOT NULL REFERENCES dataset_evidence(dataset),
+  method TEXT NOT NULL, auc REAL NOT NULL, zf INTEGER NOT NULL,
+  PRIMARY KEY(dataset, method)
+);
+CREATE TABLE provenance(key TEXT PRIMARY KEY, value TEXT NOT NULL);
+"""
+
+def build_evidence_database_antigravity(rows, target, provenance):
+    temporary = target.with_name("evidence_temporary_antigravity.sqlite3")
+    connection = sqlite3.connect(temporary)
+    connection.executescript(SCHEMA_ANTIGRAVITY)
+    for row in sorted(rows, key=lambda item: item.dataset):
+        connection.execute("INSERT INTO dataset_evidence VALUES(?,?,?)",
+                           (row.dataset, row.source_family, row.proposal))
+        connection.execute("INSERT INTO train_features VALUES(?,?,?,?,?,?,?,?)",
+                           (row.dataset, *row.features))
+        connection.executemany("INSERT INTO candidate_metrics VALUES(?,?,?,?)",
+            ((row.dataset, metric.method, metric.auc, metric.zf)
+             for metric in row.scores))
+    connection.executemany("INSERT INTO provenance VALUES(?,?)",
+                           sorted(provenance.items()))
+    assert connection.execute("SELECT count(*) FROM dataset_evidence").fetchone()[0] == 1117
+    assert connection.execute("SELECT count(*) FROM candidate_metrics").fetchone()[0] == 4468
+    assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+    connection.execute("VACUUM")
+    connection.close()
+    temporary.replace(target)
+    return sha256(target.read_bytes()).hexdigest()</code></pre>
+  <label><input type="checkbox" checked disabled>Step 5. 실제 소스 통합 테스트와 원본 파일 해시 불변을 확인합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evidence_antigravity.py -q
+# 예상: 1117 rows, 128 families, 4468 candidate metrics, PASS</code></pre>
+  <label><input type="checkbox" checked disabled>Step 6. 코드맵을 실제 경로와 해시로 갱신하고 Task 2를 커밋합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp480_antigravity.py --write --validate
+git add experiments/exp480_family_balanced_evidence_routing_antigravity docs/codemap/codemap_exp480_antigravity.*
+git commit -m "feat: build Exp480 family evidence database"</code></pre>
+
+  <h2>Task 3: family-balanced candidate-wise 정책</h2>
+  <p><strong>파일:</strong></p>
+  <ul class="files">
+    <li>생성: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/policy_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_policy_antigravity.py</code></li>
+  </ul>
+  <p><strong>입력:</strong> <code>EvidenceRowAntigravity</code>와 7개 TRAIN 특징 mapping.</p>
+  <p><strong>출력:</strong> <code>FamilyBalancedDecisionAntigravity</code>, <code>FamilyBalancedCandidatePolicyAntigravity.fit()</code>, <code>.route()</code>, <code>nearest_family_indices_antigravity()</code>.</p>
+
+  <label><input type="checkbox" checked disabled>Step 1. 같은 family의 가까운 파생 행이 여러 개여도 한 표만 남는 실패 테스트와 입력 helper를 작성합니다.</label>
+  <pre><code>def make_row_antigravity(dataset, offset, hydra_auc_gain, hydra_zf_gain):
+    mini = CandidateMetricAntigravity("minirocket_local_gap", 0.80, 1)
+    return EvidenceRowAntigravity(
+        dataset=dataset,
+        source_family=dataset.split("_normal_", 1)[0],
+        proposal="hydra_local_gap",
+        features=(offset, 10.0, 0.5, 0.0, 3.0, 1.0, 0.2),
+        scores=(
+            mini,
+            CandidateMetricAntigravity("multirocket_local_gap", 0.80, 1),
+            CandidateMetricAntigravity(
+                "hydra_local_gap", 0.80 + hydra_auc_gain, 1 + hydra_zf_gain
+            ),
+            CandidateMetricAntigravity("hydra_multirocket_local_gap", 0.80, 1),
+        ),
+    )
+
+def query_features_antigravity():
+    return dict(zip(FEATURE_KEYS_ANTIGRAVITY, (0.0, 10.0, 0.5, 0.0, 3.0, 1.0, 0.2)))
+
+def test_each_family_contributes_only_one_nearest_row_antigravity():
+    rows = tuple(
+        make_row_antigravity(f"A_normal_{index}", index / 100, 0.1, 1)
+        for index in range(8)
+    ) + (
+        make_row_antigravity("B_normal_1", 0.2, 0.1, 1),
+        make_row_antigravity("C_normal_1", 0.3, 0.1, 1),
+    )
+    policy = FamilyBalancedCandidatePolicyAntigravity(k=3, min_support=3).fit(rows)
+    decision = policy.route(query_features_antigravity())
+    assert decision.neighbour_families == ("A", "B", "C")
+    assert decision.support == 3
+
+def test_uncertain_or_insufficient_evidence_returns_exact_mini_antigravity():
+    rows = (
+        make_row_antigravity("A_normal_1", 0.0, 0.1, 1),
+        make_row_antigravity("B_normal_1", 0.1, -0.1, -1),
+    )
+    decision = FamilyBalancedCandidatePolicyAntigravity(
+        k=2, min_support=2, positive_rate_threshold=0.90
+    ).fit(rows).route(query_features_antigravity())
+    assert decision.method == "minirocket_local_gap"
+    assert decision.accepted is False
+    assert decision.reason in {"insufficient_family_support", "candidate_gates_failed"}</code></pre>
+  <label><input type="checkbox" checked disabled>Step 2. 테스트가 정책 모듈 부재로 실패하는지 확인합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_policy_antigravity.py -q
+# 예상: FAIL</code></pre>
+  <label><input type="checkbox" checked disabled>Step 3. 안정 정렬과 family 중복 제거를 최소 구현합니다.</label>
+  <pre><code>def nearest_family_indices_antigravity(distances, families, k):
+    chosen = []
+    seen = set()
+    for index in np.argsort(distances, kind="stable"):
+        family = families[int(index)]
+        if family not in seen:
+            seen.add(family)
+            chosen.append(int(index))
+            if len(chosen) == k:
+                break
+    return np.asarray(chosen, dtype=np.int64)</code></pre>
+  <label><input type="checkbox" checked disabled>Step 4. 세 대안 후보를 각각 MiniRocket과 비교하고 고정 기준을 적용합니다.</label>
+  <pre><code>passed = (
+    support &gt;= self.min_support
+    and positive_auc_rate &gt;= 0.90
+    and positive_zf_rate &gt;= 0.90
+    and lower_auc_gain &gt;= 0.0
+    and mean_zf_gain &gt; 0.0
+)
+# 통과 후보는 (mean_zf_gain, lower_auc_gain, -METHOD_INDEX)의 최댓값,
+# 통과 후보가 없으면 정확히 minirocket_local_gap을 반환합니다.</code></pre>
+  <label><input type="checkbox" checked disabled>Step 5. NaN 대치, 동률 순서, 반복 결정, 후보별 독립 판정을 모두 테스트합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_policy_antigravity.py -q
+# 예상: PASS</code></pre>
+  <label><input type="checkbox" checked disabled>Step 6. 코드맵을 갱신하고 Task 3을 커밋합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp480_antigravity.py --write --validate
+git add experiments/exp480_family_balanced_evidence_routing_antigravity/policy_antigravity.py experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_policy_antigravity.py docs/codemap/codemap_exp480_antigravity.*
+git commit -m "feat: add family-balanced candidate routing"</code></pre>
+
+  <h2>Task 4: 동일 조건 out-of-family 평가와 통과 기준</h2>
+  <p><strong>파일:</strong></p>
+  <ul class="files">
+    <li>생성: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evaluation_antigravity.py</code></li>
+  </ul>
+  <p><strong>입력:</strong> SQLite에서 읽은 1,117개 근거 행, Exp476 <code>MinimumZFGuardKNNPolicyAntigravity</code>, Exp480 정책.</p>
+  <p><strong>출력:</strong> <code>iter_family_splits_antigravity()</code>, <code>evaluate_out_of_family_antigravity()</code>, <code>apply_qualification_gates_antigravity()</code>.</p>
+
+  <label><input type="checkbox" checked disabled>Step 1. held-out family가 표준화·fit·이웃에 한 행도 들어가지 않는 실패 테스트를 작성합니다.</label>
+  <pre><code>def make_complete_row_antigravity(dataset, feature_offset, alternative_auc, alternative_zf):
+    return EvidenceRowAntigravity(
+        dataset=dataset,
+        source_family=dataset.split("_normal_", 1)[0],
+        proposal="hydra_local_gap",
+        features=(feature_offset, 10.0, 0.5, 0.0, 3.0, 1.0, 0.2),
+        scores=(
+            CandidateMetricAntigravity("minirocket_local_gap", 0.80, 1),
+            CandidateMetricAntigravity("multirocket_local_gap", 0.80, 1),
+            CandidateMetricAntigravity("hydra_local_gap", alternative_auc, alternative_zf),
+            CandidateMetricAntigravity("hydra_multirocket_local_gap", 0.80, 1),
+        ),
+    )
+
+def synthetic_rows_antigravity():
+    return tuple(
+        make_complete_row_antigravity(
+            dataset=f"{family}_normal_1", feature_offset=index / 10,
+            alternative_auc=0.81, alternative_zf=2,
+        )
+        for index, family in enumerate(("A", "B", "C", "D"))
+    )
+
+def test_out_of_family_split_has_zero_overlap_antigravity():
+    rows = synthetic_rows_antigravity()
+    result = evaluate_out_of_family_antigravity(
+        rows, family_policy_kwargs={"k": 3, "min_support": 3},
+        row_policy_kwargs={"k": 3, "min_support": 3},
+    )
+    assert result["leakage"]["family_overlap_count"] == 0
+    assert result["leakage"]["dataset_name_feature_count"] == 0
+    assert {row["dataset"] for row in result["decisions"]} == {
+        row.dataset for row in rows
+    }</code></pre>
+  <label><input type="checkbox" checked disabled>Step 2. 기준선·row-KNN·Exp480 집계와 gate 테스트를 먼저 실패시킵니다.</label>
+  <pre><code>def test_gate_requires_strict_zf_improvement_without_auc_regression_antigravity():
+    measured = {
+        "mini": {"zf_total": 100, "family_mean_zf": 1.0,
+                 "dataset_mean_auc": 0.90, "family_mean_auc": 0.90,
+                 "loss_over_0_05": 2, "loss_over_0_10": 1},
+        "row_knn": {"zf_total": 101, "family_mean_zf": 1.01,
+                    "dataset_mean_auc": 0.90, "family_mean_auc": 0.90,
+                    "loss_over_0_05": 2, "loss_over_0_10": 1},
+        "exp480": {"zf_total": 102, "family_mean_zf": 1.02,
+                   "dataset_mean_auc": 0.91, "family_mean_auc": 0.91,
+                   "loss_over_0_05": 2, "loss_over_0_10": 1,
+                   "accepted_non_baseline": 1},
+    }
+    gates = apply_qualification_gates_antigravity(measured)
+    assert gates["zf_total"]["pass"] is True
+    assert gates["family_mean_zf"]["pass"] is True
+    assert gates["dataset_mean_auc"]["pass"] is True
+    assert gates["family_mean_auc"]["pass"] is True
+    assert gates["overall_pass"] is True</code></pre>
+  <label><input type="checkbox" checked disabled>Step 3. 각 held family마다 세 방법을 같은 학습 행으로 평가합니다.</label>
+  <pre><code>for held_family, train_rows, test_rows in iter_family_splits_antigravity(rows):
+    row_policy = MinimumZFGuardKNNPolicyAntigravity(**ROW_POLICY_CONFIG_ANTIGRAVITY).fit(
+        fit_row_from_proposal_antigravity(row) for row in train_rows
+    )
+    family_policy = FamilyBalancedCandidatePolicyAntigravity(
+        **FAMILY_POLICY_CONFIG_ANTIGRAVITY
+    ).fit(train_rows)
+    # test_rows의 feature로만 결정하고, 그 뒤 고정 scores에서 성능을 조회합니다.</code></pre>
+  <label><input type="checkbox" checked disabled>Step 4. dataset 평균과 family macro 평균을 분리하고 Mini 대비 AUC 손실 개수를 계산합니다.</label>
+  <pre><code>baseline_auc_loss = baseline_auc - selected_auc
+summary = {
+    "dataset_mean_auc": mean(dataset_aucs),
+    "zf_total": sum(dataset_zfs),
+    "family_mean_auc": mean(mean_auc_by_family),
+    "family_mean_zf": mean(mean_zf_by_family),
+    "loss_over_0_05": sum(loss &gt; 0.05 for loss in losses),
+    "loss_over_0_10": sum(loss &gt; 0.10 for loss in losses),
+}</code></pre>
+  <label><input type="checkbox" checked disabled>Step 5. 모든 gate와 1개 이상 비-Mini 선택 조건을 검증합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evaluation_antigravity.py -q
+# 예상: PASS</code></pre>
+  <label><input type="checkbox" checked disabled>Step 6. 코드맵을 갱신하고 Task 4를 커밋합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp480_antigravity.py --write --validate
+git add experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_evaluation_antigravity.py docs/codemap/codemap_exp480_antigravity.*
+git commit -m "feat: evaluate Exp480 out of family"</code></pre>
+
+  <h2>Task 5: MLX 판정, 실행기, HTML 대시보드와 smoke</h2>
+  <p><strong>파일:</strong></p>
+  <ul class="files">
+    <li>생성: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/acceleration_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/run_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_acceleration_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/tests/test_runner_antigravity.py</code></li>
+    <li>생성: <code>scratch/run_exp480_family_balanced_evidence_routing_antigravity.py</code></li>
+    <li>생성 산출물: <code>scratch/exp480_mlx_assessment_antigravity.json</code>, <code>.../smoke_results_antigravity.json</code></li>
+    <li>수정: <code>docs/EXP480_DASHBOARD_antigravity.html</code></li>
+  </ul>
+  <p><strong>입력:</strong> Task 2 DB, Task 3 정책, Task 4 평가기.</p>
+  <p><strong>출력:</strong> <code>choose_backend_antigravity()</code>, <code>assess_mlx_antigravity()</code>, <code>write_json_atomic_antigravity()</code>, <code>render_dashboard_antigravity()</code>, <code>run_validate_antigravity()</code>, <code>run_smoke_antigravity()</code>, CLI.</p>
+
+  <label><input type="checkbox" checked disabled>Step 1. MLX parity와 속도 gate가 하나라도 실패하면 CPU를 선택하는 테스트를 작성합니다.</label>
+  <pre><code>def test_mlx_requires_indices_scores_and_speed_antigravity():
+    result = choose_backend_antigravity(
+        finite=True, indices_equal=True, max_abs_error=1e-12,
+        tolerance=1e-10, cpu_seconds=1.0, mlx_seconds=0.95,
+    )
+    assert result["selected_backend"] == "cpu_numpy"
+    assert result["fallback_reason"] == "speedup_below_1_1x"</code></pre>
+  <label><input type="checkbox" checked disabled>Step 2. dashboard 완료 체크와 원자적 JSON의 실패 테스트를 작성합니다.</label>
+  <pre><code>class CheckboxParserAntigravity(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.checked_count = 0
+
+    def handle_starttag(self, tag, attrs):
+        values = dict(attrs)
+        if tag == "input" and values.get("type") == "checkbox" and "checked" in values:
+            self.checked_count += 1
+
+def test_dashboard_checks_only_completed_tasks_antigravity():
+    html = render_dashboard_antigravity({"state": "smoke_complete", "task5_complete": True})
+    parser = CheckboxParserAntigravity(); parser.feed(html)
+    assert parser.checked_count == 9
+    assert "Task 5 — smoke 검증" in html
+    assert "Task 6 — 공식 1,117개 실행" in html
+    task6 = html.split("Task 6 — 공식 1,117개 실행", 1)[0].rsplit("&lt;input", 1)[-1]
+    assert "checked" not in task6</code></pre>
+  <label><input type="checkbox" checked disabled>Step 3. 동일 행렬과 질의로 CPU·MLX의 정확 연산 가능 여부와 parity·속도 gate를 측정합니다.</label>
+  <p><strong>측정 결과:</strong> 실제 Metal GPU는 확인됐지만 MLX 0.32.0 GPU가 고정 알고리즘의 <code>float64</code>를 지원하지 않았습니다. 알고리즘을 바꾸지 않고 NumPy CPU로 되돌렸습니다.</p>
+  <pre><code>assessment = {
+    "cpu_seconds": cpu_seconds,
+    "mlx_seconds": mlx_seconds,
+    "speedup": cpu_seconds / mlx_seconds,
+    "finite": finite,
+    "candidate_indices_equal": bool(np.array_equal(cpu_indices, mlx_indices)),
+    "max_abs_score_error": max_abs_error,
+    "tolerance": 1e-10,
+    "mlx_version": mlx_version,
+    "mlx_metal_version": mlx_metal_version,
+    "device": device,
+}</code></pre>
+  <label><input type="checkbox" checked disabled>Step 4. validate-only와 작은 실제 family smoke를 구현합니다.</label>
+  <pre><code>parser.add_argument("--validate-only", action="store_true")
+parser.add_argument("--smoke-families", type=int, default=0)
+parser.add_argument("--official", action="store_true")
+parser.add_argument("--verify-only", action="store_true")
+# --official은 Task 6 승인 전 실행하지 않습니다. smoke는 정렬된 앞 8 family만 평가합니다.</code></pre>
+  <label><input type="checkbox" checked disabled>Step 5. Task 1~5 단위 테스트와 CLI 검증을 실행합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp480_family_balanced_evidence_routing_antigravity/tests -q
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp480_family_balanced_evidence_routing_antigravity.py --validate-only
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp480_family_balanced_evidence_routing_antigravity.py --smoke-families 8
+# 예상: tests PASS, validate ready, smoke 8/8 family 성공</code></pre>
+  <label><input type="checkbox" checked disabled>Step 6. 기존 관련 회귀 테스트 82개를 폴더별로 다시 실행합니다.</label>
+  <pre><code>for suite in \
+  experiments/exp_routing_label_free_antigravity/tests \
+  experiments/exp474_conservative_fallback_routing_antigravity/tests \
+  experiments/exp475_joint_tail_fallback_routing_antigravity/tests \
+  experiments/exp476_minimum_zf_fallback_routing_antigravity/tests \
+  experiments/exp478_full_1117_official_routing_antigravity/tests \
+  experiments/exp479_missing_score_recovery_antigravity/tests; do
+  /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest "$suite" -q || exit 1
+done
+# 예상: 총 82개 PASS, 실패 0</code></pre>
+  <label><input type="checkbox" checked disabled>Step 7. HTML 파싱, 코드맵 갱신과 Task 5 커밋을 수행합니다.</label>
+  <pre><code>xmllint --html --noout docs/EXP480_DASHBOARD_antigravity.html
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp480_antigravity.py --write --validate
+git add experiments/exp480_family_balanced_evidence_routing_antigravity scratch/run_exp480_family_balanced_evidence_routing_antigravity.py scratch/exp480_mlx_assessment_antigravity.json docs/EXP480_DASHBOARD_antigravity.html docs/codemap/codemap_exp480_antigravity.*
+git commit -m "feat: qualify Exp480 execution path"
+</code></pre>
+
+  <h2>Task 6: 승인 후 공식 1,117개 자격 검증</h2>
+  <div class="gate"><strong>진입 조건:</strong> Task 1~5가 모두 통과하고 사용자가 “Task 6 공식 1,117개 실행 승인”이라고 명시한 뒤에만 실행합니다.</div>
+  <p><strong>파일:</strong></p>
+  <ul class="files">
+    <li>생성: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/results_antigravity.json</code></li>
+    <li>생성: <code>experiments/exp480_family_balanced_evidence_routing_antigravity/run_manifest_antigravity.json</code></li>
+    <li>생성: <code>docs/EXP480_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+    <li>수정: <code>docs/EXP480_DASHBOARD_antigravity.html</code></li>
+    <li>수정: Exp480 코드맵 triplet</li>
+  </ul>
+
+  <label><input type="checkbox" checked disabled>Step 1. 공식 모드로 128개 held family와 1,117개 결정을 실행합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp480_family_balanced_evidence_routing_antigravity.py --official
+# 예상: 1117/1117 결정, 누락 0, 모든 지표 유한 또는 명시적 fallback</code></pre>
+  <label><input type="checkbox" checked disabled>Step 2. 결과를 다시 계산하되 파일을 덮어쓰지 않고 SHA256 일치를 확인합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp480_family_balanced_evidence_routing_antigravity.py --verify-only
+# 예상: stored_result_sha256 == recomputed_result_sha256</code></pre>
+  <label><input type="checkbox" checked disabled>Step 3. 사전 통과 기준을 기계적으로 확인합니다.</label>
+  <pre><code>assert exp480["zf_total"] &gt; mini["zf_total"] and exp480["zf_total"] &gt; row_knn["zf_total"]
+assert exp480["family_mean_zf"] &gt; mini["family_mean_zf"] and exp480["family_mean_zf"] &gt; row_knn["family_mean_zf"]
+assert exp480["dataset_mean_auc"] &gt;= max(mini["dataset_mean_auc"], row_knn["dataset_mean_auc"])
+assert exp480["family_mean_auc"] &gt;= max(mini["family_mean_auc"], row_knn["family_mean_auc"])
+assert exp480["loss_over_0_05"] &lt;= row_knn["loss_over_0_05"]
+assert exp480["loss_over_0_10"] &lt;= row_knn["loss_over_0_10"]
+assert exp480["accepted_non_baseline"] &gt;= 1</code></pre>
+  <label><input type="checkbox" checked disabled>Step 4. 통과하면 “공식 반영 준비”, 실패하면 “개선 실패 보존”으로 대시보드와 쉬운 설명 보고서를 생성합니다.</label>
+  <p><strong>공식 판정:</strong> 개선 실패 보존. Exp480은 ZF 합계 2,107로 MiniRocket 2,110과 row-KNN 2,111보다 낮았고, 평균 AUC와 family 평균 지표도 사전 기준을 통과하지 못했습니다. 저장 결과와 독립 재계산 SHA256은 <code>bfe65c92aa5890bcffa90d1febe4c2d902219a66eb5d7e50361a29e94458d566</code>으로 일치했습니다.</p>
+  <pre><code># 통과해도 official_router_antigravity.py는 이 Task에서 수정하지 않습니다.
+# 실패해도 기준, family 규칙, 결과 JSON은 바꾸지 않습니다.</code></pre>
+  <label><input type="checkbox" checked disabled>Step 5. 전체 테스트, HTML, 코드맵과 작업 트리를 최종 검증합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp480_family_balanced_evidence_routing_antigravity/tests -q
+xmllint --html --noout docs/EXP480_DASHBOARD_antigravity.html docs/EXP480_IMPLEMENTATION_REPORT_antigravity.html
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp480_antigravity.py --write --validate
+git diff --check
+git status --short</code></pre>
+  <label><input type="checkbox" checked disabled>Step 6. 공식 증거를 커밋하고, 공식 라우터 반영은 별도 사용자 판단으로 남깁니다.</label>
+  <pre><code>git add experiments/exp480_family_balanced_evidence_routing_antigravity docs/EXP480_DASHBOARD_antigravity.html docs/EXP480_IMPLEMENTATION_REPORT_antigravity.html docs/codemap/codemap_exp480_antigravity.*
+git commit -m "experiment: preserve Exp480 qualification results"</code></pre>
+
+  <h2>실행 방식 선택</h2>
+  <ol>
+    <li><strong>Task별 하위 에이전트 실행:</strong> 각 Task마다 새 작업자를 배정하고, 주 세션이 명세 준수와 코드 품질을 차례로 검토합니다.</li>
+    <li><strong>현재 세션에서 순차 실행:</strong> 이 세션이 Task 1부터 진행하고, Task별 테스트와 커밋 후 다음 Task로 넘어갑니다.</li>
+  </ol>
+  <p>어느 방식을 선택해도 Task 6은 별도 승인을 다시 받습니다.</p>
+</body>
+</html>

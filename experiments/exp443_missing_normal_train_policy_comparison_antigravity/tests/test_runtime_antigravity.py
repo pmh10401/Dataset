@@ -1,0 +1,545 @@
+"""Behavior-first tests for the ordered 11-worker Exp443 runtime."""
+from __future__ import annotations
+
+from concurrent.futures import Future
+from pathlib import Path
+import os
+import tempfile
+import unittest
+from unittest.mock import patch
+
+import numpy as np
+
+from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import (
+    WorkUnitAntigravity,
+)
+from experiments.exp443_missing_normal_train_policy_comparison_antigravity.contracts_antigravity import (
+    KernelSeedScoresAntigravity,
+    PolicyDatasetResultAntigravity,
+)
+
+
+POLICIES = (
+    "linear_edge_nearest_control",
+    "exclude_nonfinite_row",
+    "leave_one_out_peer_median",
+)
+
+
+def _result(unit: WorkUnitAntigravity) -> PolicyDatasetResultAntigravity:
+    scores = tuple(
+        KernelSeedScoresAntigravity(kernel, seed, np.zeros(2, dtype="<f8"), np.zeros(1, dtype="<f8"), ())
+        for kernel in (1024, 4096)
+        for seed in (20260721, 20261721)
+    )
+    return PolicyDatasetResultAntigravity(
+        unit.policy, unit.dataset, 8, 2, 0, 2, 0, 1, scores,
+        {1024: (), 4096: ()}, (), "scored",
+    )
+
+
+class _FakeExecutor:
+    created: list[dict[str, object]] = []
+
+    def __init__(self, *, max_workers: int, initializer, **kwargs: object) -> None:
+        self.created.append({"max_workers": max_workers, "initializer": initializer, **kwargs})
+        initializer()
+        self.futures: list[Future] = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        return None
+
+    def submit(self, function, task):
+        future: Future = Future()
+        future.set_result(function(task))
+        self.futures.append(future)
+        return future
+
+
+class RuntimeAntigravityTests(unittest.TestCase):
+    def test_complete_resume_selects_read_only_finalization_authorities(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import (
+            CheckpointBindingAntigravity,
+            CompletedCheckpointInspectionAntigravity,
+            ProcessIdentityAntigravity,
+        )
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import (
+            _open_resume_authorities_antigravity,
+        )
+
+        units = (WorkUnitAntigravity(0, POLICIES[0], "dataset_00"),)
+        result = _result(units[0])
+        binding = CheckpointBindingAntigravity(
+            "exp443-fixture-antigravity", "a" * 64, "b" * 64,
+            "c" * 64, "d" * 64, "e" * 40,
+        )
+        stored = ProcessIdentityAntigravity(4242, "stored")
+        replacement = ProcessIdentityAntigravity(5252, "replacement")
+        calls: list[str] = []
+        with tempfile.TemporaryDirectory(prefix="exp443_complete_resume_antigravity_") as directory:
+            attempt = Path(directory) / "attempt_antigravity"
+            checkpoint = attempt / "checkpoint_antigravity"
+            checkpoint.mkdir(parents=True)
+            inspection = CompletedCheckpointInspectionAntigravity(
+                checkpoint, binding, units, stored, ("1" * 64,),
+                {0: result}, {0: {}},
+            )
+
+            def progress_inspector(_attempt, observed, *, pid_probe):
+                calls.append("progress_inspect")
+                self.assertIs(observed, inspection)
+                self.assertFalse(pid_probe(stored))
+                return object()
+
+            store, writer, finalization_only = _open_resume_authorities_antigravity(
+                attempt=attempt,
+                checkpoint_root=checkpoint,
+                units=units,
+                binding=binding,
+                process=replacement,
+                pid_probe=lambda _stored: False,
+                status_reader=lambda _root: "complete",
+                complete_inspector=lambda _root: inspection,
+                checkpoint_opener=lambda *_args, **_kwargs: self.fail("complete checkpoint must not be rebound"),
+                progress_inspector=progress_inspector,
+            )
+            self.assertTrue(finalization_only)
+            self.assertIsNone(writer)
+            self.assertEqual(store.status_antigravity, "complete")
+            self.assertEqual(store.completed_count_antigravity, 1)
+            self.assertEqual(store.results_antigravity(), {0: result})
+            self.assertEqual(calls, ["progress_inspect"])
+
+    def test_runtime_source_keeps_complete_progress_closed_during_publication_retry(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity import runtime_antigravity
+
+        source = __import__("inspect").getsource(runtime_antigravity._run_exp443_antigravity)
+        self.assertIn("if not finalization_only_antigravity:", source)
+        self.assertIn("writer.begin_units_antigravity(active_units)", source)
+        self.assertIn('writer.terminal_antigravity("complete", None)', source)
+        self.assertIn("publisher=publisher", source)
+        self.assertLess(
+            source.index("publication = _publish_completed_attempt_antigravity"),
+            source.index("finalized = True"),
+        )
+
+    def test_finalization_only_runtime_retries_publication_and_preserves_progress_bytes(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity import (
+            database_antigravity,
+            readiness_antigravity,
+            routing_antigravity,
+            runtime_antigravity,
+        )
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import (
+            CheckpointBindingAntigravity,
+            ProcessIdentityAntigravity,
+        )
+
+        unit = WorkUnitAntigravity(0, POLICIES[0], "dataset_00")
+        scored = _result(unit)
+
+        class StoreAntigravity:
+            status_antigravity = "complete"
+            completed_count_antigravity = 1
+
+            @staticmethod
+            def results_antigravity():
+                return {0: scored}
+
+        class PinAntigravity:
+            def __init__(self) -> None:
+                self.close_calls: list[bool] = []
+
+            def close(self, *, terminal_evidence_durable: bool = False) -> None:
+                self.close_calls.append(terminal_evidence_durable)
+
+        class ControlAntigravity:
+            passed = True
+
+        class PredictionAntigravity:
+            def __init__(self, policy: str) -> None:
+                self.policy = policy
+
+        class PublicationAntigravity:
+            publication_path = "publication_antigravity"
+            manifest_sha256 = "a" * 64
+            artifact_map_sha256 = "b" * 64
+            prediction_sha256 = tuple((policy, "c" * 64) for policy in POLICIES)
+            label_access_count = 0
+
+        class SnapshotAntigravity:
+            affected_datasets = ("dataset_00",)
+
+        binding = CheckpointBindingAntigravity(
+            "exp443-fixture-antigravity", "a" * 64, "b" * 64,
+            "c" * 64, "d" * 64, "e" * 40,
+        )
+        identity = ProcessIdentityAntigravity(5252, "replacement")
+        reviewed = "f" * 40
+        pins = [PinAntigravity(), PinAntigravity()]
+        publisher_calls: list[Path] = []
+
+        def failed_publisher(attempt: Path):
+            publisher_calls.append(attempt)
+            raise RuntimeError("publication fixture failure")
+
+        def successful_publisher(attempt: Path):
+            publisher_calls.append(attempt)
+            return PublicationAntigravity()
+
+        with tempfile.TemporaryDirectory(prefix="exp443_finalization_retry_antigravity_") as directory:
+            root = Path(directory) / "root_antigravity"
+            attempt = root / "attempts_antigravity" / "attempt_0000_antigravity"
+            attempt.mkdir(parents=True)
+            progress_names = (
+                "progress_antigravity.json", "pid_antigravity.json",
+                "events_antigravity.jsonl", "text_antigravity.log",
+            )
+            for index, name in enumerate(progress_names):
+                (attempt / name).write_bytes(f"fixed-{index}-antigravity\n".encode())
+            progress_before = {name: (attempt / name).read_bytes() for name in progress_names}
+
+            common_patches = (
+                patch.object(runtime_antigravity, "_load_readiness_antigravity", return_value={}),
+                patch.object(runtime_antigravity, "_source_snapshot_and_environment_antigravity", return_value=SnapshotAntigravity()),
+                patch.object(runtime_antigravity, "ordered_work_units_antigravity", return_value=(unit,)),
+                patch.object(runtime_antigravity, "_binding_antigravity", return_value=binding),
+                patch.object(runtime_antigravity, "_process_identity_antigravity", return_value=identity),
+                patch.object(runtime_antigravity, "_resume_attempt_root_antigravity", return_value=attempt),
+                patch.object(runtime_antigravity, "_open_resume_authorities_antigravity", return_value=(StoreAntigravity(), None, True)),
+                patch.object(runtime_antigravity, "_execute_policy_phases_antigravity", return_value=({0: scored}, ControlAntigravity())),
+                patch.object(runtime_antigravity, "_control_payload_antigravity", return_value={"passed": True}),
+                patch.object(readiness_antigravity, "current_clean_head_antigravity", return_value=reviewed),
+                patch.object(database_antigravity, "load_raw_dataset_antigravity", side_effect=AssertionError("finalization must not load raw rows")),
+                patch.object(database_antigravity, "pin_database_snapshot_antigravity", side_effect=AssertionError("resume must not create a new pin")),
+                patch.object(routing_antigravity, "route_policy_antigravity", side_effect=lambda _snapshot, _results, policy: PredictionAntigravity(policy)),
+                patch.object(routing_antigravity, "canonical_prediction_bytes_antigravity", side_effect=lambda prediction: (prediction.policy + "-antigravity\n").encode()),
+            )
+            for active_patch in common_patches:
+                active_patch.start()
+            try:
+                with patch.object(database_antigravity, "reopen_pinned_database_snapshot_antigravity", return_value=pins[0]):
+                    with self.assertRaisesRegex(RuntimeError, "publication fixture failure"):
+                        runtime_antigravity._run_exp443_antigravity(
+                            reviewed_commit=reviewed, mode="resume",
+                            attempt_name="attempt_0000_antigravity", run_root=root,
+                            publisher=failed_publisher,
+                        )
+                self.assertEqual(pins[0].close_calls, [False])
+                self.assertEqual(
+                    {name: (attempt / name).read_bytes() for name in progress_names},
+                    progress_before,
+                )
+                with patch.object(database_antigravity, "reopen_pinned_database_snapshot_antigravity", return_value=pins[1]):
+                    result = runtime_antigravity._run_exp443_antigravity(
+                        reviewed_commit=reviewed, mode="resume",
+                        attempt_name="attempt_0000_antigravity", run_root=root,
+                        publisher=successful_publisher,
+                    )
+                self.assertEqual(pins[1].close_calls, [True])
+                self.assertEqual(result["publication"]["manifest_sha256"], "a" * 64)
+                self.assertEqual(publisher_calls, [attempt, attempt])
+                self.assertEqual(
+                    {name: (attempt / name).read_bytes() for name in progress_names},
+                    progress_before,
+                )
+            finally:
+                for active_patch in reversed(common_patches):
+                    active_patch.stop()
+
+    def test_successful_runtime_finalization_publishes_after_terminal_progress(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity import runtime_antigravity
+
+        source = __import__("inspect").getsource(runtime_antigravity._run_exp443_antigravity)
+        publication_call = source.index(
+            "publication = _publish_completed_attempt_antigravity("
+        )
+        self.assertLess(
+            source.index('writer.terminal_antigravity("complete", None)'),
+            publication_call,
+        )
+        self.assertLess(
+            publication_call,
+            source.index("finalized = True"),
+        )
+        calls: list[tuple[str, object]] = []
+
+        def publisher(attempt: Path):
+            calls.append(("publish", attempt))
+            return {"state": "published"}
+
+        attempt = Path("attempt_0000_antigravity")
+        result = runtime_antigravity._publish_completed_attempt_antigravity(
+            attempt, publisher=publisher,
+        )
+        self.assertEqual(result, {"state": "published"})
+        self.assertEqual(calls, [("publish", attempt)])
+
+    def test_post_complete_publication_failure_does_not_rewrite_terminal_progress(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import (
+            _record_terminal_error_antigravity,
+        )
+
+        class CompleteStoreAntigravity:
+            status_antigravity = "complete"
+            completed_count_antigravity = 57
+
+        class ClosedWriterAntigravity:
+            stage_antigravity = "complete"
+
+            def terminal_antigravity(self, _stage: str, _error: str) -> None:
+                raise AssertionError("completed progress must remain immutable")
+
+        _record_terminal_error_antigravity(
+            CompleteStoreAntigravity(), ClosedWriterAntigravity(), (),
+            RuntimeError("publication failed"),
+        )
+
+    def test_resume_target_is_one_explicit_safe_attempt_directory(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import (
+            _resume_attempt_root_antigravity,
+        )
+
+        with tempfile.TemporaryDirectory(prefix="exp443_resume_target_antigravity_") as temporary:
+            root = Path(temporary)
+            attempts = root / "attempts_antigravity"
+            attempts.mkdir()
+            first = attempts / "attempt_0000_antigravity"
+            second = attempts / "attempt_0001_antigravity"
+            first.mkdir()
+            second.mkdir()
+            self.assertEqual(
+                _resume_attempt_root_antigravity(root, "attempt_0000_antigravity"),
+                first,
+            )
+            for invalid in (
+                "/tmp/attempt_0000_antigravity", "../attempt_0000_antigravity",
+                "attempt_0_antigravity", "attempt_0000", "attempt_0000_antigravity/..",
+            ):
+                with self.assertRaises(ValueError, msg=invalid):
+                    _resume_attempt_root_antigravity(root, invalid)
+            with self.assertRaisesRegex(ValueError, "absent"):
+                _resume_attempt_root_antigravity(root, "attempt_9999_antigravity")
+
+    def test_worker_initializer_sets_all_seven_numerical_thread_variables(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import (
+            _worker_initializer_antigravity,
+        )
+
+        names = (
+            "OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
+            "VECLIB_MAXIMUM_THREADS", "NUMEXPR_NUM_THREADS",
+            "NUMBA_NUM_THREADS", "BLIS_NUM_THREADS",
+        )
+        for name in names:
+            os.environ.pop(name, None)
+        _worker_initializer_antigravity()
+        self.assertEqual(
+            {name: os.environ.get(name) for name in names},
+            {name: "1" for name in names},
+        )
+
+    def test_scheduler_uses_exactly_eleven_spawn_workers_and_commits_only_ordered_prefix(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import (
+            run_ordered_policy_schedule_antigravity,
+        )
+
+        _FakeExecutor.created.clear()
+        units = tuple(WorkUnitAntigravity(i, POLICIES[0], name) for i, name in enumerate(("A", "B", "C")))
+        # The production order is case-sensitive; this fixture intentionally
+        # uses an already ordered unit tuple and the fake executor completes
+        # futures immediately.
+        committed: list[int] = []
+        run_ordered_policy_schedule_antigravity(
+            units=units,
+            task_loader=lambda unit: unit,
+            score_task=_result,
+            commit=lambda unit, result: committed.append(unit.sequence),
+            workers=11,
+            executor_factory=_FakeExecutor,
+        )
+        self.assertEqual(_FakeExecutor.created[0]["max_workers"], 11)
+        context = _FakeExecutor.created[0]["mp_context"]
+        self.assertEqual(context if context == "spawn" else context.get_start_method(), "spawn")
+        self.assertEqual(committed, [0, 1, 2])
+
+    def test_scheduler_stops_after_worker_error_without_submitting_later_units(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import (
+            run_ordered_policy_schedule_antigravity,
+        )
+
+        units = tuple(WorkUnitAntigravity(i, POLICIES[0], f"dataset_{i}") for i in range(3))
+        submitted: list[int] = []
+
+        def score(unit: WorkUnitAntigravity):
+            submitted.append(unit.sequence)
+            if unit.sequence == 1:
+                raise RuntimeError("worker boom")
+            return _result(unit)
+
+        with self.assertRaisesRegex(RuntimeError, "worker boom"):
+            run_ordered_policy_schedule_antigravity(
+                units=units,
+                task_loader=lambda unit: unit,
+                score_task=score,
+                commit=lambda _unit, _result: None,
+                workers=11,
+                executor_factory=_FakeExecutor,
+            )
+        self.assertNotIn(2, submitted)
+
+    def test_policy_b_is_not_submitted_when_policy_a_control_fails(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.control_antigravity import ControlGateResultAntigravity
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import _execute_policy_phases_antigravity
+
+        units = (
+            WorkUnitAntigravity(0, POLICIES[0], "dataset_00"),
+            WorkUnitAntigravity(1, POLICIES[1], "dataset_00"),
+        )
+        submitted: list[tuple[str, int]] = []
+        failed = ControlGateResultAntigravity("control_reproduction_failed", False, "fixture failure", (), {}, {}, 0)
+        with self.assertRaisesRegex(ValueError, "control_reproduction_failed"):
+            _execute_policy_phases_antigravity(
+                units=units,
+                task_loader=lambda unit: unit,
+                commit=lambda _unit, _result: None,
+                progress=None,
+                control_runner=lambda _results: failed,
+                revalidate=lambda: None,
+                score_task=lambda unit: _result(unit),
+                executor_factory=_FakeExecutor,
+            )
+        # The scheduler sees the control failure before the B phase is even
+        # constructed, so no alternative-policy task can be submitted.
+        self.assertEqual(submitted, [])
+
+    def test_resume_prefix_reopens_results_and_admits_policy_b_after_control(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import (
+            CheckpointBindingAntigravity,
+            Exp443CheckpointStoreAntigravity,
+            ProcessIdentityAntigravity,
+        )
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.control_antigravity import ControlGateResultAntigravity
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import _execute_policy_phases_antigravity
+
+        units = (
+            WorkUnitAntigravity(0, POLICIES[0], "dataset_00"),
+            WorkUnitAntigravity(1, POLICIES[1], "dataset_00"),
+        )
+        passed = ControlGateResultAntigravity("control_reproduction_passed", True, None, (), {}, {}, 0)
+        binding = CheckpointBindingAntigravity("exp443-fixture-antigravity", "a" * 64, "b" * 64, "c" * 64, "d" * 64, "e" * 40)
+        with tempfile.TemporaryDirectory(prefix="exp443_task8_resume_antigravity_") as directory:
+            root = Path(directory) / "checkpoint_antigravity"
+            old = ProcessIdentityAntigravity(4242, "old")
+            store = Exp443CheckpointStoreAntigravity.create_antigravity(root, units, binding, old)
+            first = _result(units[0])
+            store.commit_result_antigravity(0, first)
+            self.assertEqual(store.results_antigravity(), {0: first})
+            results: dict[int, PolicyDatasetResultAntigravity] = dict(store.results_antigravity())
+            _execute_policy_phases_antigravity(
+                units=units,
+                task_loader=lambda unit: unit,
+                commit=lambda unit, result: (results.__setitem__(unit.sequence, result), store.commit_result_antigravity(unit.sequence, result)),
+                progress=None,
+                control_runner=lambda _results: passed,
+                revalidate=lambda: None,
+                initial_results=results,
+                score_task=lambda unit: _result(unit),
+                executor_factory=_FakeExecutor,
+            )
+            self.assertEqual(store.completed_count_antigravity, 2)
+            # The resumed B phase is returned through the in-memory result map.
+            self.assertIn(1, results)
+
+    def test_sigterm_interruption_closes_checkpoint_and_progress_as_matching_resumable_prefix(self) -> None:
+        import json
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import (
+            CheckpointBindingAntigravity,
+            Exp443CheckpointStoreAntigravity,
+            ProcessIdentityAntigravity,
+        )
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.progress_antigravity import ProgressWriterAntigravity
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import _mark_interrupted_antigravity
+
+        units = (WorkUnitAntigravity(0, POLICIES[0], "dataset_00"), WorkUnitAntigravity(1, POLICIES[0], "dataset_01"))
+        binding = CheckpointBindingAntigravity("exp443-fixture-antigravity", "a" * 64, "b" * 64, "c" * 64, "d" * 64, "e" * 40)
+        with tempfile.TemporaryDirectory(prefix="exp443_task8_sigterm_antigravity_") as directory:
+            attempt = Path(directory) / "attempt_antigravity"
+            attempt.mkdir()
+            process = ProcessIdentityAntigravity(4242, "fixture-start")
+            checkpoint = attempt / "checkpoint_antigravity"
+            store = Exp443CheckpointStoreAntigravity.create_antigravity(checkpoint, units, binding, process)
+            writer = ProgressWriterAntigravity(attempt, total=2, checkpoint_path=checkpoint / "state_antigravity.json", process=process)
+            writer.begin_units_antigravity(units)
+            store.commit_result_antigravity(0, _result(units[0]))
+            writer.accept_unit_antigravity(_result(units[0]))
+            _mark_interrupted_antigravity(store, writer, "SIGTERM received")
+            state = json.loads((checkpoint / "state_antigravity.json").read_text())
+            progress = json.loads((attempt / "progress_antigravity.json").read_text())
+            self.assertEqual(state["status"], "interrupted_resumable")
+            self.assertEqual(state["completed_count"], 1)
+            self.assertEqual(progress["stage"], "interrupted_resumable")
+            self.assertEqual(progress["completed"], 1)
+            self.assertIsNone(progress["eta_seconds"])
+            self.assertFalse(json.loads((attempt / "pid_antigravity.json").read_text())["active"])
+
+    def test_complete_checkpoint_allows_explicit_finalization_only_resume(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.checkpoint_antigravity import (
+            CheckpointBindingAntigravity,
+            Exp443CheckpointStoreAntigravity,
+            ProcessIdentityAntigravity,
+        )
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.progress_antigravity import ProgressWriterAntigravity
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import _mark_interrupted_antigravity
+
+        units = (WorkUnitAntigravity(0, POLICIES[0], "dataset_00"),)
+        binding = CheckpointBindingAntigravity("exp443-fixture-antigravity", "a" * 64, "b" * 64, "c" * 64, "d" * 64, "e" * 40)
+        with tempfile.TemporaryDirectory(prefix="exp443_task8_finalization_resume_antigravity_") as directory:
+            attempt = Path(directory) / "attempt_antigravity"
+            attempt.mkdir()
+            checkpoint = attempt / "checkpoint_antigravity"
+            old = ProcessIdentityAntigravity(4242, "old")
+            store = Exp443CheckpointStoreAntigravity.create_antigravity(checkpoint, units, binding, old)
+            writer = ProgressWriterAntigravity(attempt, total=1, checkpoint_path=checkpoint / "state_antigravity.json", process=old)
+            writer.begin_units_antigravity(units)
+            store.commit_result_antigravity(0, _result(units[0]))
+            writer.accept_unit_antigravity(_result(units[0]))
+            self.assertEqual(store.status_antigravity, "complete")
+            _mark_interrupted_antigravity(store, writer, "SIGTERM during finalization")
+            self.assertEqual(store.status_antigravity, "complete")
+            with self.assertRaisesRegex(ValueError, "complete"):
+                Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
+                    checkpoint, binding, ProcessIdentityAntigravity(5252, "new"), lambda _process: False
+                )
+            resumed = Exp443CheckpointStoreAntigravity.open_for_resume_antigravity(
+                checkpoint,
+                binding,
+                ProcessIdentityAntigravity(5252, "new"),
+                lambda _process: False,
+                allow_complete_finalization=True,
+            )
+            self.assertEqual(resumed.status_antigravity, "complete")
+            self.assertEqual(resumed.completed_count_antigravity, 1)
+
+    def test_finalization_reuses_identical_prediction_bytes_and_rejects_changes(self) -> None:
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.artifacts_antigravity import canonical_json_bytes_antigravity
+        from experiments.exp443_missing_normal_train_policy_comparison_antigravity.runtime_antigravity import _write_prediction_idempotent_antigravity
+
+        with tempfile.TemporaryDirectory(prefix="exp443_task8_prediction_idempotent_antigravity_") as directory:
+            path = Path(directory) / "prediction_control_antigravity.json"
+            payload = canonical_json_bytes_antigravity({"dataset": "A", "policy": POLICIES[0]})
+            _write_prediction_idempotent_antigravity(path, payload)
+            _write_prediction_idempotent_antigravity(path, payload)
+            self.assertEqual(path.read_bytes(), payload)
+            with self.assertRaisesRegex(ValueError, "prediction publication bytes changed"):
+                _write_prediction_idempotent_antigravity(
+                    path,
+                    canonical_json_bytes_antigravity({"dataset": "A", "policy": POLICIES[1]}),
+                )
+
+
+if __name__ == "__main__":
+    unittest.main()

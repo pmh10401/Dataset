@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp481 엄격 근거 잔여 보정 구현 계획</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;max-width:1080px;margin:32px auto;padding:0 20px 70px;line-height:1.65;color:#182230}
+    h1,h2,h3{line-height:1.28}h2{margin-top:36px}table{border-collapse:collapse;width:100%;margin:12px 0 24px}th,td{border:1px solid #d8dee8;padding:9px 11px;text-align:left;vertical-align:top}th{background:#eef2f7}code{background:#eef2f7;padding:2px 5px;border-radius:4px}pre{background:#111827;color:#e5e7eb;padding:14px;border-radius:9px;overflow-x:auto;line-height:1.45}pre code{background:transparent;padding:0}blockquote{border-left:5px solid #175cd3;background:#eff8ff;margin:16px 0;padding:10px 16px}.constraint{border-left:5px solid #667085;background:#f8fafc;padding:11px 16px}.gate{border-left:5px solid #b54708;background:#fff8f0;padding:11px 16px}label{display:block;margin:9px 0}input{margin-right:8px}.files li{margin:5px 0}a{color:#175cd3}
+  </style>
+</head>
+<body>
+  <h1>Exp481 엄격 근거 잔여 보정 구현 계획</h1>
+  <blockquote><strong>Agentic workers:</strong> 구현 시 <code>superpowers:subagent-driven-development</code> 또는 <code>superpowers:executing-plans</code>를 사용합니다. 각 단계는 실제 완료와 검증 직후에만 체크합니다.</blockquote>
+
+  <p><strong>목표:</strong> 현재 최선인 row-KNN 결정을 보존하면서, row-KNN이 MiniRocket으로 돌아간 사례 중 근거가 엄격하게 확인된 일부만 다른 방법으로 바꿔 ZF를 2,111보다 높입니다.</p>
+  <p><strong>구조:</strong> Exp480의 검증된 1,117행 evidence DB를 읽기 전용으로 재사용합니다. 바깥쪽 leave-one-family-out은 최종 일반화를 측정하고, 그 안의 leave-one-family-out은 후보 방법이 안전한지 학습 구간에서만 확인합니다. 실제 라우팅은 이름이 아닌 고정된 TRAIN 특징 7개만 사용합니다.</p>
+  <p><strong>기술:</strong> Python 3.14, NumPy 2.3.5 기준 CPU 경로, 선택적 Numba 0.63.1(parity와 전체 stage 속도 이득이 확인된 뒤에만), pytest, SQLite 읽기 전용, 선택적 MLX/MLX-Metal, 정적 HTML.</p>
+  <p><strong>설계서:</strong> <a href="../specs/2026-09-01-exp481-strict-evidence-residual-correction-antigravity-design.html">Exp481 승인 설계서</a></p>
+
+  <h2>전체 제약</h2>
+  <div class="constraint"><ul>
+    <li>공식 기본값은 Exp480에서 검증된 row-KNN입니다. row-KNN이 대안을 골랐다면 Exp481은 그 결정을 그대로 보존합니다.</li>
+    <li>잔여 보정 대상은 row-KNN이 <code>minirocket_local_gap</code>을 고른 행뿐입니다.</li>
+    <li>라우팅 입력은 <code>width</code>, <code>n_train</code>, <code>spectral_entropy</code>, <code>skewness</code>, <code>kurtosis</code>, <code>diff_std_ratio</code>, <code>zero_crossing_rate</code>뿐입니다.</li>
+    <li>데이터셋 이름과 family 이름은 split, family당 한 표 처리, 결과 집계에만 사용하고 라우팅 특징에는 넣지 않습니다.</li>
+    <li>가까운 31개 서로 다른 family에서 ZF 개선 수가 악화 수보다 많고, AUC 최악값이 0 이상이며 AUC 하위 20% 값이 0보다 큰 후보만 local gate를 통과합니다. ZF 동률은 개선 수에 넣지 않습니다.</li>
+    <li>안쪽 gate는 실제로 결정이 바뀐 family가 20개 이상이고, ZF 개선 family 수가 악화 family 수보다 많으며, 채택 사례 AUC 최악값이 0 이상이고 하위 20%가 0보다 클 때만 후보를 활성화합니다.</li>
+    <li>성능에 중요한 NumPy 경로는 항상 Numba 대체 여부를 평가합니다. 결정적 smoke가 유한 출력, 동일한 결정과 후보 인덱스, 사전 등록 수치 일치, 컴파일 준비와 데이터 변환을 포함한 전체 stage 시간 단축을 확인한 뒤에만 Numba를 선택합니다. 그렇지 않으면 더 단순한 NumPy 또는 공식 서드파티 구현을 유지하고 backend·시간·parity·대체 이유를 기록합니다.</li>
+    <li>MLX는 정확한 연산 parity, 정확한 후보 인덱스, 유한 출력, 수치 허용오차, 전송·동기화 포함 1.1배 속도 향상을 모두 만족할 때만 해당 거리 stage에 사용합니다.</li>
+    <li>원본 DB, Exp480 evidence DB, Exp480 결과와 공식 row-KNN은 수정하지 않습니다.</li>
+    <li>Task 6 공식 1,117개 실행은 별도 사용자 승인 전에는 실행하지 않습니다.</li>
+    <li>모든 새 파일 이름에는 <code>antigravity</code>를 포함합니다.</li>
+  </ul></div>
+
+  <h2>파일 구조와 책임</h2>
+  <table>
+    <thead><tr><th>파일</th><th>책임</th></tr></thead>
+    <tbody>
+      <tr><td><code>scratch/build_codemap_exp481_antigravity.py</code></td><td>각 모듈의 호출자, 영향 범위, 담당 테스트와 해시를 코드맵 3종으로 만듭니다.</td></tr>
+      <tr><td><code>experiments/exp481_strict_evidence_residual_correction_antigravity/config_antigravity.py</code></td><td>k=31, family 지원 20, strict 임계값, 경로와 공식 기준값을 고정합니다.</td></tr>
+      <tr><td><code>.../contracts_antigravity.py</code></td><td>local 후보 평가, 안쪽 gate, 최종 잔여 보정 결정을 불변 dataclass로 정의합니다.</td></tr>
+      <tr><td><code>.../policy_antigravity.py</code></td><td>family당 한 표, strict ZF 승·패, AUC 최악값·하위값, 고유 순위와 row-KNN 보존을 구현합니다.</td></tr>
+      <tr><td><code>.../evaluation_antigravity.py</code></td><td>바깥/안쪽 family 분리, 안쪽 후보 활성화, 1,117개 최종 비교와 성공 gate를 계산합니다.</td></tr>
+      <tr><td><code>.../kernels_numba_antigravity.py</code></td><td>거리, family당 최근접 한 행, strict 통계의 선택적 Numba 경로를 제공합니다. Task 4가 parity와 전체 stage 속도 이득을 확인한 뒤에만 사용합니다.</td></tr>
+      <tr><td><code>.../acceleration_antigravity.py</code></td><td>Numba/NumPy parity·전체 stage 시간과 MLX 조건을 기록하고, 이득이 없으면 더 단순한 NumPy를 유지합니다.</td></tr>
+      <tr><td><code>.../run_antigravity.py</code></td><td>validate, smoke, official, verify 모드와 원자적 JSON·HTML 작성을 담당합니다.</td></tr>
+      <tr><td><code>scratch/run_exp481_strict_evidence_residual_correction_antigravity.py</code></td><td>승인 경계를 드러내는 명령행 진입점입니다.</td></tr>
+      <tr><td><code>docs/EXP481_DASHBOARD_antigravity.html</code></td><td>Task 체크박스, 현재 상태, 비교 성능, 통과·중단 이유를 표시합니다.</td></tr>
+      <tr><td><code>docs/EXP481_IMPLEMENTATION_REPORT_antigravity.html</code></td><td>검증된 결과를 고등학생도 이해할 수 있는 한국어로 설명합니다.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Task 1: 코드맵과 변경 경계 고정</h2>
+  <p><strong>파일:</strong></p><ul class="files">
+    <li>생성: <code>scratch/build_codemap_exp481_antigravity.py</code></li>
+    <li>생성: <code>scratch/test_build_codemap_exp481_antigravity.py</code></li>
+    <li>생성: <code>docs/codemap/codemap_exp481_antigravity.html</code></li>
+    <li>생성: <code>docs/codemap/codemap_exp481_antigravity.json</code></li>
+    <li>생성: <code>docs/codemap/codemap_exp481_antigravity.lock</code></li>
+  </ul>
+  <p><strong>입력:</strong> <code>docs/codemap/codemap_exp480_antigravity.json/lock</code>, 승인 설계서와 이 계획서.</p>
+  <p><strong>출력:</strong> 이후 파일마다 <code>caller</code>, <code>effect</code>, <code>tests</code>를 답하고 원본 Exp480 파일이 읽기 전용임을 표시하는 코드맵.</p>
+  <label><input type="checkbox" checked disabled>Step 1. Exp480 lock과 현재 파일 해시 차이를 검사하고, 차이가 있으면 먼저 Exp480 코드맵을 재생성합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp480_antigravity.py --validate
+# 예상: exit 0, stale paths 0</code></pre>
+  <label><input type="checkbox" checked disabled>Step 2. Exp481 노드의 세 질문이 모두 채워지는 실패 테스트를 작성합니다.</label>
+  <pre><code>def test_exp481_map_answers_three_questions_antigravity():
+    graph = build_graph_antigravity()
+    nodes = {node["id"]: node for node in graph["nodes"]}
+    assert nodes["strict_policy"]["caller"] == "evaluation_antigravity.py"
+    assert "row-knn" in nodes["strict_policy"]["effect"].lower()
+    assert nodes["strict_policy"]["tests"] == [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py"
+    ]</code></pre>
+  <label><input type="checkbox" checked disabled>Step 3. 생성기 부재 때문에 테스트가 실패하는지 확인합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest scratch/test_build_codemap_exp481_antigravity.py -q
+# 예상: ModuleNotFoundError 또는 build_graph_antigravity 부재로 FAIL</code></pre>
+  <label><input type="checkbox" checked disabled>Step 4. <code>strict_policy</code>, <code>nested_evaluation</code>, <code>numba_kernels</code>, <code>acceleration</code>, <code>runner</code> 노드를 가진 생성기를 구현하고 코드맵 3종을 만듭니다.</label>
+  <pre><code>NODE_SPECS_ANTIGRAVITY = (
+    ("strict_policy", "policy_antigravity.py", "evaluation_antigravity.py",
+     "Preserves row-KNN unless strict residual evidence passes.", "test_policy_antigravity.py"),
+    ("nested_evaluation", "evaluation_antigravity.py", "run_antigravity.py",
+     "Uses inner and outer family holdouts without score leakage.", "test_evaluation_antigravity.py"),
+    ("numba_kernels", "kernels_numba_antigravity.py", "policy_antigravity.py",
+     "Provides optional Numba neighbour and strict statistics after parity and full-stage speed selection.", "test_numba_antigravity.py"),
+    ("acceleration", "acceleration_antigravity.py", "run_antigravity.py",
+     "Selects Numba only after parity plus full-stage speed benefit; otherwise retains NumPy and records the fallback reason, then gates optional MLX.", "test_acceleration_antigravity.py"),
+    ("runner", "run_antigravity.py", "scratch CLI",
+     "Writes deterministic results and verified HTML.", "test_runner_antigravity.py"),
+)</code></pre>
+  <label><input type="checkbox" checked disabled>Step 5. 생성·검증 후 Task 1 체크박스를 갱신하고 커밋합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp481_antigravity.py --write --validate
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest scratch/test_build_codemap_exp481_antigravity.py -q
+git add scratch/build_codemap_exp481_antigravity.py scratch/test_build_codemap_exp481_antigravity.py docs/codemap/codemap_exp481_antigravity.* docs/EXP481_DASHBOARD_antigravity.html
+git commit -m "docs: map Exp481 residual correction boundaries"</code></pre>
+
+  <h2>Task 2: strict evidence 계약과 row-KNN 보존 정책</h2>
+  <p><strong>파일:</strong></p><ul class="files">
+    <li>생성: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/config_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/contracts_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py</code></li>
+  </ul>
+  <p><strong>Consumes:</strong> Exp480의 <code>EvidenceRowAntigravity</code>, <code>FEATURE_KEYS_ANTIGRAVITY</code>, 네 방법 순서와 불변 evidence DB.</p>
+  <p><strong>Produces:</strong> <code>ReferenceStatisticsAntigravity</code>, <code>StrictCandidateAssessmentAntigravity</code>, <code>InnerCandidateGateAntigravity</code>, <code>ResidualDecisionAntigravity</code>, <code>StrictResidualPolicyAntigravity.fit()</code>, <code>.route()</code>.</p>
+  <label><input type="checkbox" checked disabled>Step 1. 동률 제외, AUC 꼬리 조건, row-KNN 보존과 고유 순위 실패 테스트를 작성합니다.</label>
+  <pre><code>def test_tied_zf_is_not_a_strict_win_antigravity():
+    result = strict_statistics_reference_antigravity(
+        zf_gains=(1, 0, -1), auc_gains=(0.3, 0.2, 0.1), q=0.20
+    )
+    assert (result.zf_wins, result.zf_ties, result.zf_losses) == (1, 1, 1)
+    assert result.passed is False
+
+def test_non_mini_row_knn_is_preserved_antigravity(fitted_policy_antigravity):
+    decision = fitted_policy_antigravity.route(
+        query_features_antigravity(), row_knn_method="hydra_local_gap"
+    )
+    assert decision.method == "hydra_local_gap"
+    assert decision.changed is False
+    assert decision.reason == "row_knn_alternative_preserved"
+
+def test_equal_candidate_rank_returns_row_knn_antigravity(fitted_policy_antigravity):
+    decision = fitted_policy_antigravity.route(
+        query_features_antigravity(), row_knn_method="minirocket_local_gap"
+    )
+    assert decision.method == "minirocket_local_gap"
+    assert decision.reason == "candidate_rank_tie"</code></pre>
+  <label><input type="checkbox" checked disabled>Step 2. 새 모듈이 없어 테스트가 실패하는지 확인합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py -q
+# 예상: ModuleNotFoundError로 FAIL</code></pre>
+  <label><input type="checkbox" checked disabled>Step 3. 고정 설정과 불변 결과 계약을 구현합니다.</label>
+  <pre><code>K_ANTIGRAVITY = 31
+INNER_MIN_CHANGED_FAMILIES_ANTIGRAVITY = 20
+AUC_QUANTILE_ANTIGRAVITY = 0.20
+BASELINE_METHOD_ANTIGRAVITY = "minirocket_local_gap"
+ALTERNATIVE_METHODS_ANTIGRAVITY = (
+    "multirocket_local_gap", "hydra_local_gap", "hydra_multirocket_local_gap"
+)
+
+@dataclass(frozen=True)
+class ReferenceStatisticsAntigravity:
+    passed: bool
+    zf_wins: int
+    zf_losses: int
+    zf_ties: int
+    min_auc_gain: float
+    q20_auc_gain: float
+
+@dataclass(frozen=True)
+class StrictCandidateAssessmentAntigravity:
+    method: str
+    passed: bool
+    support: int
+    zf_wins: int
+    zf_losses: int
+    zf_ties: int
+    min_auc_gain: float
+    q20_auc_gain: float
+    neighbour_families: tuple[str, ...]
+
+@dataclass(frozen=True)
+class InnerCandidateGateAntigravity:
+    method: str
+    enabled: bool
+    changed_families: int
+    winning_families: int
+    losing_families: int
+    tied_families: int
+    min_auc_gain: float
+    q20_auc_gain: float
+
+@dataclass(frozen=True)
+class ResidualDecisionAntigravity:
+    method: str
+    changed: bool
+    reason: str
+    selected_candidate: str | None
+    assessments: tuple[StrictCandidateAssessmentAntigravity, ...]</code></pre>
+  <label><input type="checkbox" checked disabled>Step 4. 작은 테스트 기준 계산과 정책의 정확한 선택 규칙을 구현합니다.</label>
+  <pre><code>def strict_statistics_reference_antigravity(zf_gains, auc_gains, q):
+    zf = tuple(int(value) for value in zf_gains)
+    auc = tuple(float(value) for value in auc_gains)
+    wins = sum(value &gt; 0 for value in zf)
+    losses = sum(value &lt; 0 for value in zf)
+    ties = len(zf) - wins - losses
+    minimum = min(auc)
+    q20 = float(np.quantile(np.asarray(auc, dtype=np.float64), q))
+    return ReferenceStatisticsAntigravity(
+        passed=wins &gt; losses and minimum &gt;= 0.0 and q20 &gt; 0.0,
+        zf_wins=wins, zf_losses=losses, zf_ties=ties,
+        min_auc_gain=minimum, q20_auc_gain=q20,
+    )
+
+def _unique_best_antigravity(assessments):
+    passed = tuple(item for item in assessments if item.passed)
+    if not passed:
+        return None, "strict_local_gate_failed"
+    ranks = tuple((item.zf_wins - item.zf_losses,
+                   item.min_auc_gain, item.q20_auc_gain) for item in passed)
+    best_rank = max(ranks)
+    winners = tuple(item for item, rank in zip(passed, ranks, strict=True)
+                    if rank == best_rank)
+    return (winners[0], "strict_candidate_accept") if len(winners) == 1 else (None, "candidate_rank_tie")</code></pre>
+  <label><input type="checkbox" checked disabled>Step 5. 정책 테스트 전체를 통과시키고 코드맵·대시보드를 갱신한 뒤 커밋합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py -q
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp481_antigravity.py --write --validate
+git add experiments/exp481_strict_evidence_residual_correction_antigravity docs/codemap/codemap_exp481_antigravity.* docs/EXP481_DASHBOARD_antigravity.html
+git commit -m "feat: add Exp481 strict residual policy"</code></pre>
+
+  <h2>Task 3: 중첩 family 평가와 성능 gate</h2>
+  <p><strong>파일:</strong></p><ul class="files">
+    <li>생성: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_evaluation_antigravity.py</code></li>
+  </ul>
+  <p><strong>Consumes:</strong> Task 2 정책, Exp480 <code>iter_family_splits_antigravity()</code>, 공식 <code>MinimumZFGuardKNNPolicyAntigravity</code>.</p>
+  <p><strong>Produces:</strong> <code>MeasuredDecisionAntigravity</code>, <code>qualify_inner_methods_antigravity()</code>, <code>evaluate_nested_out_of_family_antigravity()</code>, <code>apply_exp481_gates_antigravity()</code>.</p>
+  <label><input type="checkbox" checked disabled>Step 1. 안쪽/바깥 family 무중첩, held score 후읽기, 안쪽 20-family 조건과 row-KNN 기준 gate 테스트를 작성합니다.</label>
+  <pre><code>def test_nested_splits_never_expose_outer_family_antigravity(synthetic_rows_antigravity):
+    for outer_family, outer_train, outer_test in iter_family_splits_antigravity(
+        synthetic_rows_antigravity
+    ):
+        assert outer_family not in {row.source_family for row in outer_train}
+        for inner_family, inner_train, inner_test in iter_family_splits_antigravity(outer_train):
+            assert outer_family not in {row.source_family for row in inner_train + inner_test}
+            assert inner_family not in {row.source_family for row in inner_train}
+
+def test_inner_gate_needs_twenty_changed_families_antigravity():
+    gate = aggregate_inner_gate_antigravity("hydra_local_gap", inner_records_antigravity(19))
+    assert gate.enabled is False
+    assert gate.changed_families == 19
+
+def test_all_qualification_gates_compare_against_row_knn_antigravity():
+    gates = apply_exp481_gates_antigravity(summary_fixture_antigravity())
+    assert gates["zf_total"]["required"] == "&gt; 2111"
+    assert gates["dataset_mean_auc"]["required"] == "&gt;= 0.9832866538430738"</code></pre>
+  <label><input type="checkbox" checked disabled>Step 2. 평가 모듈이 없어 테스트가 실패하는지 확인합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_evaluation_antigravity.py -q
+# 예상: ModuleNotFoundError로 FAIL</code></pre>
+  <label><input type="checkbox" checked disabled>Step 3. 후보별 안쪽 결과를 원본 family 단위로 합치는 gate를 구현합니다.</label>
+  <pre><code>def aggregate_inner_gate_antigravity(method, selected_records):
+    by_family = defaultdict(list)
+    for record in selected_records:
+        if record.method == method and record.changed:
+            by_family[record.held_family].append(record)
+    family_zf = {family: sum(item.zf_gain for item in items)
+                 for family, items in by_family.items()}
+    auc = tuple(item.auc_gain for items in by_family.values() for item in items)
+    minimum = min(auc) if auc else float("-inf")
+    q20 = float(np.quantile(np.asarray(auc), 0.20)) if auc else float("-inf")
+    wins = sum(value &gt; 0 for value in family_zf.values())
+    losses = sum(value &lt; 0 for value in family_zf.values())
+    ties = len(family_zf) - wins - losses
+    enabled = len(by_family) &gt;= 20 and wins &gt; losses and minimum &gt;= 0.0 and q20 &gt; 0.0
+    return InnerCandidateGateAntigravity(
+        method=method, enabled=enabled, changed_families=len(by_family),
+        winning_families=wins, losing_families=losses, tied_families=ties,
+        min_auc_gain=minimum, q20_auc_gain=q20,
+    )</code></pre>
+  <label><input type="checkbox" checked disabled>Step 4. 안쪽 gate를 바깥 held family에 적용하되 점수는 결정이 끝난 뒤에만 읽도록 평가 순서를 고정합니다.</label>
+  <pre><code>@dataclass(frozen=True)
+class MeasuredDecisionAntigravity:
+    dataset: str
+    held_family: str
+    row_knn_method: str
+    method: str
+    changed: bool
+    auc: float
+    zf: int
+    auc_gain: float
+    zf_gain: int
+
+def evaluate_outer_row_antigravity(row, row_policy, residual_policy, enabled_methods):
+    features = feature_mapping_antigravity(row)
+    row_decision = row_policy.route(features, row.proposal)
+    residual_decision = residual_policy.route(
+        features, row_knn_method=row_decision.method,
+        enabled_methods=enabled_methods,
+    )
+    scores = score_mapping_after_decision_antigravity(row)
+    selected = scores[residual_decision.method]
+    baseline = scores[row_decision.method]
+    return MeasuredDecisionAntigravity(
+        dataset=row.dataset, held_family=row.source_family,
+        row_knn_method=row_decision.method, method=residual_decision.method,
+        changed=residual_decision.changed, auc=selected.auc, zf=selected.zf,
+        auc_gain=selected.auc - baseline.auc, zf_gain=selected.zf - baseline.zf,
+    )</code></pre>
+  <label><input type="checkbox" checked disabled>Step 5. ZF, family 평균, AUC 꼬리 손실, 변경군 승·패, 80% 지배 대조군을 포함한 최종 gate를 구현합니다.</label>
+  <pre><code>EXP481_THRESHOLDS_ANTIGRAVITY = {
+    "zf_total": 2111,
+    "family_mean_zf": 2.9440228392325434,
+    "dataset_mean_auc": 0.9832866538430738,
+    "family_mean_auc": 0.9718432393318419,
+    "max_added_loss_0_05": 0,
+    "max_added_loss_0_10": 0,
+    "min_changed": 1,
+    "require_changed_wins_gt_losses": True,
+    "max_changed_tie_rate": 0.50,
+    "dominance_control_rate": 0.80,
+}</code></pre>
+  <label><input type="checkbox" checked disabled>Step 6. 평가 테스트를 통과시키고 코드맵·대시보드를 갱신한 뒤 커밋합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_evaluation_antigravity.py -q
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp481_antigravity.py --write --validate
+git add experiments/exp481_strict_evidence_residual_correction_antigravity docs/codemap/codemap_exp481_antigravity.* docs/EXP481_DASHBOARD_antigravity.html
+git commit -m "feat: add Exp481 nested family evaluation"</code></pre>
+
+  <h2>Task 4: Numba/NumPy parity·속도 평가와 MLX 판정</h2>
+  <p><strong>파일:</strong></p><ul class="files">
+    <li>생성: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/kernels_numba_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/acceleration_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_numba_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_acceleration_antigravity.py</code></li>
+    <li>생성 산출물: <code>scratch/exp481_acceleration_assessment_antigravity.json</code></li>
+  </ul>
+  <p><strong>Consumes:</strong> Task 2의 작은 기준 계산과 Task 3 평가 입력 배열.</p>
+  <p><strong>Produces:</strong> <code>nearest_distinct_family_indices_numba_antigravity()</code>, <code>strict_statistics_numba_antigravity()</code>, <code>assess_acceleration_antigravity()</code>. Numba는 parity와 전체 stage 속도 이득이 확인된 뒤에만 선택되고, 그렇지 않으면 더 단순한 NumPy 기준 경로를 유지합니다.</p>
+  <label><input type="checkbox" checked disabled>Step 1. Numba 후보 인덱스·통계·최종 결정 parity와, 이득이 없으면 NumPy를 유지하는 테스트를 작성합니다.</label>
+  <pre><code>def test_numba_indices_and_statistics_match_reference_antigravity():
+    expected_indices = nearest_distinct_family_indices_reference_antigravity(
+        DISTANCES_ANTIGRAVITY, FAMILY_CODES_ANTIGRAVITY, 3
+    )
+    actual_indices = nearest_distinct_family_indices_numba_antigravity(
+        DISTANCES_ANTIGRAVITY, FAMILY_CODES_ANTIGRAVITY, 3
+    )
+    assert actual_indices.tolist() == expected_indices.tolist()
+    assert strict_statistics_numba_antigravity(
+        ZF_GAINS_ANTIGRAVITY, AUC_GAINS_ANTIGRAVITY, 0.20
+    ) == strict_statistics_reference_tuple_antigravity(
+        ZF_GAINS_ANTIGRAVITY, AUC_GAINS_ANTIGRAVITY, 0.20
+    )
+
+def test_numba_parity_failure_keeps_numpy_reference_antigravity(monkeypatch):
+    monkeypatch.setattr(acceleration_module_antigravity, "decision_parity_antigravity", lambda: False)
+    assessment = assess_acceleration_antigravity()
+    assert assessment["selected_backend"] == "numpy_reference"
+    assert "parity" in str(assessment["fallback_reason"]).lower()</code></pre>
+  <label><input type="checkbox" checked disabled>Step 2. 새 kernel 부재 때문에 테스트가 실패하는지 확인합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_numba_antigravity.py experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_acceleration_antigravity.py -q
+# 예상: ModuleNotFoundError로 FAIL</code></pre>
+  <label><input type="checkbox" checked disabled>Step 3. 안정적인 거리 순서와 family당 한 행 선택을 Numba로 구현합니다.</label>
+  <pre><code>@njit(cache=True)
+def nearest_distinct_family_indices_numba_antigravity(distances, family_codes, k):
+    order = np.argsort(distances, kind="mergesort")
+    chosen = np.empty(min(k, len(order)), dtype=np.int64)
+    seen = np.zeros(int(family_codes.max()) + 1, dtype=np.uint8)
+    count = 0
+    for index in order:
+        family = family_codes[index]
+        if seen[family] == 0:
+            seen[family] = 1
+            chosen[count] = index
+            count += 1
+            if count == k:
+                break
+    return chosen[:count]</code></pre>
+  <label><input type="checkbox" checked disabled>Step 4. ZF 승·패·동률과 AUC 최악값·하위 20%를 Numba로 계산하고 정책을 Numba kernel에 연결합니다.</label>
+  <pre><code>@njit(cache=True)
+def strict_statistics_numba_antigravity(zf_gains, auc_gains, q):
+    wins = 0
+    losses = 0
+    for gain in zf_gains:
+        wins += gain &gt; 0
+        losses += gain &lt; 0
+    ties = len(zf_gains) - wins - losses
+    minimum = float(np.min(auc_gains))
+    q20 = float(np.quantile(auc_gains, q))
+    passed = wins &gt; losses and minimum &gt;= 0.0 and q20 &gt; 0.0
+    return passed, wins, losses, ties, minimum, q20</code></pre>
+  <label><input type="checkbox" checked disabled>Step 5. 컴파일 준비·변환·실행 시간을 포함한 Numba 기록과 MLX 1.1배 gate를 생성하고, 이득이 없으면 NumPy를 유지한 이유를 기록합니다.</label>
+  <pre><code>numba_selected = bool(
+    index_parity and decision_parity and numerical_agreement
+    and finite_outputs and numba_faster_including_warmup
+)
+mlx_selected = bool(
+    numba_selected and mlx_index_parity and mlx_finite
+    and mlx_speedup &gt;= 1.1
+)
+if mlx_selected:
+    selected_backend = "numba_plus_mlx"
+    fallback_reason = ""
+elif numba_selected:
+    selected_backend = "numba_cpu"
+    fallback_reason = "mlx_gate_failed"
+else:
+    selected_backend = "numpy_reference"
+    fallback_reason = "numba_parity_or_speed_failed"
+assessment = {
+    "numba_version": numba.__version__,
+    "numpy_version": np.__version__,
+    "numba_candidate_index_parity": bool(index_parity),
+    "numba_decision_parity": bool(decision_parity),
+    "numba_warmup_seconds": float(warmup_seconds),
+    "numba_nested_seconds": float(nested_seconds),
+    "mlx_version": mlx_version_antigravity(),
+    "mlx_candidate_index_parity": bool(mlx_index_parity),
+    "mlx_speedup_including_transfer": float(mlx_speedup),
+    "selected_backend": selected_backend,
+    "fallback_reason": fallback_reason,
+}</code></pre>
+  <label><input type="checkbox" checked disabled>Step 6. parity·속도 검사와 전체 Task 2~4 테스트를 통과시키고 커밋합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_evaluation_antigravity.py experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_numba_antigravity.py experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_acceleration_antigravity.py -q
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp481_antigravity.py --write --validate
+git add experiments/exp481_strict_evidence_residual_correction_antigravity scratch/exp481_acceleration_assessment_antigravity.json docs/codemap/codemap_exp481_antigravity.* docs/EXP481_DASHBOARD_antigravity.html
+git commit -m "perf: add Exp481 Numba execution path"</code></pre>
+
+  <h2>Task 5: 실행기, smoke, 재현성 및 HTML 보고</h2>
+  <p><strong>파일:</strong></p><ul class="files">
+    <li>생성: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/run_antigravity.py</code></li>
+    <li>생성: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_runner_antigravity.py</code></li>
+    <li>생성: <code>scratch/run_exp481_strict_evidence_residual_correction_antigravity.py</code></li>
+    <li>생성 산출물: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/smoke_results_antigravity.json</code></li>
+    <li>수정: <code>docs/EXP481_DASHBOARD_antigravity.html</code></li>
+  </ul>
+  <p><strong>Consumes:</strong> Task 3 평가기, Task 4 backend 판정, Exp480 evidence SHA와 결과 기준값.</p>
+  <p><strong>Produces:</strong> <code>run_validate_antigravity()</code>, <code>run_smoke_antigravity()</code>, <code>run_official_antigravity()</code>, <code>verify_official_antigravity()</code>.</p>
+  <label><input type="checkbox" checked disabled>Step 1. 공식 승인 경계, 원자적 쓰기, deterministic bytes, smoke 비공식 상태와 HTML 체크박스 테스트를 작성합니다.</label>
+  <pre><code>def test_smoke_never_writes_official_result_antigravity(tmp_path):
+    result = run_smoke_antigravity(family_count=8, output_dir=tmp_path)
+    assert result["state"] == "smoke_nonofficial"
+    assert not (tmp_path / "results_antigravity.json").exists()
+
+def test_same_input_produces_identical_result_bytes_antigravity(tmp_path):
+    first = build_official_result_antigravity(frozen_evaluation_antigravity())
+    second = build_official_result_antigravity(frozen_evaluation_antigravity())
+    assert json_bytes_antigravity(first) == json_bytes_antigravity(second)
+
+def test_dashboard_checks_task5_not_task6_after_smoke_antigravity():
+    html = render_dashboard_antigravity(smoke_result_antigravity())
+    assert 'checked disabled&gt; Task 5' in html
+    assert 'disabled&gt; Task 6' in html</code></pre>
+  <label><input type="checkbox" checked disabled>Step 2. 실행 모듈이 없어 테스트가 실패하는지 확인합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_runner_antigravity.py -q
+# 예상: ModuleNotFoundError로 FAIL</code></pre>
+  <label><input type="checkbox" checked disabled>Step 3. <code>--validate-only</code>, <code>--smoke-families</code>, <code>--official</code>, <code>--verify-only</code>가 서로 배타적인 CLI를 구현합니다.</label>
+  <pre><code>modes = parser.add_mutually_exclusive_group(required=True)
+modes.add_argument("--validate-only", action="store_true")
+modes.add_argument("--smoke-families", type=int)
+modes.add_argument("--official", action="store_true")
+modes.add_argument("--verify-only", action="store_true")</code></pre>
+  <label><input type="checkbox" checked disabled>Step 4. 결과 JSON에는 시각·장치·실행 시간을 넣지 않고, 별도 manifest에만 기록하도록 원자적 writer와 validator를 구현합니다.</label>
+  <pre><code>def json_bytes_antigravity(payload):
+    return (json.dumps(payload, ensure_ascii=False, sort_keys=True,
+                       separators=(",", ":"), allow_nan=False) + "\n").encode("utf-8")
+
+def write_json_atomic_antigravity(path, payload):
+    temporary = path.with_name(path.stem + "_temporary_antigravity" + path.suffix)
+    temporary.write_bytes(json_bytes_antigravity(payload))
+    temporary.replace(path)</code></pre>
+  <label><input type="checkbox" checked disabled>Step 5. validate와 8-family smoke를 실행하고 결과가 유한하며 측정된 선택 backend(numpy_reference, numba_cpu, 또는 numba_plus_mlx)와 선택/대체 이유, split 무중첩, 라우팅 입력 7개, 공식 파일 미생성을 만족하는지 확인합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp481_strict_evidence_residual_correction_antigravity.py --validate-only
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp481_strict_evidence_residual_correction_antigravity.py --smoke-families 8
+# 예상: state=smoke_nonofficial, backend=numpy_reference 또는 numba_cpu 또는 numba_plus_mlx, 선택/대체 이유 기록, family_overlap_count=0</code></pre>
+  <label><input type="checkbox" checked disabled>Step 6. Exp480 50개 회귀 테스트와 Exp481 전체 테스트를 실행하고 대시보드·코드맵을 갱신한 뒤 커밋합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp480_family_balanced_evidence_routing_antigravity/tests experiments/exp481_strict_evidence_residual_correction_antigravity/tests -q
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp481_antigravity.py --write --validate
+git add experiments/exp481_strict_evidence_residual_correction_antigravity scratch/run_exp481_strict_evidence_residual_correction_antigravity.py docs/codemap/codemap_exp481_antigravity.* docs/EXP481_DASHBOARD_antigravity.html
+git commit -m "test: verify Exp481 smoke pipeline"</code></pre>
+
+  <h2>Task 6: 공식 1,117개 실행과 독립 검증</h2>
+  <div class="gate"><strong>승인 경계:</strong> 이 Task는 사용자가 “Task 6 공식 1,117개 실행 승인”이라고 별도로 승인한 뒤에만 수행합니다.</div>
+  <p><strong>파일:</strong></p><ul class="files">
+    <li>생성: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/results_antigravity.json</code></li>
+    <li>생성: <code>experiments/exp481_strict_evidence_residual_correction_antigravity/run_manifest_antigravity.json</code></li>
+    <li>생성: <code>docs/EXP481_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+    <li>수정: <code>docs/EXP481_DASHBOARD_antigravity.html</code></li>
+  </ul>
+  <label><input type="checkbox" checked disabled>Step 1. 작업 폴더가 깨끗하고 Task 1~5 체크박스가 완료되었으며 evidence SHA, 완전한 backend 평가(선택 backend와 선택/대체 이유), smoke 상태가 고정되었는지 확인합니다.</label>
+  <pre><code>git status --short
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp481_strict_evidence_residual_correction_antigravity.py --validate-only
+# 예상: git 출력 없음, validation state=ready_for_official</code></pre>
+  <label><input type="checkbox" checked disabled>Step 2. 사용자 승인 문구를 확인한 뒤 공식 1,117개·128 family 중첩 평가를 한 번 실행합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp481_strict_evidence_residual_correction_antigravity.py --official
+# 예상: datasets=1117, families=128, result와 manifest 원자적 생성</code></pre>
+  <label><input type="checkbox" checked disabled>Step 3. 별도 <code>--verify-only</code> 실행으로 입력 SHA, manifest schema, result SHA, 완전한 backend 평가(선택 backend와 선택/대체 이유), 1,117개 결정, 128 family, 네 방법 점수, deterministic bytes를 다시 확인합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/run_exp481_strict_evidence_residual_correction_antigravity.py --verify-only
+# 예상: verified=true, result_sha_match=true, family_overlap_count=0</code></pre>
+  <label><input type="checkbox" checked disabled>Step 4. 공식 성공 기준을 기계적으로 판정하고 한 항목이라도 실패하면 실패 결과를 그대로 보존합니다.</label>
+  <pre><code>assert result["dataset_count"] == 1117
+assert result["family_count"] == 128
+assert result["gates"]["zf_total"]["required"] == "&gt; 2111"
+assert result["gates"]["dataset_mean_auc"]["required"] == "&gt;= 0.9832866538430738"
+assert result["gates"]["added_loss_0_05"]["required"] == "== 0"
+assert result["gates"]["changed_decisions"]["required"] == "&gt;= 1"</code></pre>
+  <label><input type="checkbox" checked disabled>Step 5. 검증된 수치와 실패·통과 이유만으로 대시보드와 쉬운 한국어 보고서를 만들고 HTML 링크를 검사합니다.</label>
+  <pre><code>python3 - &lt;&lt;'PY'
+from html.parser import HTMLParser
+from pathlib import Path
+for name in ("docs/EXP481_DASHBOARD_antigravity.html",
+             "docs/EXP481_IMPLEMENTATION_REPORT_antigravity.html"):
+    text = Path(name).read_text(encoding="utf-8")
+    HTMLParser().feed(text)
+    assert "Task 6" in text
+print("EXP481_HTML_OK")
+PY</code></pre>
+  <label><input type="checkbox" checked disabled>Step 6. 전체 테스트, 코드맵 검증, <code>git diff --check</code>를 통과시키고 공식 결과를 커밋합니다.</label>
+  <pre><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m pytest experiments/exp480_family_balanced_evidence_routing_antigravity/tests experiments/exp481_strict_evidence_residual_correction_antigravity/tests -q
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python scratch/build_codemap_exp481_antigravity.py --write --validate
+git diff --check
+git add experiments/exp481_strict_evidence_residual_correction_antigravity docs/EXP481_DASHBOARD_antigravity.html docs/EXP481_IMPLEMENTATION_REPORT_antigravity.html docs/codemap/codemap_exp481_antigravity.*
+git commit -m "experiment: preserve Exp481 official qualification"</code></pre>
+
+  <h2>계획 진행 체크</h2>
+  <label><input type="checkbox" checked disabled> 승인 설계서를 구현 계약으로 변환</label>
+  <label><input type="checkbox" checked disabled> 파일 책임과 Task 1~6 경계 정의</label>
+  <label><input type="checkbox" checked disabled> Numba/NumPy parity·속도 선택과 MLX 조건 반영</label>
+  <label><input type="checkbox" checked disabled> Task 6 별도 승인 경계 반영</label>
+  <label><input type="checkbox" checked disabled> Task 1~5 구현 완료</label>
+  <label><input type="checkbox" checked disabled> Task 6 공식 결과 검증 및 보존</label>
+</body>
+</html>

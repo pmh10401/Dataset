@@ -1,0 +1,274 @@
+"""Source-free descriptor-pinned Exp446 publication identity authority.
+
+This module reads only the immutable Exp446 publication.  It deliberately imports
+no SQLite, label-session capability, evaluator, or mutable run authority.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass
+import hashlib
+import json
+import os
+from pathlib import Path
+import stat
+from typing import Mapping, Sequence
+
+from .config_antigravity import FROZEN_CONFIG_ANTIGRAVITY
+from .contracts_antigravity import PublicationIdentityAntigravity
+
+_DATASET_ROOT_ANTIGRAVITY = Path("/Users/mac/Documents/Dataset")
+_EXP446_ROOT_ANTIGRAVITY = _DATASET_ROOT_ANTIGRAVITY / "exp446_exp445_publication_materialization_repair_antigravity_20260811"
+_EXP446_PARTS_ANTIGRAVITY = ("attempts_antigravity", "attempt_0000_antigravity", "publication_antigravity")
+_DATABASE_SHA256_ANTIGRAVITY = "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c"
+_LEAVES_ANTIGRAVITY = (
+    "artifact_sha256_antigravity.json", "backend_decision_antigravity.json",
+    "candidate_stability_antigravity.jsonl", "control_replay_antigravity.json",
+    "dataset_summary_antigravity.jsonl", "manifest_antigravity.json",
+    "runtime_antigravity.json", "source_audit_antigravity.json",
+    "source_candidates_antigravity.jsonl", "stable_review_prediction_antigravity.jsonl",
+    "status_antigravity.json", "unstable_review_prediction_antigravity.jsonl",
+    "view_evidence_antigravity.jsonl",
+)
+_DIRECTORY_FLAGS_ANTIGRAVITY = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
+_LEAF_FLAGS_ANTIGRAVITY = os.O_RDONLY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
+
+@dataclass(frozen=True, slots=True)
+class _PinnedLeafAntigravity:
+    """An open no-follow leaf descriptor retained through final validation."""
+
+    name: str
+    descriptor: int
+    identity: tuple[int, int, int, int, int, int, int]
+
+
+def _identity_antigravity(info: os.stat_result) -> tuple[int, int, int, int, int, int, int]:
+    return (info.st_dev, info.st_ino, info.st_mode, info.st_nlink, info.st_size, info.st_mtime_ns, info.st_ctime_ns)
+
+
+def _open_directory_antigravity(parent_fd: int | None, name: str | Path) -> tuple[int, tuple[int, int, int, int, int, int, int]]:
+    try:
+        before = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+        descriptor = os.open(name, _DIRECTORY_FLAGS_ANTIGRAVITY, dir_fd=parent_fd)
+    except OSError as error:
+        raise ValueError("frozen source directory is absent or unsafe") from error
+    try:
+        opened = os.fstat(descriptor)
+        if not stat.S_ISDIR(before.st_mode) or _identity_antigravity(before) != _identity_antigravity(opened):
+            raise ValueError("frozen source directory changed during open")
+        return descriptor, _identity_antigravity(opened)
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _assert_directory_antigravity(parent_fd: int | None, name: str | Path, descriptor: int, expected: tuple[int, int, int, int, int, int, int]) -> None:
+    try:
+        current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+        opened = os.fstat(descriptor)
+    except OSError as error:
+        raise ValueError("frozen source directory disappeared") from error
+    if any(not stat.S_ISDIR(item.st_mode) or _identity_antigravity(item) != expected for item in (current, opened)):
+        raise ValueError("frozen source directory changed during verification")
+
+
+def _exact_names_antigravity(directory_fd: int, expected: Sequence[str]) -> None:
+    try:
+        names = tuple(sorted(os.listdir(directory_fd)))
+    except OSError as error:
+        raise ValueError("frozen source inventory is unreadable") from error
+    if names != tuple(sorted(expected)):
+        raise ValueError("frozen source inventory is not exact")
+
+
+def _pin_leaf_antigravity(directory_fd: int, name: str) -> _PinnedLeafAntigravity:
+    try:
+        before = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
+        descriptor = os.open(name, _LEAF_FLAGS_ANTIGRAVITY, dir_fd=directory_fd)
+    except OSError as error:
+        raise ValueError(f"frozen source leaf is absent or unsafe: {name}") from error
+    try:
+        opened = os.fstat(descriptor)
+        expected = _identity_antigravity(before)
+        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1 or _identity_antigravity(opened) != expected:
+            raise ValueError(f"frozen source leaf is not one regular inode: {name}")
+        return _PinnedLeafAntigravity(name, descriptor, expected)
+    except OSError as error:
+        raise ValueError(f"frozen source leaf pin failed: {name}") from error
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _read_pinned_leaf_antigravity(pinned: _PinnedLeafAntigravity) -> bytes:
+    try:
+        os.lseek(pinned.descriptor, 0, os.SEEK_SET)
+        chunks: list[bytes] = []
+        while block := os.read(pinned.descriptor, 1 << 20):
+            chunks.append(block)
+        return b"".join(chunks)
+    except OSError as error:
+        raise ValueError(f"frozen source leaf read failed: {pinned.name}") from error
+
+
+def _assert_pinned_leaf_antigravity(directory_fd: int, pinned: _PinnedLeafAntigravity) -> None:
+    try:
+        current = os.stat(pinned.name, dir_fd=directory_fd, follow_symlinks=False)
+        opened = os.fstat(pinned.descriptor)
+    except OSError as error:
+        raise ValueError(f"frozen source leaf disappeared: {pinned.name}") from error
+    if any(
+        not stat.S_ISREG(item.st_mode) or item.st_nlink != 1 or _identity_antigravity(item) != pinned.identity
+        for item in (current, opened)
+    ):
+        raise ValueError(f"frozen source leaf changed during verification: {pinned.name}")
+
+
+def _read_leaf_antigravity(directory_fd: int, name: str) -> tuple[bytes, str, tuple[int, int, int, int, int, int, int]]:
+    """Read one leaf for isolated helper checks; captures retain their pin instead."""
+    pinned = _pin_leaf_antigravity(directory_fd, name)
+    try:
+        payload = _read_pinned_leaf_antigravity(pinned)
+        _assert_pinned_leaf_antigravity(directory_fd, pinned)
+        return payload, hashlib.sha256(payload).hexdigest(), pinned.identity
+    finally:
+        os.close(pinned.descriptor)
+
+
+def _strict_json_antigravity(payload: bytes, name: str) -> Mapping[str, object]:
+    def pairs(items: list[tuple[str, object]]) -> dict[str, object]:
+        result: dict[str, object] = {}
+        for key, value in items:
+            if key in result:
+                raise ValueError(f"{name} has duplicate JSON keys")
+            result[key] = value
+        return result
+    try:
+        value = json.loads(payload.decode("utf-8"), object_pairs_hook=pairs, parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
+    except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+        raise ValueError(f"{name} is not strict JSON") from error
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{name} is not a JSON object")
+    return value
+
+
+def _strict_jsonl_antigravity(payload: bytes, name: str) -> tuple[Mapping[str, object], ...]:
+    if not payload.endswith(b"\n") or not payload:
+        raise ValueError(f"{name} is not complete JSONL")
+    return tuple(_strict_json_antigravity(line, f"{name} row {number}") for number, line in enumerate(payload.splitlines(), 1) if line)
+
+
+def _coordinate_antigravity(value: object, name: str) -> tuple[str, int]:
+    if not isinstance(value, Mapping) or set(value) != {"dataset", "instance_index", "original_depths", "original_rank", "raw_length"}:
+        raise ValueError(f"{name} candidate schema is invalid")
+    dataset, index, rank = value["dataset"], value["instance_index"], value["original_rank"]
+    if type(dataset) is not str or not dataset or type(index) is not int or index < 0 or type(rank) is not int or rank < 1:
+        raise ValueError(f"{name} candidate is invalid")
+    return dataset, index
+
+
+def _validate_exp446_semantics_antigravity(leaves: Mapping[str, bytes], digests: Mapping[str, str], root_identity: tuple[int, int, int, int, int, int, int]) -> PublicationIdentityAntigravity:
+    if digests["manifest_antigravity.json"] != FROZEN_CONFIG_ANTIGRAVITY.exp446_manifest_file_sha256:
+        raise ValueError("Exp446 manifest digest differs from frozen authority")
+    if digests["artifact_sha256_antigravity.json"] != FROZEN_CONFIG_ANTIGRAVITY.exp446_artifact_map_file_sha256:
+        raise ValueError("Exp446 artifact map digest differs from frozen authority")
+    artifact_map = _strict_json_antigravity(leaves["artifact_sha256_antigravity.json"], "Exp446 artifact map")
+    if set(artifact_map) != {"schema", "files"} or artifact_map.get("schema") != "exp446.artifact-sha256.v1" or not isinstance(artifact_map.get("files"), Mapping):
+        raise ValueError("Exp446 artifact map schema is invalid")
+    expected_map_names = set(_LEAVES_ANTIGRAVITY) - {"artifact_sha256_antigravity.json"}
+    if set(artifact_map["files"]) != expected_map_names or any(artifact_map["files"].get(name) != digests[name] for name in expected_map_names):
+        raise ValueError("Exp446 artifact map does not bind the exact leaves")
+    manifest = _strict_json_antigravity(leaves["manifest_antigravity.json"], "Exp446 manifest")
+    if (
+        set(manifest) != {"dataset_count", "experiment_id", "label_access_count", "leaf_sha256", "prediction_sha256", "run_identity", "schema", "source_candidate_count", "stable_count", "unstable_count"}
+        or manifest.get("experiment_id") != "Exp446" or manifest.get("schema") != "exp446.publication.v1"
+        or manifest.get("run_identity") != "exp446-exp445-publication-materialization-repair-antigravity-20260811"
+        or (manifest.get("dataset_count"), manifest.get("source_candidate_count"), manifest.get("stable_count"), manifest.get("unstable_count"), manifest.get("label_access_count")) != (1117, 30, 26, 4, 0)
+        or not isinstance(manifest.get("leaf_sha256"), Mapping)
+    ):
+        raise ValueError("Exp446 manifest semantics are invalid")
+    manifest_leaves = manifest["leaf_sha256"]
+    expected_manifest_names = expected_map_names - {"manifest_antigravity.json", "status_antigravity.json"}
+    if set(manifest_leaves) != expected_manifest_names or any(manifest_leaves.get(name) != digests[name] for name in expected_manifest_names):
+        raise ValueError("Exp446 manifest leaf identity is invalid")
+    stable = _strict_jsonl_antigravity(leaves["stable_review_prediction_antigravity.jsonl"], "stable review")
+    unstable = _strict_jsonl_antigravity(leaves["unstable_review_prediction_antigravity.jsonl"], "unstable review")
+    source = _strict_jsonl_antigravity(leaves["source_candidates_antigravity.jsonl"], "source candidates")
+    summary = _strict_jsonl_antigravity(leaves["dataset_summary_antigravity.jsonl"], "dataset summary")
+    if len(summary) != 1117 or any(set(row) != {"candidate_count", "dataset"} or type(row["dataset"]) is not str or not row["dataset"] for row in summary):
+        raise ValueError("Exp446 dataset order is invalid")
+    dataset_order = tuple(row["dataset"] for row in summary)
+    if len(set(dataset_order)) != 1117:
+        raise ValueError("Exp446 dataset order is not unique")
+    source_coordinates = tuple(_coordinate_antigravity(row, "source") for row in source)
+    if len(source_coordinates) != 30 or len(set(source_coordinates)) != 30 or tuple(row["original_rank"] for row in source) != tuple(range(1, 31)):
+        raise ValueError("Exp446 source candidates are invalid")
+    def lane(rows: Sequence[Mapping[str, object]], name: str, count: int) -> tuple[tuple[str, int], ...]:
+        if len(rows) != count:
+            raise ValueError(f"Exp446 {name} population is invalid")
+        result: list[tuple[str, int]] = []
+        for row in rows:
+            if not isinstance(row.get("candidate"), Mapping) or row.get("lane") != name:
+                raise ValueError(f"Exp446 {name} lane is invalid")
+            result.append(_coordinate_antigravity(row["candidate"], name))
+        return tuple(result)
+    stable_coordinates = lane(stable, "stable_review", 26)
+    unstable_coordinates = lane(unstable, "unstable_review", 4)
+    if set(source_coordinates) != set(stable_coordinates) | set(unstable_coordinates) or set(stable_coordinates) & set(unstable_coordinates):
+        raise ValueError("Exp446 lane partition is not exact")
+    if any(dataset not in dataset_order for dataset, _ in source_coordinates):
+        raise ValueError("Exp446 source coordinate dataset is absent")
+    if hashlib.sha256(leaves["stable_review_prediction_antigravity.jsonl"] + leaves["unstable_review_prediction_antigravity.jsonl"]).hexdigest() != FROZEN_CONFIG_ANTIGRAVITY.exp446_prediction_sha256:
+        raise ValueError("Exp446 frozen prediction digest differs")
+    source_audit = _strict_json_antigravity(leaves["source_audit_antigravity.json"], "Exp446 source audit")
+    status = _strict_json_antigravity(leaves["status_antigravity.json"], "Exp446 status")
+    if source_audit.get("label_access_count") != 0 or not isinstance(source_audit.get("source_hashes"), Mapping) or source_audit["source_hashes"].get("database") != _DATABASE_SHA256_ANTIGRAVITY:
+        raise ValueError("Exp446 source audit violates the label/database contract")
+    if status.get("label_access_count") != 0 or status.get("review_only") is not True or status.get("operational_alert_eligible") is not False:
+        raise ValueError("Exp446 status violates review-only governance")
+    return PublicationIdentityAntigravity(
+        root_device=root_identity[0], root_inode=root_identity[1], leaf_sha256=dict(digests),
+        manifest_sha256=digests["manifest_antigravity.json"], prediction_sha256=FROZEN_CONFIG_ANTIGRAVITY.exp446_prediction_sha256,
+        artifact_map_sha256=digests["artifact_sha256_antigravity.json"], dataset_order=dataset_order,
+        source_coordinates=source_coordinates, stable_coordinates=stable_coordinates,
+        unstable_coordinates=unstable_coordinates, label_access_count=0,
+    )
+
+
+
+
+def capture_exp446_publication_antigravity() -> PublicationIdentityAntigravity:
+    """Capture every Exp446 publication byte under descriptor pins, without labels."""
+    root_fd = attempts_fd = attempt_fd = publication_fd = -1
+    pinned_leaves: list[_PinnedLeafAntigravity] = []
+    try:
+        root_fd, root_identity = _open_directory_antigravity(None, _EXP446_ROOT_ANTIGRAVITY)
+        attempts_fd, attempts_identity = _open_directory_antigravity(root_fd, _EXP446_PARTS_ANTIGRAVITY[0])
+        attempt_fd, attempt_identity = _open_directory_antigravity(attempts_fd, _EXP446_PARTS_ANTIGRAVITY[1])
+        publication_fd, publication_identity = _open_directory_antigravity(attempt_fd, _EXP446_PARTS_ANTIGRAVITY[2])
+        _exact_names_antigravity(publication_fd, _LEAVES_ANTIGRAVITY)
+        leaves: dict[str, bytes] = {}
+        digests: dict[str, str] = {}
+        for name in _LEAVES_ANTIGRAVITY:
+            pinned = _pin_leaf_antigravity(publication_fd, name)
+            pinned_leaves.append(pinned)
+            payload = _read_pinned_leaf_antigravity(pinned)
+            leaves[name], digests[name] = payload, hashlib.sha256(payload).hexdigest()
+        result = _validate_exp446_semantics_antigravity(leaves, digests, publication_identity)
+        for pinned in pinned_leaves:
+            _assert_pinned_leaf_antigravity(publication_fd, pinned)
+        _exact_names_antigravity(publication_fd, _LEAVES_ANTIGRAVITY)
+        _assert_directory_antigravity(attempt_fd, _EXP446_PARTS_ANTIGRAVITY[2], publication_fd, publication_identity)
+        _assert_directory_antigravity(attempts_fd, _EXP446_PARTS_ANTIGRAVITY[1], attempt_fd, attempt_identity)
+        _assert_directory_antigravity(root_fd, _EXP446_PARTS_ANTIGRAVITY[0], attempts_fd, attempts_identity)
+        _assert_directory_antigravity(None, _EXP446_ROOT_ANTIGRAVITY, root_fd, root_identity)
+        return result
+    finally:
+        for pinned in pinned_leaves:
+            os.close(pinned.descriptor)
+        for descriptor in (publication_fd, attempt_fd, attempts_fd, root_fd):
+            if descriptor >= 0:
+                os.close(descriptor)
+
+__all__ = [
+    "capture_exp446_publication_antigravity",
+]

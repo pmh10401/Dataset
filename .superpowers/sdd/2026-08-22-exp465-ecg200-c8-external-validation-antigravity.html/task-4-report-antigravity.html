@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><title>Exp465 Task 4 구현 보고서</title>
+<body><main>
+<h1>Exp465 Task 4 구현 보고서</h1>
+<p><strong>상태:</strong> <code>task_4_review_pass_complete</code></p>
+<p><strong>기능 커밋:</strong> <code>b76c04a3</code>, <code>317050c0</code>, <code>dbea6a1f</code></p>
+<h2>완성된 흐름</h2>
+<ol>
+<li>원점수에서 네 AUC, 평균, finite, confirmation을 다시 계산한다.</li>
+<li>C0와 C8의 gradual·period 순서쌍을 비교해 fixed·broken을 설명값으로 만든다.</li>
+<li>C8 10/10, seed별 정상 confirmation 0, C0 대비 비열화 0을 합격 조건으로 적용한다.</li>
+<li>일곱 결과 파일을 canonical하게 만들고 임시 경로에서 publish→inspect를 재생한다.</li>
+<li>점수·AUC·Wilson·confirmation·요약·판정·대시보드 변조를 재생 단계에서 거부한다.</li>
+</ol>
+<h2>검증</h2>
+<ul>
+<li>Task 4 집중 검사: 6개 × 2회 통과</li>
+<li>Task 1–3 회귀 검사: 21개 × 1회 통과</li>
+<li><code>compileall</code>, <code>git diff --check</code> 통과</li>
+<li>ECG200 TEST, private 실행, 공식 실행 접근 없음</li>
+</ul>
+<p>Wilson <code>0.05273725818905172</code>는 설명값일 뿐 합격 기준이 아니다. 아직 실제 qualification 성능 결과는 없다.</p>
+<p><strong>최종 독립 검토:</strong> <code>SPEC PASS / QUALITY APPROVED</code>. 재생은 정확히 69개 OOF를 다시 확인하고, C0는 보존 입력으로 Exp464를 다시 실행하며, C6/C8은 원시 근거에서 다시 계산한다.</p>
+</main></body></html>

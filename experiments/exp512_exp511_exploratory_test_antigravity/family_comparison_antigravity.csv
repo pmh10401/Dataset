@@ -1,0 +1,1537 @@
+﻿source_family,comparison,budget,delta_tpr,delta_percentage_points,status
+ACSF1,MiniRocket,FP0,0.0,0.0,unchanged
+ACSF1,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+ACSF1,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+ACSF1,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+Adiac,MiniRocket,FP0,0.027027027027027084,2.7027027027027084,improved
+Adiac,MiniRocket,FPR ≤0.1%,0.027027027027027084,2.7027027027027084,improved
+Adiac,MiniRocket,FPR ≤0.5%,0.027027027027027084,2.7027027027027084,improved
+Adiac,MiniRocket,FPR ≤1%,0.027027027027027084,2.7027027027027084,improved
+AllGestureWiimoteX,MiniRocket,FP0,0.050000000000000044,5.000000000000004,improved
+AllGestureWiimoteX,MiniRocket,FPR ≤0.1%,0.050000000000000044,5.000000000000004,improved
+AllGestureWiimoteX,MiniRocket,FPR ≤0.5%,0.050000000000000044,5.000000000000004,improved
+AllGestureWiimoteX,MiniRocket,FPR ≤1%,0.050000000000000044,5.000000000000004,improved
+AllGestureWiimoteY,MiniRocket,FP0,0.15000000000000002,15.000000000000002,improved
+AllGestureWiimoteY,MiniRocket,FPR ≤0.1%,0.15000000000000002,15.000000000000002,improved
+AllGestureWiimoteY,MiniRocket,FPR ≤0.5%,0.15000000000000002,15.000000000000002,improved
+AllGestureWiimoteY,MiniRocket,FPR ≤1%,0.15000000000000002,15.000000000000002,improved
+AllGestureWiimoteZ,MiniRocket,FP0,0.0,0.0,unchanged
+AllGestureWiimoteZ,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+AllGestureWiimoteZ,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+AllGestureWiimoteZ,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+ArrowHead,MiniRocket,FP0,-0.3333333333333333,-33.33333333333333,worsened
+ArrowHead,MiniRocket,FPR ≤0.1%,-0.3333333333333333,-33.33333333333333,worsened
+ArrowHead,MiniRocket,FPR ≤0.5%,-0.3333333333333333,-33.33333333333333,worsened
+ArrowHead,MiniRocket,FPR ≤1%,-0.3333333333333333,-33.33333333333333,worsened
+BME,MiniRocket,FP0,0.0,0.0,unchanged
+BME,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+BME,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+BME,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+Beef,MiniRocket,FP0,0.0,0.0,unchanged
+Beef,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+Beef,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+Beef,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+BeetleFly,MiniRocket,FP0,-0.5,-50.0,worsened
+BeetleFly,MiniRocket,FPR ≤0.1%,-0.5,-50.0,worsened
+BeetleFly,MiniRocket,FPR ≤0.5%,-0.5,-50.0,worsened
+BeetleFly,MiniRocket,FPR ≤1%,-0.5,-50.0,worsened
+BirdChicken,MiniRocket,FP0,0.5,50.0,improved
+BirdChicken,MiniRocket,FPR ≤0.1%,0.5,50.0,improved
+BirdChicken,MiniRocket,FPR ≤0.5%,0.5,50.0,improved
+BirdChicken,MiniRocket,FPR ≤1%,0.5,50.0,improved
+CBF,MiniRocket,FP0,0.0,0.0,unchanged
+CBF,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+CBF,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+CBF,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+Car,MiniRocket,FP0,0.25,25.0,improved
+Car,MiniRocket,FPR ≤0.1%,0.25,25.0,improved
+Car,MiniRocket,FPR ≤0.5%,0.25,25.0,improved
+Car,MiniRocket,FPR ≤1%,0.25,25.0,improved
+Chinatown,MiniRocket,FP0,0.09999999999999998,9.999999999999998,improved
+Chinatown,MiniRocket,FPR ≤0.1%,0.09999999999999998,9.999999999999998,improved
+Chinatown,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+Chinatown,MiniRocket,FPR ≤1%,0.30000000000000004,30.000000000000004,improved
+ChlorineConcentration,MiniRocket,FP0,-0.21453900709219859,-21.45390070921986,worsened
+ChlorineConcentration,MiniRocket,FPR ≤0.1%,-0.22872340425531917,-22.872340425531917,worsened
+ChlorineConcentration,MiniRocket,FPR ≤0.5%,0.004609929078014163,0.46099290780141633,improved
+ChlorineConcentration,MiniRocket,FPR ≤1%,0.04503546099290778,4.503546099290778,improved
+CinCECGTorso,MiniRocket,FP0,0.0,0.0,unchanged
+CinCECGTorso,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+CinCECGTorso,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+CinCECGTorso,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+Coffee,MiniRocket,FP0,0.5,50.0,improved
+Coffee,MiniRocket,FPR ≤0.1%,0.5,50.0,improved
+Coffee,MiniRocket,FPR ≤0.5%,0.5,50.0,improved
+Coffee,MiniRocket,FPR ≤1%,0.5,50.0,improved
+Computers,MiniRocket,FP0,0.0,0.0,unchanged
+Computers,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+Computers,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+Computers,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+CricketX,MiniRocket,FP0,-0.16666666666666674,-16.666666666666675,worsened
+CricketX,MiniRocket,FPR ≤0.1%,-0.16666666666666674,-16.666666666666675,worsened
+CricketX,MiniRocket,FPR ≤0.5%,-0.16666666666666674,-16.666666666666675,worsened
+CricketX,MiniRocket,FPR ≤1%,-0.16666666666666674,-16.666666666666675,worsened
+CricketY,MiniRocket,FP0,0.0,0.0,unchanged
+CricketY,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+CricketY,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+CricketY,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+CricketZ,MiniRocket,FP0,0.08333333333333326,8.333333333333325,improved
+CricketZ,MiniRocket,FPR ≤0.1%,0.08333333333333326,8.333333333333325,improved
+CricketZ,MiniRocket,FPR ≤0.5%,0.08333333333333326,8.333333333333325,improved
+CricketZ,MiniRocket,FPR ≤1%,0.08333333333333326,8.333333333333325,improved
+Crop,MiniRocket,FP0,0.14374999999999993,14.374999999999993,improved
+Crop,MiniRocket,FPR ≤0.1%,0.14374999999999993,14.374999999999993,improved
+Crop,MiniRocket,FPR ≤0.5%,0.17083333333333317,17.083333333333318,improved
+Crop,MiniRocket,FPR ≤1%,0.1729166666666665,17.29166666666665,improved
+DiatomSizeReduction,MiniRocket,FP0,0.0,0.0,unchanged
+DiatomSizeReduction,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+DiatomSizeReduction,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+DiatomSizeReduction,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+DistalPhalanxOutlineAgeGroup,MiniRocket,FP0,-0.05555555555555558,-5.555555555555558,worsened
+DistalPhalanxOutlineAgeGroup,MiniRocket,FPR ≤0.1%,-0.05555555555555558,-5.555555555555558,worsened
+DistalPhalanxOutlineAgeGroup,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+DistalPhalanxOutlineAgeGroup,MiniRocket,FPR ≤1%,0.05555555555555547,5.5555555555555465,improved
+DistalPhalanxOutlineCorrect,MiniRocket,FP0,-0.04545454545454544,-4.545454545454544,worsened
+DistalPhalanxOutlineCorrect,MiniRocket,FPR ≤0.1%,-0.04545454545454544,-4.545454545454544,worsened
+DistalPhalanxOutlineCorrect,MiniRocket,FPR ≤0.5%,-0.04545454545454544,-4.545454545454544,worsened
+DistalPhalanxOutlineCorrect,MiniRocket,FPR ≤1%,0.09090909090909091,9.090909090909092,improved
+DistalPhalanxTW,MiniRocket,FP0,-0.16666666666666674,-16.666666666666675,worsened
+DistalPhalanxTW,MiniRocket,FPR ≤0.1%,-0.16666666666666674,-16.666666666666675,worsened
+DistalPhalanxTW,MiniRocket,FPR ≤0.5%,-0.16666666666666674,-16.666666666666675,worsened
+DistalPhalanxTW,MiniRocket,FPR ≤1%,-0.16666666666666674,-16.666666666666675,worsened
+DodgerLoopDay,MiniRocket,FP0,-0.1428571428571428,-14.28571428571428,worsened
+DodgerLoopDay,MiniRocket,FPR ≤0.1%,-0.1428571428571428,-14.28571428571428,worsened
+DodgerLoopDay,MiniRocket,FPR ≤0.5%,-0.1428571428571428,-14.28571428571428,worsened
+DodgerLoopDay,MiniRocket,FPR ≤1%,-0.1428571428571428,-14.28571428571428,worsened
+DodgerLoopGame,MiniRocket,FP0,0.0,0.0,unchanged
+DodgerLoopGame,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+DodgerLoopGame,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+DodgerLoopGame,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+DodgerLoopWeekend,MiniRocket,FP0,0.0,0.0,unchanged
+DodgerLoopWeekend,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+DodgerLoopWeekend,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+DodgerLoopWeekend,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+ECG200,MiniRocket,FP0,0.0,0.0,unchanged
+ECG200,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+ECG200,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+ECG200,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+ECG5000,MiniRocket,FP0,0.006779661016949152,0.6779661016949152,improved
+ECG5000,MiniRocket,FPR ≤0.1%,-0.061016949152542375,-6.101694915254238,worsened
+ECG5000,MiniRocket,FPR ≤0.5%,-0.02655367231638417,-2.655367231638417,worsened
+ECG5000,MiniRocket,FPR ≤1%,0.21016949152542364,21.016949152542363,improved
+ECGFiveDays,MiniRocket,FP0,0.05555555555555558,5.555555555555558,improved
+ECGFiveDays,MiniRocket,FPR ≤0.1%,0.05555555555555558,5.555555555555558,improved
+ECGFiveDays,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+ECGFiveDays,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+EOGHorizontalSignal,MiniRocket,FP0,0.08333333333333326,8.333333333333325,improved
+EOGHorizontalSignal,MiniRocket,FPR ≤0.1%,0.08333333333333326,8.333333333333325,improved
+EOGHorizontalSignal,MiniRocket,FPR ≤0.5%,0.08333333333333326,8.333333333333325,improved
+EOGHorizontalSignal,MiniRocket,FPR ≤1%,0.08333333333333326,8.333333333333325,improved
+EOGVerticalSignal,MiniRocket,FP0,0.16666666666666669,16.666666666666668,improved
+EOGVerticalSignal,MiniRocket,FPR ≤0.1%,0.16666666666666669,16.666666666666668,improved
+EOGVerticalSignal,MiniRocket,FPR ≤0.5%,0.16666666666666669,16.666666666666668,improved
+EOGVerticalSignal,MiniRocket,FPR ≤1%,0.16666666666666669,16.666666666666668,improved
+Earthquakes,MiniRocket,FP0,0.0,0.0,unchanged
+Earthquakes,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+Earthquakes,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+Earthquakes,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+ElectricDevices,MiniRocket,FP0,0.04792840385741404,4.792840385741403,improved
+ElectricDevices,MiniRocket,FPR ≤0.1%,0.03908093250813166,3.908093250813166,improved
+ElectricDevices,MiniRocket,FPR ≤0.5%,0.04599640374141756,4.599640374141756,improved
+ElectricDevices,MiniRocket,FPR ≤1%,0.04589694127989019,4.589694127989019,improved
+EthanolLevel,MiniRocket,FP0,0.0,0.0,unchanged
+EthanolLevel,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+EthanolLevel,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+EthanolLevel,MiniRocket,FPR ≤1%,0.05,5.0,improved
+FaceAll,MiniRocket,FP0,0.04999999999999993,4.999999999999993,improved
+FaceAll,MiniRocket,FPR ≤0.1%,0.04999999999999993,4.999999999999993,improved
+FaceAll,MiniRocket,FPR ≤0.5%,0.03809523809523818,3.809523809523818,improved
+FaceAll,MiniRocket,FPR ≤1%,0.014285714285714124,1.4285714285714124,improved
+FaceFour,MiniRocket,FP0,0.25,25.0,improved
+FaceFour,MiniRocket,FPR ≤0.1%,0.25,25.0,improved
+FaceFour,MiniRocket,FPR ≤0.5%,0.25,25.0,improved
+FaceFour,MiniRocket,FPR ≤1%,0.25,25.0,improved
+FacesUCR,MiniRocket,FP0,0.08571428571428585,8.571428571428585,improved
+FacesUCR,MiniRocket,FPR ≤0.1%,0.08571428571428585,8.571428571428585,improved
+FacesUCR,MiniRocket,FPR ≤0.5%,0.15714285714285725,15.714285714285726,improved
+FacesUCR,MiniRocket,FPR ≤1%,0.08571428571428585,8.571428571428585,improved
+FiftyWords,MiniRocket,FP0,0.030000000000000027,3.0000000000000027,improved
+FiftyWords,MiniRocket,FPR ≤0.1%,0.030000000000000027,3.0000000000000027,improved
+FiftyWords,MiniRocket,FPR ≤0.5%,0.030000000000000027,3.0000000000000027,improved
+FiftyWords,MiniRocket,FPR ≤1%,0.030000000000000027,3.0000000000000027,improved
+Fish,MiniRocket,FP0,0.0,0.0,unchanged
+Fish,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+Fish,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+Fish,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+FordA,MiniRocket,FP0,-0.010416666666666664,-1.0416666666666665,worsened
+FordA,MiniRocket,FPR ≤0.1%,-0.019607843137254916,-1.9607843137254917,worsened
+FordA,MiniRocket,FPR ≤0.5%,-0.007352941176470562,-0.7352941176470562,worsened
+FordA,MiniRocket,FPR ≤1%,-0.07720588235294112,-7.720588235294112,worsened
+FordB,MiniRocket,FP0,-0.07954545454545454,-7.954545454545454,worsened
+FordB,MiniRocket,FPR ≤0.1%,-0.05681818181818182,-5.6818181818181825,worsened
+FordB,MiniRocket,FPR ≤0.5%,-0.020256916996047453,-2.0256916996047454,worsened
+FordB,MiniRocket,FPR ≤1%,0.013833992094861691,1.3833992094861691,improved
+FreezerRegularTrain,MiniRocket,FP0,-0.06666666666666667,-6.666666666666667,worsened
+FreezerRegularTrain,MiniRocket,FPR ≤0.1%,-0.35,-35.0,worsened
+FreezerRegularTrain,MiniRocket,FPR ≤0.5%,-0.033333333333333326,-3.3333333333333326,worsened
+FreezerRegularTrain,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+FreezerSmallTrain,MiniRocket,FP0,0.18965517241379315,18.965517241379317,improved
+FreezerSmallTrain,MiniRocket,FPR ≤0.1%,-0.15517241379310343,-15.517241379310342,worsened
+FreezerSmallTrain,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+FreezerSmallTrain,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+Fungi,MiniRocket,FP0,0.0,0.0,unchanged
+Fungi,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+Fungi,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+Fungi,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+GestureMidAirD1,MiniRocket,FP0,-0.07692307692307687,-7.692307692307687,worsened
+GestureMidAirD1,MiniRocket,FPR ≤0.1%,-0.07692307692307687,-7.692307692307687,worsened
+GestureMidAirD1,MiniRocket,FPR ≤0.5%,-0.07692307692307687,-7.692307692307687,worsened
+GestureMidAirD1,MiniRocket,FPR ≤1%,-0.07692307692307687,-7.692307692307687,worsened
+GestureMidAirD2,MiniRocket,FP0,-0.03846153846153855,-3.8461538461538547,worsened
+GestureMidAirD2,MiniRocket,FPR ≤0.1%,-0.03846153846153855,-3.8461538461538547,worsened
+GestureMidAirD2,MiniRocket,FPR ≤0.5%,-0.03846153846153855,-3.8461538461538547,worsened
+GestureMidAirD2,MiniRocket,FPR ≤1%,-0.03846153846153855,-3.8461538461538547,worsened
+GestureMidAirD3,MiniRocket,FP0,0.11538461538461542,11.538461538461542,improved
+GestureMidAirD3,MiniRocket,FPR ≤0.1%,0.11538461538461542,11.538461538461542,improved
+GestureMidAirD3,MiniRocket,FPR ≤0.5%,0.11538461538461542,11.538461538461542,improved
+GestureMidAirD3,MiniRocket,FPR ≤1%,0.11538461538461542,11.538461538461542,improved
+GesturePebbleZ1,MiniRocket,FP0,0.16666666666666663,16.666666666666664,improved
+GesturePebbleZ1,MiniRocket,FPR ≤0.1%,0.16666666666666663,16.666666666666664,improved
+GesturePebbleZ1,MiniRocket,FPR ≤0.5%,0.16666666666666663,16.666666666666664,improved
+GesturePebbleZ1,MiniRocket,FPR ≤1%,0.16666666666666663,16.666666666666664,improved
+GesturePebbleZ2,MiniRocket,FP0,0.16666666666666663,16.666666666666664,improved
+GesturePebbleZ2,MiniRocket,FPR ≤0.1%,0.16666666666666663,16.666666666666664,improved
+GesturePebbleZ2,MiniRocket,FPR ≤0.5%,0.16666666666666663,16.666666666666664,improved
+GesturePebbleZ2,MiniRocket,FPR ≤1%,0.16666666666666663,16.666666666666664,improved
+GunPoint,MiniRocket,FP0,0.0,0.0,unchanged
+GunPoint,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+GunPoint,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+GunPoint,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+GunPointAgeSpan,MiniRocket,FP0,0.125,12.5,improved
+GunPointAgeSpan,MiniRocket,FPR ≤0.1%,0.125,12.5,improved
+GunPointAgeSpan,MiniRocket,FPR ≤0.5%,0.125,12.5,improved
+GunPointAgeSpan,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+GunPointMaleVersusFemale,MiniRocket,FP0,0.0,0.0,unchanged
+GunPointMaleVersusFemale,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+GunPointMaleVersusFemale,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+GunPointMaleVersusFemale,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+GunPointOldVersusYoung,MiniRocket,FP0,-0.25,-25.0,worsened
+GunPointOldVersusYoung,MiniRocket,FPR ≤0.1%,-0.25,-25.0,worsened
+GunPointOldVersusYoung,MiniRocket,FPR ≤0.5%,-0.25,-25.0,worsened
+GunPointOldVersusYoung,MiniRocket,FPR ≤1%,-0.125,-12.5,worsened
+Ham,MiniRocket,FP0,0.0,0.0,unchanged
+Ham,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+Ham,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+Ham,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+HandOutlines,MiniRocket,FP0,0.14705882352941177,14.705882352941178,improved
+HandOutlines,MiniRocket,FPR ≤0.1%,0.14705882352941177,14.705882352941178,improved
+HandOutlines,MiniRocket,FPR ≤0.5%,0.05882352941176472,5.882352941176472,improved
+HandOutlines,MiniRocket,FPR ≤1%,0.11764705882352941,11.76470588235294,improved
+Haptics,MiniRocket,FP0,0.0,0.0,unchanged
+Haptics,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+Haptics,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+Haptics,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+Herring,MiniRocket,FP0,0.0,0.0,unchanged
+Herring,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+Herring,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+Herring,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+HouseTwenty,MiniRocket,FP0,0.0,0.0,unchanged
+HouseTwenty,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+HouseTwenty,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+HouseTwenty,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+InlineSkate,MiniRocket,FP0,0.5,50.0,improved
+InlineSkate,MiniRocket,FPR ≤0.1%,0.5,50.0,improved
+InlineSkate,MiniRocket,FPR ≤0.5%,0.5,50.0,improved
+InlineSkate,MiniRocket,FPR ≤1%,0.5,50.0,improved
+InsectEPGRegularTrain,MiniRocket,FP0,-0.2777777777777778,-27.77777777777778,worsened
+InsectEPGRegularTrain,MiniRocket,FPR ≤0.1%,-0.2777777777777778,-27.77777777777778,worsened
+InsectEPGRegularTrain,MiniRocket,FPR ≤0.5%,-0.2777777777777778,-27.77777777777778,worsened
+InsectEPGRegularTrain,MiniRocket,FPR ≤1%,-0.16666666666666663,-16.666666666666664,worsened
+InsectEPGSmallTrain,MiniRocket,FP0,0.16666666666666669,16.666666666666668,improved
+InsectEPGSmallTrain,MiniRocket,FPR ≤0.1%,0.16666666666666669,16.666666666666668,improved
+InsectEPGSmallTrain,MiniRocket,FPR ≤0.5%,0.16666666666666669,16.666666666666668,improved
+InsectEPGSmallTrain,MiniRocket,FPR ≤1%,0.16666666666666669,16.666666666666668,improved
+InsectWingbeatSound,MiniRocket,FP0,0.06818181818181812,6.818181818181812,improved
+InsectWingbeatSound,MiniRocket,FPR ≤0.1%,0.06818181818181812,6.818181818181812,improved
+InsectWingbeatSound,MiniRocket,FPR ≤0.5%,0.06818181818181812,6.818181818181812,improved
+InsectWingbeatSound,MiniRocket,FPR ≤1%,0.11363636363636365,11.363636363636365,improved
+ItalyPowerDemand,MiniRocket,FP0,-0.045454545454545414,-4.545454545454541,worsened
+ItalyPowerDemand,MiniRocket,FPR ≤0.1%,-0.045454545454545414,-4.545454545454541,worsened
+ItalyPowerDemand,MiniRocket,FPR ≤0.5%,0.045454545454545525,4.545454545454552,improved
+ItalyPowerDemand,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+LargeKitchenAppliances,MiniRocket,FP0,0.06666666666666667,6.666666666666667,improved
+LargeKitchenAppliances,MiniRocket,FPR ≤0.1%,0.06666666666666667,6.666666666666667,improved
+LargeKitchenAppliances,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+LargeKitchenAppliances,MiniRocket,FPR ≤1%,-0.13333333333333333,-13.333333333333334,worsened
+Lightning2,MiniRocket,FP0,0.0,0.0,unchanged
+Lightning2,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+Lightning2,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+Lightning2,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+Lightning7,MiniRocket,FP0,0.1428571428571429,14.28571428571429,improved
+Lightning7,MiniRocket,FPR ≤0.1%,0.1428571428571429,14.28571428571429,improved
+Lightning7,MiniRocket,FPR ≤0.5%,0.1428571428571429,14.28571428571429,improved
+Lightning7,MiniRocket,FPR ≤1%,0.1428571428571429,14.28571428571429,improved
+Mallat,MiniRocket,FP0,0.02083333333333326,2.083333333333326,improved
+Mallat,MiniRocket,FPR ≤0.1%,0.02083333333333326,2.083333333333326,improved
+Mallat,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+Mallat,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+Meat,MiniRocket,FP0,0.0,0.0,unchanged
+Meat,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+Meat,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+Meat,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+MedicalImages,MiniRocket,FP0,-0.08333333333333326,-8.333333333333325,worsened
+MedicalImages,MiniRocket,FPR ≤0.1%,-0.08333333333333326,-8.333333333333325,worsened
+MedicalImages,MiniRocket,FPR ≤0.5%,-0.08333333333333337,-8.333333333333337,worsened
+MedicalImages,MiniRocket,FPR ≤1%,-0.07499999999999984,-7.499999999999984,worsened
+MelbournePedestrian,MiniRocket,FP0,-0.02238095238095239,-2.238095238095239,worsened
+MelbournePedestrian,MiniRocket,FPR ≤0.1%,-0.02238095238095239,-2.238095238095239,worsened
+MelbournePedestrian,MiniRocket,FPR ≤0.5%,0.005238095238095153,0.5238095238095153,improved
+MelbournePedestrian,MiniRocket,FPR ≤1%,0.0652380952380952,6.52380952380952,improved
+MiddlePhalanxOutlineAgeGroup,MiniRocket,FP0,0.08333333333333333,8.333333333333332,improved
+MiddlePhalanxOutlineAgeGroup,MiniRocket,FPR ≤0.1%,0.08333333333333333,8.333333333333332,improved
+MiddlePhalanxOutlineAgeGroup,MiniRocket,FPR ≤0.5%,0.08333333333333333,8.333333333333332,improved
+MiddlePhalanxOutlineAgeGroup,MiniRocket,FPR ≤1%,0.3666666666666667,36.66666666666667,improved
+MiddlePhalanxOutlineCorrect,MiniRocket,FP0,0.0,0.0,unchanged
+MiddlePhalanxOutlineCorrect,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+MiddlePhalanxOutlineCorrect,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+MiddlePhalanxOutlineCorrect,MiniRocket,FPR ≤1%,-0.04545454545454544,-4.545454545454544,worsened
+MiddlePhalanxTW,MiniRocket,FP0,0.0,0.0,unchanged
+MiddlePhalanxTW,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+MiddlePhalanxTW,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+MiddlePhalanxTW,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+MixedShapesRegularTrain,MiniRocket,FP0,-0.1704545454545455,-17.04545454545455,worsened
+MixedShapesRegularTrain,MiniRocket,FPR ≤0.1%,-0.1704545454545455,-17.04545454545455,worsened
+MixedShapesRegularTrain,MiniRocket,FPR ≤0.5%,-0.09230769230769231,-9.230769230769232,worsened
+MixedShapesRegularTrain,MiniRocket,FPR ≤1%,0.03384615384615375,3.384615384615375,improved
+MixedShapesSmallTrain,MiniRocket,FP0,-0.006837606837606813,-0.6837606837606813,worsened
+MixedShapesSmallTrain,MiniRocket,FPR ≤0.1%,-0.006837606837606813,-0.6837606837606813,worsened
+MixedShapesSmallTrain,MiniRocket,FPR ≤0.5%,0.09722222222222221,9.722222222222221,improved
+MixedShapesSmallTrain,MiniRocket,FPR ≤1%,0.2055555555555555,20.55555555555555,improved
+MoteStrain,MiniRocket,FP0,-0.020979020979020935,-2.0979020979020935,worsened
+MoteStrain,MiniRocket,FPR ≤0.1%,-0.020979020979020935,-2.0979020979020935,worsened
+MoteStrain,MiniRocket,FPR ≤0.5%,-0.15034965034965037,-15.034965034965037,worsened
+MoteStrain,MiniRocket,FPR ≤1%,-0.1048951048951049,-10.48951048951049,worsened
+NonInvasiveFetalECGThorax1,MiniRocket,FP0,0.0,0.0,unchanged
+NonInvasiveFetalECGThorax1,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+NonInvasiveFetalECGThorax1,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+NonInvasiveFetalECGThorax1,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+NonInvasiveFetalECGThorax2,MiniRocket,FP0,0.023809523809523836,2.3809523809523836,improved
+NonInvasiveFetalECGThorax2,MiniRocket,FPR ≤0.1%,0.023809523809523836,2.3809523809523836,improved
+NonInvasiveFetalECGThorax2,MiniRocket,FPR ≤0.5%,0.023809523809523836,2.3809523809523836,improved
+NonInvasiveFetalECGThorax2,MiniRocket,FPR ≤1%,0.023809523809523836,2.3809523809523836,improved
+OSULeaf,MiniRocket,FP0,0.0,0.0,unchanged
+OSULeaf,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+OSULeaf,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+OSULeaf,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+OliveOil,MiniRocket,FP0,-0.25,-25.0,worsened
+OliveOil,MiniRocket,FPR ≤0.1%,-0.25,-25.0,worsened
+OliveOil,MiniRocket,FPR ≤0.5%,-0.25,-25.0,worsened
+OliveOil,MiniRocket,FPR ≤1%,-0.25,-25.0,worsened
+PLAID,MiniRocket,FP0,0.030303030303030276,3.0303030303030276,improved
+PLAID,MiniRocket,FPR ≤0.1%,0.030303030303030276,3.0303030303030276,improved
+PLAID,MiniRocket,FPR ≤0.5%,0.030303030303030276,3.0303030303030276,improved
+PLAID,MiniRocket,FPR ≤1%,0.12121212121212127,12.121212121212126,improved
+PhalangesOutlinesCorrect,MiniRocket,FP0,0.014705882352941176,1.4705882352941175,improved
+PhalangesOutlinesCorrect,MiniRocket,FPR ≤0.1%,0.014705882352941176,1.4705882352941175,improved
+PhalangesOutlinesCorrect,MiniRocket,FPR ≤0.5%,-0.044117647058823525,-4.411764705882352,worsened
+PhalangesOutlinesCorrect,MiniRocket,FPR ≤1%,-0.044117647058823525,-4.411764705882352,worsened
+Phoneme,MiniRocket,FP0,-0.01315789473684209,-1.315789473684209,worsened
+Phoneme,MiniRocket,FPR ≤0.1%,-0.01315789473684209,-1.315789473684209,worsened
+Phoneme,MiniRocket,FPR ≤0.5%,-0.01315789473684209,-1.315789473684209,worsened
+Phoneme,MiniRocket,FPR ≤1%,0.010964912280701788,1.0964912280701788,improved
+PickupGestureWiimoteZ,MiniRocket,FP0,0.0,0.0,unchanged
+PickupGestureWiimoteZ,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+PickupGestureWiimoteZ,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+PickupGestureWiimoteZ,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+PigAirwayPressure,MiniRocket,FP0,0.0,0.0,unchanged
+PigAirwayPressure,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+PigAirwayPressure,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+PigAirwayPressure,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+PigArtPressure,MiniRocket,FP0,0.0,0.0,unchanged
+PigArtPressure,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+PigArtPressure,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+PigArtPressure,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+PigCVP,MiniRocket,FP0,-0.019230769230769273,-1.9230769230769273,worsened
+PigCVP,MiniRocket,FPR ≤0.1%,-0.019230769230769273,-1.9230769230769273,worsened
+PigCVP,MiniRocket,FPR ≤0.5%,-0.019230769230769273,-1.9230769230769273,worsened
+PigCVP,MiniRocket,FPR ≤1%,-0.019230769230769273,-1.9230769230769273,worsened
+Plane,MiniRocket,FP0,0.1428571428571429,14.28571428571429,improved
+Plane,MiniRocket,FPR ≤0.1%,0.1428571428571429,14.28571428571429,improved
+Plane,MiniRocket,FPR ≤0.5%,0.1428571428571429,14.28571428571429,improved
+Plane,MiniRocket,FPR ≤1%,0.1428571428571429,14.28571428571429,improved
+PowerCons,MiniRocket,FP0,0.33333333333333337,33.333333333333336,improved
+PowerCons,MiniRocket,FPR ≤0.1%,0.33333333333333337,33.333333333333336,improved
+PowerCons,MiniRocket,FPR ≤0.5%,0.33333333333333337,33.333333333333336,improved
+PowerCons,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+ProximalPhalanxOutlineAgeGroup,MiniRocket,FP0,0.06666666666666668,6.666666666666668,improved
+ProximalPhalanxOutlineAgeGroup,MiniRocket,FPR ≤0.1%,0.06666666666666668,6.666666666666668,improved
+ProximalPhalanxOutlineAgeGroup,MiniRocket,FPR ≤0.5%,0.20000000000000004,20.000000000000004,improved
+ProximalPhalanxOutlineAgeGroup,MiniRocket,FPR ≤1%,0.13333333333333336,13.333333333333336,improved
+ProximalPhalanxOutlineCorrect,MiniRocket,FP0,0.0,0.0,unchanged
+ProximalPhalanxOutlineCorrect,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+ProximalPhalanxOutlineCorrect,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+ProximalPhalanxOutlineCorrect,MiniRocket,FPR ≤1%,0.016666666666666663,1.6666666666666663,improved
+ProximalPhalanxTW,MiniRocket,FP0,-0.16666666666666674,-16.666666666666675,worsened
+ProximalPhalanxTW,MiniRocket,FPR ≤0.1%,-0.16666666666666674,-16.666666666666675,worsened
+ProximalPhalanxTW,MiniRocket,FPR ≤0.5%,-0.16666666666666674,-16.666666666666675,worsened
+ProximalPhalanxTW,MiniRocket,FPR ≤1%,-0.16666666666666674,-16.666666666666675,worsened
+RefrigerationDevices,MiniRocket,FP0,-0.19999999999999998,-20.0,worsened
+RefrigerationDevices,MiniRocket,FPR ≤0.1%,-0.19999999999999998,-20.0,worsened
+RefrigerationDevices,MiniRocket,FPR ≤0.5%,-0.4,-40.0,worsened
+RefrigerationDevices,MiniRocket,FPR ≤1%,-0.2666666666666668,-26.66666666666668,worsened
+Rock,MiniRocket,FP0,0.25,25.0,improved
+Rock,MiniRocket,FPR ≤0.1%,0.25,25.0,improved
+Rock,MiniRocket,FPR ≤0.5%,0.25,25.0,improved
+Rock,MiniRocket,FPR ≤1%,0.25,25.0,improved
+ScreenType,MiniRocket,FP0,0.13333333333333333,13.333333333333334,improved
+ScreenType,MiniRocket,FPR ≤0.1%,0.13333333333333333,13.333333333333334,improved
+ScreenType,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+ScreenType,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+SemgHandGenderCh2,MiniRocket,FP0,0.11688311688311688,11.688311688311687,improved
+SemgHandGenderCh2,MiniRocket,FPR ≤0.1%,0.11688311688311688,11.688311688311687,improved
+SemgHandGenderCh2,MiniRocket,FPR ≤0.5%,0.05844155844155846,5.844155844155846,improved
+SemgHandGenderCh2,MiniRocket,FPR ≤1%,-0.0844155844155845,-8.441558441558449,worsened
+SemgHandMovementCh2,MiniRocket,FP0,0.0,0.0,unchanged
+SemgHandMovementCh2,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+SemgHandMovementCh2,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+SemgHandMovementCh2,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+SemgHandSubjectCh2,MiniRocket,FP0,0.0,0.0,unchanged
+SemgHandSubjectCh2,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+SemgHandSubjectCh2,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+SemgHandSubjectCh2,MiniRocket,FPR ≤1%,-0.1333333333333333,-13.33333333333333,worsened
+ShakeGestureWiimoteZ,MiniRocket,FP0,0.09999999999999998,9.999999999999998,improved
+ShakeGestureWiimoteZ,MiniRocket,FPR ≤0.1%,0.09999999999999998,9.999999999999998,improved
+ShakeGestureWiimoteZ,MiniRocket,FPR ≤0.5%,0.09999999999999998,9.999999999999998,improved
+ShakeGestureWiimoteZ,MiniRocket,FPR ≤1%,0.09999999999999998,9.999999999999998,improved
+ShapeletSim,MiniRocket,FP0,0.0,0.0,unchanged
+ShapeletSim,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+ShapeletSim,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+ShapeletSim,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+ShapesAll,MiniRocket,FP0,-0.01666666666666672,-1.6666666666666718,worsened
+ShapesAll,MiniRocket,FPR ≤0.1%,-0.01666666666666672,-1.6666666666666718,worsened
+ShapesAll,MiniRocket,FPR ≤0.5%,-0.01666666666666672,-1.6666666666666718,worsened
+ShapesAll,MiniRocket,FPR ≤1%,-0.01666666666666672,-1.6666666666666718,worsened
+SmallKitchenAppliances,MiniRocket,FP0,-0.13333333333333333,-13.333333333333334,worsened
+SmallKitchenAppliances,MiniRocket,FPR ≤0.1%,-0.13333333333333333,-13.333333333333334,worsened
+SmallKitchenAppliances,MiniRocket,FPR ≤0.5%,-0.13333333333333328,-13.333333333333327,worsened
+SmallKitchenAppliances,MiniRocket,FPR ≤1%,-0.06666666666666665,-6.666666666666665,worsened
+SmoothSubspace,MiniRocket,FP0,0.5,50.0,improved
+SmoothSubspace,MiniRocket,FPR ≤0.1%,0.5,50.0,improved
+SmoothSubspace,MiniRocket,FPR ≤0.5%,0.5,50.0,improved
+SmoothSubspace,MiniRocket,FPR ≤1%,0.5,50.0,improved
+SonyAIBORobotSurface1,MiniRocket,FP0,-0.11428571428571432,-11.428571428571432,worsened
+SonyAIBORobotSurface1,MiniRocket,FPR ≤0.1%,-0.11428571428571432,-11.428571428571432,worsened
+SonyAIBORobotSurface1,MiniRocket,FPR ≤0.5%,0.02857142857142858,2.857142857142858,improved
+SonyAIBORobotSurface1,MiniRocket,FPR ≤1%,0.10000000000000009,10.000000000000009,improved
+SonyAIBORobotSurface2,MiniRocket,FP0,-0.047619047619047616,-4.761904761904762,worsened
+SonyAIBORobotSurface2,MiniRocket,FPR ≤0.1%,-0.047619047619047616,-4.761904761904762,worsened
+SonyAIBORobotSurface2,MiniRocket,FPR ≤0.5%,0.023809523809523836,2.3809523809523836,improved
+SonyAIBORobotSurface2,MiniRocket,FPR ≤1%,-0.029761904761904767,-2.9761904761904767,worsened
+StarLightCurves,MiniRocket,FP0,0.343542260208927,34.354226020892696,improved
+StarLightCurves,MiniRocket,FPR ≤0.1%,0.21699905033238365,21.699905033238366,improved
+StarLightCurves,MiniRocket,FPR ≤0.5%,-0.0030864197530863224,-0.30864197530863224,worsened
+StarLightCurves,MiniRocket,FPR ≤1%,0.04629629629629639,4.629629629629639,improved
+Strawberry,MiniRocket,FP0,-0.0714285714285714,-7.14285714285714,worsened
+Strawberry,MiniRocket,FPR ≤0.1%,-0.0714285714285714,-7.14285714285714,worsened
+Strawberry,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+Strawberry,MiniRocket,FPR ≤1%,-0.08333333333333337,-8.333333333333337,worsened
+SwedishLeaf,MiniRocket,FP0,0.06666666666666665,6.666666666666665,improved
+SwedishLeaf,MiniRocket,FPR ≤0.1%,0.06666666666666665,6.666666666666665,improved
+SwedishLeaf,MiniRocket,FPR ≤0.5%,0.06666666666666665,6.666666666666665,improved
+SwedishLeaf,MiniRocket,FPR ≤1%,0.06666666666666665,6.666666666666665,improved
+Symbols,MiniRocket,FP0,-0.11111111111111105,-11.111111111111105,worsened
+Symbols,MiniRocket,FPR ≤0.1%,-0.11111111111111105,-11.111111111111105,worsened
+Symbols,MiniRocket,FPR ≤0.5%,-0.11111111111111105,-11.111111111111105,worsened
+Symbols,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+SyntheticControl,MiniRocket,FP0,0.0,0.0,unchanged
+SyntheticControl,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+SyntheticControl,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+SyntheticControl,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+ToeSegmentation1,MiniRocket,FP0,0.0,0.0,unchanged
+ToeSegmentation1,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+ToeSegmentation1,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+ToeSegmentation1,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+ToeSegmentation2,MiniRocket,FP0,0.25,25.0,improved
+ToeSegmentation2,MiniRocket,FPR ≤0.1%,0.25,25.0,improved
+ToeSegmentation2,MiniRocket,FPR ≤0.5%,0.25,25.0,improved
+ToeSegmentation2,MiniRocket,FPR ≤1%,0.25,25.0,improved
+Trace,MiniRocket,FP0,-0.25,-25.0,worsened
+Trace,MiniRocket,FPR ≤0.1%,-0.25,-25.0,worsened
+Trace,MiniRocket,FPR ≤0.5%,-0.25,-25.0,worsened
+Trace,MiniRocket,FPR ≤1%,-0.25,-25.0,worsened
+TwoLeadECG,MiniRocket,FP0,0.045454545454545525,4.545454545454552,improved
+TwoLeadECG,MiniRocket,FPR ≤0.1%,0.045454545454545525,4.545454545454552,improved
+TwoLeadECG,MiniRocket,FPR ≤0.5%,0.09090909090909094,9.090909090909093,improved
+TwoLeadECG,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+TwoPatterns,MiniRocket,FP0,0.020000000000000018,2.0000000000000018,improved
+TwoPatterns,MiniRocket,FPR ≤0.1%,0.010000000000000009,1.0000000000000009,improved
+TwoPatterns,MiniRocket,FPR ≤0.5%,0.010000000000000009,1.0000000000000009,improved
+TwoPatterns,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+UMD,MiniRocket,FP0,0.0,0.0,unchanged
+UMD,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+UMD,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+UMD,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+UWaveGestureLibraryAll,MiniRocket,FP0,-0.022727272727272707,-2.2727272727272707,worsened
+UWaveGestureLibraryAll,MiniRocket,FPR ≤0.1%,-0.022727272727272707,-2.2727272727272707,worsened
+UWaveGestureLibraryAll,MiniRocket,FPR ≤0.5%,0.05681818181818188,5.681818181818188,improved
+UWaveGestureLibraryAll,MiniRocket,FPR ≤1%,0.03409090909090917,3.409090909090917,improved
+UWaveGestureLibraryX,MiniRocket,FP0,0.045454545454545525,4.545454545454552,improved
+UWaveGestureLibraryX,MiniRocket,FPR ≤0.1%,0.045454545454545525,4.545454545454552,improved
+UWaveGestureLibraryX,MiniRocket,FPR ≤0.5%,0.06818181818181823,6.818181818181824,improved
+UWaveGestureLibraryX,MiniRocket,FPR ≤1%,0.045454545454545414,4.545454545454541,improved
+UWaveGestureLibraryY,MiniRocket,FP0,0.13636363636363635,13.636363636363635,improved
+UWaveGestureLibraryY,MiniRocket,FPR ≤0.1%,0.13636363636363635,13.636363636363635,improved
+UWaveGestureLibraryY,MiniRocket,FPR ≤0.5%,0.09090909090909094,9.090909090909093,improved
+UWaveGestureLibraryY,MiniRocket,FPR ≤1%,0.06818181818181812,6.818181818181812,improved
+UWaveGestureLibraryZ,MiniRocket,FP0,0.11363636363636365,11.363636363636365,improved
+UWaveGestureLibraryZ,MiniRocket,FPR ≤0.1%,0.11363636363636365,11.363636363636365,improved
+UWaveGestureLibraryZ,MiniRocket,FPR ≤0.5%,0.06818181818181823,6.818181818181824,improved
+UWaveGestureLibraryZ,MiniRocket,FPR ≤1%,0.022727272727272707,2.2727272727272707,improved
+Wafer,MiniRocket,FP0,-0.021794871794871794,-2.1794871794871793,worsened
+Wafer,MiniRocket,FPR ≤0.1%,-0.14102564102564102,-14.102564102564102,worsened
+Wafer,MiniRocket,FPR ≤0.5%,-0.14615384615384608,-14.615384615384608,worsened
+Wafer,MiniRocket,FPR ≤1%,0.01538461538461533,1.538461538461533,improved
+Wine,MiniRocket,FP0,0.0,0.0,unchanged
+Wine,MiniRocket,FPR ≤0.1%,0.0,0.0,unchanged
+Wine,MiniRocket,FPR ≤0.5%,0.0,0.0,unchanged
+Wine,MiniRocket,FPR ≤1%,0.0,0.0,unchanged
+WordSynonyms,MiniRocket,FP0,0.12,12.0,improved
+WordSynonyms,MiniRocket,FPR ≤0.1%,0.12,12.0,improved
+WordSynonyms,MiniRocket,FPR ≤0.5%,0.12,12.0,improved
+WordSynonyms,MiniRocket,FPR ≤1%,0.13,13.0,improved
+Worms,MiniRocket,FP0,-0.19999999999999996,-19.999999999999996,worsened
+Worms,MiniRocket,FPR ≤0.1%,-0.19999999999999996,-19.999999999999996,worsened
+Worms,MiniRocket,FPR ≤0.5%,-0.19999999999999996,-19.999999999999996,worsened
+Worms,MiniRocket,FPR ≤1%,-0.19999999999999996,-19.999999999999996,worsened
+WormsTwoClass,MiniRocket,FP0,-0.16666666666666666,-16.666666666666664,worsened
+WormsTwoClass,MiniRocket,FPR ≤0.1%,-0.16666666666666666,-16.666666666666664,worsened
+WormsTwoClass,MiniRocket,FPR ≤0.5%,-0.16666666666666666,-16.666666666666664,worsened
+WormsTwoClass,MiniRocket,FPR ≤1%,-0.16666666666666666,-16.666666666666664,worsened
+Yoga,MiniRocket,FP0,-0.016129032258064516,-1.6129032258064515,worsened
+Yoga,MiniRocket,FPR ≤0.1%,-0.03225806451612903,-3.225806451612903,worsened
+Yoga,MiniRocket,FPR ≤0.5%,-0.09229390681003585,-9.229390681003585,worsened
+Yoga,MiniRocket,FPR ≤1%,-0.09005376344086016,-9.005376344086017,worsened
+ACSF1,square_joint,FP0,0.0,0.0,unchanged
+ACSF1,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+ACSF1,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+ACSF1,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Adiac,square_joint,FP0,0.0,0.0,unchanged
+Adiac,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Adiac,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Adiac,square_joint,FPR ≤1%,0.0,0.0,unchanged
+AllGestureWiimoteX,square_joint,FP0,0.15000000000000002,15.000000000000002,improved
+AllGestureWiimoteX,square_joint,FPR ≤0.1%,0.15000000000000002,15.000000000000002,improved
+AllGestureWiimoteX,square_joint,FPR ≤0.5%,0.15000000000000002,15.000000000000002,improved
+AllGestureWiimoteX,square_joint,FPR ≤1%,0.15000000000000002,15.000000000000002,improved
+AllGestureWiimoteY,square_joint,FP0,0.04999999999999999,4.999999999999999,improved
+AllGestureWiimoteY,square_joint,FPR ≤0.1%,0.04999999999999999,4.999999999999999,improved
+AllGestureWiimoteY,square_joint,FPR ≤0.5%,0.04999999999999999,4.999999999999999,improved
+AllGestureWiimoteY,square_joint,FPR ≤1%,0.04999999999999999,4.999999999999999,improved
+AllGestureWiimoteZ,square_joint,FP0,0.10000000000000003,10.000000000000004,improved
+AllGestureWiimoteZ,square_joint,FPR ≤0.1%,0.10000000000000003,10.000000000000004,improved
+AllGestureWiimoteZ,square_joint,FPR ≤0.5%,0.10000000000000003,10.000000000000004,improved
+AllGestureWiimoteZ,square_joint,FPR ≤1%,0.10000000000000003,10.000000000000004,improved
+ArrowHead,square_joint,FP0,0.0,0.0,unchanged
+ArrowHead,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+ArrowHead,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+ArrowHead,square_joint,FPR ≤1%,0.0,0.0,unchanged
+BME,square_joint,FP0,0.0,0.0,unchanged
+BME,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+BME,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+BME,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Beef,square_joint,FP0,0.0,0.0,unchanged
+Beef,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Beef,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Beef,square_joint,FPR ≤1%,0.0,0.0,unchanged
+BeetleFly,square_joint,FP0,0.0,0.0,unchanged
+BeetleFly,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+BeetleFly,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+BeetleFly,square_joint,FPR ≤1%,0.0,0.0,unchanged
+BirdChicken,square_joint,FP0,0.0,0.0,unchanged
+BirdChicken,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+BirdChicken,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+BirdChicken,square_joint,FPR ≤1%,0.0,0.0,unchanged
+CBF,square_joint,FP0,0.0,0.0,unchanged
+CBF,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+CBF,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+CBF,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Car,square_joint,FP0,0.0,0.0,unchanged
+Car,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Car,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Car,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Chinatown,square_joint,FP0,0.0,0.0,unchanged
+Chinatown,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Chinatown,square_joint,FPR ≤0.5%,-0.10000000000000009,-10.000000000000009,worsened
+Chinatown,square_joint,FPR ≤1%,0.0,0.0,unchanged
+ChlorineConcentration,square_joint,FP0,-0.047517730496453914,-4.751773049645392,worsened
+ChlorineConcentration,square_joint,FPR ≤0.1%,-0.047517730496453914,-4.751773049645392,worsened
+ChlorineConcentration,square_joint,FPR ≤0.5%,-0.04042553191489362,-4.042553191489362,worsened
+ChlorineConcentration,square_joint,FPR ≤1%,-0.016666666666666607,-1.6666666666666607,worsened
+CinCECGTorso,square_joint,FP0,0.1071428571428571,10.71428571428571,improved
+CinCECGTorso,square_joint,FPR ≤0.1%,0.1071428571428571,10.71428571428571,improved
+CinCECGTorso,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+CinCECGTorso,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Coffee,square_joint,FP0,0.0,0.0,unchanged
+Coffee,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Coffee,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Coffee,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Computers,square_joint,FP0,0.0,0.0,unchanged
+Computers,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Computers,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Computers,square_joint,FPR ≤1%,0.0,0.0,unchanged
+CricketX,square_joint,FP0,-0.16666666666666674,-16.666666666666675,worsened
+CricketX,square_joint,FPR ≤0.1%,-0.16666666666666674,-16.666666666666675,worsened
+CricketX,square_joint,FPR ≤0.5%,-0.16666666666666674,-16.666666666666675,worsened
+CricketX,square_joint,FPR ≤1%,-0.16666666666666674,-16.666666666666675,worsened
+CricketY,square_joint,FP0,0.08333333333333337,8.333333333333337,improved
+CricketY,square_joint,FPR ≤0.1%,0.08333333333333337,8.333333333333337,improved
+CricketY,square_joint,FPR ≤0.5%,0.08333333333333337,8.333333333333337,improved
+CricketY,square_joint,FPR ≤1%,0.08333333333333337,8.333333333333337,improved
+CricketZ,square_joint,FP0,-0.08333333333333337,-8.333333333333337,worsened
+CricketZ,square_joint,FPR ≤0.1%,-0.08333333333333337,-8.333333333333337,worsened
+CricketZ,square_joint,FPR ≤0.5%,-0.08333333333333337,-8.333333333333337,worsened
+CricketZ,square_joint,FPR ≤1%,-0.08333333333333337,-8.333333333333337,worsened
+Crop,square_joint,FP0,0.004166666666666596,0.41666666666665964,improved
+Crop,square_joint,FPR ≤0.1%,0.004166666666666596,0.41666666666665964,improved
+Crop,square_joint,FPR ≤0.5%,0.025000000000000133,2.5000000000000133,improved
+Crop,square_joint,FPR ≤1%,0.014583333333333282,1.4583333333333282,improved
+DiatomSizeReduction,square_joint,FP0,0.0,0.0,unchanged
+DiatomSizeReduction,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+DiatomSizeReduction,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+DiatomSizeReduction,square_joint,FPR ≤1%,0.0,0.0,unchanged
+DistalPhalanxOutlineAgeGroup,square_joint,FP0,0.0,0.0,unchanged
+DistalPhalanxOutlineAgeGroup,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+DistalPhalanxOutlineAgeGroup,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+DistalPhalanxOutlineAgeGroup,square_joint,FPR ≤1%,0.0,0.0,unchanged
+DistalPhalanxOutlineCorrect,square_joint,FP0,0.0,0.0,unchanged
+DistalPhalanxOutlineCorrect,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+DistalPhalanxOutlineCorrect,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+DistalPhalanxOutlineCorrect,square_joint,FPR ≤1%,0.09090909090909091,9.090909090909092,improved
+DistalPhalanxTW,square_joint,FP0,0.0,0.0,unchanged
+DistalPhalanxTW,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+DistalPhalanxTW,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+DistalPhalanxTW,square_joint,FPR ≤1%,0.0,0.0,unchanged
+DodgerLoopDay,square_joint,FP0,0.0,0.0,unchanged
+DodgerLoopDay,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+DodgerLoopDay,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+DodgerLoopDay,square_joint,FPR ≤1%,0.0,0.0,unchanged
+DodgerLoopGame,square_joint,FP0,0.0,0.0,unchanged
+DodgerLoopGame,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+DodgerLoopGame,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+DodgerLoopGame,square_joint,FPR ≤1%,0.0,0.0,unchanged
+DodgerLoopWeekend,square_joint,FP0,0.0,0.0,unchanged
+DodgerLoopWeekend,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+DodgerLoopWeekend,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+DodgerLoopWeekend,square_joint,FPR ≤1%,0.0,0.0,unchanged
+ECG200,square_joint,FP0,0.0,0.0,unchanged
+ECG200,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+ECG200,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+ECG200,square_joint,FPR ≤1%,0.0,0.0,unchanged
+ECG5000,square_joint,FP0,0.0,0.0,unchanged
+ECG5000,square_joint,FPR ≤0.1%,0.0033898305084745775,0.3389830508474577,improved
+ECG5000,square_joint,FPR ≤0.5%,0.020338983050847442,2.0338983050847443,improved
+ECG5000,square_joint,FPR ≤1%,-0.011111111111111183,-1.1111111111111183,worsened
+ECGFiveDays,square_joint,FP0,0.0,0.0,unchanged
+ECGFiveDays,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+ECGFiveDays,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+ECGFiveDays,square_joint,FPR ≤1%,0.0,0.0,unchanged
+EOGHorizontalSignal,square_joint,FP0,0.0,0.0,unchanged
+EOGHorizontalSignal,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+EOGHorizontalSignal,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+EOGHorizontalSignal,square_joint,FPR ≤1%,0.0,0.0,unchanged
+EOGVerticalSignal,square_joint,FP0,0.0,0.0,unchanged
+EOGVerticalSignal,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+EOGVerticalSignal,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+EOGVerticalSignal,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Earthquakes,square_joint,FP0,0.0,0.0,unchanged
+Earthquakes,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Earthquakes,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Earthquakes,square_joint,FPR ≤1%,0.0,0.0,unchanged
+ElectricDevices,square_joint,FP0,0.00658165510836739,0.658165510836739,improved
+ElectricDevices,square_joint,FPR ≤0.1%,-0.02097456907291212,-2.097456907291212,worsened
+ElectricDevices,square_joint,FPR ≤0.5%,-0.0006451562407656652,-0.06451562407656652,worsened
+ElectricDevices,square_joint,FPR ≤1%,0.0075269313971523255,0.7526931397152326,improved
+EthanolLevel,square_joint,FP0,0.0,0.0,unchanged
+EthanolLevel,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+EthanolLevel,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+EthanolLevel,square_joint,FPR ≤1%,0.05,5.0,improved
+FaceAll,square_joint,FP0,1.1102230246251565e-16,1.1102230246251565e-14,unchanged
+FaceAll,square_joint,FPR ≤0.1%,1.1102230246251565e-16,1.1102230246251565e-14,unchanged
+FaceAll,square_joint,FPR ≤0.5%,0.023809523809523725,2.3809523809523725,improved
+FaceAll,square_joint,FPR ≤1%,-0.04761904761904767,-4.761904761904767,worsened
+FaceFour,square_joint,FP0,0.0,0.0,unchanged
+FaceFour,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+FaceFour,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+FaceFour,square_joint,FPR ≤1%,0.0,0.0,unchanged
+FacesUCR,square_joint,FP0,0.04761904761904767,4.761904761904767,improved
+FacesUCR,square_joint,FPR ≤0.1%,0.04761904761904767,4.761904761904767,improved
+FacesUCR,square_joint,FPR ≤0.5%,0.04761904761904756,4.761904761904756,improved
+FacesUCR,square_joint,FPR ≤1%,-0.04761904761904756,-4.761904761904756,worsened
+FiftyWords,square_joint,FP0,0.010000000000000009,1.0000000000000009,improved
+FiftyWords,square_joint,FPR ≤0.1%,0.010000000000000009,1.0000000000000009,improved
+FiftyWords,square_joint,FPR ≤0.5%,0.010000000000000009,1.0000000000000009,improved
+FiftyWords,square_joint,FPR ≤1%,0.010000000000000009,1.0000000000000009,improved
+Fish,square_joint,FP0,0.0,0.0,unchanged
+Fish,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Fish,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Fish,square_joint,FPR ≤1%,0.0,0.0,unchanged
+FordA,square_joint,FP0,-0.020833333333333336,-2.0833333333333335,worsened
+FordA,square_joint,FPR ≤0.1%,-0.009191176470588244,-0.9191176470588245,worsened
+FordA,square_joint,FPR ≤0.5%,-0.060049019607843146,-6.004901960784315,worsened
+FordA,square_joint,FPR ≤1%,-0.0404411764705882,-4.044117647058821,worsened
+FordB,square_joint,FP0,-0.056818181818181816,-5.681818181818182,worsened
+FordB,square_joint,FPR ≤0.1%,-0.022727272727272728,-2.272727272727273,worsened
+FordB,square_joint,FPR ≤0.5%,-0.07806324110671942,-7.806324110671942,worsened
+FordB,square_joint,FPR ≤1%,-0.03260869565217389,-3.260869565217389,worsened
+FreezerRegularTrain,square_joint,FP0,0.0,0.0,unchanged
+FreezerRegularTrain,square_joint,FPR ≤0.1%,0.21666666666666665,21.666666666666664,improved
+FreezerRegularTrain,square_joint,FPR ≤0.5%,-0.033333333333333326,-3.3333333333333326,worsened
+FreezerRegularTrain,square_joint,FPR ≤1%,0.0,0.0,unchanged
+FreezerSmallTrain,square_joint,FP0,0.0,0.0,unchanged
+FreezerSmallTrain,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+FreezerSmallTrain,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+FreezerSmallTrain,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Fungi,square_joint,FP0,0.0,0.0,unchanged
+Fungi,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Fungi,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Fungi,square_joint,FPR ≤1%,0.0,0.0,unchanged
+GestureMidAirD1,square_joint,FP0,0.0,0.0,unchanged
+GestureMidAirD1,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+GestureMidAirD1,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+GestureMidAirD1,square_joint,FPR ≤1%,0.0,0.0,unchanged
+GestureMidAirD2,square_joint,FP0,0.0,0.0,unchanged
+GestureMidAirD2,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+GestureMidAirD2,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+GestureMidAirD2,square_joint,FPR ≤1%,0.0,0.0,unchanged
+GestureMidAirD3,square_joint,FP0,0.0,0.0,unchanged
+GestureMidAirD3,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+GestureMidAirD3,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+GestureMidAirD3,square_joint,FPR ≤1%,0.0,0.0,unchanged
+GesturePebbleZ1,square_joint,FP0,0.0,0.0,unchanged
+GesturePebbleZ1,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+GesturePebbleZ1,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+GesturePebbleZ1,square_joint,FPR ≤1%,0.0,0.0,unchanged
+GesturePebbleZ2,square_joint,FP0,0.0,0.0,unchanged
+GesturePebbleZ2,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+GesturePebbleZ2,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+GesturePebbleZ2,square_joint,FPR ≤1%,0.0,0.0,unchanged
+GunPoint,square_joint,FP0,0.0,0.0,unchanged
+GunPoint,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+GunPoint,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+GunPoint,square_joint,FPR ≤1%,0.0,0.0,unchanged
+GunPointAgeSpan,square_joint,FP0,0.0,0.0,unchanged
+GunPointAgeSpan,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+GunPointAgeSpan,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+GunPointAgeSpan,square_joint,FPR ≤1%,0.0,0.0,unchanged
+GunPointMaleVersusFemale,square_joint,FP0,-0.25,-25.0,worsened
+GunPointMaleVersusFemale,square_joint,FPR ≤0.1%,-0.25,-25.0,worsened
+GunPointMaleVersusFemale,square_joint,FPR ≤0.5%,-0.25,-25.0,worsened
+GunPointMaleVersusFemale,square_joint,FPR ≤1%,0.0,0.0,unchanged
+GunPointOldVersusYoung,square_joint,FP0,0.0,0.0,unchanged
+GunPointOldVersusYoung,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+GunPointOldVersusYoung,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+GunPointOldVersusYoung,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Ham,square_joint,FP0,-0.25,-25.0,worsened
+Ham,square_joint,FPR ≤0.1%,-0.25,-25.0,worsened
+Ham,square_joint,FPR ≤0.5%,-0.25,-25.0,worsened
+Ham,square_joint,FPR ≤1%,-0.25,-25.0,worsened
+HandOutlines,square_joint,FP0,0.0,0.0,unchanged
+HandOutlines,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+HandOutlines,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+HandOutlines,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Haptics,square_joint,FP0,0.0,0.0,unchanged
+Haptics,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Haptics,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Haptics,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Herring,square_joint,FP0,0.0,0.0,unchanged
+Herring,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Herring,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Herring,square_joint,FPR ≤1%,0.0,0.0,unchanged
+HouseTwenty,square_joint,FP0,0.0,0.0,unchanged
+HouseTwenty,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+HouseTwenty,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+HouseTwenty,square_joint,FPR ≤1%,0.0,0.0,unchanged
+InlineSkate,square_joint,FP0,0.0714285714285714,7.14285714285714,improved
+InlineSkate,square_joint,FPR ≤0.1%,0.0714285714285714,7.14285714285714,improved
+InlineSkate,square_joint,FPR ≤0.5%,0.0714285714285714,7.14285714285714,improved
+InlineSkate,square_joint,FPR ≤1%,0.0714285714285714,7.14285714285714,improved
+InsectEPGRegularTrain,square_joint,FP0,-0.11111111111111116,-11.111111111111116,worsened
+InsectEPGRegularTrain,square_joint,FPR ≤0.1%,-0.11111111111111116,-11.111111111111116,worsened
+InsectEPGRegularTrain,square_joint,FPR ≤0.5%,-0.11111111111111116,-11.111111111111116,worsened
+InsectEPGRegularTrain,square_joint,FPR ≤1%,0.0,0.0,unchanged
+InsectEPGSmallTrain,square_joint,FP0,0.16666666666666669,16.666666666666668,improved
+InsectEPGSmallTrain,square_joint,FPR ≤0.1%,0.16666666666666669,16.666666666666668,improved
+InsectEPGSmallTrain,square_joint,FPR ≤0.5%,0.16666666666666669,16.666666666666668,improved
+InsectEPGSmallTrain,square_joint,FPR ≤1%,0.16666666666666669,16.666666666666668,improved
+InsectWingbeatSound,square_joint,FP0,-0.06818181818181823,-6.818181818181824,worsened
+InsectWingbeatSound,square_joint,FPR ≤0.1%,-0.06818181818181823,-6.818181818181824,worsened
+InsectWingbeatSound,square_joint,FPR ≤0.5%,-0.06818181818181823,-6.818181818181824,worsened
+InsectWingbeatSound,square_joint,FPR ≤1%,0.045454545454545414,4.545454545454541,improved
+ItalyPowerDemand,square_joint,FP0,0.2272727272727273,22.72727272727273,improved
+ItalyPowerDemand,square_joint,FPR ≤0.1%,0.2272727272727273,22.72727272727273,improved
+ItalyPowerDemand,square_joint,FPR ≤0.5%,0.13636363636363635,13.636363636363635,improved
+ItalyPowerDemand,square_joint,FPR ≤1%,0.09090909090909094,9.090909090909093,improved
+LargeKitchenAppliances,square_joint,FP0,0.0,0.0,unchanged
+LargeKitchenAppliances,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+LargeKitchenAppliances,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+LargeKitchenAppliances,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Lightning2,square_joint,FP0,0.0,0.0,unchanged
+Lightning2,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Lightning2,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Lightning2,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Lightning7,square_joint,FP0,0.0,0.0,unchanged
+Lightning7,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Lightning7,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Lightning7,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Mallat,square_joint,FP0,0.0,0.0,unchanged
+Mallat,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Mallat,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Mallat,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Meat,square_joint,FP0,0.0,0.0,unchanged
+Meat,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Meat,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Meat,square_joint,FPR ≤1%,0.0,0.0,unchanged
+MedicalImages,square_joint,FP0,-0.09166666666666667,-9.166666666666668,worsened
+MedicalImages,square_joint,FPR ≤0.1%,-0.09166666666666667,-9.166666666666668,worsened
+MedicalImages,square_joint,FPR ≤0.5%,-0.09166666666666667,-9.166666666666668,worsened
+MedicalImages,square_joint,FPR ≤1%,-0.07499999999999984,-7.499999999999984,worsened
+MelbournePedestrian,square_joint,FP0,0.02857142857142858,2.857142857142858,improved
+MelbournePedestrian,square_joint,FPR ≤0.1%,0.02857142857142858,2.857142857142858,improved
+MelbournePedestrian,square_joint,FPR ≤0.5%,-0.014285714285714235,-1.4285714285714235,worsened
+MelbournePedestrian,square_joint,FPR ≤1%,0.014285714285714235,1.4285714285714235,improved
+MiddlePhalanxOutlineAgeGroup,square_joint,FP0,0.0,0.0,unchanged
+MiddlePhalanxOutlineAgeGroup,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+MiddlePhalanxOutlineAgeGroup,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+MiddlePhalanxOutlineAgeGroup,square_joint,FPR ≤1%,0.15000000000000002,15.000000000000002,improved
+MiddlePhalanxOutlineCorrect,square_joint,FP0,0.0,0.0,unchanged
+MiddlePhalanxOutlineCorrect,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+MiddlePhalanxOutlineCorrect,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+MiddlePhalanxOutlineCorrect,square_joint,FPR ≤1%,0.0,0.0,unchanged
+MiddlePhalanxTW,square_joint,FP0,0.0,0.0,unchanged
+MiddlePhalanxTW,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+MiddlePhalanxTW,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+MiddlePhalanxTW,square_joint,FPR ≤1%,0.0,0.0,unchanged
+MixedShapesRegularTrain,square_joint,FP0,-0.07272727272727272,-7.2727272727272725,worsened
+MixedShapesRegularTrain,square_joint,FPR ≤0.1%,-0.07272727272727272,-7.2727272727272725,worsened
+MixedShapesRegularTrain,square_joint,FPR ≤0.5%,0.06713286713286704,6.713286713286704,improved
+MixedShapesRegularTrain,square_joint,FPR ≤1%,0.01538461538461533,1.538461538461533,improved
+MixedShapesSmallTrain,square_joint,FP0,0.0888888888888889,8.888888888888891,improved
+MixedShapesSmallTrain,square_joint,FPR ≤0.1%,0.0888888888888889,8.888888888888891,improved
+MixedShapesSmallTrain,square_joint,FPR ≤0.5%,0.06666666666666665,6.666666666666665,improved
+MixedShapesSmallTrain,square_joint,FPR ≤1%,0.10833333333333317,10.833333333333318,improved
+MoteStrain,square_joint,FP0,0.03846153846153849,3.8461538461538494,improved
+MoteStrain,square_joint,FPR ≤0.1%,0.03846153846153849,3.8461538461538494,improved
+MoteStrain,square_joint,FPR ≤0.5%,-0.16783216783216787,-16.783216783216787,worsened
+MoteStrain,square_joint,FPR ≤1%,-0.045454545454545414,-4.545454545454541,worsened
+NonInvasiveFetalECGThorax1,square_joint,FP0,0.0,0.0,unchanged
+NonInvasiveFetalECGThorax1,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+NonInvasiveFetalECGThorax1,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+NonInvasiveFetalECGThorax1,square_joint,FPR ≤1%,0.0,0.0,unchanged
+NonInvasiveFetalECGThorax2,square_joint,FP0,0.0,0.0,unchanged
+NonInvasiveFetalECGThorax2,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+NonInvasiveFetalECGThorax2,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+NonInvasiveFetalECGThorax2,square_joint,FPR ≤1%,0.0,0.0,unchanged
+OSULeaf,square_joint,FP0,0.0,0.0,unchanged
+OSULeaf,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+OSULeaf,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+OSULeaf,square_joint,FPR ≤1%,0.0,0.0,unchanged
+OliveOil,square_joint,FP0,0.0,0.0,unchanged
+OliveOil,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+OliveOil,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+OliveOil,square_joint,FPR ≤1%,0.0,0.0,unchanged
+PLAID,square_joint,FP0,0.10606060606060602,10.606060606060602,improved
+PLAID,square_joint,FPR ≤0.1%,0.10606060606060602,10.606060606060602,improved
+PLAID,square_joint,FPR ≤0.5%,0.10606060606060602,10.606060606060602,improved
+PLAID,square_joint,FPR ≤1%,0.0757575757575758,7.57575757575758,improved
+PhalangesOutlinesCorrect,square_joint,FP0,0.0,0.0,unchanged
+PhalangesOutlinesCorrect,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+PhalangesOutlinesCorrect,square_joint,FPR ≤0.5%,0.01470588235294118,1.470588235294118,improved
+PhalangesOutlinesCorrect,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Phoneme,square_joint,FP0,-0.017543859649122806,-1.7543859649122806,worsened
+Phoneme,square_joint,FPR ≤0.1%,-0.017543859649122806,-1.7543859649122806,worsened
+Phoneme,square_joint,FPR ≤0.5%,-0.017543859649122806,-1.7543859649122806,worsened
+Phoneme,square_joint,FPR ≤1%,0.006578947368421073,0.6578947368421073,improved
+PickupGestureWiimoteZ,square_joint,FP0,0.0,0.0,unchanged
+PickupGestureWiimoteZ,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+PickupGestureWiimoteZ,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+PickupGestureWiimoteZ,square_joint,FPR ≤1%,0.0,0.0,unchanged
+PigAirwayPressure,square_joint,FP0,0.0,0.0,unchanged
+PigAirwayPressure,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+PigAirwayPressure,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+PigAirwayPressure,square_joint,FPR ≤1%,0.0,0.0,unchanged
+PigArtPressure,square_joint,FP0,0.0,0.0,unchanged
+PigArtPressure,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+PigArtPressure,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+PigArtPressure,square_joint,FPR ≤1%,0.0,0.0,unchanged
+PigCVP,square_joint,FP0,0.0,0.0,unchanged
+PigCVP,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+PigCVP,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+PigCVP,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Plane,square_joint,FP0,0.0,0.0,unchanged
+Plane,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Plane,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Plane,square_joint,FPR ≤1%,0.0,0.0,unchanged
+PowerCons,square_joint,FP0,-0.16666666666666663,-16.666666666666664,worsened
+PowerCons,square_joint,FPR ≤0.1%,-0.16666666666666663,-16.666666666666664,worsened
+PowerCons,square_joint,FPR ≤0.5%,-0.16666666666666663,-16.666666666666664,worsened
+PowerCons,square_joint,FPR ≤1%,-0.16666666666666674,-16.666666666666675,worsened
+ProximalPhalanxOutlineAgeGroup,square_joint,FP0,-0.13333333333333336,-13.333333333333336,worsened
+ProximalPhalanxOutlineAgeGroup,square_joint,FPR ≤0.1%,-0.13333333333333336,-13.333333333333336,worsened
+ProximalPhalanxOutlineAgeGroup,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+ProximalPhalanxOutlineAgeGroup,square_joint,FPR ≤1%,0.0,0.0,unchanged
+ProximalPhalanxOutlineCorrect,square_joint,FP0,0.0,0.0,unchanged
+ProximalPhalanxOutlineCorrect,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+ProximalPhalanxOutlineCorrect,square_joint,FPR ≤0.5%,0.04166666666666667,4.166666666666667,improved
+ProximalPhalanxOutlineCorrect,square_joint,FPR ≤1%,0.0,0.0,unchanged
+ProximalPhalanxTW,square_joint,FP0,0.0,0.0,unchanged
+ProximalPhalanxTW,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+ProximalPhalanxTW,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+ProximalPhalanxTW,square_joint,FPR ≤1%,0.0,0.0,unchanged
+RefrigerationDevices,square_joint,FP0,-0.13333333333333333,-13.333333333333334,worsened
+RefrigerationDevices,square_joint,FPR ≤0.1%,-0.13333333333333333,-13.333333333333334,worsened
+RefrigerationDevices,square_joint,FPR ≤0.5%,-0.13333333333333333,-13.333333333333334,worsened
+RefrigerationDevices,square_joint,FPR ≤1%,0.06666666666666665,6.666666666666665,improved
+Rock,square_joint,FP0,0.0,0.0,unchanged
+Rock,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Rock,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Rock,square_joint,FPR ≤1%,0.0,0.0,unchanged
+ScreenType,square_joint,FP0,0.06666666666666667,6.666666666666667,improved
+ScreenType,square_joint,FPR ≤0.1%,0.06666666666666667,6.666666666666667,improved
+ScreenType,square_joint,FPR ≤0.5%,0.06666666666666667,6.666666666666667,improved
+ScreenType,square_joint,FPR ≤1%,0.0,0.0,unchanged
+SemgHandGenderCh2,square_joint,FP0,0.07142857142857142,7.142857142857142,improved
+SemgHandGenderCh2,square_joint,FPR ≤0.1%,0.07142857142857142,7.142857142857142,improved
+SemgHandGenderCh2,square_joint,FPR ≤0.5%,-0.0714285714285714,-7.14285714285714,worsened
+SemgHandGenderCh2,square_joint,FPR ≤1%,-0.13636363636363646,-13.636363636363647,worsened
+SemgHandMovementCh2,square_joint,FP0,-0.05555555555555558,-5.555555555555558,worsened
+SemgHandMovementCh2,square_joint,FPR ≤0.1%,-0.05555555555555558,-5.555555555555558,worsened
+SemgHandMovementCh2,square_joint,FPR ≤0.5%,-0.05555555555555558,-5.555555555555558,worsened
+SemgHandMovementCh2,square_joint,FPR ≤1%,-0.11111111111111105,-11.111111111111105,worsened
+SemgHandSubjectCh2,square_joint,FP0,0.0,0.0,unchanged
+SemgHandSubjectCh2,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+SemgHandSubjectCh2,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+SemgHandSubjectCh2,square_joint,FPR ≤1%,-0.06666666666666665,-6.666666666666665,worsened
+ShakeGestureWiimoteZ,square_joint,FP0,0.0,0.0,unchanged
+ShakeGestureWiimoteZ,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+ShakeGestureWiimoteZ,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+ShakeGestureWiimoteZ,square_joint,FPR ≤1%,0.0,0.0,unchanged
+ShapeletSim,square_joint,FP0,0.0,0.0,unchanged
+ShapeletSim,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+ShapeletSim,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+ShapeletSim,square_joint,FPR ≤1%,0.0,0.0,unchanged
+ShapesAll,square_joint,FP0,0.0,0.0,unchanged
+ShapesAll,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+ShapesAll,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+ShapesAll,square_joint,FPR ≤1%,0.0,0.0,unchanged
+SmallKitchenAppliances,square_joint,FP0,-0.13333333333333333,-13.333333333333334,worsened
+SmallKitchenAppliances,square_joint,FPR ≤0.1%,-0.13333333333333333,-13.333333333333334,worsened
+SmallKitchenAppliances,square_joint,FPR ≤0.5%,-0.13333333333333328,-13.333333333333327,worsened
+SmallKitchenAppliances,square_joint,FPR ≤1%,0.0,0.0,unchanged
+SmoothSubspace,square_joint,FP0,0.16666666666666663,16.666666666666664,improved
+SmoothSubspace,square_joint,FPR ≤0.1%,0.16666666666666663,16.666666666666664,improved
+SmoothSubspace,square_joint,FPR ≤0.5%,0.16666666666666663,16.666666666666664,improved
+SmoothSubspace,square_joint,FPR ≤1%,0.16666666666666663,16.666666666666664,improved
+SonyAIBORobotSurface1,square_joint,FP0,-0.1428571428571429,-14.28571428571429,worsened
+SonyAIBORobotSurface1,square_joint,FPR ≤0.1%,-0.1428571428571429,-14.28571428571429,worsened
+SonyAIBORobotSurface1,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+SonyAIBORobotSurface1,square_joint,FPR ≤1%,0.0,0.0,unchanged
+SonyAIBORobotSurface2,square_joint,FP0,-0.041666666666666685,-4.166666666666669,worsened
+SonyAIBORobotSurface2,square_joint,FPR ≤0.1%,-0.041666666666666685,-4.166666666666669,worsened
+SonyAIBORobotSurface2,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+SonyAIBORobotSurface2,square_joint,FPR ≤1%,0.0,0.0,unchanged
+StarLightCurves,square_joint,FP0,-0.0064102564102563875,-0.6410256410256387,worsened
+StarLightCurves,square_joint,FPR ≤0.1%,0.005935422602089124,0.5935422602089124,improved
+StarLightCurves,square_joint,FPR ≤0.5%,0.0030864197530865445,0.30864197530865445,improved
+StarLightCurves,square_joint,FPR ≤1%,0.0185185185185186,1.85185185185186,improved
+Strawberry,square_joint,FP0,0.0,0.0,unchanged
+Strawberry,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Strawberry,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Strawberry,square_joint,FPR ≤1%,0.0,0.0,unchanged
+SwedishLeaf,square_joint,FP0,0.06666666666666665,6.666666666666665,improved
+SwedishLeaf,square_joint,FPR ≤0.1%,0.06666666666666665,6.666666666666665,improved
+SwedishLeaf,square_joint,FPR ≤0.5%,0.06666666666666665,6.666666666666665,improved
+SwedishLeaf,square_joint,FPR ≤1%,0.06666666666666665,6.666666666666665,improved
+Symbols,square_joint,FP0,0.0,0.0,unchanged
+Symbols,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Symbols,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Symbols,square_joint,FPR ≤1%,0.0,0.0,unchanged
+SyntheticControl,square_joint,FP0,0.0,0.0,unchanged
+SyntheticControl,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+SyntheticControl,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+SyntheticControl,square_joint,FPR ≤1%,0.0,0.0,unchanged
+ToeSegmentation1,square_joint,FP0,-0.25,-25.0,worsened
+ToeSegmentation1,square_joint,FPR ≤0.1%,-0.25,-25.0,worsened
+ToeSegmentation1,square_joint,FPR ≤0.5%,-0.25,-25.0,worsened
+ToeSegmentation1,square_joint,FPR ≤1%,-0.25,-25.0,worsened
+ToeSegmentation2,square_joint,FP0,0.0,0.0,unchanged
+ToeSegmentation2,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+ToeSegmentation2,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+ToeSegmentation2,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Trace,square_joint,FP0,-0.25,-25.0,worsened
+Trace,square_joint,FPR ≤0.1%,-0.25,-25.0,worsened
+Trace,square_joint,FPR ≤0.5%,-0.25,-25.0,worsened
+Trace,square_joint,FPR ≤1%,-0.25,-25.0,worsened
+TwoLeadECG,square_joint,FP0,0.045454545454545525,4.545454545454552,improved
+TwoLeadECG,square_joint,FPR ≤0.1%,0.045454545454545525,4.545454545454552,improved
+TwoLeadECG,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+TwoLeadECG,square_joint,FPR ≤1%,0.0,0.0,unchanged
+TwoPatterns,square_joint,FP0,0.020000000000000018,2.0000000000000018,improved
+TwoPatterns,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+TwoPatterns,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+TwoPatterns,square_joint,FPR ≤1%,0.0,0.0,unchanged
+UMD,square_joint,FP0,0.0,0.0,unchanged
+UMD,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+UMD,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+UMD,square_joint,FPR ≤1%,0.0,0.0,unchanged
+UWaveGestureLibraryAll,square_joint,FP0,-0.022727272727272707,-2.2727272727272707,worsened
+UWaveGestureLibraryAll,square_joint,FPR ≤0.1%,-0.022727272727272707,-2.2727272727272707,worsened
+UWaveGestureLibraryAll,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+UWaveGestureLibraryAll,square_joint,FPR ≤1%,0.022727272727272707,2.2727272727272707,improved
+UWaveGestureLibraryX,square_joint,FP0,0.0,0.0,unchanged
+UWaveGestureLibraryX,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+UWaveGestureLibraryX,square_joint,FPR ≤0.5%,-0.045454545454545414,-4.545454545454541,worsened
+UWaveGestureLibraryX,square_joint,FPR ≤1%,0.07954545454545447,7.954545454545448,improved
+UWaveGestureLibraryY,square_joint,FP0,0.03409090909090906,3.409090909090906,improved
+UWaveGestureLibraryY,square_joint,FPR ≤0.1%,0.03409090909090906,3.409090909090906,improved
+UWaveGestureLibraryY,square_joint,FPR ≤0.5%,0.022727272727272707,2.2727272727272707,improved
+UWaveGestureLibraryY,square_joint,FPR ≤1%,0.011363636363636354,1.1363636363636354,improved
+UWaveGestureLibraryZ,square_joint,FP0,-0.03409090909090917,-3.409090909090917,worsened
+UWaveGestureLibraryZ,square_joint,FPR ≤0.1%,-0.03409090909090917,-3.409090909090917,worsened
+UWaveGestureLibraryZ,square_joint,FPR ≤0.5%,0.011363636363636465,1.1363636363636465,improved
+UWaveGestureLibraryZ,square_joint,FPR ≤1%,0.011363636363636354,1.1363636363636354,improved
+Wafer,square_joint,FP0,0.0038461538461538464,0.38461538461538464,improved
+Wafer,square_joint,FPR ≤0.1%,0.011538461538461553,1.1538461538461553,improved
+Wafer,square_joint,FPR ≤0.5%,-0.1217948717948718,-12.17948717948718,worsened
+Wafer,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Wine,square_joint,FP0,0.0,0.0,unchanged
+Wine,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Wine,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+Wine,square_joint,FPR ≤1%,0.0,0.0,unchanged
+WordSynonyms,square_joint,FP0,0.020000000000000018,2.0000000000000018,improved
+WordSynonyms,square_joint,FPR ≤0.1%,0.020000000000000018,2.0000000000000018,improved
+WordSynonyms,square_joint,FPR ≤0.5%,0.020000000000000018,2.0000000000000018,improved
+WordSynonyms,square_joint,FPR ≤1%,0.020000000000000018,2.0000000000000018,improved
+Worms,square_joint,FP0,-0.19999999999999996,-19.999999999999996,worsened
+Worms,square_joint,FPR ≤0.1%,-0.19999999999999996,-19.999999999999996,worsened
+Worms,square_joint,FPR ≤0.5%,-0.19999999999999996,-19.999999999999996,worsened
+Worms,square_joint,FPR ≤1%,-0.19999999999999996,-19.999999999999996,worsened
+WormsTwoClass,square_joint,FP0,0.0,0.0,unchanged
+WormsTwoClass,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+WormsTwoClass,square_joint,FPR ≤0.5%,0.0,0.0,unchanged
+WormsTwoClass,square_joint,FPR ≤1%,0.0,0.0,unchanged
+Yoga,square_joint,FP0,0.0,0.0,unchanged
+Yoga,square_joint,FPR ≤0.1%,0.0,0.0,unchanged
+Yoga,square_joint,FPR ≤0.5%,0.04166666666666666,4.166666666666666,improved
+Yoga,square_joint,FPR ≤1%,0.01612903225806453,1.6129032258064528,improved
+ACSF1,crossfit_unweighted,FP0,0.0,0.0,unchanged
+ACSF1,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+ACSF1,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+ACSF1,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Adiac,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Adiac,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Adiac,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Adiac,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+AllGestureWiimoteX,crossfit_unweighted,FP0,0.10000000000000003,10.000000000000004,improved
+AllGestureWiimoteX,crossfit_unweighted,FPR ≤0.1%,0.10000000000000003,10.000000000000004,improved
+AllGestureWiimoteX,crossfit_unweighted,FPR ≤0.5%,0.10000000000000003,10.000000000000004,improved
+AllGestureWiimoteX,crossfit_unweighted,FPR ≤1%,0.10000000000000003,10.000000000000004,improved
+AllGestureWiimoteY,crossfit_unweighted,FP0,0.15000000000000002,15.000000000000002,improved
+AllGestureWiimoteY,crossfit_unweighted,FPR ≤0.1%,0.15000000000000002,15.000000000000002,improved
+AllGestureWiimoteY,crossfit_unweighted,FPR ≤0.5%,0.15000000000000002,15.000000000000002,improved
+AllGestureWiimoteY,crossfit_unweighted,FPR ≤1%,0.15000000000000002,15.000000000000002,improved
+AllGestureWiimoteZ,crossfit_unweighted,FP0,0.0,0.0,unchanged
+AllGestureWiimoteZ,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+AllGestureWiimoteZ,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+AllGestureWiimoteZ,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+ArrowHead,crossfit_unweighted,FP0,0.0,0.0,unchanged
+ArrowHead,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+ArrowHead,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+ArrowHead,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+BME,crossfit_unweighted,FP0,0.0,0.0,unchanged
+BME,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+BME,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+BME,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Beef,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Beef,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Beef,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Beef,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+BeetleFly,crossfit_unweighted,FP0,0.0,0.0,unchanged
+BeetleFly,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+BeetleFly,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+BeetleFly,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+BirdChicken,crossfit_unweighted,FP0,0.0,0.0,unchanged
+BirdChicken,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+BirdChicken,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+BirdChicken,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+CBF,crossfit_unweighted,FP0,0.0,0.0,unchanged
+CBF,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+CBF,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+CBF,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Car,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Car,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Car,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Car,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Chinatown,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Chinatown,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Chinatown,crossfit_unweighted,FPR ≤0.5%,-0.10000000000000009,-10.000000000000009,worsened
+Chinatown,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+ChlorineConcentration,crossfit_unweighted,FP0,0.0,0.0,unchanged
+ChlorineConcentration,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+ChlorineConcentration,crossfit_unweighted,FPR ≤0.5%,0.03333333333333344,3.3333333333333437,improved
+ChlorineConcentration,crossfit_unweighted,FPR ≤1%,0.016666666666666607,1.6666666666666607,improved
+CinCECGTorso,crossfit_unweighted,FP0,0.1071428571428571,10.71428571428571,improved
+CinCECGTorso,crossfit_unweighted,FPR ≤0.1%,0.1071428571428571,10.71428571428571,improved
+CinCECGTorso,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+CinCECGTorso,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Coffee,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Coffee,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Coffee,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Coffee,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Computers,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Computers,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Computers,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Computers,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+CricketX,crossfit_unweighted,FP0,0.0,0.0,unchanged
+CricketX,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+CricketX,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+CricketX,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+CricketY,crossfit_unweighted,FP0,0.16666666666666674,16.666666666666675,improved
+CricketY,crossfit_unweighted,FPR ≤0.1%,0.16666666666666674,16.666666666666675,improved
+CricketY,crossfit_unweighted,FPR ≤0.5%,0.16666666666666674,16.666666666666675,improved
+CricketY,crossfit_unweighted,FPR ≤1%,0.16666666666666674,16.666666666666675,improved
+CricketZ,crossfit_unweighted,FP0,-0.08333333333333337,-8.333333333333337,worsened
+CricketZ,crossfit_unweighted,FPR ≤0.1%,-0.08333333333333337,-8.333333333333337,worsened
+CricketZ,crossfit_unweighted,FPR ≤0.5%,-0.08333333333333337,-8.333333333333337,worsened
+CricketZ,crossfit_unweighted,FPR ≤1%,-0.08333333333333337,-8.333333333333337,worsened
+Crop,crossfit_unweighted,FP0,0.002083333333333326,0.2083333333333326,improved
+Crop,crossfit_unweighted,FPR ≤0.1%,0.002083333333333326,0.2083333333333326,improved
+Crop,crossfit_unweighted,FPR ≤0.5%,0.02083333333333337,2.083333333333337,improved
+Crop,crossfit_unweighted,FPR ≤1%,0.016666666666666607,1.6666666666666607,improved
+DiatomSizeReduction,crossfit_unweighted,FP0,0.0,0.0,unchanged
+DiatomSizeReduction,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+DiatomSizeReduction,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+DiatomSizeReduction,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+DistalPhalanxOutlineAgeGroup,crossfit_unweighted,FP0,0.0,0.0,unchanged
+DistalPhalanxOutlineAgeGroup,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+DistalPhalanxOutlineAgeGroup,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+DistalPhalanxOutlineAgeGroup,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+DistalPhalanxOutlineCorrect,crossfit_unweighted,FP0,0.0,0.0,unchanged
+DistalPhalanxOutlineCorrect,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+DistalPhalanxOutlineCorrect,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+DistalPhalanxOutlineCorrect,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+DistalPhalanxTW,crossfit_unweighted,FP0,0.0,0.0,unchanged
+DistalPhalanxTW,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+DistalPhalanxTW,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+DistalPhalanxTW,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+DodgerLoopDay,crossfit_unweighted,FP0,0.0,0.0,unchanged
+DodgerLoopDay,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+DodgerLoopDay,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+DodgerLoopDay,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+DodgerLoopGame,crossfit_unweighted,FP0,0.0,0.0,unchanged
+DodgerLoopGame,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+DodgerLoopGame,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+DodgerLoopGame,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+DodgerLoopWeekend,crossfit_unweighted,FP0,0.0,0.0,unchanged
+DodgerLoopWeekend,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+DodgerLoopWeekend,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+DodgerLoopWeekend,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+ECG200,crossfit_unweighted,FP0,0.0,0.0,unchanged
+ECG200,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+ECG200,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+ECG200,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+ECG5000,crossfit_unweighted,FP0,0.0,0.0,unchanged
+ECG5000,crossfit_unweighted,FPR ≤0.1%,0.0033898305084745775,0.3389830508474577,improved
+ECG5000,crossfit_unweighted,FPR ≤0.5%,0.03851224105461393,3.8512241054613927,improved
+ECG5000,crossfit_unweighted,FPR ≤1%,-0.00772128060263666,-0.772128060263666,worsened
+ECGFiveDays,crossfit_unweighted,FP0,0.0,0.0,unchanged
+ECGFiveDays,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+ECGFiveDays,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+ECGFiveDays,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+EOGHorizontalSignal,crossfit_unweighted,FP0,0.0,0.0,unchanged
+EOGHorizontalSignal,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+EOGHorizontalSignal,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+EOGHorizontalSignal,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+EOGVerticalSignal,crossfit_unweighted,FP0,0.08333333333333331,8.333333333333332,improved
+EOGVerticalSignal,crossfit_unweighted,FPR ≤0.1%,0.08333333333333331,8.333333333333332,improved
+EOGVerticalSignal,crossfit_unweighted,FPR ≤0.5%,0.08333333333333331,8.333333333333332,improved
+EOGVerticalSignal,crossfit_unweighted,FPR ≤1%,0.08333333333333331,8.333333333333332,improved
+Earthquakes,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Earthquakes,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Earthquakes,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Earthquakes,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+ElectricDevices,crossfit_unweighted,FP0,0.02422377051015595,2.4223770510155953,improved
+ElectricDevices,crossfit_unweighted,FPR ≤0.1%,-0.008173729804218322,-0.8173729804218322,worsened
+ElectricDevices,crossfit_unweighted,FPR ≤0.5%,0.017409222309613614,1.7409222309613614,improved
+ElectricDevices,crossfit_unweighted,FPR ≤1%,0.008903763196885683,0.8903763196885683,improved
+EthanolLevel,crossfit_unweighted,FP0,0.0,0.0,unchanged
+EthanolLevel,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+EthanolLevel,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+EthanolLevel,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+FaceAll,crossfit_unweighted,FP0,0.026190476190476097,2.6190476190476097,improved
+FaceAll,crossfit_unweighted,FPR ≤0.1%,0.026190476190476097,2.6190476190476097,improved
+FaceAll,crossfit_unweighted,FPR ≤0.5%,0.03571428571428581,3.571428571428581,improved
+FaceAll,crossfit_unweighted,FPR ≤1%,-0.011904761904761862,-1.1904761904761862,worsened
+FaceFour,crossfit_unweighted,FP0,0.0,0.0,unchanged
+FaceFour,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+FaceFour,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+FaceFour,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+FacesUCR,crossfit_unweighted,FP0,0.023809523809523947,2.3809523809523947,improved
+FacesUCR,crossfit_unweighted,FPR ≤0.1%,0.023809523809523947,2.3809523809523947,improved
+FacesUCR,crossfit_unweighted,FPR ≤0.5%,0.023809523809523836,2.3809523809523836,improved
+FacesUCR,crossfit_unweighted,FPR ≤1%,-0.04761904761904756,-4.761904761904756,worsened
+FiftyWords,crossfit_unweighted,FP0,-0.019999999999999907,-1.9999999999999907,worsened
+FiftyWords,crossfit_unweighted,FPR ≤0.1%,-0.019999999999999907,-1.9999999999999907,worsened
+FiftyWords,crossfit_unweighted,FPR ≤0.5%,-0.019999999999999907,-1.9999999999999907,worsened
+FiftyWords,crossfit_unweighted,FPR ≤1%,-0.019999999999999907,-1.9999999999999907,worsened
+Fish,crossfit_unweighted,FP0,-0.14285714285714285,-14.285714285714285,worsened
+Fish,crossfit_unweighted,FPR ≤0.1%,-0.14285714285714285,-14.285714285714285,worsened
+Fish,crossfit_unweighted,FPR ≤0.5%,-0.14285714285714285,-14.285714285714285,worsened
+Fish,crossfit_unweighted,FPR ≤1%,-0.14285714285714285,-14.285714285714285,worsened
+FordA,crossfit_unweighted,FP0,0.0,0.0,unchanged
+FordA,crossfit_unweighted,FPR ≤0.1%,-0.009803921568627458,-0.9803921568627458,worsened
+FordA,crossfit_unweighted,FPR ≤0.5%,-0.050245098039215674,-5.024509803921568,worsened
+FordA,crossfit_unweighted,FPR ≤1%,-0.009803921568627416,-0.9803921568627416,worsened
+FordB,crossfit_unweighted,FP0,0.0,0.0,unchanged
+FordB,crossfit_unweighted,FPR ≤0.1%,-0.03409090909090909,-3.4090909090909087,worsened
+FordB,crossfit_unweighted,FPR ≤0.5%,-0.022233201581027706,-2.2233201581027706,worsened
+FordB,crossfit_unweighted,FPR ≤1%,-0.010869565217391297,-1.0869565217391297,worsened
+FreezerRegularTrain,crossfit_unweighted,FP0,0.0,0.0,unchanged
+FreezerRegularTrain,crossfit_unweighted,FPR ≤0.1%,0.18333333333333332,18.333333333333332,improved
+FreezerRegularTrain,crossfit_unweighted,FPR ≤0.5%,-0.01666666666666672,-1.6666666666666718,worsened
+FreezerRegularTrain,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+FreezerSmallTrain,crossfit_unweighted,FP0,0.05172413793103453,5.172413793103453,improved
+FreezerSmallTrain,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+FreezerSmallTrain,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+FreezerSmallTrain,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Fungi,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Fungi,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Fungi,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Fungi,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+GestureMidAirD1,crossfit_unweighted,FP0,0.0,0.0,unchanged
+GestureMidAirD1,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+GestureMidAirD1,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+GestureMidAirD1,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+GestureMidAirD2,crossfit_unweighted,FP0,0.0,0.0,unchanged
+GestureMidAirD2,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+GestureMidAirD2,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+GestureMidAirD2,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+GestureMidAirD3,crossfit_unweighted,FP0,0.0,0.0,unchanged
+GestureMidAirD3,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+GestureMidAirD3,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+GestureMidAirD3,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+GesturePebbleZ1,crossfit_unweighted,FP0,0.0,0.0,unchanged
+GesturePebbleZ1,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+GesturePebbleZ1,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+GesturePebbleZ1,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+GesturePebbleZ2,crossfit_unweighted,FP0,0.0,0.0,unchanged
+GesturePebbleZ2,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+GesturePebbleZ2,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+GesturePebbleZ2,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+GunPoint,crossfit_unweighted,FP0,0.0,0.0,unchanged
+GunPoint,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+GunPoint,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+GunPoint,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+GunPointAgeSpan,crossfit_unweighted,FP0,0.0,0.0,unchanged
+GunPointAgeSpan,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+GunPointAgeSpan,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+GunPointAgeSpan,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+GunPointMaleVersusFemale,crossfit_unweighted,FP0,0.0,0.0,unchanged
+GunPointMaleVersusFemale,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+GunPointMaleVersusFemale,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+GunPointMaleVersusFemale,crossfit_unweighted,FPR ≤1%,0.25,25.0,improved
+GunPointOldVersusYoung,crossfit_unweighted,FP0,0.0,0.0,unchanged
+GunPointOldVersusYoung,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+GunPointOldVersusYoung,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+GunPointOldVersusYoung,crossfit_unweighted,FPR ≤1%,-0.125,-12.5,worsened
+Ham,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Ham,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Ham,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Ham,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+HandOutlines,crossfit_unweighted,FP0,0.0,0.0,unchanged
+HandOutlines,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+HandOutlines,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+HandOutlines,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Haptics,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Haptics,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Haptics,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Haptics,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Herring,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Herring,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Herring,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Herring,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+HouseTwenty,crossfit_unweighted,FP0,0.0,0.0,unchanged
+HouseTwenty,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+HouseTwenty,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+HouseTwenty,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+InlineSkate,crossfit_unweighted,FP0,0.14285714285714285,14.285714285714285,improved
+InlineSkate,crossfit_unweighted,FPR ≤0.1%,0.14285714285714285,14.285714285714285,improved
+InlineSkate,crossfit_unweighted,FPR ≤0.5%,0.14285714285714285,14.285714285714285,improved
+InlineSkate,crossfit_unweighted,FPR ≤1%,0.14285714285714285,14.285714285714285,improved
+InsectEPGRegularTrain,crossfit_unweighted,FP0,-0.11111111111111116,-11.111111111111116,worsened
+InsectEPGRegularTrain,crossfit_unweighted,FPR ≤0.1%,-0.11111111111111116,-11.111111111111116,worsened
+InsectEPGRegularTrain,crossfit_unweighted,FPR ≤0.5%,-0.11111111111111116,-11.111111111111116,worsened
+InsectEPGRegularTrain,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+InsectEPGSmallTrain,crossfit_unweighted,FP0,0.0,0.0,unchanged
+InsectEPGSmallTrain,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+InsectEPGSmallTrain,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+InsectEPGSmallTrain,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+InsectWingbeatSound,crossfit_unweighted,FP0,0.022727272727272707,2.2727272727272707,improved
+InsectWingbeatSound,crossfit_unweighted,FPR ≤0.1%,0.022727272727272707,2.2727272727272707,improved
+InsectWingbeatSound,crossfit_unweighted,FPR ≤0.5%,0.022727272727272707,2.2727272727272707,improved
+InsectWingbeatSound,crossfit_unweighted,FPR ≤1%,0.022727272727272707,2.2727272727272707,improved
+ItalyPowerDemand,crossfit_unweighted,FP0,0.18181818181818182,18.181818181818183,improved
+ItalyPowerDemand,crossfit_unweighted,FPR ≤0.1%,0.18181818181818182,18.181818181818183,improved
+ItalyPowerDemand,crossfit_unweighted,FPR ≤0.5%,0.09090909090909094,9.090909090909093,improved
+ItalyPowerDemand,crossfit_unweighted,FPR ≤1%,0.09090909090909094,9.090909090909093,improved
+LargeKitchenAppliances,crossfit_unweighted,FP0,0.0,0.0,unchanged
+LargeKitchenAppliances,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+LargeKitchenAppliances,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+LargeKitchenAppliances,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Lightning2,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Lightning2,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Lightning2,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Lightning2,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Lightning7,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Lightning7,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Lightning7,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Lightning7,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Mallat,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Mallat,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Mallat,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Mallat,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Meat,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Meat,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Meat,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Meat,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+MedicalImages,crossfit_unweighted,FP0,-0.09166666666666667,-9.166666666666668,worsened
+MedicalImages,crossfit_unweighted,FPR ≤0.1%,-0.09166666666666667,-9.166666666666668,worsened
+MedicalImages,crossfit_unweighted,FPR ≤0.5%,-0.09166666666666667,-9.166666666666668,worsened
+MedicalImages,crossfit_unweighted,FPR ≤1%,-0.07499999999999984,-7.499999999999984,worsened
+MelbournePedestrian,crossfit_unweighted,FP0,0.04285714285714287,4.285714285714287,improved
+MelbournePedestrian,crossfit_unweighted,FPR ≤0.1%,0.04285714285714287,4.285714285714287,improved
+MelbournePedestrian,crossfit_unweighted,FPR ≤0.5%,-0.03428571428571425,-3.4285714285714253,worsened
+MelbournePedestrian,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+MiddlePhalanxOutlineAgeGroup,crossfit_unweighted,FP0,0.0,0.0,unchanged
+MiddlePhalanxOutlineAgeGroup,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+MiddlePhalanxOutlineAgeGroup,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+MiddlePhalanxOutlineAgeGroup,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+MiddlePhalanxOutlineCorrect,crossfit_unweighted,FP0,0.0,0.0,unchanged
+MiddlePhalanxOutlineCorrect,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+MiddlePhalanxOutlineCorrect,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+MiddlePhalanxOutlineCorrect,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+MiddlePhalanxTW,crossfit_unweighted,FP0,0.0,0.0,unchanged
+MiddlePhalanxTW,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+MiddlePhalanxTW,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+MiddlePhalanxTW,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+MixedShapesRegularTrain,crossfit_unweighted,FP0,0.0,0.0,unchanged
+MixedShapesRegularTrain,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+MixedShapesRegularTrain,crossfit_unweighted,FPR ≤0.5%,0.010769230769230753,1.0769230769230753,improved
+MixedShapesRegularTrain,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+MixedShapesSmallTrain,crossfit_unweighted,FP0,0.06666666666666665,6.666666666666665,improved
+MixedShapesSmallTrain,crossfit_unweighted,FPR ≤0.1%,0.06666666666666665,6.666666666666665,improved
+MixedShapesSmallTrain,crossfit_unweighted,FPR ≤0.5%,0.06666666666666665,6.666666666666665,improved
+MixedShapesSmallTrain,crossfit_unweighted,FPR ≤1%,0.04166666666666674,4.166666666666674,improved
+MoteStrain,crossfit_unweighted,FP0,0.07692307692307693,7.6923076923076925,improved
+MoteStrain,crossfit_unweighted,FPR ≤0.1%,0.07692307692307693,7.6923076923076925,improved
+MoteStrain,crossfit_unweighted,FPR ≤0.5%,-0.04545454545454547,-4.545454545454547,worsened
+MoteStrain,crossfit_unweighted,FPR ≤1%,-0.045454545454545414,-4.545454545454541,worsened
+NonInvasiveFetalECGThorax1,crossfit_unweighted,FP0,0.023809523809523836,2.3809523809523836,improved
+NonInvasiveFetalECGThorax1,crossfit_unweighted,FPR ≤0.1%,0.023809523809523836,2.3809523809523836,improved
+NonInvasiveFetalECGThorax1,crossfit_unweighted,FPR ≤0.5%,0.023809523809523836,2.3809523809523836,improved
+NonInvasiveFetalECGThorax1,crossfit_unweighted,FPR ≤1%,0.023809523809523836,2.3809523809523836,improved
+NonInvasiveFetalECGThorax2,crossfit_unweighted,FP0,0.0,0.0,unchanged
+NonInvasiveFetalECGThorax2,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+NonInvasiveFetalECGThorax2,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+NonInvasiveFetalECGThorax2,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+OSULeaf,crossfit_unweighted,FP0,0.0,0.0,unchanged
+OSULeaf,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+OSULeaf,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+OSULeaf,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+OliveOil,crossfit_unweighted,FP0,0.0,0.0,unchanged
+OliveOil,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+OliveOil,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+OliveOil,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+PLAID,crossfit_unweighted,FP0,0.015151515151515138,1.5151515151515138,improved
+PLAID,crossfit_unweighted,FPR ≤0.1%,0.015151515151515138,1.5151515151515138,improved
+PLAID,crossfit_unweighted,FPR ≤0.5%,0.015151515151515138,1.5151515151515138,improved
+PLAID,crossfit_unweighted,FPR ≤1%,-0.015151515151515027,-1.5151515151515027,worsened
+PhalangesOutlinesCorrect,crossfit_unweighted,FP0,0.0,0.0,unchanged
+PhalangesOutlinesCorrect,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+PhalangesOutlinesCorrect,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+PhalangesOutlinesCorrect,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Phoneme,crossfit_unweighted,FP0,0.01754385964912275,1.754385964912275,improved
+Phoneme,crossfit_unweighted,FPR ≤0.1%,0.01754385964912275,1.754385964912275,improved
+Phoneme,crossfit_unweighted,FPR ≤0.5%,0.01754385964912275,1.754385964912275,improved
+Phoneme,crossfit_unweighted,FPR ≤1%,0.032894736842105254,3.2894736842105257,improved
+PickupGestureWiimoteZ,crossfit_unweighted,FP0,0.0,0.0,unchanged
+PickupGestureWiimoteZ,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+PickupGestureWiimoteZ,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+PickupGestureWiimoteZ,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+PigAirwayPressure,crossfit_unweighted,FP0,0.0,0.0,unchanged
+PigAirwayPressure,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+PigAirwayPressure,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+PigAirwayPressure,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+PigArtPressure,crossfit_unweighted,FP0,0.0,0.0,unchanged
+PigArtPressure,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+PigArtPressure,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+PigArtPressure,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+PigCVP,crossfit_unweighted,FP0,0.0,0.0,unchanged
+PigCVP,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+PigCVP,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+PigCVP,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Plane,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Plane,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Plane,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Plane,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+PowerCons,crossfit_unweighted,FP0,-0.16666666666666663,-16.666666666666664,worsened
+PowerCons,crossfit_unweighted,FPR ≤0.1%,-0.16666666666666663,-16.666666666666664,worsened
+PowerCons,crossfit_unweighted,FPR ≤0.5%,-0.16666666666666663,-16.666666666666664,worsened
+PowerCons,crossfit_unweighted,FPR ≤1%,-0.16666666666666674,-16.666666666666675,worsened
+ProximalPhalanxOutlineAgeGroup,crossfit_unweighted,FP0,0.0,0.0,unchanged
+ProximalPhalanxOutlineAgeGroup,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+ProximalPhalanxOutlineAgeGroup,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+ProximalPhalanxOutlineAgeGroup,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+ProximalPhalanxOutlineCorrect,crossfit_unweighted,FP0,0.0,0.0,unchanged
+ProximalPhalanxOutlineCorrect,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+ProximalPhalanxOutlineCorrect,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+ProximalPhalanxOutlineCorrect,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+ProximalPhalanxTW,crossfit_unweighted,FP0,0.0,0.0,unchanged
+ProximalPhalanxTW,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+ProximalPhalanxTW,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+ProximalPhalanxTW,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+RefrigerationDevices,crossfit_unweighted,FP0,-0.06666666666666667,-6.666666666666667,worsened
+RefrigerationDevices,crossfit_unweighted,FPR ≤0.1%,-0.06666666666666667,-6.666666666666667,worsened
+RefrigerationDevices,crossfit_unweighted,FPR ≤0.5%,-0.06666666666666665,-6.666666666666665,worsened
+RefrigerationDevices,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Rock,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Rock,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Rock,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Rock,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+ScreenType,crossfit_unweighted,FP0,0.13333333333333333,13.333333333333334,improved
+ScreenType,crossfit_unweighted,FPR ≤0.1%,0.13333333333333333,13.333333333333334,improved
+ScreenType,crossfit_unweighted,FPR ≤0.5%,0.06666666666666667,6.666666666666667,improved
+ScreenType,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+SemgHandGenderCh2,crossfit_unweighted,FP0,0.07142857142857142,7.142857142857142,improved
+SemgHandGenderCh2,crossfit_unweighted,FPR ≤0.1%,0.07142857142857142,7.142857142857142,improved
+SemgHandGenderCh2,crossfit_unweighted,FPR ≤0.5%,-0.0714285714285714,-7.14285714285714,worsened
+SemgHandGenderCh2,crossfit_unweighted,FPR ≤1%,-0.045454545454545525,-4.545454545454552,worsened
+SemgHandMovementCh2,crossfit_unweighted,FP0,0.0,0.0,unchanged
+SemgHandMovementCh2,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+SemgHandMovementCh2,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+SemgHandMovementCh2,crossfit_unweighted,FPR ≤1%,-0.05555555555555558,-5.555555555555558,worsened
+SemgHandSubjectCh2,crossfit_unweighted,FP0,0.0,0.0,unchanged
+SemgHandSubjectCh2,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+SemgHandSubjectCh2,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+SemgHandSubjectCh2,crossfit_unweighted,FPR ≤1%,-0.1333333333333333,-13.33333333333333,worsened
+ShakeGestureWiimoteZ,crossfit_unweighted,FP0,0.0,0.0,unchanged
+ShakeGestureWiimoteZ,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+ShakeGestureWiimoteZ,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+ShakeGestureWiimoteZ,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+ShapeletSim,crossfit_unweighted,FP0,0.0,0.0,unchanged
+ShapeletSim,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+ShapeletSim,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+ShapeletSim,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+ShapesAll,crossfit_unweighted,FP0,0.0,0.0,unchanged
+ShapesAll,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+ShapesAll,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+ShapesAll,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+SmallKitchenAppliances,crossfit_unweighted,FP0,-0.13333333333333333,-13.333333333333334,worsened
+SmallKitchenAppliances,crossfit_unweighted,FPR ≤0.1%,-0.13333333333333333,-13.333333333333334,worsened
+SmallKitchenAppliances,crossfit_unweighted,FPR ≤0.5%,-0.06666666666666662,-6.6666666666666625,worsened
+SmallKitchenAppliances,crossfit_unweighted,FPR ≤1%,0.06666666666666665,6.666666666666665,improved
+SmoothSubspace,crossfit_unweighted,FP0,0.0,0.0,unchanged
+SmoothSubspace,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+SmoothSubspace,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+SmoothSubspace,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+SonyAIBORobotSurface1,crossfit_unweighted,FP0,0.0,0.0,unchanged
+SonyAIBORobotSurface1,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+SonyAIBORobotSurface1,crossfit_unweighted,FPR ≤0.5%,0.1428571428571429,14.28571428571429,improved
+SonyAIBORobotSurface1,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+SonyAIBORobotSurface2,crossfit_unweighted,FP0,-0.041666666666666685,-4.166666666666669,worsened
+SonyAIBORobotSurface2,crossfit_unweighted,FPR ≤0.1%,-0.041666666666666685,-4.166666666666669,worsened
+SonyAIBORobotSurface2,crossfit_unweighted,FPR ≤0.5%,0.07142857142857151,7.142857142857151,improved
+SonyAIBORobotSurface2,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+StarLightCurves,crossfit_unweighted,FP0,-0.0064102564102563875,-0.6410256410256387,worsened
+StarLightCurves,crossfit_unweighted,FPR ≤0.1%,0.005935422602089124,0.5935422602089124,improved
+StarLightCurves,crossfit_unweighted,FPR ≤0.5%,0.0030864197530865445,0.30864197530865445,improved
+StarLightCurves,crossfit_unweighted,FPR ≤1%,0.04629629629629639,4.629629629629639,improved
+Strawberry,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Strawberry,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Strawberry,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Strawberry,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+SwedishLeaf,crossfit_unweighted,FP0,0.06666666666666665,6.666666666666665,improved
+SwedishLeaf,crossfit_unweighted,FPR ≤0.1%,0.06666666666666665,6.666666666666665,improved
+SwedishLeaf,crossfit_unweighted,FPR ≤0.5%,0.06666666666666665,6.666666666666665,improved
+SwedishLeaf,crossfit_unweighted,FPR ≤1%,0.06666666666666665,6.666666666666665,improved
+Symbols,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Symbols,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Symbols,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Symbols,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+SyntheticControl,crossfit_unweighted,FP0,0.0,0.0,unchanged
+SyntheticControl,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+SyntheticControl,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+SyntheticControl,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+ToeSegmentation1,crossfit_unweighted,FP0,-0.25,-25.0,worsened
+ToeSegmentation1,crossfit_unweighted,FPR ≤0.1%,-0.25,-25.0,worsened
+ToeSegmentation1,crossfit_unweighted,FPR ≤0.5%,-0.25,-25.0,worsened
+ToeSegmentation1,crossfit_unweighted,FPR ≤1%,-0.25,-25.0,worsened
+ToeSegmentation2,crossfit_unweighted,FP0,0.0,0.0,unchanged
+ToeSegmentation2,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+ToeSegmentation2,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+ToeSegmentation2,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Trace,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Trace,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Trace,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Trace,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+TwoLeadECG,crossfit_unweighted,FP0,0.09090909090909105,9.090909090909104,improved
+TwoLeadECG,crossfit_unweighted,FPR ≤0.1%,0.09090909090909105,9.090909090909104,improved
+TwoLeadECG,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+TwoLeadECG,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+TwoPatterns,crossfit_unweighted,FP0,0.010000000000000009,1.0000000000000009,improved
+TwoPatterns,crossfit_unweighted,FPR ≤0.1%,0.010000000000000009,1.0000000000000009,improved
+TwoPatterns,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+TwoPatterns,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+UMD,crossfit_unweighted,FP0,0.0,0.0,unchanged
+UMD,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+UMD,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+UMD,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+UWaveGestureLibraryAll,crossfit_unweighted,FP0,0.07954545454545464,7.954545454545464,improved
+UWaveGestureLibraryAll,crossfit_unweighted,FPR ≤0.1%,0.07954545454545464,7.954545454545464,improved
+UWaveGestureLibraryAll,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+UWaveGestureLibraryAll,crossfit_unweighted,FPR ≤1%,0.011363636363636354,1.1363636363636354,improved
+UWaveGestureLibraryX,crossfit_unweighted,FP0,0.011363636363636354,1.1363636363636354,improved
+UWaveGestureLibraryX,crossfit_unweighted,FPR ≤0.1%,0.011363636363636354,1.1363636363636354,improved
+UWaveGestureLibraryX,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+UWaveGestureLibraryX,crossfit_unweighted,FPR ≤1%,0.07954545454545447,7.954545454545448,improved
+UWaveGestureLibraryY,crossfit_unweighted,FP0,0.011363636363636354,1.1363636363636354,improved
+UWaveGestureLibraryY,crossfit_unweighted,FPR ≤0.1%,0.011363636363636354,1.1363636363636354,improved
+UWaveGestureLibraryY,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+UWaveGestureLibraryY,crossfit_unweighted,FPR ≤1%,0.03409090909090906,3.409090909090906,improved
+UWaveGestureLibraryZ,crossfit_unweighted,FP0,0.022727272727272707,2.2727272727272707,improved
+UWaveGestureLibraryZ,crossfit_unweighted,FPR ≤0.1%,0.022727272727272707,2.2727272727272707,improved
+UWaveGestureLibraryZ,crossfit_unweighted,FPR ≤0.5%,0.011363636363636465,1.1363636363636465,improved
+UWaveGestureLibraryZ,crossfit_unweighted,FPR ≤1%,0.022727272727272707,2.2727272727272707,improved
+Wafer,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Wafer,crossfit_unweighted,FPR ≤0.1%,0.02692307692307694,2.692307692307694,improved
+Wafer,crossfit_unweighted,FPR ≤0.5%,-0.08846153846153837,-8.846153846153836,worsened
+Wafer,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Wine,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Wine,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Wine,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+Wine,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+WordSynonyms,crossfit_unweighted,FP0,0.020000000000000018,2.0000000000000018,improved
+WordSynonyms,crossfit_unweighted,FPR ≤0.1%,0.020000000000000018,2.0000000000000018,improved
+WordSynonyms,crossfit_unweighted,FPR ≤0.5%,0.020000000000000018,2.0000000000000018,improved
+WordSynonyms,crossfit_unweighted,FPR ≤1%,0.020000000000000018,2.0000000000000018,improved
+Worms,crossfit_unweighted,FP0,-0.19999999999999996,-19.999999999999996,worsened
+Worms,crossfit_unweighted,FPR ≤0.1%,-0.19999999999999996,-19.999999999999996,worsened
+Worms,crossfit_unweighted,FPR ≤0.5%,-0.19999999999999996,-19.999999999999996,worsened
+Worms,crossfit_unweighted,FPR ≤1%,-0.19999999999999996,-19.999999999999996,worsened
+WormsTwoClass,crossfit_unweighted,FP0,0.0,0.0,unchanged
+WormsTwoClass,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+WormsTwoClass,crossfit_unweighted,FPR ≤0.5%,0.0,0.0,unchanged
+WormsTwoClass,crossfit_unweighted,FPR ≤1%,0.0,0.0,unchanged
+Yoga,crossfit_unweighted,FP0,0.0,0.0,unchanged
+Yoga,crossfit_unweighted,FPR ≤0.1%,0.0,0.0,unchanged
+Yoga,crossfit_unweighted,FPR ≤0.5%,0.04390681003584229,4.390681003584229,improved
+Yoga,crossfit_unweighted,FPR ≤1%,0.046146953405017926,4.614695340501792,improved

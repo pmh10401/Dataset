@@ -1,0 +1,27 @@
+{
+  "schema": "exp478_full_1117_official_routing_codemap_lock_v1",
+  "current_commit": "82daefaeac56ecc2391fd9457c6ded1ecf9b1787",
+  "frozen_exp477_result_sha256": "e794cc506d7579fc63e2fe96ccfebc794a330975f6a4375889419263bc877949",
+  "triplet": [
+    "docs/codemap/codemap_exp478_antigravity.html",
+    "docs/codemap/codemap_exp478_antigravity.json",
+    "docs/codemap/codemap_exp478_antigravity.lock"
+  ],
+  "represented_paths": [
+    "/Users/mac/Documents/Dataset/univariate_ts.db",
+    "experiments/exp_routing_label_free_antigravity/conservative_policy_antigravity.py",
+    "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py",
+    "experiments/exp474_conservative_fallback_routing_antigravity/ragged_features_antigravity.py",
+    "experiments/exp_routing_label_free_antigravity/pipeline_integration_antigravity.py",
+    "experiments/exp_routing_label_free_antigravity/checkpoints",
+    "experiments/exp478_full_1117_official_routing_antigravity/run_antigravity.py",
+    "experiments/exp478_full_1117_official_routing_antigravity/tests/test_runner_antigravity.py",
+    "experiments/exp478_full_1117_official_routing_antigravity/checkpoint_antigravity.json",
+    "experiments/exp478_full_1117_official_routing_antigravity/results_antigravity.json",
+    "docs/EXP478_DASHBOARD_antigravity.html"
+  ],
+  "official_router_sha256": "9d42dad06e92ae136a760db8771506377b3ccdca8615122ce1b0b43bca0b927c",
+  "checkpoint_sha256": "fac71c7cb25e1673a697e302015310b9f3b5348e1688d43e0f173f611614c5d2",
+  "result_sha256": "7af31a8849c00af9a3021fea60f9cedc4e0b537b0a1ac483d4f5c5f7ec0d26cc",
+  "dashboard_sha256": "43fa25b8d9360bf80d7c2afff165c8d79222d9940cd0e0614a7696a141f83b9d"
+}

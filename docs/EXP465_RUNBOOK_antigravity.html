@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp465 runbook</title>
+<style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.15rem .3rem;overflow:auto}.box{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style></head>
+<body><main>
+<h1>Exp465 실행 runbook</h1>
+<div class="stop"><p><strong>현재 경계:</strong> Task 5는 두 번 정확히 재현된 자격 실패로 reviewed closeout 상태다. Ox Alpha Ultra와 Sol 최종 검토는 모두 <code>SPEC PASS / SCIENCE APPROVED</code>였다. Task 6 공식 실행과 라우팅 연구는 금지하고 공식 root는 계속 만들지 않는다.</p></div>
+<h2>Exp465 실행 runbook 상태</h2>
+<table>
+<tr><th>공식 root</th><td><code>/Users/mac/Documents/Dataset/exp465_ecg200_c8_external_validation_antigravity_20260822</code> must stay absent until separate approval.</td></tr>
+<tr><th>TEST boundary</th><td>Do not open <code>ECG200_TEST.ts</code> or any TEST label. TEST metrics must never inform this qualification.</td></tr>
+<tr><th>TRAIN input</th><td>공식 Zenodo TRAIN만 외부 <code>/Users/mac/Documents/Dataset/exp465_ecg200_train_antigravity/ECG200_TRAIN_antigravity.ts</code>에 저장한다. MD5는 frozen 값과 일치해야 하고 TEST는 조회하지 않는다.</td></tr>
+<tr><th>명령 횟수</th><td>official evaluate <code>0</code>, official inspect <code>0</code>, private run <code>2</code>, label query count <code>0</code>.</td></tr>
+<tr><th>재현 결과</th><td>run1/run2의 stdout과 7개 결과 파일이 byte-for-byte 일치했다. 추가 실행은 하지 않는다.</td></tr>
+</table>
+<h2>Task 1 focused verification commands</h2>
+<pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_config_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_contracts_antigravity experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_governance_antigravity
+$PY -m unittest experiments.exp465_ecg200_c8_external_validation_antigravity.tests.test_scoring_antigravity
+$PY -m unittest experiments.exp464_ecg_residual_centered_ramp_confirmation_antigravity.tests.test_scoring_antigravity
+$PY scratch/build_codemap_exp465_antigravity.py --validate-only
+git diff --check</code></pre>
+<p>Task 1–3 focused unittest commands must run twice before review closure; the Exp464 regression runs once. scoring suite에는 imported Exp464 scorer를 정확히 한 번 호출하는지 확인하는 test spy가 있다. 코드맵 <code>--validate-only</code>는 읽기 전용이고 파일을 고치면 안 된다.</p>
+<div class="stop"><strong>Do not run:</strong> 공식 evaluate/inspect, 추가 private 실행, TEST 파일 조회, 실패 후 계약 변경, C6 승격, champion/pending/routing/promotion 수정은 모두 금지다. Frozen C8 gate 실패로 Task 6는 닫혔다.</div>
+</main></body></html>

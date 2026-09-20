@@ -1,0 +1,32 @@
+{
+  "state": "complete_verified_exploratory_test",
+  "utc": "2026-09-18T02:54:38.301321+00:00",
+  "evaluation_model": "unchanged_exp511",
+  "datasets": 1117,
+  "families": 128,
+  "train_gate_passed": false,
+  "model_promotion": false,
+  "observed_target_met": false,
+  "source_code_changed_after_scoring": false,
+  "report": "docs/EXP512_EXP511_EXPLORATORY_TEST_antigravity.html",
+  "links_verified": {
+    "docs/EXP512_EXP511_EXPLORATORY_TEST_antigravity.html": 10,
+    "docs/CURRENT_MODEL_IMPROVEMENT_STATUS_antigravity.html": 37
+  },
+  "browser_preview_verified": false,
+  "browser_preview_limitation": "Previous local-file URL policy restriction respected; no browser workaround.",
+  "artifacts": {
+    "docs/EXP512_EXP511_EXPLORATORY_TEST_antigravity.html": "d2b04cdfd6a55c4e707f187c83ffd6f73453f9b8526bf53bd22fbb99dfe2edcf",
+    "docs/CURRENT_MODEL_IMPROVEMENT_STATUS_antigravity.html": "5549bf47a40b9b9c1810e7f77897283979bfa09876c2941fa7f33b7956fc904e",
+    "experiments/exp512_exp511_exploratory_test_antigravity/family_comparison_antigravity.csv": "b75e4a1dce90d6e5c2b2ff6a494c8bdc2e3d4d8d3eb58a5c681261d294f79df6",
+    "experiments/exp512_exp511_exploratory_test_antigravity/dataset_comparison_antigravity.csv": "efa62f6ed7c6619e9ba423ce071c4e002cfc42e1430216c9472649e9520cd767",
+    "experiments/exp512_exp511_exploratory_test_antigravity/plan_antigravity.html": "02cd08676eb62cf76b34257f251af7f6252bc61a031a0f85e84a9c17d7ceb4f0",
+    "scratch/report_exp512_antigravity.py": "127cf8874efc45166be6459a93c6408f6864624dc3ff472d6ebc3c897dc675c0",
+    "experiments/exp512_exp511_exploratory_test_antigravity/results_antigravity.json": "1aea8e55026f1f7655612b417d5148850035d3f782d9bd4f1c8376c6ec57ee5e",
+    "experiments/exp512_exp511_exploratory_test_antigravity/verification_antigravity.json": "b0ca667af315ab1bfe27aaddf3d1599e08311ab8bf0748b893b4ab7d56efbba0",
+    "experiments/exp512_exp511_exploratory_test_antigravity/manifest_antigravity.json": "2ae242fea5ca41749f72c4ef7e26b6a227044ad7ed2b3e05d5fe7aa03477b0f7",
+    "experiments/exp512_exp511_exploratory_test_antigravity/score_freeze_antigravity.json": "b127b43b18b5534c4bf6d57ed6fa784011c6ef398d3417352a226cd47e03bdb3",
+    "experiments/exp512_exp511_exploratory_test_antigravity/preflight_antigravity.json": "8302388e403cc97cbceb6472ee41efb77b4a1b12f50d554334e1af976e5756ea",
+    "experiments/exp512_exp511_exploratory_test_antigravity/execution_exit_antigravity.json": "702f04f1badc2d59f952329107a7213a428107f9fd08f47d4bd9a48958f12ab5"
+  }
+}

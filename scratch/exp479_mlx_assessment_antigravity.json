@@ -1,0 +1,17 @@
+{
+  "schema": "exp479_mlx_assessment_v1",
+  "stage": "ragged_linear_resampling",
+  "mlx_available": false,
+  "eligible": false,
+  "parity": "not_run",
+  "speedup": null,
+  "selected_backend": "numba_cpu",
+  "fallback_reason": "mlx_not_installed_in_fixed_interpreter",
+  "versions": {
+    "numpy": "2.3.5",
+    "numba": "0.63.1",
+    "mlx": null,
+    "mlx_metal": null
+  },
+  "device": null
+}

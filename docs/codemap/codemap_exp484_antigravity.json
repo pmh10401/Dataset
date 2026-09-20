@@ -1,0 +1,146 @@
+{
+  "answers": {
+    "callers": "Exp481 continues to call the default standard policy. Only Exp484 passes the new distance_variant and distance_backend arguments; its CLI and focused tests call the new runner.",
+    "effects": "The change affects TRAIN-only neighbourhood distance calculation and Exp484 artifacts. Candidate methods, K=31, strict gate clauses, dataset/family-name exclusion, Exp481 artifacts, and the official router are unchanged.",
+    "tests": "The Exp481 suite protects the default behavior. Exp484 tests cover hand-checked neighbour orders, Numba parity and isolation, frozen source hashes, equal populations, result selection, publication, checked HTML, and verification state."
+  },
+  "baseline": {
+    "path": "docs/codemap/codemap_exp483_antigravity.json",
+    "sha256": "efa40df6d4a273a363edeee6e8b96a584a745cbdca4dd3dbccf02c3de35e78ee"
+  },
+  "edges": [
+    {
+      "from": "exp481_opt_in_distance_policy",
+      "to": "exp484_runner",
+      "type": "explicit_distance_variant"
+    },
+    {
+      "from": "exp484_numba_distance_kernels",
+      "to": "exp484_acceleration",
+      "type": "parity_and_timing"
+    },
+    {
+      "from": "exp484_acceleration",
+      "to": "exp484_runner",
+      "type": "distance_backend_selection"
+    },
+    {
+      "from": "exp484_runner",
+      "to": "exp484_outputs",
+      "type": "nested_train_result_and_html"
+    }
+  ],
+  "fingerprints": [
+    {
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
+      "sha256": "fc3548d1d9d109a6d10491b0ce2decffec4f36fd865bb8055846c323a4df9dfe",
+      "size": 15601
+    },
+    {
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/kernels_numba_antigravity.py",
+      "sha256": "97bbb6299629b488df5b960d47322a52447726b1a16e9f6714d49a214b50af87",
+      "size": 5731
+    },
+    {
+      "path": "experiments/exp484_distance_qualification_antigravity/acceleration_antigravity.py",
+      "sha256": "f4a372adbe3b1c4bdb509a488402420e598e889d5a23fdc33c5fa124dc914fa0",
+      "size": 14636
+    },
+    {
+      "path": "experiments/exp484_distance_qualification_antigravity/run_antigravity.py",
+      "sha256": "b6955524db81ab3792346411140ac1ce71c00a039ec5254eba0d4f525be6e7d1",
+      "size": 22495
+    },
+    {
+      "path": "experiments/exp484_distance_qualification_antigravity/tests/test_distance_variants_antigravity.py",
+      "sha256": "296b0a2df8b2699e9718d8196f293dfeaa0af5cf64b85289b7a58e663f875bf1",
+      "size": 13319
+    },
+    {
+      "path": "experiments/exp484_distance_qualification_antigravity/tests/test_run_antigravity.py",
+      "sha256": "8e77aea9b065163f1c684d13f91a966cfdfa319463fcab2f9fe6d7556172dd31",
+      "size": 18560
+    },
+    {
+      "path": "experiments/exp484_distance_qualification_antigravity/results_antigravity.json",
+      "sha256": "a5a097f8289477ca67e4e2cd9bdc7edffaa852b435a1f92fef338a0823dec415",
+      "size": 826510
+    },
+    {
+      "path": "experiments/exp484_distance_qualification_antigravity/run_manifest_antigravity.json",
+      "sha256": "adddf8e1f7f6825c5744d5c18e1d9b67a9b6aa32eb51c1ee3f49eb00bc0d2841",
+      "size": 2666
+    },
+    {
+      "path": "scratch/exp484_acceleration_assessment_antigravity.json",
+      "sha256": "f72722284abf4641ae2aa93f6bdd86d216788175ff091d05072628b4c3a52426",
+      "size": 2079
+    },
+    {
+      "path": "docs/EXP484_DASHBOARD_antigravity.html",
+      "sha256": "8a77e5dc7282f4ce0eb5d1ff6ef532078b73d0085e5cdb0bf748b18e3dc6969a",
+      "size": 3016
+    },
+    {
+      "path": "docs/EXP484_IMPLEMENTATION_REPORT_antigravity.html",
+      "sha256": "6c0938c9375fa97dd2c86fd226cf2c75cf23427cedb7c2c4f47c2dd74343f901",
+      "size": 2526
+    },
+    {
+      "path": "scratch/build_codemap_exp484_antigravity.py",
+      "sha256": "1f4257c70e33a1238b1478ab58eed85bfad3b35a4d86760c49863301d859abc8",
+      "size": 10111
+    }
+  ],
+  "nodes": [
+    {
+      "caller": "Frozen Exp481 evaluation by default; Exp484 runner with an explicit distance variant",
+      "effect": "Keeps standard Euclidean unchanged and adds opt-in robust Manhattan and shrinkage Mahalanobis neighbourhoods",
+      "id": "exp481_opt_in_distance_policy",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
+      "tests": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests/test_policy_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/tests/test_distance_variants_antigravity.py"
+      ]
+    },
+    {
+      "caller": "Exp484 policy distance stage and acceleration parity benchmark",
+      "effect": "Computes only the two new distances; frozen neighbour selection and strict statistics remain on their selected existing backend",
+      "id": "exp484_numba_distance_kernels",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/kernels_numba_antigravity.py",
+      "tests": [
+        "experiments/exp484_distance_qualification_antigravity/tests/test_distance_variants_antigravity.py"
+      ]
+    },
+    {
+      "caller": "Exp484 runner before the 1,117-dataset evaluation",
+      "effect": "Checks finite values, numerical/decision/candidate parity, cold-inclusive timing, and the MLX device gate",
+      "id": "exp484_acceleration",
+      "path": "experiments/exp484_distance_qualification_antigravity/acceleration_antigravity.py",
+      "tests": [
+        "experiments/exp484_distance_qualification_antigravity/tests/test_distance_variants_antigravity.py"
+      ]
+    },
+    {
+      "caller": "python -m experiments.exp484_distance_qualification_antigravity.run_antigravity",
+      "effect": "Pins Exp480/481/483 sources, evaluates two distances on the same nested TRAIN population, and writes result-backed HTML",
+      "id": "exp484_runner",
+      "path": "experiments/exp484_distance_qualification_antigravity/run_antigravity.py",
+      "tests": [
+        "experiments/exp484_distance_qualification_antigravity/tests/test_run_antigravity.py"
+      ]
+    },
+    {
+      "caller": "Dashboard, report, manifest, code map, and later experiment design",
+      "effect": "Records 1,117 datasets, 128 families, zero changes for all distances, and the decision to replace features",
+      "id": "exp484_outputs",
+      "path": "experiments/exp484_distance_qualification_antigravity/results_antigravity.json",
+      "tests": [
+        "experiments/exp484_distance_qualification_antigravity/tests/test_run_antigravity.py",
+        "scratch/build_codemap_exp484_antigravity.py"
+      ]
+    }
+  ],
+  "schema": "exp484_distance_qualification_codemap_v1",
+  "unknown_relationships": []
+}

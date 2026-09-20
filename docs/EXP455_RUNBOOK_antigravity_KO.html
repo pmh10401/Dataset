@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp455 실행 안내서</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem;overflow:auto}.stop{border-left:4px solid #c0392b;background:#fff5f4;padding:1rem}</style></head><body><main>
+<h1>Exp455 실행 안내서</h1>
+<p><strong>현재 단계:</strong> 공식 Exp455 evaluate는 clean commit <code>b1ac9c24eea25b1da055d7076240d3058ffce613</code>에서 정확히 한 번 실행됐고, 특징과 authority 대상 순서가 달라 exit 1로 중단됐다. 공식 inspect는 실행하지 않았고 결과 폴더는 없다. Exp455를 다시 실행하지 않는다.</p>
+<h2>완료된 흐름</h2><ol><li>Exp454 immutable evidence를 읽기 전용으로 검증했다.</li><li>8개 dataset의 label-free 특징과 leave-one-dataset-out 결정을 합성 검증했다.</li><li>승인된 clean commit에서 공식 evaluate를 한 번 실행했고 순서 계약 충돌로 중단했다.</li></ol>
+<div class="stop">Exp455는 <code>official_evaluation_failed_immutable_no_retry</code> 상태다. evaluate/inspect를 다시 실행하지 않는다. routing 활성화, champion 또는 pending candidate 변경, promotion도 금지된다. 순서 계약 수정은 새 실험 번호에서만 진행한다.</div>
+<h2>결과 판정</h2><p>나중에 결과가 있어도 FN &lt; 1988, FP &lt;= 314, F1 &gt;= 0.6264199935, ECG5000 및 ChlorineConcentration family FN delta 각각 &lt;= 0을 모두 만족할 때만 <code>routing_candidate_qualified_for_external_validation</code>로 기록한다. 이는 자동 라우팅 또는 승격이 아니다.</p>
+</main></body></html>

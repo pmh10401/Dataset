@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp459 실행 가이드</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
+<body><main>
+  <h1>Exp459 실행 가이드</h1>
+  <p><strong>상태:</strong> <code>official_evaluation_inspected_complete_unstable_no_promotion</code>. Task 6 official evaluate and bare inspect have both completed exactly once. Do not rerun, retry, tune thresholds, alter folds/seeds/synthetic types, change routing, or publish externally from this experiment.</p>
+  <h2>Task 6 official command evidence</h2>
+  <table>
+    <tr><th>evaluate</th><td><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python REVIEWED_COMMIT=$(git rev-parse HEAD); "$PY" scratch/run_exp459_ecg_normal2_blocked_validation_antigravity.py evaluate --reviewed-commit "$REVIEWED_COMMIT"</code>; PID 26273; exit 0; stdout <code>.superpowers/sdd/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity.html/task6_official_evaluate_stdout_antigravity.json</code>; stderr empty</td></tr>
+    <tr><th>inspect</th><td><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python; "$PY" scratch/run_exp459_ecg_normal2_blocked_validation_antigravity.py inspect</code>; PID 27275; exit 0; stdout <code>.superpowers/sdd/2026-08-18-exp459-ecg-normal2-blocked-validation-antigravity.html/task6_official_inspect_stdout_antigravity.json</code>; stderr empty</td></tr>
+    <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818</code>, exactly seven regular leaves, artifact map <code>a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d</code></td></tr>
+    <tr><th>equality</th><td>evaluate/inspect payloads exact-equal and authority payload exact-equal; stdout SHA-256 <code>c1dee85d9a78651df3366f1a5c24ec57d16cd0581e1b1f8fbe4098746c5ef350</code></td></tr>
+    <tr><th>decision</th><td><code>unstable</code>; failed folds are seed 20260721 fold 3 period_change AUC 0.8208339620743423; seed 20261721 fold 4 period_change AUC 0.8004124541019063</td></tr>
+    <tr><th>label query count</th><td>0</td></tr>
+  </table>
+  <p><strong>Wilson 검사의 한계:</strong> 각 fold에서는 정상 점수 282개 또는 283개를 자기 자신과 비교해 p값을 계산한다. 자기 자신 한 건이 항상 포함되고 계산식에서 1을 더하므로 가능한 가장 작은 p값은 <code>2/(n+1)</code>이다. n=283이면 약 0.00704, n=282이면 약 0.00707로 경보 기준 0.005보다 크다. 따라서 이 실험에서는 정상 경보 수가 항상 0이고, Wilson 값은 fold별 오경보 차이를 구분하지 못한다. 최종 <code>unstable</code> 판단은 seed 20260721의 fold 3과 seed 20261721의 fold 4에서 <code>period_change</code> AUC가 기준에 미달한 사실만으로 결정됐다.</p>
+  <h2>Post-run boundary</h2>
+  <table>
+    <tr><td>세 ledger</td><td>status official_evaluation_inspected_complete_unstable_no_promotion, official evaluate 1, official inspect 1, label query 0, result hashes populated</td></tr>
+    <tr><td>Exp458 predecessor</td><td>공식 결과와 product code를 수정하지 않음</td></tr>
+    <tr><td>Next research</td><td>Failure-fold analysis may be proposed separately; this Task 6 run does not automatically promote or route.</td></tr>
+  </table>
+</main></body></html>

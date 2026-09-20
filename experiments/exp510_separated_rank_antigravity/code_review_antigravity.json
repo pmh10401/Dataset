@@ -1,0 +1,99 @@
+{
+  "review": {
+    "verdict": "issues_found",
+    "blocking_for_frozen_pilot": false,
+    "core_estimator": "A/B isolation, contribution algebra, TRAIN-only C evaluation, frozen full-F replay, four conjunctive gates, and fallback copying of full-F square_joint are consistent with the registered design. No TEST path is present.",
+    "defects": [
+      {
+        "severity": "medium",
+        "file": "verify_antigravity.py",
+        "function": "main",
+        "issue": "Stored-vector audit reconstructs parents as the full B set and never replays ranking_parents.",
+        "evidence": "Asserts `len(b)<=128 and f['parents']==b.tolist()`, and `len(z['normal_scores'])==len(b)` plus `len(z['anomaly_scores'])==4*len(b)`. `ranking_parents` is the registered cap: if `len(b)>128` it returns `np.sort(default_rng(SEED+1510).choice(b,128,replace=False))`. Pilot stores `parents=fit[h.parents].tolist()`, which is that subsample, not B.",
+        "why_it_matters": "The independent verifier is wrong for a registered head path. On any fold with |B|>128 it false-fails, and it never checks the SEED+1510 subsample isolation. The inline comment that all pilot B sets are <=128, if true for this population, only hides the bug for the current 50 datasets.",
+        "action": "Import and replay `split_roles` and `ranking_parents` on each reconstructed fit index set. Assert `f['parents']==fit[ranking_parents(b_local)].tolist()` and score lengths against `len(parents)`, not `len(b)`. Do not add a new split."
+      },
+      {
+        "severity": "low",
+        "file": "verify_antigravity.py",
+        "function": "main",
+        "issue": "Fold A/B and crossfit membership are reimplemented from literals instead of the registered functions.",
+        "evidence": "`np.random.default_rng(20260721).shuffle` + `np.array_split(...,5)` and `default_rng(20260721+2510).permutation(len(fit))` duplicate `crossfit_plan_antigravity` (source not in this bundle) and `split_roles` (`SEED+2510`). SEED is not imported.",
+        "why_it_matters": "Audit consistency depends on `SEED==20260721` and on `crossfit_plan_antigravity` matching this exact shuffle/split. That is not enforced by calling the frozen functions.",
+        "action": "Replay `crossfit_plan_antigravity(n_train, seed=SEED)` and `split_roles(len(fit))`; keep the verifier free of `SeparatedRankHeads` fitting."
+      },
+      {
+        "severity": "low",
+        "file": "test_exp510_antigravity.py",
+        "function": "test_fallback_and_constant_short_rows_do_not_invent_a_trained_model",
+        "issue": "The n=32 all-zero path requires `optimizer_trained` and exact unit weights, but that path still runs `solve` on B-parent KINDS proxies.",
+        "evidence": "For `count>=32`, `split_roles` yields nonempty B, `contributions(x[parents])` and `perturbations(x[parents], SEED+1508)` are passed to `solve`. Nothing in `solve`/`_objective` forces the box minimizer to remain at ones when anomalous contributions are non-constant. The assertion is `np.testing.assert_array_equal(h.weights, np.ones_like(h.weights))`.",
+        "why_it_matters": "This is a brittle contract, not a registered degeneracy rule. It can fail without any leakage or algebra bug, and it does not protect the actual fallback (`n<32`), which already copies `square_joint` and skips `solve`.",
+        "action": "Keep the n<32 checks. Drop or weaken the exact-ones assertion on the trained n=32 constant path; do not add a new degeneracy branch to the head."
+      },
+      {
+        "severity": "low",
+        "file": "verify_antigravity.py",
+        "function": "main",
+        "issue": "Verification JSON is a non-atomic `write_text`, unlike the pilot.",
+        "evidence": "`(P/'verification_antigravity.json').write_text(...)` vs pilot `write_json_atomic_antigravity`.",
+        "why_it_matters": "A crash can leave a truncated `state=passed` artifact. Not a scoring bug.",
+        "action": "Write the verifier output with the same atomic helper used by the pilot."
+      }
+    ],
+    "limitations": [
+      {
+        "type": "research",
+        "item": "KINDS proxies train ranking weights and also enter the standard-recall gates. Only UNSEEN kinds are fit-excluded. That is type-reuse on TRAIN, not TEST leakage; unseen_nonregression is the registered mitigation, not a new holdout."
+      },
+      {
+        "type": "research",
+        "item": "Full-F MiniRocket/oas_distance/square_joint see A∪B; the candidate geometry sees only A. Promotion must beat a higher-information geometry control plus same-reference `a_unweighted`. That is conservative, not leakage."
+      },
+      {
+        "type": "research",
+        "item": "Pilot recall uses max(held-C normal) as a fold-internal threshold. That is TRAIN screening, not a deployed calibrated cutoff. Full TEST ROC after score freeze is conditional and is not implemented."
+      },
+      {
+        "type": "research",
+        "item": "L-BFGS-B may stop short of projected-gradient tolerance. The returned finite iterate is the registered estimator; the verifier reports `projected_gradient_passed` and `solver_success` separately and does not retry."
+      },
+      {
+        "type": "research",
+        "item": "Inherited common target-length preprocessing on all normal TRAIN is not A-only. Roles are disjoint indices; equal series values across roles are allowed."
+      },
+      {
+        "type": "research",
+        "item": "The tail gate compares only to MiniRocket (`<= 3*max(MiniRocket,1e-9)`), not to all four controls. The other three gates use max over NAMES[:-1]. This matches the unit test; it is not an algebra error."
+      },
+      {
+        "type": "verifier_scope",
+        "item": "Verifier recomputes loss, projected-box certificate, recalls, tails, gates, and A/B disjointness from stored vectors. It does not rebuild contribution matrices or gradient vectors from series. `gradient_vectors_independently_recomputed=False` is accurate."
+      },
+      {
+        "type": "verifier_scope",
+        "item": "`len(w)==8064` is a frozen representation width, not derived from the head. Contribution-sum vs `a_unweighted` and `g@w` vs `separated_rank` are not rechecked because those matrices are not stored."
+      },
+      {
+        "type": "assessment_scope",
+        "item": "Acceleration success is numpy cold/warm/batch self-parity on synthetic (64,128)/(1024,128). Numba/torch are timed, not promotion candidates. Fallback, |B|>128, and official transformers are untested there."
+      },
+      {
+        "type": "unverified_here",
+        "item": "No execution, population tables, or out-of-bundle sources were used. Not shown in this concatenation: `crossfit_plan_antigravity`, `perturbations`/`KINDS`, `SEED`, `make_representation_antigravity`, Exp509 `signal`/`cert` wrappers, `load_normal_train`, and the 50-row n_train values needed to know whether any fold actually has |B|>128."
+      }
+    ],
+    "in_scope_checks": {
+      "leakage": "Candidate encoder/scaler/OAS/reference/scale are A-only; ranking uses B (or 128-parent subsample) plus KINDS on those parents; scoring/gates use held C. TEST loaders are not called; flags stay false. Full-F heads are controls only.",
+      "algebra": "cdist Euclidean d; sum_i residual_i^2 / d = d; mean over k unweighted neighbors / scale = A-only square_joint ranking. Query neighbors are not parent-weighted. Feature weights apply after that mean.",
+      "fixed_splits": "One frozen rule: SEED+2510 permutation, B=size//4 if size>=32 else empty; parents=B if |B|<=128 else SEED+1510 sample. Pilot worker asserts A∩B=∅ and fit∩held=∅ and no fallback.",
+      "scoring": "Five outputs: three full-F controls, A-only unweighted sum, A-only weighted. Nonfinite rejected. Batch/order independence is unit-tested.",
+      "control_replay": "Worker exact-matches MiniRocket/oas_distance/square_joint fold recall and tails to Exp508 prior; does not replay a_unweighted or separated_rank against that prior.",
+      "fallback": "size<32: empty B, no solve, a_unweighted and separated_rank copy full-F square_joint. Pilot preflight and worker forbid this path.",
+      "aggregation_and_gates": "Family-mean of fold-mean recall; median of family-mean tails. selected=separated_rank iff all four gates else square_joint; no extra search, split, dedup, threshold fit, or optimizer retry.",
+      "runtime": "Empty/short/non-int split inputs raise; length and nonfinite checks raise; completed pilot/acceleration refuse overwrite; worker failures abort without TEST."
+    }
+  },
+  "prompt_sha256": "54428198a7fde5d6f326cb8cd754e9ae44163a329f391ccf46c28da7d2f67a23",
+  "scope": "exact code review; no private data"
+}

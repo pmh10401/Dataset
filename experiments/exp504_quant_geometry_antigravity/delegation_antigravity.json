@@ -1,0 +1,75 @@
+{
+  "state": "complete_grok_implementation_train_screen_rejected",
+  "implementer": "grok-4.6",
+  "reasoning_effort": "high",
+  "worktree": "/private/tmp/exp504_grok_quant_antigravity",
+  "exec_session_id": 92775,
+  "brief_path": "/private/tmp/exp504_grok_quant_antigravity/brief_antigravity.txt",
+  "brief_sha256": "82d53a110672d57c5715fe7824675b52fabe6e3b40b6f07f871b4182f15562b7",
+  "log_path": "/private/tmp/exp504_grok_quant_antigravity/implementation_response_antigravity.log",
+  "permission_mode": "plan",
+  "tools": [
+    "read_file",
+    "list_dir"
+  ],
+  "delivery": "response JSON only; Codex independently reviews and integrates; no external write permission requested",
+  "official_pilot_started": true,
+  "official_test_started": false,
+  "pro_status": "Two prior Pro consultation timeouts",
+  "synthetic_official_QUANT_probe": {
+    "aeon": "1.5.0",
+    "dtype": "float32",
+    "feature_dimensions": {
+      "3": 10,
+      "4": 17,
+      "9": 63,
+      "128": 1160,
+      "512": 4500,
+      "2700": 23882
+    },
+    "all_finite": true
+  },
+  "primary_source": "https://www.aeon-toolkit.org/en/latest/api_reference/auto_generated/aeon.transformations.collection.interval_based.QUANTTransformer.html",
+  "next_action": "No full run for rejected QUANT candidate; continue separate preregistered hypothesis.",
+  "grok_session_id": "01a0ad25-b265-7f32-b0e8-c854a75122b3",
+  "proposed_file_sha256": {
+    "quant_antigravity.py": "d78f17629a4d106a2442abb0aa9f4b21f191672b47064725f99121eb11a96f56",
+    "acceleration_antigravity.py": "c1d1e37d8f45a0c8116687433bcc591977180bd7f24c2d1a1eba64ed76c3ca3e",
+    "test_exp504_antigravity.py": "b6e0373faa74d501f52bc5e65c81302f19ee3795e15f931b1d0b28cf9594d4cc",
+    "protocol_antigravity.html": "ddb7191d81ebd807f85c818fc30964d2866ad442c65b00a8baf90d0748f66f3a",
+    "pilot_antigravity.py": "39b8b6dd8303de9197ea915d6c2977bf5162066e34a3d33c8fcee08873f01ebd"
+  },
+  "tests": "4 passed in 5.94s",
+  "independent_review": "Sol ship; no additional concrete bug, leakage, or goal drift",
+  "grok_corrections_sha256": "483d6e9531bc9aa3eaa07f5b4700bdc772cf7c23b379ced2d85b52d8ddf4189f",
+  "acceleration_sha256": "7d8ed0b242233d8b4e2a91e22136ee219f1996c26980cc20dbc347da63d6c898",
+  "verification": {
+    "state": "passed_train_screen",
+    "datasets": 50,
+    "folds": 250,
+    "selected": "oas_distance",
+    "unrestricted_winner": "oas_distance",
+    "best_new_candidate": "quant_joint",
+    "new_candidate_worst_proxy": 0.6150622224992732,
+    "anchor_worst_proxy": 0.6522197414956119,
+    "new_candidate_margin": -0.03715751899633868,
+    "required_proxy_margin": 0.02,
+    "eligible": [
+      "MiniRocket",
+      "oas_distance",
+      "quant_distance",
+      "quant_joint"
+    ],
+    "normal_tail": {
+      "MiniRocket": 2.9277101049968524,
+      "oas_distance": 2.5555495038907714,
+      "quant_distance": 3.7407182152708334,
+      "quant_joint": 3.6333722839693667
+    },
+    "anchor_fold_recalls_exact": true,
+    "source_hashes_passed": true,
+    "pilot_sha256": "c9db83779dea48fbe179339baf5f6a553e81a987f37187c367e11585826daddf",
+    "full_run_skipped": true,
+    "test_labels_read": false
+  }
+}

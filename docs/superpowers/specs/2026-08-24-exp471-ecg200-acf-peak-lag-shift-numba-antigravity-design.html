@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp471 ECG200 ACF peak-lag 이동 Numba 설계서</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#fff;--fg:#172033;--muted:#5e6878;--line:#b8c0cc;--soft:#f3f6fa;--ok:#16794b;--warn:#9a6700;--stop:#b42318;--accent:#285ea8}
+    @media(prefers-color-scheme:dark){:root{--bg:#181a1f;--fg:#e3e7ee;--muted:#b6becb;--line:#48505e;--soft:#232832;--ok:#72d39a;--warn:#f0c36a;--stop:#ff8a87;--accent:#8bb8ff}}
+    *{box-sizing:border-box}body{max-width:1120px;margin:2rem auto;padding:0 1rem;background:var(--bg);color:var(--fg);font:16px/1.7 system-ui,-apple-system,sans-serif}h1,h2{line-height:1.25}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid var(--line);padding:.6rem;text-align:left;vertical-align:top}code,pre{background:var(--soft);border-radius:5px}code{padding:.1rem .3rem}pre{padding:1rem;overflow:auto}.box{background:var(--soft);border-left:6px solid var(--accent);padding:1rem;margin:1rem 0}.ok{border-left-color:var(--ok)}.warn{border-left-color:var(--warn)}.stop{border-left-color:var(--stop)}.muted{color:var(--muted)}label{display:block;margin:.35rem 0}input{margin-right:.55rem}.flow{display:grid;grid-template-columns:repeat(5,1fr);gap:.55rem;margin:1rem 0}.flow div{padding:.75rem;background:var(--soft);border:1px solid var(--line);border-radius:7px;text-align:center}@media(max-width:760px){.flow{grid-template-columns:1fr}}
+  </style>
+</head>
+<body><main>
+  <h1>Exp471 — ECG200 ACF peak-lag 이동 Numba 자격 검증</h1>
+  <div class="box ok">
+    <p><strong>설계 상태:</strong> 사용자가 이 고정안을 검토·승인했고, HTML 구현 계획까지 작성했다.</p>
+    <p><strong>한 줄 목표:</strong> 파형 앞부분과 뒷부분에서 반복 간격이 얼마나 달라졌는지 한 개의 자기상관 점수로 재고, C0가 놓친 period 순서만 안전하게 고칠 수 있는지 확인한다.</p>
+  </div>
+
+  <h2>1. 왜 이 실험을 하는가</h2>
+  <p>Exp470의 두 private 실행은 완전히 같았지만, 두 seed 모두 <code>period fixed=0</code>이었다. spectral entropy가 확인한 period 행은 이미 C0 점수가 1.0이어서 실제 수정으로 이어지지 않았다. 따라서 임계값을 낮추지 않고, 합성 period 변화가 만든 <strong>반복 간격의 이동</strong>을 직접 측정한다.</p>
+  <p>과거 Exp461 계열은 여러 FFT·자기상관 값을 한꺼번에 거리로 합쳤다. Exp471은 그 방법을 다시 조정하지 않는다. 앞·뒤 구간의 대표 반복 간격 차이 하나만 남겨, 정보가 여러 특징 사이에서 약해졌는지를 확인한다.</p>
+
+  <h2>2. 실험 범위와 고정 입력</h2>
+  <table>
+    <tr><th>항목</th><th>고정 내용</th></tr>
+    <tr><td>실험</td><td><code>Exp471</code> / ECG200 TRAIN-only ACF peak-lag shift qualification</td></tr>
+    <tr><td>기준선</td><td>검토가 끝난 Exp470의 C0, 데이터 로더, 96→140 보간, blocked fold와 합성 변화 authority를 정확히 재사용한다. C0는 Exp461의 두 branch rank를 결합해 이어 온 float64 순위 점수이며 범위는 <code>(0,1]</code>이다.</td></tr>
+    <tr><td>데이터</td><td>ECG200 TRAIN의 정상 <code>+1</code> 69개만 사용한다.</td></tr>
+    <tr><td>반복</td><td>seed <code>20260721</code>, <code>20261721</code> × blocked fold 5개 = 10개 기록</td></tr>
+    <tr><td>합성 변화</td><td><code>level_shift</code>, <code>gradual_drift</code>, <code>amplitude_scaling</code>, <code>period_change</code>. period는 아래에 적은 Exp466 authority의 정확한 식을 사용한다.</td></tr>
+    <tr><td>새 방법</td><td><code>E12</code> ACF peak-lag 이동 순위, <code>C12</code> strict-confirmed C0 fallback</td></tr>
+    <tr><td>새 계산 backend</td><td>Numba CPU, float64, <code>fastmath=False</code>. NumPy 점수 backend나 자동 fallback은 만들지 않는다.</td></tr>
+    <tr><td>성능 기준</td><td>절대 AUC 0.85가 아니라 C0의 잘못된 정상–period 순서 쌍을 고치는지를 본다.</td></tr>
+    <tr><td>이번 실험에서 하지 않는 일</td><td>official 실행, ECG200 TEST, 실제 FN/FP/F1, routing, champion/promotion 변경</td></tr>
+  </table>
+  <pre><code>source = [0.0, 1.0, ..., 83.0]
+warped[56:140] = interp(source / 1.25, source, original[56:140])</code></pre>
+  <p><code>numpy.interp</code>의 선형 보간과 기존 endpoint 규칙을 authority로 exact import한다. 조회 좌표는 <code>0.0..66.4</code>로 원래 suffix 좌표 <code>0..83</code> 안에 있으므로 바깥값 보충은 발생하지 않는다. 84개 값을 같은 <code>[56:140]</code>에 넣어 최종 길이는 140 그대로다. 두 seed 값은 Exp470에서 사용한 <code>20260721</code>, <code>20261721</code>을 의도적으로 그대로 유지한다.</p>
+
+  <h2>3. 앞·뒤 구간을 고르는 규칙</h2>
+  <table>
+    <tr><th>구간</th><th>좌표</th><th>이유</th></tr>
+    <tr><td>앞 구간</td><td><code>[0:56]</code></td><td>period 변화 시작점 56보다 앞이므로 합성 변화가 섞이지 않는다.</td></tr>
+    <tr><td>뒤 구간</td><td><code>[84:140]</code></td><td>변화 시작 경계를 피하면서 앞 구간과 같은 길이 56을 유지한다.</td></tr>
+    <tr><td>제외 구간</td><td><code>[56:84]</code></td><td>두 비교 창의 길이를 같게 하고 변화 경계의 영향이 peak 선택에 섞이는 것을 줄인다.</td></tr>
+  </table>
+  <p>각 구간은 중앙값을 빼고 <code>1.4826 × MAD</code>로 나눈다. MAD가 0 이하이거나 결과가 유한하지 않으면 즉시 STOP한다. 이 표준화 때문에 단순한 높이 이동과 양의 크기 배율은 ACF 모양을 바꾸지 않아야 한다.</p>
+
+  <h2>4. ACF peak-lag 한 개를 만드는 방법</h2>
+  <p>표준화한 길이 56 구간을 <code>z</code>라 하고, lag 1부터 25까지 아래 자기상관을 계산한다.</p>
+  <pre><code>ACF(lag) = sum(z[t] * z[t + lag]) / sum(z[t] * z[t])
+           t = 0 .. 55-lag             t = 0 .. 55
+
+peak 후보 lag = 2 .. 24 중에서
+  ACF(lag) &gt; 0
+  ACF(lag) &gt; ACF(lag-1)
+  ACF(lag) &gt;= ACF(lag+1)
+
+dominant_peak = ACF가 가장 큰 peak 후보의 lag
+                동점이면 더 작은 lag
+                후보가 없으면 0</code></pre>
+  <p>lag 1과 25는 양쪽 이웃이 없어서 peak 후보에서 제외한다. 최대 lag 24는 이전 자기상관 실험의 고정 범위를 그대로 사용하며, Exp471 결과를 보고 바꾸지 않는다.</p>
+  <pre><code>early_peak = dominant_peak(row[0:56])
+late_peak  = dominant_peak(row[84:140])
+shift(row) = late_peak - early_peak</code></pre>
+  <p><code>shift</code>는 앞보다 뒤의 반복 간격이 몇 칸 이동했는지 나타낸다. peak의 0은 실제 lag 2..24와 겹치지 않는다. 다만 두 peak가 같아 생긴 shift 0과 두 구간 모두 peak가 없어 생긴 shift 0은 같은 “이동 근거 없음”으로 일부러 합친다. peak 존재 여부와 선택된 lag는 설명 자료로 저장하지만 점수에는 쓰지 않아, 후보 수는 하나로 유지한다.</p>
+
+  <h2>5. E12와 C12</h2>
+  <p>방향을 결과를 보고 고르지 않기 위해, 정상 TRAIN의 대표 shift에서 얼마나 멀리 떨어졌는지를 raw 점수로 사용한다.</p>
+  <pre><code>fit_raw[i] = abs(shift(fit[i]) - median(shift(fit without i)))
+query_raw  = abs(shift(query)  - median(shift(fit)))
+
+E12_rank = (1 + count(fit_raw &lt;= query_raw)) / (n_fit + 1)
+confirmed = query_raw &gt; 0 and query_raw &gt; max(fit_raw)
+C12 = max(C0, E12_rank) if confirmed else C0</code></pre>
+  <p>median은 값을 오름차순으로 정렬한 뒤 홀수 개면 가운데 값, 짝수 개면 가운데 두 값의 산술평균으로 고정한다. blocked fold의 query index는 fit 목록에 들어가지 않으며, query shift는 fit median이나 fit raw를 만드는 데 한 번도 사용하지 않는다. fit 행의 raw만 자기 자신을 뺀 나머지 fit 행으로 계산한다.</p>
+  <p>C0와 E12는 모두 범위 <code>(0,1]</code>의 순위 점수라 같은 척도에서 비교한다. Exp471은 Exp470의 exact C0 scorer와 결합 규칙을 import한다. 확인이 됐더라도 E12가 C0보다 크지 않으면 C12는 C0 그대로다. confirmation이 거짓인 모든 위치에서는 C12의 dtype, shape와 bytes가 C0와 같아야 한다.</p>
+  <div class="flow" aria-label="Exp471 점수 흐름">
+    <div>TRAIN 정상 fit</div><div>앞·뒤 ACF peak</div><div>shift의 정상 범위</div><div>엄격한 확인</div><div>확실할 때만 C0와 max</div>
+  </div>
+  <div class="box warn">
+    <p>FFT, spectral entropy, DTW, phase margin, recurrence, 여러 lag 범위나 여러 창 조합을 함께 시험하지 않는다. Exp471의 새 후보는 위 ACF shift 하나뿐이다.</p>
+  </div>
+
+  <h2>6. 잔여 FN 구조 개선 판정</h2>
+  <p>AUC의 바탕이 되는 정상–변화 점수 쌍을 직접 비교한다.</p>
+  <pre><code>pair_credit(normal, changed) = 1.0  if changed &gt; normal
+                             = 0.5  if changed == normal
+                             = 0.0  if changed &lt; normal
+
+fixed  = count(C12_credit &gt; C0_credit)
+broken = count(C12_credit &lt; C0_credit)</code></pre>
+  <p>두 seed는 독립 표본처럼 합쳐 p값을 만들지 않고 반복 확인으로 본다. 다음 조건을 모두 만족해야 PASS다.</p>
+  <ol>
+    <li>모든 ACF, raw, rank와 결합 점수가 finite다.</li>
+    <li>각 seed의 period <code>fixed</code> 합이 1개 이상이다.</li>
+    <li>각 seed의 period <code>broken</code> 합은 0개다.</li>
+    <li>level shift, gradual drift, amplitude scaling의 <code>broken</code> 합은 모두 0개다.</li>
+    <li>각 seed의 OOF 정상 confirmation 합은 0개다.</li>
+    <li>fallback 구간에서 C12와 C0가 byte 단위로 같다.</li>
+    <li>서로 다른 두 private root의 canonical 결과 7개와 최종 판정이 byte 단위로 같다.</li>
+  </ol>
+  <p>AUC는 설명용으로 기록하지만 0.85를 합격선으로 사용하지 않는다.</p>
+
+  <h2>7. Numba·MLX 계산 계약</h2>
+  <ul>
+    <li>중앙값, MAD, ACF, peak 선택, LOO raw, rank, confirmation, C12 결합과 pair count의 새 숫자 경로를 Numba <code>njit</code>로 구현한다.</li>
+    <li>작은 고정 입력은 Python <code>math.fsum</code>과 <code>sorted</code>로 별도 재현한다. 이 기준 코드는 전체 데이터 점수 계산에 참여하지 않는다.</li>
+    <li>Numba는 Python 기준 대비 ACF·raw 최대 오차 <code>≤1e-12</code>, exact peak lag, exact rank, exact confirmation, exact fixed/broken count와 반복 결정성을 만족해야 한다.</li>
+    <li>Numba 기준 검사나 결정성이 실패하면 실험을 중단한다. NumPy scorer로 전환하지 않는다.</li>
+    <li>새 점수 전체 실행 전 같은 입력과 seed로 MLX 적격성 smoke를 수행한다. finite, 수치 오차 <code>≤1e-12</code>, exact peak lag·confirmation, 결정성과 전송·동기화 포함 <code>1.1×</code> 속도를 모두 기록한다.</li>
+    <li>Exp471의 승인 backend는 Numba다. MLX smoke는 적격성 근거만 남기며 이 실행의 점수 authority를 바꾸지 않는다.</li>
+    <li>Python, Numba, llvmlite, MLX와 mlx-metal 버전, CPU/GPU, cold compile·warm 평가 시간을 manifest에 기록한다.</li>
+  </ul>
+
+  <h2>8. 구현 검증 항목</h2>
+  <ul>
+    <li>좌표 <code>[0:56]</code>, <code>[84:140]</code>와 lag 1..25가 한 칸도 바뀌지 않는지 검사한다.</li>
+    <li>양수 peak, 동점의 작은 lag 우선, peak 없음의 0 sentinel을 단위 테스트한다.</li>
+    <li>상수 더하기와 양의 상수 곱하기가 peak와 shift를 바꾸지 않는지 검사한다.</li>
+    <li>고정된 작은 time-stretch 예제에서 late peak가 예상한 lag로 이동하는지 검사한다.</li>
+    <li>LOO 분리, strict <code>&gt;</code> 경계, rank tie, C0 exact fallback을 검사한다.</li>
+    <li>저장된 raw evidence만으로 E12/C12, pair repair, AUC와 판정을 다시 만들 수 있어야 한다.</li>
+  </ul>
+
+  <h2>9. 실패와 중단 규칙</h2>
+  <div class="box stop">
+    <ul>
+      <li>위 PASS 조건 하나라도 실패하면 Exp471 결과를 FAIL로 그대로 보존한다.</li>
+      <li>실패 뒤 같은 Exp471에서 창 좌표, lag 범위, peak 규칙, sentinel, 집계, threshold, seed, fold 또는 합격 기준을 바꾸지 않는다.</li>
+      <li>결과를 본 뒤 signed shift, 절댓값 shift 또는 다른 ACF 정규화 중 좋은 것을 고르지 않는다. 승인된 식만 실행한다.</li>
+      <li>private 실행 1·2는 구현과 사전검증이 끝난 뒤 별도 승인을 받아 순차 실행한다.</li>
+      <li>private 결과가 PASS여도 별도 승인 전에는 official 실행, TEST/FN 확인과 routing을 하지 않는다.</li>
+    </ul>
+  </div>
+
+  <h2>10. 결과 파일과 대시보드</h2>
+  <p>구현 뒤에는 source-free replay가 가능한 canonical 7개 결과 파일, 해시 지도, HTML 결과 대시보드를 만든다. 파일명은 모두 <code>antigravity</code>를 포함한다. 현재 대시보드는 설계 진행 상태만 보여 주며 결과값을 미리 채우지 않는다.</p>
+
+  <h2>11. 진행 체크</h2>
+  <section aria-label="Exp471 진행 체크박스">
+    <label><input type="checkbox" checked disabled> Exp470 재현 가능한 성능 실패와 원인 확인</label>
+    <label><input type="checkbox" checked disabled> ACF peak-lag 단일 후보 방향 사용자 승인</label>
+    <label><input type="checkbox" checked disabled> Exp471 HTML 고정 설계서 작성</label>
+    <label><input type="checkbox" checked disabled> Ox Alpha Ultra 읽기 전용 설계 검토와 모호성 수정</label>
+    <label><input type="checkbox" checked disabled> 작성된 HTML 설계서 사용자 검토·승인</label>
+    <label><input type="checkbox" checked disabled> HTML 구현 계획 작성</label>
+    <label><input type="checkbox" checked disabled> Ox Alpha Ultra 구현 계획 읽기 전용 검토 GO</label>
+    <label><input type="checkbox" checked disabled> Task 1 고정 계약·authority·code map</label>
+    <label><input type="checkbox" checked disabled> Task 2 Numba ACF peak-lag scorer</label>
+    <label><input type="checkbox" checked disabled> Task 3 Python 기준·결정성·MLX 적격성 smoke</label>
+    <label><input type="checkbox" disabled> Task 4 C0/E12/C12·pair repair 판정</label>
+    <label><input type="checkbox" disabled> Task 5 canonical 저장·semantic replay·HTML export</label>
+    <label><input type="checkbox" disabled> Task 6 closed CLI·최종 사전검증</label>
+    <label><input type="checkbox" disabled> private 실행 1·2와 결과 분석</label>
+    <label><input type="checkbox" disabled> official 실행·TEST/FN·routing 별도 판단</label>
+  </section>
+
+  <h2>12. 근거</h2>
+  <ul>
+    <li><a href="../../EXP470_IMPLEMENTATION_REPORT_antigravity.html">Exp470 구현·결과 보고서</a></li>
+    <li><a href="../../EXP470_DASHBOARD_antigravity.html">Exp470 결과 대시보드</a></li>
+    <li><a href="2026-08-20-exp461-ecg-period-signature-qualification-antigravity-design.html">Exp461 주기 특징 설계</a></li>
+    <li><a href="2026-08-23-exp466-ecg200-phase-registration-margin-antigravity-design.html">Exp466 period 변화 설계와 이전 ACF 근거</a></li>
+    <li><a href="../plans/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html">Exp471 구현 계획</a></li>
+  </ul>
+  <p>Ox Alpha Ultra의 읽기 전용 검토에서 label leakage, 후보 혼합, gate 모순은 발견되지 않았다. median 규칙, 정확한 warp 보간식, fit/query 분리, C0 순위 척도와 0 sentinel의 뜻을 더 명확히 쓰라는 지적을 반영했고, 수정안 재검토는 <strong>GO</strong>였다.</p>
+  <p class="muted">작성일: 2026-08-24 · Task 1 고정 계약·authority·code map과 Task 2 Numba ACF peak-lag scorer, 그리고 Task 3 Python 기준·결정성·MLX smoke까지 끝났고 Task 4가 다음 단계다. private/official 실행, TEST/FN 접근, routing은 모두 0이다.</p>
+</main></body>
+</html>

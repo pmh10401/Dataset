@@ -1,0 +1,1 @@
+{"completed":1116,"elapsed_seconds":10538.96046462492,"failures":[{"dataset":"UWaveGestureLibraryZ_normal_8","error":"finite non-constant rows are required","type":"ValueError"}],"total":1117}

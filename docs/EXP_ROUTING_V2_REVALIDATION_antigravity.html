@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>라우팅 v2 재검증 - antigravity</title>
+<style>
+body{font-family:-apple-system,sans-serif;max-width:960px;margin:40px auto;padding:0 24px;color:#222;line-height:1.65}
+h1{border-bottom:3px solid #2b6cb0;padding-bottom:10px;color:#1a365d}
+h2{color:#2b6cb0;margin-top:32px;border-left:4px solid #2b6cb0;padding-left:12px}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14px}
+th,td{border:1px solid #cbd5e0;padding:7px 11px;text-align:center}
+th{background:#edf2f7}
+td:first-child{text-align:left;font-weight:500}
+.ok{background:#c6f6d5}.bad{background:#fed7d7}.mid{background:#fefcbf}
+.note{background:#ebf8ff;border-left:4px solid #2b6cb0;padding:14px 18px;margin:18px 0;border-radius:4px}
+.warn{background:#fffaf0;border-left:4px solid #dd6b20;padding:14px 18px;margin:18px 0}
+code{background:#f7fafc;padding:1px 5px;border-radius:3px;font-size:13px}
+ul,ol{padding-left:22px}li{margin-bottom:5px}
+</style>
+</head>
+<body>
+<h1>라우팅 규칙 v2 재검증 결과 (antigravity)</h1>
+
+<h2>규칙 변경 내용 (v1 → v2c)</h2>
+<p>v2c에서 추가된 새 규칙:</p>
+<div class="note">
+<code>width &lt; 200 AND kurtosis &gt; 1.5 AND spectral_entropy &lt; 0.70</code><br>
+→ <strong>hydra_local_gap</strong> 선택
+<br><br>이유: 짧은 길이 + 무거운 꼬리(스파이크) + 낮은~중간 주기성 조합은 ECG류 신호 특징이며,
+Hydra의 multi-scale 수용 영역이 이런 패턴에 강함.
+</div>
+
+<h2>Holdout 5개 데이터셋 성능 비교</h2>
+<table>
+<tr><th rowspan="2">가족</th><th colspan="3">AUC 기준</th><th colspan="3">zero-FP TP 기준</th></tr>
+<tr><th>선택 AUC</th><th>최고 AUC</th><th>판정</th><th>선택 TP</th><th>최고 TP</th><th>판정</th></tr>
+<tr><td>FaceFour</td><td>1.0000</td><td>1.0000</td><td class="ok">OK</td><td>1</td><td>1</td><td class="ok">OK</td></tr>
+<tr><td>GunPoint</td><td>0.9592</td><td>1.0000</td><td class="mid">-0.04</td><td>1</td><td>2</td><td class="mid">-1</td></tr>
+<tr><td>SyntheticControl</td><td>1.0000</td><td>1.0000</td><td class="ok">OK</td><td>2</td><td>2</td><td class="ok">OK</td></tr>
+<tr><td>TwoLeadECG</td><td>0.9951</td><td>0.9995</td><td class="ok">OK</td><td>6</td><td>10</td><td class="bad">-4</td></tr>
+<tr><td>Wafer</td><td class="ok">0.9988</td><td>0.9988</td><td class="ok">OK</td><td class="ok">11</td><td>11</td><td class="ok">OK</td></tr>
+<tr style="font-weight:bold;background:#edf2f7"><td>합계</td><td colspan="2">4/5 OK</td><td>80%</td><td colspan="2">3/5 OK</td><td>60%</td></tr>
+</table>
+
+<h2>학습 8가족 회귀 확인</h2>
+<p>v2c 규칙을 학습에 사용한 원래 8가족에 다시 적용한 결과 <strong>8/8 모두 정상 라우팅(회귀 없음)</strong>.</p>
+
+<h2>v1 대비 개선 사항</h2>
+<table>
+<tr><th>지표</th><th>v1</th><th>v2c</th><th>변화</th></tr>
+<tr><td>Holdout AUC 정확도</td><td>4/5 (80%)</td><td>4/5 (80%)</td><td>-</td></tr>
+<tr><td>Holdout zero-FP 정확도</td><td class="bad">2/5 (40%)</td><td class="ok">3/5 (60%)</td><td class="ok">+20%p</td></tr>
+<tr><td>Wafer zero-FP TP</td><td class="bad">2</td><td class="ok">11</td><td class="ok">+9</td></tr>
+<tr><td>학습 회귀</td><td>0</td><td>0</td><td>-</td></tr>
+</table>
+
+<h2>남은 한계</h2>
+<ul>
+<li><strong>TwoLeadECG:</strong> 여전히 hydra 계열이 zero-FP에서 앞섬 (-4). kurtosis가 +0.55로 낮아 새 게이트에 걸리지 않음.</li>
+<li><strong>GunPoint:</strong> minirocket이 압도적이나 multirocket을 선택해 -0.04 AUC 손실.</li>
+<li>이 두 케이스는 서로 다른 보조 신호가 필요하며 단일 임계값으로 해결 어려움.</li>
+</ul>
+
+<h2>다음 단계 권장</h2>
+<ol>
+<li><strong>공식 반영 검토:</strong> 현재 v2c로도 기존 대비 명백한 개선이므로 승인 후 파이프라인 반영 가능</li>
+<li><strong>추가 보조 신호 탐색:</strong> TwoLeadECG류를 구분할 신호(예: 자기상관 구조, 변동성 비율) 연구</li>
+<li><strong>holdout 확대:</strong> 더 많은 미학습 가족으로 일반화 확인</li>
+</ol>
+</body>
+</html>

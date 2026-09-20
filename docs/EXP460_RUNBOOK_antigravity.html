@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp460 실행 가이드</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
+<body><main>
+  <h1>Exp460 실행 가이드</h1>
+  <p><strong>상태:</strong> <code>official_evaluation_inspected_complete_fallback_no_performance_improvement</code>. Task 6 official evaluate/inspect counts 1/1 with exits 0/0, label query count 0, and result hashes frozen.</p>
+  <h2>Task 6 terminal operating boundary</h2>
+  <table>
+    <tr><th>CLI surface</th><td>exactly <code>evaluate --reviewed-commit LOWER40HEX</code> and <code>bare inspect</code></td></tr>
+    <tr><th>fixed runtime</th><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code></td></tr>
+    <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp460_ecg_strict_fallback_antigravity_20260820</code>; immutable exact six-leaf result</td></tr>
+    <tr><th>evaluate sequence</th><td>Task 2 authority capture → Task 3 four-rule evaluation → Task 4 six-leaf publication → Task 4 semantic replay → Task 4 dashboard payload</td></tr>
+    <tr><th>inspect sequence</th><td>Task 2 authority capture → Task 4 replay of the existing root → Task 4 dashboard payload</td></tr>
+    <tr><th>private evidence</th><td>2 sequential non-official roots; payload exact-equal, all 6 leaf hashes exact-equal, roots cleaned</td></tr>
+    <tr><th>terminal prohibition</th><td>rerun, retry, overwrite, new/resume/override, root override, TRAIN recomputation, new seed/threshold, TEST labels, champion/pending/routing/promotion change</td></tr>
+  </table>
+  <h2>Task 6 command evidence — do not rerun</h2>
+  <p>The commands below were consumed exactly once each at reviewed commit <code>ca51813450f26b8a3fada6f39cf810452467297e</code>; evaluate and inspect both exited 0. A separate pre-launch literal <code>PY</code> wrapper exit 127 is retained but did not invoke Python, launcher, or CLI and is not an official count.</p>
+  <pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+$PY scratch/run_exp460_ecg_strict_fallback_antigravity.py evaluate --reviewed-commit LOWER40HEX
+$PY scratch/run_exp460_ecg_strict_fallback_antigravity.py inspect</code></pre>
+  <h2>Official frozen-authority outcome</h2>
+  <table>
+    <tr><th>records</th><td>8/10 pass; two failures</td></tr>
+    <tr><th>failed folds</th><td>seed 20260721 fold 3 AUC 0.8208339620743423; seed 20261721 fold 4 AUC 0.8004124541019063</td></tr>
+    <tr><th>worst AUC</th><td>0.8004124541019063</td></tr>
+    <tr><th>majority route</th><td>candidate</td></tr>
+    <tr><th>strict route</th><td>baseline</td></tr>
+    <tr><th>status</th><td><code>fallback_triggered_performance_not_improved</code>; joint success false</td></tr>
+  </table>
+  <h2>Post-Task 6 preservation checklist</h2>
+  <ul>
+    <li>Preserve official evaluate/inspect counts 1/1 and exits 0/0.</li>
+    <li>Preserve the exact six leaf hashes and artifact-map recomputation.</li>
+    <li>Do not execute either official command again.</li>
+    <li>Keep label query count 0 and TEST labels unopened.</li>
+    <li>Keep champion, pending candidate, promotion, and actual routing unchanged.</li>
+  </ul>
+</main></body></html>

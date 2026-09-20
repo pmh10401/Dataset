@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp462 Task 1 report antigravity</title>
+<style>body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.12rem .3rem}.box{padding:1rem;background:#f5f7fa;border-left:6px solid #3569a8}.warn{border-left-color:#b7791f}</style>
+</head><body><main>
+<h1>Exp462 Task 1 report</h1>
+<p><strong>Status:</strong> Task 1 complete / Task 2 next. Ledger status remains <code>planned_implementation_not_started</code> and implementation status remains <code>task_1_complete_pending_task_2</code>.</p>
+
+<h2>Closeout</h2><table><tr><th>Independent re-review</th><td>Approved with C/I/M 0 after fix round 1.</td></tr><tr><th>Checkbox state</th><td>Task 1 heading and six Task 1 step checkboxes are checked. Tasks 2–6 and all their steps remain unchecked.</td></tr><tr><th>Status phrase</th><td>Task 1 complete / Task 2 next.</td></tr></table><h2>Commit boundary</h2>
+<table>
+  <tr><th>Verified source parent / pre-commit</th><td><code>aacdb6752033b4f0709615d9d65f56c49f4004b4</code></td></tr>
+  <tr><th>Final commit</th><td>Supplied in handoff. The report intentionally does not contain a self-referential commit hash.</td></tr>
+  <tr><th>Fix round 1 source parent</th><td><code>68a000fbf977b2dda8ae69bcc3ed237b0607c879</code></td></tr>
+  <tr><th>Worktree</th><td><code>/Users/mac/Documents/Time Series/.worktrees/exp462-ecg-gradual-signature-antigravity</code></td></tr>
+  <tr><th>Branch</th><td><code>codex/exp462-ecg-gradual-signature-antigravity</code></td></tr>
+</table>
+
+<h2>RED / GREEN</h2>
+<table>
+  <tr><th>Retained RED</th><td>Focused governance test failed with two missing-artifact failures for the three missing HTML documents and Exp462 codemap triplet.</td></tr>
+  <tr><th>GREEN count</th><td>Focused governance test passed twice: <code>Ran 2 tests ... OK</code> on both runs.</td></tr>
+  <tr><th>Validation</th><td>Strict duplicate-key parse passed for five modified JSON files; HTML parse passed for six HTML files; map validate-only passed; root absence, label0, unchanged champion/pending, unchecked controls, no <code>__init__.py</code>, and <code>git diff --check</code> passed.</td></tr>
+</table>
+
+<h2>Fix round 1 — physical root absence assertion</h2>
+<p><strong>Fix note:</strong> The governance regression now directly checks the physical official root path with <code>assertFalse(run_root.exists())</code> and <code>assertFalse(run_root.is_symlink())</code>, so ledger claims that the root is absent cannot pass while the path exists or is a symlink.</p>
+<table>
+  <tr><th>Focused RED command</th><td><code>PYTHONDONTWRITEBYTECODE=1 python3 - &lt;&lt;'PY' ... patch.object(Path, 'exists', exists_with_root_present) ... GovernanceAntigravityTest.test_task1_planned_governance_antigravity</code></td></tr>
+  <tr><th>Focused RED output</th><td><code>FAIL: test_task1_planned_governance_antigravity ... AssertionError: True is not false : /Users/mac/Documents/Dataset/exp462_ecg_gradual_signature_qualification_antigravity_20260820 ... Ran 1 test ... FAILED (failures=1)</code></td></tr>
+  <tr><th>GREEN command</th><td><code>PYTHONDONTWRITEBYTECODE=1 python3 -m unittest experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_governance_antigravity</code></td></tr>
+  <tr><th>GREEN output</th><td><code>Ran 2 tests in 0.078s ... OK</code></td></tr>
+  <tr><th>Codemap</th><td>Regenerated because the governance test fingerprint changed. Graph and lock source parent are <code>68a000fbf977b2dda8ae69bcc3ed237b0607c879</code>.</td></tr>
+</table>
+
+<h2>Document and map hashes</h2>
+<table>
+  <tr><th><code>docs/EXP462_PREREGISTRATION_antigravity.html</code></th><td><code>a2745f6aba585487a50363f002221c8c6366608696c47fabe1e966b158262494</code></td></tr>
+  <tr><th><code>docs/EXP462_RUNBOOK_antigravity.html</code></th><td><code>03c7de096c11fa4805945aa0df076d6f2f1fb14e75348ebc99f1b89f52cb76f5</code></td></tr>
+  <tr><th><code>docs/EXP462_IMPLEMENTATION_REPORT_antigravity.html</code></th><td><code>8097f7d04097ffa8075257e930a0c9909d5a8e6a1279eec512155c131b72ac0c</code></td></tr>
+  <tr><th><code>docs/EXP462_DASHBOARD_antigravity.html</code></th><td><code>33150875c51207113c7d0972d63378aaf6d4167a68d39edad1ef8f5bcd822d07</code></td></tr>
+  <tr><th><code>docs/codemap/codemap_exp462_antigravity.html</code></th><td><code>b109fd9c7f99664f83cd3568678f35c68e2336c4808f37a74e92fef94136282a</code></td></tr>
+  <tr><th><code>docs/codemap/codemap_exp462_antigravity.json</code></th><td><code>7e5941e609c8c5932d53b0c21d29720b564fe2851ed389442a6d0f312ea1b9e6</code></td></tr>
+  <tr><th><code>docs/codemap/codemap_exp462_antigravity.lock</code></th><td><code>d54cb076f95e723ed824dd5f7ad7eb7a9c51fbfa72fc30a27ca3865a757d2de4</code></td></tr>
+  <tr><th><code>experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_governance_antigravity.py</code></th><td><code>e5bb4f0de78ab57cbb74643934bcc42a61425d1236c90bfa05a8aa9c06a71e6d</code></td></tr>
+  <tr><th><code>scratch/build_codemap_exp462_antigravity.py</code></th><td><code>c77be3c32973b6a9a9d4574ee0c15b54de2ab09be0bd5276c46c367f1f1e5ce8</code></td></tr>
+</table>
+
+<h2>Ledger and lifecycle checks</h2>
+<table>
+  <tr><th>Ledgers</th><td><code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, and <code>CHAMPION_LEDGER.json</code> contain matching Exp462 records.</td></tr>
+  <tr><th>Official lifecycle</th><td>official evaluate <code>0</code>, official inspect <code>0</code>, official root absent, result root not created, official result <code>null</code>.</td></tr>
+  <tr><th>Hashes</th><td>prediction, evaluation, decision, artifact map, and dashboard snapshot hashes are <code>null</code>.</td></tr>
+  <tr><th>Labels</th><td>TEST labels not opened; label query count <code>0</code>.</td></tr>
+  <tr><th>Champion / pending</th><td>Champion status remains <code>no_new_champion_verified_in_current_loop</code>; pending candidate remains the existing <code>none_exp446_publication_inspected_complete_not_pending_champion</code> null candidate.</td></tr>
+  <tr><th>Map</th><td>HTML embedded JSON equals JSON; lock represented paths are exact; current fix source parent is <code>68a000fbf977b2dda8ae69bcc3ed237b0607c879</code>; real Task 1 governance nodes are represented; future Task 2-5 nodes are unknown and not implemented.</td></tr>
+</table>
+
+<div class="box warn">
+  <p><strong>Concern and ruling:</strong> A report cannot honestly contain the final commit hash that will include the report itself. Ruling received: do not create a self-referential report commit hash. This report records the exact pre-commit/source-parent it verified and states that the final commit is supplied in the handoff; no placeholder is used.</p>
+</div>
+
+<h2>Remaining concerns</h2>
+<p>No implementation blocker remains for Task 1. Task 1 checkboxes are checked after independent review approval; Tasks 2-6 remain unchecked and are not implemented.</p>
+</main></body></html>

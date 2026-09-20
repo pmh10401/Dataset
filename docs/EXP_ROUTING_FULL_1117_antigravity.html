@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>전체 1119개 데이터셋 라우팅 검증 결과</title>
+<style>
+body {font-family: sans-serif; max-width: 1000px; margin: 40px auto; padding: 0 20px; line-height: 1.6;}
+h1 {color: #1a1a2e; border-bottom: 3px solid #0f3460; padding-bottom: 10px;}
+h2 {color: #0f3460; margin-top: 32px;}
+.card {background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 16px; text-align: center; margin: 8px 0;}
+.card .value {font-size: 2em; font-weight: 700; color: #0f3460;}
+.card .label {font-size: 0.85em; color: #6c757d; margin-top: 4px;}
+table {border-collapse: collapse; width: 100%; margin: 16px 0;}
+th, td {border: 1px solid #dee2e6; padding: 8px 12px; text-align: left;}
+th {background: #e9ecef;}
+tr:nth-child(even) {background: #f8f9fa;}
+code {background: #f1f3f5; padding: 2px 6px; border-radius: 3px;}
+.note {background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin: 16px 0; border-radius: 4px;}
+.progress {background: #e9ecef; border-radius: 4px; height: 24px; margin: 4px 0; overflow: hidden;}
+.progress .fill {height: 100%; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 0.8em; font-weight: 600; color: white;}
+.green {background: #28a745;}
+.orange {background: #fd7e14;}
+.red {background: #dc3545;}
+.decision {background: #fff5f5; border: 2px solid #dc3545; border-radius: 8px; padding: 16px; margin: 20px 0;}
+.checklist label {display: block; margin: 7px 0;}
+.muted {color: #6c757d; font-size: 0.92em;}
+</style></head><body>
+<h1>전체 1119개 데이터셋 라우팅 검증 결과</h1>
+<p>실험명: <code>label-free router v6</code> | 검증 일시: 2026-08-26</p>
+<h2>1. 전체 결과 요약</h2>
+<p>처음 예상한 1117개가 아니라, 데이터베이스를 직접 조회한 결과 <strong>1119개</strong>가 등록되어 있어 1119개 모두를 대상으로 실행했습니다.</p>
+<div class="card" style="background: #f0fff4; border-color: #28a745;">
+  <div class="value">962</div>
+  <div class="label">검증 가능 (ok)</div>
+</div>
+<div class="card">
+  <div class="value">729</div>
+  <div class="label">AUC 정답 (75.8%)</div>
+</div>
+<div class="card">
+  <div class="value">737</div>
+  <div class="label">ZF 정답 (76.6%)</div>
+</div>
+<div class="progress"><div class="fill green" style="width: 75.8%">75.8%</div></div>
+<div class="decision">
+  <strong>최종 판정: 현재 라우터의 공식 채택은 보류합니다.</strong><br>
+  라우터 평균 AUC는 0.9766으로, 항상 MiniRocket을 선택하는 단순 기준선 0.9821보다 0.0054 낮습니다.
+  0-FP에서 잡힌 이상 개수의 평균도 라우터 1.73, MiniRocket 2.04로 기준선보다 낮습니다.
+</div>
+
+<h3>진행 체크리스트</h3>
+<div class="checklist">
+  <label><input type="checkbox" checked disabled> 데이터베이스의 전체 1119개 이름 확인</label>
+  <label><input type="checkbox" checked disabled> 23개 체크포인트로 전체 실행 완료</label>
+  <label><input type="checkbox" checked disabled> 유효한 962개 데이터셋의 AUC·ZF 집계</label>
+  <label><input type="checkbox" checked disabled> 단일 방법 기준선 및 최적 선택과 비교</label>
+  <label><input type="checkbox" checked disabled> 실패 집중군과 극단 손실 데이터셋 확인</label>
+  <label><input type="checkbox" checked disabled> HTML 대시보드 작성</label>
+  <label><input type="checkbox" disabled> 현재 라우터를 공식 파이프라인의 기본값으로 승격</label>
+</div>
+<h3>상태별 분포</h3>
+<table><tr><th>상태</th><th>개수</th><th>비율</th></tr>
+<tr><td>ok</td><td>962</td><td>86.0%</td></tr>
+<tr><td>single_class</td><td>109</td><td>9.7%</td></tr>
+<tr><td>insufficient</td><td>27</td><td>2.4%</td></tr>
+<tr><td>non_finite</td><td>20</td><td>1.8%</td></tr>
+<tr><td>skipped_size</td><td>1</td><td>0.1%</td></tr>
+</table>
+<div class="note"><strong>상태 설명:</strong>
+<ul>
+<li><code>ok</code>: 정상 평가 완료</li>
+<li><code>single_class</code>: 테스트 세트에 정상 클래스만 존재 (이진 분류 불가)</li>
+<li><code>insufficient</code>: 훈련 또는 테스트 샘플이 너무 적음</li>
+<li><code>non_finite</code>: NaN/Inf 값이 포함됨</li>
+<li><code>skipped_size</code>: 데이터가 너무 커서 제외 (CornellWhaleChallenge: 4000 길이 x 41,778 샘플)</li>
+</ul></div>
+<h2>2. 라우팅 방법별 성능</h2>
+<h3>방법별 평균 AUC</h3>
+<table><tr><th>방법</th><th>평균 AUC</th><th>라우팅 선택 수</th><th>선택 시 정답률</th></tr>
+<tr><td>minirocket_local_gap</td><td>0.9821</td><td>184</td><td class='green'>78.8%</td></tr>
+<tr><td>multirocket_local_gap</td><td>0.9714</td><td>408</td><td class='orange'>69.6%</td></tr>
+<tr><td>hydra_local_gap</td><td>0.9698</td><td>370</td><td class='green'>81.1%</td></tr>
+<tr><td>hydra_multirocket_local_gap</td><td>0.9799</td><td>0</td><td class='red'>0.0%</td></tr>
+</table>
+<p class="muted">선택 시 정답률은 선택한 방법의 AUC가 네 후보 중 최고 AUC보다 0.01 이내인 비율입니다. 0번 선택된 방법의 0.0%는 성능 실패가 아니라 라우터가 그 방법을 선택하지 않았다는 뜻입니다.</p>
+
+<h3>라우터와 단일 방법 기준선 비교</h3>
+<table>
+<tr><th>전략</th><th>평균 AUC</th><th>평균 ZF-TP</th><th>판정</th></tr>
+<tr><td>항상 MiniRocket</td><td><strong>0.9821</strong></td><td><strong>2.04</strong></td><td>현재 가장 좋은 단순 기준선</td></tr>
+<tr><td>항상 Hydra+MultiRocket</td><td>0.9799</td><td>1.82</td><td>라우터보다 평균 AUC 높음</td></tr>
+<tr><td>현재 라우터</td><td>0.9766</td><td>1.73</td><td class="red">기준선 미달</td></tr>
+<tr><td>데이터셋별 최적 후보(상한선)</td><td>0.9918</td><td>2.39</td><td>라우팅이 도달할 수 있는 참고 상한</td></tr>
+</table>
+<h3>라우팅 선택 분포</h3>
+<p><code>minirocket_local_gap</code>: <strong>184개</strong> (19.1%)</p>
+<p><code>multirocket_local_gap</code>: <strong>408개</strong> (42.4%)</p>
+<p><code>hydra_local_gap</code>: <strong>370개</strong> (38.5%)</p>
+<p><code>hydra_multirocket_local_gap</code>: <strong>0개</strong> (0.0%)</p>
+<h2>3. 라우팅 손실 분석</h2>
+<table><tr><th>지표</th><th>평균 손실</th><th>최대 손실</th></tr>
+<tr><td>AUC 손실</td><td>0.0151</td><td>1.0000</td></tr>
+<tr><td>ZF-TP 손실</td><td>0.66</td><td>85</td></tr>
+</table>
+<p>AUC 기준으로 648개(67.4%)는 최적 후보를 정확히 골랐고, 729개(75.8%)는 최고 후보보다 0.01 이내였습니다. 반면 68개는 AUC 손실이 0.05를 넘었고, 32개는 0.10을 넘었습니다.</p>
+<h2>4. 라우팅이 잘못된 케이스 (최악 10개)</h2>
+<table><tr><th>데이터셋</th><th>선택된 방법</th><th>AUC</th></tr>
+<tr><td>EOGVerticalSignal_normal_3</td><td>minirocket_local_gap</td><td>0.0000</td></tr>
+<tr><td>EOGHorizontalSignal_normal_9</td><td>minirocket_local_gap</td><td>0.0204</td></tr>
+<tr><td>OSULeaf_normal_2</td><td>multirocket_local_gap</td><td>0.3265</td></tr>
+<tr><td>MedicalImages_normal_10</td><td>hydra_local_gap</td><td>0.5706</td></tr>
+<tr><td>UWaveGestureLibraryX_normal_4</td><td>multirocket_local_gap</td><td>0.5804</td></tr>
+<tr><td>UWaveGestureLibraryY_normal_5</td><td>multirocket_local_gap</td><td>0.6375</td></tr>
+<tr><td>Earthquakes_normal_1</td><td>minirocket_local_gap</td><td>0.6735</td></tr>
+<tr><td>LargeKitchenAppliances_normal_2</td><td>multirocket_local_gap</td><td>0.6776</td></tr>
+<tr><td>DistalPhalanxTW_normal_7</td><td>multirocket_local_gap</td><td>0.6939</td></tr>
+<tr><td>ProximalPhalanxOutlineAgeGroup_normal_3</td><td>multirocket_local_gap</td><td>0.7037</td></tr>
+
+</table>
+<h2>5. 라우팅이 잘 된 케이스 (최고 10개)</h2>
+<table><tr><th>데이터셋</th><th>선택된 방법</th><th>AUC</th></tr>
+<tr><td>ACSF1_normal_0</td><td>hydra_local_gap</td><td>1.0000</td></tr>
+<tr><td>ACSF1_normal_3</td><td>hydra_local_gap</td><td>1.0000</td></tr>
+<tr><td>ACSF1_normal_4</td><td>hydra_local_gap</td><td>1.0000</td></tr>
+<tr><td>ACSF1_normal_6</td><td>hydra_local_gap</td><td>1.0000</td></tr>
+<tr><td>ACSF1_normal_7</td><td>hydra_local_gap</td><td>1.0000</td></tr>
+<tr><td>ACSF1_normal_8</td><td>hydra_local_gap</td><td>1.0000</td></tr>
+<tr><td>ACSF1_normal_9</td><td>hydra_local_gap</td><td>1.0000</td></tr>
+<tr><td>Adiac_normal_1</td><td>minirocket_local_gap</td><td>1.0000</td></tr>
+<tr><td>Adiac_normal_10</td><td>minirocket_local_gap</td><td>1.0000</td></tr>
+<tr><td>Adiac_normal_11</td><td>minirocket_local_gap</td><td>1.0000</td></tr>
+
+</table>
+<h2>6. 우선 개선할 데이터셋 가족</h2>
+<p>같은 원본 데이터셋에서 정상 클래스를 바꾼 변형을 하나의 가족으로 묶었습니다. 아래는 표본이 3개 이상인 가족 중 라우팅 적중률이 낮은 집중군입니다.</p>
+<table>
+<tr><th>가족</th><th>변형 수</th><th>AUC 적중률</th><th>평균 AUC 손실</th></tr>
+<tr><td>SemgHandSubjectCh2</td><td>5</td><td>0.0%</td><td>0.0435</td></tr>
+<tr><td>ArrowHead</td><td>3</td><td>0.0%</td><td>0.0476</td></tr>
+<tr><td>EthanolLevel</td><td>4</td><td>0.0%</td><td>0.0494</td></tr>
+<tr><td>MiddlePhalanxOutlineAgeGroup</td><td>3</td><td>0.0%</td><td>0.0687</td></tr>
+<tr><td>LargeKitchenAppliances</td><td>3</td><td>33.3%</td><td>0.0982</td></tr>
+<tr><td>ProximalPhalanxOutlineAgeGroup</td><td>3</td><td>33.3%</td><td>0.0971</td></tr>
+<tr><td>ECG5000</td><td>5</td><td>40.0%</td><td>0.0312</td></tr>
+<tr><td>EOGVerticalSignal</td><td>12</td><td>50.0%</td><td>0.0986</td></tr>
+</table>
+
+<h2>7. 결론 및 다음 단계</h2>
+<div class="note"><ul>
+<li>1119개 중 962개에서 네 후보를 공정하게 비교할 수 있었습니다.</li>
+<li>현재 라우터는 후보를 최고 AUC의 0.01 이내로 고른 비율이 75.8%입니다.</li>
+<li>하지만 실제 평균 성능은 항상 MiniRocket을 쓰는 기준선보다 낮으므로, 라우터를 공식 기본값으로 승격하면 안 됩니다.</li>
+<li>다음 실험은 데이터셋 이름이 아니라 학습 데이터에서 계산되는 특징만 사용해야 합니다.</li>
+<li>우선순위는 ① 심각한 손실 68개에 대한 보수적 복귀 규칙, ② MultiRocket 과선택 감소, ③ 위 실패 가족의 공통 특징 분석입니다.</li>
+<li>다음 통과 기준은 적중률 자체보다 <strong>평균 AUC 0.9821 이상 및 평균 ZF 2.04 이상</strong>으로 잡는 것이 안전합니다.</li>
+</ul></div>
+
+<h2>8. 데이터 출처와 계산 정의</h2>
+<ul>
+<li>원본 데이터: <code>/Users/mac/Documents/Dataset/univariate_ts.db</code></li>
+<li>실행 증거: <code>experiments/exp_routing_label_free_antigravity/checkpoints/chunk_0000_antigravity.json</code> ~ <code>chunk_0022_antigravity.json</code></li>
+<li>AUC 적중: 라우터 선택 AUC가 같은 데이터셋의 최고 후보 AUC보다 0.01 이내</li>
+<li>ZF-TP: 정상 오탐을 0개로 유지하면서 잡아낸 이상 샘플 수. ZF 적중은 이 값이 네 후보 중 최댓값과 같은 경우</li>
+<li>테스트 라벨은 평가에만 사용했으며, 라우팅 결정에는 사용하지 않았습니다.</li>
+</ul>
+</body></html>

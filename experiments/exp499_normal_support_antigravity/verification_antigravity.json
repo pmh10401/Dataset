@@ -1,0 +1,32 @@
+{
+  "state": "passed_train_screen_rejected_kernel",
+  "datasets": 50,
+  "folds": 250,
+  "selected": "oas_distance",
+  "unrestricted_winner": "kernel_g025_n001",
+  "observed_proxy_margin": 7.409528172230839e-05,
+  "required_proxy_margin": 0.02,
+  "eligible": [
+    "MiniRocket",
+    "oas_distance",
+    "oas_nearest",
+    "kernel_g025_n001",
+    "kernel_g025_n010",
+    "kernel_g4_n001",
+    "kernel_g4_n010"
+  ],
+  "normal_tail": {
+    "MiniRocket": 2.927710104996852,
+    "oas_distance": 2.5555495038907714,
+    "oas_nearest": 2.552285348815353,
+    "kernel_g025_n001": 3.139013748981348,
+    "kernel_g025_n010": 3.1390133312198216,
+    "kernel_g4_n001": 3.138794208256938,
+    "kernel_g4_n010": 3.1387943570408963
+  },
+  "pilot_sha256": "ff9746d25e98acc30e1d340019d1fbc634494b0caf929d966f2f694aad315397",
+  "full_run_skipped": true,
+  "test_labels_read": false,
+  "reused_result": "Exp495 canonical OAS distance",
+  "repeated_fits_identical_on_deterministic_smoke": true
+}

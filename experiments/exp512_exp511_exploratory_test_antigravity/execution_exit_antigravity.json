@@ -1,0 +1,21 @@
+{
+  "scoring": {
+    "exit_code": null,
+    "exit_code_observed": false,
+    "completion_evidence": "Existing scores_frozen manifest, 1117-score boundary, and final completion log; original process exit status was not recovered. No rescoring performed.",
+    "log_sha256": "8773c72ab5345387377d1ee3e35b1788556a60a34dde9e085ff071aad669f8f4",
+    "boundary_sha256": "b127b43b18b5534c4bf6d57ed6fa784011c6ef398d3417352a226cd47e03bdb3"
+  },
+  "evaluation": {
+    "exit_code": 0,
+    "started_utc": "2026-09-18T02:51:18.629475+00:00",
+    "ended_utc": "2026-09-18T02:51:33.748356+00:00",
+    "log_sha256": "288dbb58c327e837c241e3b673c8c4bc024940915cfbe067480fd8e1f4e0c15c"
+  },
+  "verification": {
+    "exit_code": 0,
+    "started_utc": "2026-09-18T02:51:33.749517+00:00",
+    "ended_utc": "2026-09-18T02:51:44.344405+00:00",
+    "log_sha256": "db669e28675de864c83c655f18e257a4a82ceabc54d7e553fb06c66f112fb21e"
+  }
+}

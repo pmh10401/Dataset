@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp462 gradual signature qualification 구현 계획</title>
+<style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}section{border-top:2px solid #d5dbe3;padding-top:1rem;margin-top:2rem}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aab3bf;padding:.5rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}pre{padding:1rem}label{display:block}input{margin-right:.45rem}</style></head><body><main>
+<h1>Exp462 ECG gradual signature qualification 구현 계획</h1>
+<blockquote><strong>Agent 실행 규칙:</strong> Task별 fresh subagent 방식 또는 inline executing-plans 방식 중 하나를 선택한다. 모든 Step은 HTML checkbox로 추적하며 외부 검토 전에는 완료 체크하지 않는다.</blockquote>
+<table>
+  <tr><th>Goal</th><td>Exp461 period 성능을 그대로 보존하면서 gradual_drift 실패 한 건을 TRAIN-only 고정 특징으로 해결한다.</td></tr>
+  <tr><th>Architecture</th><td>Exp461 reviewed 점수를 기준선으로 재사용하고, 24차원 gradual signature와 LocalGap 순위를 추가한다. 주 후보는 두 순위의 원소별 max이며 10개 blocked 기록과 period 보존 조건으로만 판정한다.</td></tr>
+  <tr><th>Tech stack</th><td>Python 3.14.6, NumPy 2.3.5, existing aeon/LocalGap/Hydra CPU stack, unittest, canonical JSON/JSONL, HTML dashboard.</td></tr>
+  <tr><th>Spec</th><td><a href="../specs/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity-design.html">승인된 Exp462 설계서</a> — SHA-256 <code>34a950e619b7ddd1accc7cc41281a476611010f27ef02b1a73fa46523d064829</code></td></tr>
+  <tr><th>Current status</th><td><code>stopped_before_official_evaluation_qualification_failed</code>, Task 5 complete after final review SHIP C/I/M0 at clean commit <code>ff57925ae2d5542fe6ec34131686ffa0bc37fe0c</code>; Task 5 heading and all six steps checked (7/7). Task 6 is forbidden (0/7 unchecked). Official command <code>0</code>, label query <code>0</code>; there is no next official action.</td></tr>
+</table>
+
+<h2>Global constraints</h2>
+<ul>
+  <li>실험 ID <code>Exp462</code>, kind <code>ecg_gradual_signature_qualification</code>, run identity <code>exp462-ecg-gradual-signature-qualification-antigravity-20260820</code>.</li>
+  <li>공식 root <code>/Users/mac/Documents/Dataset/exp462_ecg_gradual_signature_qualification_antigravity_20260820</code>는 Task 6 별도 승인 전까지 없어야 한다.</li>
+  <li>데이터는 <code>ECG5000_normal_2</code> TRAIN <code>1413×140</code>, seeds <code>(20260721, 20261721)</code>, blocked folds <code>5</code>, 변화 유형 순서 <code>level_shift, gradual_drift, amplitude_scaling, period_change</code>다.</li>
+  <li>방법 순서는 <code>hydra_period_rank_max</code>, <code>gradual_signature_local_gap</code>, <code>hydra_period_gradual_rank_max</code>다.</li>
+  <li>Task 3 전체 실행 전 MLX parity/speed를 평가한다. finite·순서·수치 허용오차·1.1배 속도 조건 중 하나라도 실패하거나 MLX가 없으면 CPU NumPy를 사용하며 패키지를 설치하지 않는다.</li>
+  <li>TEST label, TEST confusion/FN/FP/F1, 라우팅 적용, champion/pending 변경, threshold/seed/fold 사후 변경은 금지한다.</li>
+  <li>새 파일명에는 <code>antigravity</code>가 포함되며 새 <code>__init__.py</code>를 만들지 않는다. 사용자 문서와 Task report는 HTML이다.</li>
+  <li>코드 변경 Task 시작 전 현재 map lock을 검증하고 callers/effects/tests를 확인한다. 경계가 바뀌면 Exp462 HTML/JSON/lock triplet을 같은 commit에 갱신한다.</li>
+  <li>완료된 Task heading과 Step만 검토 후 체크한다. 후속 Task와 Task 6은 미체크로 유지한다.</li>
+</ul>
+
+<section>
+<h2><label><input type="checkbox" checked disabled>Task 1 — governance, dashboard, code map</label></h2>
+<p><strong>Files:</strong> Create <code>docs/EXP462_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP462_RUNBOOK_antigravity.html</code>, <code>docs/EXP462_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>experiments/exp462_ecg_gradual_signature_qualification_antigravity/tests/test_governance_antigravity.py</code>, <code>scratch/build_codemap_exp462_antigravity.py</code>, <code>docs/codemap/codemap_exp462_antigravity.{html,json,lock}</code>. Modify dashboard, three ledgers, this plan.</p>
+<p><strong>Produces:</strong> immutable design/prereg/runbook hashes, planned Exp462 ledger record, dashboard status, and map that names future Task 2–5 boundaries as unknown rather than implemented.</p><p><strong>Current state:</strong> Task 1 complete / Task 2 next after independent review C/I/M 0. Task 1 heading and six steps are checked; Tasks 2–6 remain unchecked.</p>
+<ol>
+  <li><label><input type="checkbox" checked disabled>Step 1 — RED governance test: assert the three HTML governance documents, dashboard, three matching ledger records, planned status, null result hashes, official0/label0/root absent, unchanged champion/pending state.</label><pre><code>self.assertEqual(record["status"], "planned_implementation_not_started")
+self.assertEqual(record["label_query_count"], 0)
+self.assertIsNone(record["artifact_map_sha256"])</code></pre></li>
+  <li><label><input type="checkbox" checked disabled>Step 2 — Run the single governance test and retain the missing-document/record failure summary.</label><pre><code>"$PY" -m unittest experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_governance_antigravity</code></pre></li>
+  <li><label><input type="checkbox" checked disabled>Step 3 — Write easy Korean preregistration/runbook/report and planned ledger entries. Dashboard must show Task 1 progress, Exp461 failure 9/10, gradual target 0.85, three period preservation values, official0/label0.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 4 — Build Exp462 map with real design/governance nodes, permitted edge types, resolving evidence, exact embedded HTML=JSON, clean source-parent lock, and future Task 2–5 nodes marked unknown.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 5 — GREEN twice; strict duplicate-key JSON parse; HTML parse; map validate; diff-check; root absence; pending/champion unchanged.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 6 — Commit governance/map, receive fresh review C/I0, then check Task 1 heading+steps and update dashboard to Task 1 complete / Task 2 next.</label></li>
+</ol>
+</section>
+
+<section>
+<h2><label><input type="checkbox" checked disabled>Task 2 — frozen Exp461 authority and TRAIN source</label></h2>
+<p><strong>Files:</strong> Create <code>config_antigravity.py</code>, <code>contracts_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>sources_antigravity.py</code> and four corresponding tests. Modify map/dashboard/report/plan only.</p>
+<p><strong>Consumes:</strong> Exp461 reviewed code commit <code>3a306ff3e276dae13b28b9733db30e9934da7eb2</code> for private TRAIN candidate execution/reproduction code, Exp461 terminal closeout commit <code>0340b6ee737da84777283668449738d0c1585566</code> for terminal truth/docs closeout, and four frozen private hashes. <strong>Produces:</strong> <code>FROZEN_CONFIG_ANTIGRAVITY</code>, <code>capture_exp461_gradual_authority_antigravity()</code>, <code>load_normal2_train_antigravity()</code>.</p>
+<p><strong>Current state:</strong> Task 2 complete / Task 3 next after independent review C/I/M 0. The Task 2 heading and six steps are checked; Tasks 3-6 remain unchecked.</p>
+<ol>
+  <li><label><input type="checkbox" checked disabled>Step 1 — RED tests for exact identity/data/seeds/folds/method order/gates, strict predecessor hash/result values, immutable dataclasses, source shape/dtype/finite/owned/read-only, and label0.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 2 — Run focused Task 2 tests and retain missing-module failures.</label><pre><code>"$PY" -m unittest experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_config_antigravity experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_contracts_antigravity experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_predecessor_antigravity experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_sources_antigravity</code></pre></li>
+  <li><label><input type="checkbox" checked disabled>Step 3 — Implement exact frozen config/contracts. Authority records Exp461 9/10, gradual min <code>0.8402306222021025</code>, period min <code>0.907392736783864</code>, historical period fold values <code>0.907392736783864</code> and <code>0.9216148584075248</code>, plus four private hashes.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 4 — Implement source-free predecessor capture from versioned truth and reuse Exp461 TRAIN loader without TEST-table or label SQL.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 5 — Focused tests twice, Task 1 regression, one read-only TRAIN source smoke, py_compile, map validate, diff-check, official-root absence, label0.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 6 — Update map/dashboard/report, commit, fresh review C/I0, then check Task 2 controls.</label></li>
+</ol>
+</section>
+
+<section>
+<h2><label><input type="checkbox" checked disabled>Task 3 — 24D gradual signature and three scores</label></h2>
+<p><strong>Files:</strong> Create <code>gradual_features_antigravity.py</code>, <code>scoring_antigravity.py</code> and two tests. Modify map/dashboard/report/plan only.</p>
+<p><strong>Produces:</strong> <code>gradual_signature_antigravity(values: numpy.ndarray) -&gt; numpy.ndarray</code>, <code>score_fold_methods_antigravity(train, fit_indices, query_indices, *, seed, fold_index) -&gt; FoldMethodScoresAntigravity</code>.</p>
+<p><strong>Current state:</strong> Task 3 complete / Task 4 next after review C/I/M 0. RED/GREEN, CPU-vs-MLX smoke, and focused independent review evidence are recorded in <code>.superpowers/sdd/2026-08-20-exp462-ecg-gradual-signature-qualification-antigravity.html/task-3-report-antigravity.html</code>.</p>
+<ol>
+  <li><label><input type="checkbox" checked disabled>Step 1 — RED feature tests against an independent NumPy reference for three views × five normalized basis projections × three quarter-median contrasts = 24 ordered values; reject wrong shape/dtype/nonfinite/MAD-zero and prove input unchanged/output immutable.</label><pre><code>self.assertEqual(signature.shape, (24,))
+self.assertEqual(signature.dtype, numpy.dtype(numpy.float64))
+self.assertFalse(signature.flags.writeable)</code></pre></li>
+  <li><label><input type="checkbox" checked disabled>Step 2 — RED scoring tests for exact method order, Exp461 baseline delegation, gradual LocalGap index/seed flow, exact rank formula, and primary <code>maximum(exp461_rank, gradual_rank)</code>.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 3 — Implement the smallest deterministic 24D feature and score boundary with no learned weight or fold-specific selection.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 4 — Run focused tests twice and Task 2 regression once; verify finite/deterministic results.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 5 — Run one bounded CPU-vs-MLX smoke on the same synthetic input/seed. Record runtime versions, device, timing, numeric/order parity, selected backend, and exact fallback reason. Do not install MLX.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 6 — Update map/dashboard/report, commit, fresh review C/I0, then check Task 3 controls.</label></li>
+</ol>
+</section>
+
+<section>
+<h2><label><input type="checkbox" checked disabled>Task 4 — blocked qualification, seven leaves, replay</label></h2>
+<p><strong>Files:</strong> Create <code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code> and five tests. Modify map/dashboard/report/plan.</p>
+<p><strong>Produces:</strong> 30 ordered metric/evidence rows, three summaries, decision, exact seven-leaf publication, source-free semantic replay, aggregate dashboard payload.</p>
+<p><strong>Current state:</strong> Task 5 complete after final review SHIP C/I/M 0. Task 1–5 headings and steps are checked (7/7 each); Task 6 remains unchecked and explicitly forbidden (0/7).</p>
+<ol>
+  <li><label><input type="checkbox" checked disabled>Step 1 — RED tests for 3 methods × 2 seeds × 5 folds, four ordered AUCs, pooled/Wilson/finite, primary 10/10, gradual ≥0.85, period global and two historical preservation gates.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 2 — Implement qualification/evaluation that recomputes metrics and pass reasons from stored fold score evidence rather than trusting caller booleans.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 3 — RED then GREEN exact canonical leaves: <code>context</code>, <code>method_fold_metrics</code>, <code>failed_folds</code>, <code>method_summary</code>, <code>decision</code>, <code>dashboard_snapshot</code>, self-excluding <code>artifact_sha256</code>.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 4 — Replay recomputes rows, AUCs, summaries, gradual/period preservation, decision and dashboard from evidence. Coherently rehashed score/metric/summary/decision/dashboard tamper must fail.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 5 — Focused suite twice, Tasks 2–3 regression, temporary publish→inspect exact equality, py_compile, map/html/diff/root/label checks.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 6 — Update map/dashboard/report, commit, fresh review C/I0, then check Task 4 controls.</label></li>
+</ol>
+</section>
+
+<section>
+<h2><label><input type="checkbox" checked disabled>Task 5 — closed CLI and two private TRAIN reproductions</label></h2>
+<p><strong>Files:</strong> Create <code>cli_antigravity.py</code>, <code>tests/test_cli_antigravity.py</code>, <code>scratch/run_exp462_ecg_gradual_signature_qualification_antigravity.py</code>. Modify HTML docs, ledgers, map, plan.</p>
+<p><strong>CLI:</strong> exactly <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>; dependency-injected temporary roots only in Task 5.</p>
+<p><strong>Current implementation note:</strong> Closed CLI/launcher and RED/GREEN tests are implemented. Exactly two private TRAIN evaluate→inspect cycles matched byte-for-byte for 30 rows, summaries, decision, dashboard, and seven leaves at reviewed commit <code>ff57925ae2d5542fe6ec34131686ffa0bc37fe0c</code>. The primary candidate passed only <code>3/10</code> (minimum gradual <code>0.7953196519289775</code>, period <code>0.8960376741612595</code>), so status is <code>stopped_before_official_evaluation_qualification_failed</code>. Final review is SHIP with Critical/Important/Major 0, so Task 5 is complete with heading and all six steps checked (7/7). Task 6 is forbidden and there is no next official action.</p>
+<ol>
+  <li><label><input type="checkbox" checked disabled>Step 1 — RED exact parser/lazy import/outside-CWD launcher/TEST-label firewall tests; GREEN focused CLI twice.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 2 — Preflight clean commit, fixed interpreter, no duplicate heavy process, official root absent; run private TRAIN evaluate→inspect sequentially in temporary root 1.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 3 — After run 1 exits, run root 2 once; compare 30 rows, summaries, decision, dashboard, seven leaf bytes/hashes exactly; retain aggregate evidence and remove only the two explicit temporary roots.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 4 — Run Exp462 discovery twice, Exp461 scientific regression once, fixed-runtime/MLX decision/map/html/diff/root/label checks.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 5 — If every frozen gate passes, record <code>implementation_verified_awaiting_official_evaluation</code>; otherwise record <code>stopped_before_official_evaluation_qualification_failed</code> and forbid Task 6.</label></li>
+  <li><label><input type="checkbox" checked disabled>Step 6 — Fresh final result review C/I0, commit terminal Task 5 truth, check Task 5 controls. Never start Task 6 in this Task.</label></li>
+</ol>
+</section>
+
+<section>
+<h2><label><input type="checkbox" disabled>Task 6 — separately approved official result preservation</label></h2>
+<p>Task 5 primary must pass all gates and the user must separately approve Task 6 on an exact clean reviewed commit. Any failure stops permanently; no retry.</p>
+<p><strong>Current closeout:</strong> Task 5 failed qualification at <code>3/10</code>, so Task 6 is forbidden. The Task 6 heading and all six steps intentionally remain unchecked and disabled (0/7).</p>
+<ol>
+  <li><label><input type="checkbox" disabled>Step 1 — Recheck SHIP review, exact clean HEAD, official root absent, label0, no active duplicate process.</label></li>
+  <li><label><input type="checkbox" disabled>Step 2 — Invoke official evaluate exactly once.</label><pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+REVIEWED_COMMIT=$(git rev-parse HEAD)
+"$PY" scratch/run_exp462_ecg_gradual_signature_qualification_antigravity.py evaluate --reviewed-commit "$REVIEWED_COMMIT"</code></pre></li>
+  <li><label><input type="checkbox" disabled>Step 3 — Only after evaluate exit 0 and exact seven-leaf root, invoke bare inspect exactly once.</label><pre><code>"$PY" scratch/run_exp462_ecg_gradual_signature_qualification_antigravity.py inspect</code></pre></li>
+  <li><label><input type="checkbox" disabled>Step 4 — Independently recompute leaf hashes, replay semantics, 30 rows, three summaries, gradual and period preservation, decision/dashboard equality, label0.</label></li>
+  <li><label><input type="checkbox" disabled>Step 5 — Commit official truth/HTML dashboard/ledgers/map without changing champion/pending/routing; receive fresh read-only final review.</label></li>
+  <li><label><input type="checkbox" disabled>Step 6 — After review C/I0, check Task 6 controls and stop for result discussion. Any nonzero command leaves remaining steps unchecked.</label></li>
+</ol>
+</section>
+
+<h2>Execution choice</h2>
+<p><strong>Option 1 — Task별 서브에이전트 (recommended):</strong> 각 Task마다 fresh implementer를 배정하고 독립 review 후 checkbox를 닫는다.</p>
+<p><strong>Option 2 — 현재 세션 직접 실행:</strong> 이 세션에서 Task를 순서대로 구현하고 각 경계에서 checkpoint를 제공한다.</p>
+</main></body></html>

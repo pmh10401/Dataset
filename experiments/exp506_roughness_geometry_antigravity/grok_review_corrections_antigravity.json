@@ -1,0 +1,50 @@
+{
+  "edits": [
+    {
+      "file": "roughness_antigravity.py",
+      "old": "    if not np.isfinite(y).all():raise ValueError('nonfinite roughness rows')\n    return y.astype(np.float32)\n",
+      "new": "    if not np.isfinite(y).all():raise ValueError('nonfinite roughness rows')\n    y=y.astype(np.float32)\n    if not np.isfinite(y).all():raise ValueError('nonfinite roughness rows')\n    return y\n"
+    },
+    {
+      "file": "test_exp506_antigravity.py",
+      "old": "\"\"\"Contracts for Exp506 roughness OAS geometry.\"\"\"\nimport numpy as np\nfrom experiments.exp449_residual_fn_method_qualification_antigravity.representations_antigravity import make_representation_antigravity\nfrom experiments.exp495_normal_geometry_antigravity.diagnostics_antigravity import SEED\nfrom experiments.exp506_roughness_geometry_antigravity.roughness_antigravity import roughness_rows,RoughnessHeads\n",
+      "new": "\"\"\"Contracts for Exp506 roughness OAS geometry.\"\"\"\nfrom experiments.exp495_normal_geometry_antigravity.diagnostics_antigravity import configure_inner_threads_antigravity,SEED\nconfigure_inner_threads_antigravity()\nimport numpy as np\nfrom experiments.exp449_residual_fn_method_qualification_antigravity.representations_antigravity import make_representation_antigravity\nfrom experiments.exp495_normal_geometry_antigravity.geometry_heads_antigravity import PairedHeads\nfrom experiments.exp506_roughness_geometry_antigravity.roughness_antigravity import roughness_rows,RoughnessHeads\n"
+    },
+    {
+      "file": "test_exp506_antigravity.py",
+      "old": "    rng=np.random.default_rng(7)\n    for n,L in ((2,12),(8,12)):\n        x=rng.normal(size=(n,L));s=RoughnessHeads(x).score(x)\n        assert s['MiniRocket'].shape==(n,) and all(np.isfinite(s[k]).all() for k in RoughnessHeads.names)\n",
+      "new": "    rng=np.random.default_rng(7)\n    for n,L in ((2,12),(8,12)):\n        fit=rng.normal(size=(n,L));query=rng.normal(size=(n+3,L))\n        enc=make_representation_antigravity('minirocket_local_gap',SEED)\n        paired=PairedHeads(enc.fit_transform(fit))\n        heads=RoughnessHeads(fit)\n        got=heads.score(query);ref=paired.score(enc.transform(query))\n        assert np.allclose(got['MiniRocket'],ref['MiniRocket'],rtol=1e-10,atol=1e-8)\n        assert np.allclose(got['oas_distance'],ref['oas_distance'],rtol=1e-10,atol=1e-8)\n        assert all(np.isfinite(got[k]).all() for k in RoughnessHeads.names)\n        snap={name:np.array(model[2],copy=True) for name,model in heads.models.items()}\n        heads.score(rng.normal(size=(5,L)))\n        assert all(np.array_equal(snap[name],heads.models[name][2]) for name in snap)\n"
+    },
+    {
+      "file": "test_exp506_antigravity.py",
+      "old": "    _raises(lambda:roughness_rows([[1.,np.inf],[0.,1.]]))\n    _raises(lambda:h.score([[1.,np.nan]+[0.]*6,[0.]*8]))\n",
+      "new": "    _raises(lambda:roughness_rows([[1.,np.inf],[0.,1.]]))\n    _raises(lambda:roughness_rows([[0,1e40,4e40,2e40]]))\n    _raises(lambda:h.score([[1.,np.nan]+[0.]*6,[0.]*8]))\n"
+    },
+    {
+      "file": "acceleration_antigravity.py",
+      "old": "        helper(fit);helper(query[:8])\n        t0=perf_counter();heads,first=_run(fit,query);first_seconds=perf_counter()-t0\n",
+      "new": "        t0=perf_counter();heads,first=_run(fit,query);first_seconds=perf_counter()-t0\n"
+    },
+    {
+      "file": "acceleration_antigravity.py",
+      "old": "    parity=bool(_finite(first) and _finite(warm) and _close(first,ref) and _close(warm,ref) and _rank_eq(first,ref) and _candidates(first)==_candidates(ref) and _candidates(warm)==_candidates(ref))\n",
+      "new": "    parity=bool(_finite(first) and _finite(warm) and _close(first,ref) and _close(warm,ref) and _rank_eq(first,ref) and _rank_eq(warm,ref) and _candidates(first)==_candidates(ref) and _candidates(warm)==_candidates(ref))\n"
+    },
+    {
+      "file": "acceleration_antigravity.py",
+      "old": "    if not np.isfinite(y).all():raise ValueError('nonfinite roughness rows')\n    return y.astype(np.float32)\n",
+      "new": "    if not np.isfinite(y).all():raise ValueError('nonfinite roughness rows')\n    y=y.astype(np.float32)\n    if not np.isfinite(y).all():raise ValueError('nonfinite roughness rows')\n    return y\n"
+    },
+    {
+      "file": "protocol_antigravity.html",
+      "old": "<p>\ub370\uc774\ud130\uc14b 1117\uac1c, \uae38\uc774 128\ub85c \uac19\ub2e4. 1\ucc28 \ubaa9\ud45c\ub294 \uacbd\ud5d8\uc801 FPR 0.1% \uc774\ud558\uc5d0\uc11c \uac00\uc871 \ub9e4\ud06c\ub85c TPR\uc774 MiniRocket \ub300\ube44 \uc0c1\ub300 10% \uc774\uc0c1\uc774\uace0, FP0\uc5d0\uc11c \ud1f4\ud589\ud558\uc9c0 \uc54a\ub294 \uac83\uc774\ub2e4. \uc608\uc0b0 0, 1, 5, 10\uacfc \uc138 \uac00\uc9c0 \ud3c9\uade0\uc744 \ubcf4\uace0\ud558\uba70, \uc804\ubd80\uac00 \uc88b\uc544\uc9c8 \ud544\uc694\ub294 \uc5c6\ub2e4. \uc774 \ubca4\uce58\ub9c8\ud06c\ub294 \uac1c\ubc1c\uc5d0 \ub178\ucd9c\ub41c \uc9d1\ud569\uc774\uba70 \ubbf8\uacf5\uac1c \ud640\ub4dc\uc544\uc6c3\uc774 \uc544\ub2c8\ub2e4. \uc810\uc218\uc640 \ud574\uc2dc\ub294 TEST \ub77c\ubca8 \uc804\uc5d0 \uace0\uc815\ud55c\ub2e4. TRAIN \ud6c4\ubcf4\ub9cc \uace0\ub974\uace0 TEST\ub85c \ud29c\ub2dd\ud558\uc9c0 \uc54a\ub294\ub2e4.</p>",
+      "new": "<p>\ub370\uc774\ud130\uc14b 1117\uac1c, \ucd9c\ucc98 \uac00\uc871 128\uac1c\ub85c \uac19\ub2e4. 1\ucc28 \ubaa9\ud45c\ub294 \uacbd\ud5d8\uc801 FPR 0.1% \uc774\ud558\uc5d0\uc11c \uac00\uc871 \ub9e4\ud06c\ub85c TPR\uc774 MiniRocket \ub300\ube44 \uc0c1\ub300 10% \uc774\uc0c1\uc774\uace0, FP0\uc5d0\uc11c \ud1f4\ud589\ud558\uc9c0 \uc54a\ub294 \uac83\uc774\ub2e4. \uc800FPR \uc608\uc0b0\uc740 FPR 0%, 0.1%, 0.5%, 1%\uc774\uace0 \ud45c\uae30\ub294 0, 1, 5, 10\uc774\ub2e4. \ud569\uc131 1000\uac1c \uc815\uc0c1 \ud328\ub9ac\ud2f0 \ud504\ub85c\ube0c\ub97c \uc81c\uc678\ud558\uba74 \uc774 \uc22b\uc790\ub294 \uace0\uc815 \uac1c\uc218\uac00 \uc544\ub2c8\ub2e4. \uc138 \uac00\uc9c0 \ud3c9\uade0\uc744 \ubcf4\uace0\ud558\uba70, \uc804\ubd80\uac00 \uc88b\uc544\uc9c8 \ud544\uc694\ub294 \uc5c6\ub2e4. \ud6c4\ubcf4 \uc21c\uc11c\ub294 MiniRocket, oas_distance, roughness_distance, roughness_joint\uc774\uba70 \ub3d9\uc810\uc77c \ub54c \uc55e\uc120 \uc774\ub984\uc744 \uace0\ub978\ub2e4. \uc774 \ubca4\uce58\ub9c8\ud06c\ub294 \uac1c\ubc1c\uc5d0 \ub178\ucd9c\ub41c \uc9d1\ud569\uc774\uba70 \ubbf8\uacf5\uac1c \ud640\ub4dc\uc544\uc6c3\uc774 \uc544\ub2c8\ub2e4. \uc810\uc218\uc640 \ud574\uc2dc\ub294 TEST \ub77c\ubca8 \uc804\uc5d0 \uace0\uc815\ud55c\ub2e4. TRAIN \ud6c4\ubcf4\ub9cc \uace0\ub974\uace0 TEST\ub85c \ud29c\ub2dd\ud558\uc9c0 \uc54a\ub294\ub2e4. \ubcf4\uace0 \uac12\uc740 \uc9e7\uc740 \uc5f0\uad6c \uc9c0\ud45c\uc774\uba70 \uc778\uacfc\uac00 \uc544\ub2c8\ub2e4.</p>"
+    },
+    {
+      "file": "protocol_antigravity.html",
+      "old": "\ucd5c\uc545 \uc624\uc5fc, \uadf8\ub2e4\uc74c \ud3c9\uade0, \uadf8\ub2e4\uc74c \uc55e\uc120 \ud6c4\ubcf4 \uc21c\uc73c\ub85c \uace0\ub978\ub2e4.",
+      "new": "\ucd5c\uc545 \uc624\uc5fc, \uadf8\ub2e4\uc74c \ud3c9\uade0, \uadf8\ub2e4\uc74c \uace0\uc815 \uc21c\uc11c MiniRocket, oas_distance, roughness_distance, roughness_joint \uc21c\uc73c\ub85c \uace0\ub978\ub2e4."
+    }
+  ],
+  "note": "First-stage timer now includes JIT; warm ranks required for backend parity; n2/n8 Mini/OAS checked against independent PairedHeads; float32 finite check plus overflow reject; protocol is 1117 datasets/128 families and FPR 0/0.1/0.5/1% budgets."
+}

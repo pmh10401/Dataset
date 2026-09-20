@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>Exp471 Task 2 보고</title>
+</head>
+<body><main>
+  <h1>Exp471 Task 2 보고 — Numba ACF peak-lag scorer</h1>
+  <p>이 보고서는 2026-08-25에 전용 worktree에서 실행한 Task 2 증거만 기록합니다.</p>
+
+  <h2>1. 범위</h2>
+  <p>Task 2는 Python 검증 기준과 float64 Numba ACF peak-lag 단일 scorer를 테스트 우선으로 구현했습니다. evaluation, qualification, artifact publication, CLI, MLX 측정, private/official 실행, TEST/FN 접근과 routing은 포함하지 않았습니다.</p>
+
+  <h2>2. RED 증거</h2>
+  <p>production 파일보다 두 테스트 파일을 먼저 만든 뒤 같은 명령으로 import failure를 확인했습니다.</p>
+  <pre><code>python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_python_reference_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_acf_peak_lag_antigravity</code></pre>
+  <pre><code>Ran 2 tests in 0.000s
+
+FAILED (errors=2)</code></pre>
+  <pre><code>ModuleNotFoundError: No module named 'experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.acf_peak_lag_antigravity'
+ModuleNotFoundError: No module named 'experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.python_reference_antigravity'</code></pre>
+
+  <h2>3. 중간 실패와 수정</h2>
+  <table>
+    <thead><tr><th>증상</th><th>원인</th><th>수정</th></tr></thead>
+    <tbody>
+      <tr><td>초기 테스트 네 개가 실패</td><td>LOO raw의 예상값, 141열 입력 fixture, bool presence dtype에 대한 테스트 기대값이 고정 수식과 달랐음</td><td>구현 수식은 유지하고 테스트 기대값과 fixture만 바로잡음</td></tr>
+      <tr><td>빈 query의 presence 배열이 <code>(0,)</code>으로 반환</td><td>빈 list를 2열 배열로 바꾸는 과정에서 열 모양 정보가 사라짐</td><td>행 수를 받아 항상 <code>(n, 2)</code> bool 배열로 고정하는 helper를 두 backend에 추가</td></tr>
+      <tr><td>동점·rank parity 검사가 충분하지 않음</td><td>두 최고 peak가 실제로 같은 fixture와 rank exact parity 단언이 빠져 있었음</td><td>lag 3·9 동점에서 lag 3 선택, Python/Numba rank exact 일치 테스트를 추가</td></tr>
+    </tbody>
+  </table>
+  <p>두 수정 모두 approved 수식·threshold·routing을 바꾸지 않았습니다.</p>
+
+  <h2>4. GREEN 증거</h2>
+  <p>같은 Task 2 집중 스위트를 연속 두 번 실행했고 14개 테스트가 모두 통과했습니다.</p>
+  <pre class="pass"><code>Ran 14 tests in 1.423s
+
+OK</code></pre>
+  <pre class="pass"><code>Ran 14 tests in 1.358s
+
+OK</code></pre>
+  <p>Task 1 회귀(8개)는 한 번 통과했습니다.</p>
+  <pre class="pass"><code>Ran 8 tests in 0.097s
+
+OK</code></pre>
+
+  <h2>5. 코드 맵 갱신</h2>
+  <ul>
+    <li><code>task-2-brief-antigravity.html</code>, <code>task-2-report-antigravity.html</code>, production 파일 2개, 테스트 파일 2개를 existing 노드로 추가하고 future 선언에서 제거했습니다.</li>
+    <li>caller/effect/tests edges와 SHA-256 fingerprints를 함께 기록했습니다.</li>
+    <li>schema를 <code>exp471_task2_acf_scorer_codemap_v2</code>/<code>exp471_task2_acf_scorer_lock_v2</code>로 올렸습니다. Task 1/Exp470 authority 노드와 edge는 그대로 보존했습니다.</li>
+  </ul>
+
+  <h2>6. 금지 실행 경계</h2>
+  <p>experiment 실행, private 실행, official 실행, TEST 접근, FN 접근, routing 실행은 0회였습니다. MLX 측정도 하지 않았습니다. 수행한 작업은 unit test, code-map 생성·검증, JSON/lock 문법 검사, 대시보드 portable 재생성, Git 상태 확인과 커밋뿐입니다.</p>
+
+  <h2>7. 최종 검증</h2>
+  <ul>
+    <li>Task 2 스위트 <span class="pass">14개 통과 × 2회</span>.</li>
+    <li>Task 1 회귀 <span class="pass">8개 통과 × 1회</span>.</li>
+    <li>코드 맵 generate 후 validate-only 재검증 통과, JSON/lock 문법 검사 통과.</li>
+    <li>휴대형 대시보드를 지정된 builder로 재생성해 1440px·390px verification passed 확인.</li>
+    <li><code>git diff --check</code> 통과.</li>
+  </ul>
+
+  <h2>8. 진행 체크</h2>
+  <section aria-label="Exp471 Task 2 진행 체크박스">
+    <label><input type="checkbox" checked disabled> Task 1 고정 계약·authority·code map</label>
+    <label><input type="checkbox" checked disabled> Task 2 Numba ACF peak-lag scorer</label>
+    <label><input type="checkbox" disabled> Task 3 Python 기준·결정성·MLX 적격성 smoke</label>
+    <label><input type="checkbox" disabled> Task 4 C0/E12/C12·pair repair 판정</label>
+    <label><input type="checkbox" disabled> Task 5 canonical 저장·semantic replay·HTML export</label>
+    <label><input type="checkbox" disabled> Task 6 closed CLI·최종 사전검증</label>
+    <label><input type="checkbox" disabled> private 실행 1·2와 결과 분석</label>
+    <label><input type="checkbox" disabled> official 실행·TEST/FN·routing 별도 판단</label>
+  </section>
+</main></body></html>

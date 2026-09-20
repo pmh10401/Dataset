@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp471 ECG200 ACF peak-lag 이동 Numba 구현 계획</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#fff;--fg:#172033;--muted:#5e6878;--line:#b8c0cc;--soft:#f3f6fa;--ok:#16794b;--warn:#9a6700;--stop:#b42318;--accent:#285ea8}
+    @media(prefers-color-scheme:dark){:root{--bg:#181a1f;--fg:#e3e7ee;--muted:#b6becb;--line:#48505e;--soft:#232832;--ok:#72d39a;--warn:#f0c36a;--stop:#ff8a87;--accent:#8bb8ff}}
+    *{box-sizing:border-box}body{max-width:1180px;margin:2rem auto;padding:0 1rem;background:var(--bg);color:var(--fg);font:16px/1.68 system-ui,-apple-system,sans-serif}h1,h2,h3{line-height:1.25}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid var(--line);padding:.6rem;text-align:left;vertical-align:top}code,pre{background:var(--soft);border-radius:5px}code{padding:.1rem .3rem}pre{padding:1rem;overflow:auto;white-space:pre}.box{background:var(--soft);border-left:6px solid var(--accent);padding:1rem;margin:1rem 0}.ok{border-left-color:var(--ok)}.warn{border-left-color:var(--warn)}.stop{border-left-color:var(--stop)}.muted{color:var(--muted)}label{display:block;margin:.42rem 0}input{margin-right:.55rem}
+  </style>
+</head>
+<body><main>
+  <h1>Exp471 ECG200 ACF peak-lag 이동 Numba 구현 계획</h1>
+  <div class="box ok">
+    <p><strong>For agentic workers:</strong> 구현 시 <code>superpowers:subagent-driven-development</code>(권장) 또는 <code>superpowers:executing-plans</code>를 반드시 사용한다. 각 단계는 아래 HTML checkbox로 추적한다.</p>
+    <p><strong>목표:</strong> ECG200 TRAIN-only에서 앞·뒤 ACF peak-lag 이동 한 가지가 C0의 잔여 정상–period 순서 오류를 안전하게 고치는지 Numba로 검증한다.</p>
+    <p><strong>구조:</strong> Exp470의 입력·보간·합성 변화·C0·pair-repair authority를 정확히 가져오고, Exp471은 ACF peak-lag, E12/C12 결합과 해당 raw evidence만 새로 구현한다. 새 수치 경로는 Numba 하나이며 Python 기준 검사와 MLX 적격성 smoke는 결과 실행 전에 끝낸다.</p>
+    <p><strong>기술:</strong> Python 3, Numba, llvmlite, 기존 ndarray 기반 Exp470 authority, unittest, canonical JSON/JSONL, self-contained HTML.</p>
+    <p><strong>설계서:</strong> <a href="../specs/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity-design.html">Exp471 승인 설계서</a></p>
+  </div>
+  <section aria-label="구현 전 준비 체크박스">
+    <label><input type="checkbox" checked disabled> Ox Alpha Ultra 구현 계획 읽기 전용 검토 GO</label>
+  </section>
+
+  <h2>전역 제약</h2>
+  <ul>
+    <li>새 파일 이름에는 모두 <code>antigravity</code>가 포함되어야 한다.</li>
+    <li>ECG200 TRAIN 정상 69개, 96→140 보간, seed <code>(20260721, 20261721)</code>, blocked fold 5개와 네 합성 변화는 Exp470 authority 그대로다.</li>
+    <li>새 후보는 <code>E12</code> ACF peak-lag 이동 하나뿐이며 방법 순서는 <code>("C0","E12","C12")</code>다.</li>
+    <li>창은 <code>[0:56]</code>, <code>[84:140]</code>, ACF 계산 lag는 1..25, peak 후보는 2..24다. 다른 창과 lag를 탐색하지 않는다.</li>
+    <li>median은 짝수일 때 가운데 두 값의 산술평균이다. peak 동점은 작은 lag, peak 없음은 integer 0이다.</li>
+    <li>새 점수의 production backend는 float64 Numba, <code>fastmath=False</code>, <code>cache=False</code> 하나다. NumPy scorer나 자동 fallback은 만들지 않는다.</li>
+    <li>Python 기준 대비 ACF·raw 최대 오차는 <code>1e-12</code> 이하여야 하며 peak lag·rank·confirmation·fixed/broken은 정확히 같아야 한다.</li>
+    <li>MLX는 전체 실행 전에 적격성만 평가하고 Numba authority를 대신하지 않는다.</li>
+    <li>절대 AUC 0.85를 gate로 사용하지 않는다. seed별 period fixed/broken과 보호 변화 broken, 정상 confirmation, exact fallback이 성능 gate다.</li>
+    <li>official 실행, TEST/FN 접근, routing은 금지한다. private 실행 1·2도 Task 6 완료 뒤 별도 승인을 받아야 한다.</li>
+    <li>Ox Alpha Ultra가 구현에 참여하면 공식 폴더와 분리된 전용 worktree만 쓰고, Codex가 diff·테스트·결과를 최종 검증한다.</li>
+    <li>각 Task는 RED 확인 → 최소 구현 → GREEN 두 번 → code map 갱신 → 독립 검토 → commit 순서로 끝낸다.</li>
+  </ul>
+
+  <h2>파일 구조</h2>
+  <table>
+    <tr><th>경로</th><th>한 가지 책임</th></tr>
+    <tr><td><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/config_antigravity.py</code></td><td>입력, 창, lag, 방법 순서와 gate를 고정</td></tr>
+    <tr><td><code>sources_antigravity.py</code>, <code>interpolation_antigravity.py</code>, <code>synthetic_antigravity.py</code>, <code>predecessor_antigravity.py</code></td><td>Exp470 authority의 exact re-export만 담당</td></tr>
+    <tr><td><code>contracts_antigravity.py</code></td><td>fold evidence, pair count, qualification, decision의 immutable 형식</td></tr>
+    <tr><td><code>acf_peak_lag_antigravity.py</code></td><td>Numba median/MAD, ACF, peak, shift, LOO raw, E12 rank와 confirmation</td></tr>
+    <tr><td><code>python_reference_antigravity.py</code></td><td>작은 고정 입력용 Python <code>math</code> 기준. production scorer에서는 호출 금지</td></tr>
+    <tr><td><code>acceleration_antigravity.py</code></td><td>Numba 기준·결정성·cold/warm 시간과 MLX 적격성 smoke</td></tr>
+    <tr><td><code>scoring_antigravity.py</code></td><td>fold별 C0/E12/C12와 raw peak evidence 조립</td></tr>
+    <tr><td><code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code></td><td>pair fixed/broken 집계와 고정 PASS/FAIL 판정</td></tr>
+    <tr><td><code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code></td><td>canonical 7 leaves, SHA-256, loader-free semantic replay</td></tr>
+    <tr><td><code>dashboard_export_antigravity.py</code></td><td>결과와 실제 완료 checkbox를 쉬운 한국어 HTML payload로 변환</td></tr>
+    <tr><td><code>cli_antigravity.py</code>, <code>scratch/run_exp471_ecg200_acf_peak_lag_shift_numba_antigravity.py</code></td><td>evaluate/inspect와 승인된 private 실행 두 번의 유일한 진입점</td></tr>
+    <tr><td><code>scratch/build_codemap_exp471_antigravity.py</code>, <code>docs/codemap/codemap_exp471_antigravity.{html,json,lock}</code></td><td>caller·effect·test 관계와 tracked fingerprint</td></tr>
+    <tr><td><code>scratch/exp471_acceleration_assessment_antigravity.json</code></td><td>실행 환경·backend parity·시간 근거</td></tr>
+    <tr><td><code>docs/EXP471_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>docs/EXP471_RUNBOOK_antigravity.html</code>, <code>docs/EXP471_DASHBOARD_antigravity.html</code></td><td>구현 근거, 실행 경계, 진행·결과 화면</td></tr>
+  </table>
+
+  <h2>Task 1 — 고정 계약·Exp470 authority·code map</h2>
+  <p><strong>Files:</strong> Create <code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/config_antigravity.py</code>, <code>sources_antigravity.py</code>, <code>interpolation_antigravity.py</code>, <code>synthetic_antigravity.py</code>, <code>predecessor_antigravity.py</code>, <code>contracts_antigravity.py</code>; Test <code>tests/test_config_antigravity.py</code>, <code>test_contracts_antigravity.py</code>, <code>test_predecessor_antigravity.py</code>; Create <code>scratch/build_codemap_exp471_antigravity.py</code>, code map triplet, <code>docs/EXP471_IMPLEMENTATION_REPORT_antigravity.html</code>.</p>
+  <p><strong>Consumes:</strong> Exp470 versioned code map and exact exported functions. <strong>Produces:</strong> <code>FROZEN_CONFIG_ANTIGRAVITY</code>, exact loader/interpolator/synthetic/C0 exports, immutable Exp471 contract types.</p>
+  <section>
+    <label><input type="checkbox" checked disabled> <strong>1.1</strong> 변경 전에 Exp470 code map에서 caller, 영향, 테스트를 확인한다.</label>
+    <pre><code>python3 scratch/build_codemap_exp470_antigravity.py --validate-only
+python3 -m json.tool docs/codemap/codemap_exp470_antigravity.json &gt;/dev/null
+python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null
+rg -n "config_antigravity.py|predecessor_antigravity.py|scoring_antigravity.py|qualification_antigravity.py" \
+  docs/codemap/codemap_exp470_antigravity.json</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>1.2</strong> config와 exact authority가 다르면 실패하는 테스트를 작성한다.</label>
+    <pre><code>class Exp471ConfigTestsAntigravity(unittest.TestCase):
+    def test_frozen_acf_contract_antigravity(self):
+        c = FROZEN_CONFIG_ANTIGRAVITY
+        self.assertEqual(c.seeds, (20260721, 20261721))
+        self.assertEqual((c.early_start, c.late_start, c.window_length), (0, 84, 56))
+        self.assertEqual((c.acf_lag_min, c.acf_lag_max), (1, 25))
+        self.assertEqual((c.peak_lag_min, c.peak_lag_max), (2, 24))
+        self.assertEqual(c.method_order, ("C0", "E12", "C12"))
+
+class Exp471AuthorityTestsAntigravity(unittest.TestCase):
+    def test_exports_are_exact_exp470_objects_antigravity(self):
+        self.assertIs(load_ecg200_normal_train_antigravity, exp470_load)
+        self.assertIs(interpolate_to_140_antigravity, exp470_interpolate)
+        self.assertIs(primary_rows_antigravity, exp470_primary)
+        self.assertIs(score_c0_fold_antigravity, exp470_c0)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>1.3</strong> 새 package가 없어서 RED인지 확인한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_config_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_predecessor_antigravity</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>1.4</strong> frozen dataclass와 exact re-export를 최소 구현한다.</label>
+    <pre><code>@dataclass(frozen=True, slots=True)
+class Exp471ConfigAntigravity:
+    seeds: tuple[int, int] = (20260721, 20261721)
+    folds: int = 5
+    normal_rows: int = 69
+    source_width: int = 96
+    interpolated_width: int = 140
+    onset: int = 56
+    warp_factor: float = 1.25
+    early_start: int = 0
+    late_start: int = 84
+    window_length: int = 56
+    acf_lag_min: int = 1
+    acf_lag_max: int = 25
+    peak_lag_min: int = 2
+    peak_lag_max: int = 24
+    mad_scale: float = 1.4826
+    method_order: tuple[str, str, str] = ("C0", "E12", "C12")
+    change_types: tuple[str, ...] = ("level_shift", "gradual_drift", "amplitude_scaling", "period_change")
+    required_speedup: float = 1.1
+
+from experiments.exp470_ecg200_spectral_entropy_numba_antigravity.synthetic_antigravity import (
+    primary_rows_antigravity,
+)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>1.5</strong> Exp471 code map을 만들고 새 모듈과 테스트 관계를 기록한다.</label>
+    <pre><code>python3 scratch/build_codemap_exp471_antigravity.py
+python3 scratch/build_codemap_exp471_antigravity.py --validate-only
+python3 -m json.tool docs/codemap/codemap_exp471_antigravity.json &gt;/dev/null
+python3 -m json.tool docs/codemap/codemap_exp471_antigravity.lock &gt;/dev/null</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>1.6</strong> Task 1 테스트를 두 번 통과시키고 commit한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_config_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_contracts_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_predecessor_antigravity
+python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_config_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_contracts_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_predecessor_antigravity
+git diff --check
+git add experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity scratch/build_codemap_exp471_antigravity.py docs/codemap/codemap_exp471_antigravity.* docs/EXP471_IMPLEMENTATION_REPORT_antigravity.html
+git commit -m "feat: freeze Exp471 authority and contracts"</code></pre>
+  </section>
+
+  <h2>Task 2 — Numba ACF peak-lag 단일 scorer</h2>
+  <p><strong>Files:</strong> Create <code>acf_peak_lag_antigravity.py</code>, <code>python_reference_antigravity.py</code>; Test <code>tests/test_acf_peak_lag_antigravity.py</code>, <code>tests/test_python_reference_antigravity.py</code>.</p>
+  <p><strong>Produces:</strong> <code>ACFPeakLagScoresAntigravity</code>; <code>score_acf_peak_lag_numba_antigravity(fit_rows, query_rows)</code>; 검사용 <code>score_acf_peak_lag_python_reference_antigravity(fit_rows, query_rows)</code>. Dataclass는 fit/query early·late peak lag와 presence, integer shift, raw, rank, confirmation, fit maximum, backend를 보존한다.</p>
+  <section>
+    <label><input type="checkbox" checked disabled> <strong>2.1</strong> peak, tie, sentinel, 불변성, MAD STOP과 Python parity RED 테스트를 작성한다.</label>
+    <pre><code>def periodic_row_antigravity(early_period=8.0, late_period=10.0):
+    row = np.sin(2.0 * np.pi * np.arange(140, dtype=np.float64) / 9.0)
+    row[0:56] = np.sin(2.0 * np.pi * np.arange(56) / early_period)
+    row[84:140] = np.sin(2.0 * np.pi * np.arange(56) / late_period)
+    return row
+
+def test_known_peak_shift_antigravity(self):
+    early, late, early_present, late_present, shift = peak_shift_row_numba_antigravity(
+        periodic_row_antigravity(),
+    )
+    self.assertEqual((early, late, shift), (8, 10, 2))
+    self.assertEqual((early_present, late_present), (True, True))
+
+def test_peak_rule_uses_smallest_tie_and_zero_sentinel_antigravity(self):
+    tie = np.zeros(25, dtype=np.float64)
+    tie[1], tie[2], tie[3], tie[7], tie[8], tie[9] = (0.1, 0.8, 0.1, 0.1, 0.8, 0.1)
+    self.assertEqual(dominant_peak_from_acf_numba_antigravity(tie), (3, True))
+    self.assertEqual(dominant_peak_from_acf_numba_antigravity(np.linspace(1.0, 0.1, 25)), (0, False))
+
+def test_offset_and_positive_scale_leave_shift_unchanged_antigravity(self):
+    row = periodic_row_antigravity()
+    self.assertEqual(peak_shift_row_numba_antigravity(row), peak_shift_row_numba_antigravity(7.0 + 3.0 * row))
+
+def test_numba_matches_python_reference_antigravity(self):
+    rows = np.stack((periodic_row_antigravity(8, 8), periodic_row_antigravity(9, 9), periodic_row_antigravity(8, 10)))
+    expected = score_acf_peak_lag_python_reference_antigravity(rows[:2], rows[2:])
+    actual = score_acf_peak_lag_numba_antigravity(rows[:2], rows[2:])
+    self.assertLessEqual(max_abs_raw_error_antigravity(actual, expected), 1e-12)
+    self.assertEqual(tuple(actual.query_shifts), expected.query_shifts)
+    self.assertEqual(tuple(actual.query_ranks), expected.query_ranks)
+    self.assertEqual(tuple(actual.confirmation_mask), expected.confirmation_mask)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>2.2</strong> import 실패로 RED인지 확인한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_python_reference_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_acf_peak_lag_antigravity</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>2.3</strong> Python 기준을 list, <code>math.fsum</code>, <code>sorted</code>만으로 구현한다.</label>
+    <pre><code>def median_python_antigravity(values):
+    ordered = sorted(float(value) for value in values)
+    middle = len(ordered) // 2
+    return ordered[middle] if len(ordered) % 2 else (ordered[middle - 1] + ordered[middle]) / 2.0
+
+def peak_shift_row_python_antigravity(row):
+    peaks = []
+    presence = []
+    for start in (0, 84):
+        window = [float(value) for value in row[start:start + 56]]
+        center = median_python_antigravity(window)
+        mad = median_python_antigravity(abs(value - center) for value in window)
+        scale = 1.4826 * mad
+        if not math.isfinite(scale) or scale &lt;= 0.0:
+            raise ValueError("window MAD must be positive and finite")
+        z = [(value - center) / scale for value in window]
+        denominator = math.fsum(value * value for value in z)
+        acf = [math.fsum(z[t] * z[t + lag] for t in range(56 - lag)) / denominator for lag in range(1, 26)]
+        candidates = [(acf[lag - 1], lag) for lag in range(2, 25) if acf[lag - 1] &gt; 0.0 and acf[lag - 1] &gt; acf[lag - 2] and acf[lag - 1] &gt;= acf[lag]]
+        peak = min((-value, lag) for value, lag in candidates)[1] if candidates else 0
+        peaks.append(peak)
+        presence.append(bool(candidates))
+    return peaks[0], peaks[1], presence[0], presence[1], peaks[1] - peaks[0]</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>2.4</strong> Numba median/MAD, biased ACF, local peak와 shift를 수식 그대로 구현한다.</label>
+    <pre><code>@numba.njit(cache=False, fastmath=False)
+def dominant_peak_from_acf_numba_antigravity(acf):
+    best_lag = 0
+    best_value = -np.inf
+    for lag in range(2, 25):
+        value = acf[lag - 1]
+        eligible = value &gt; 0.0 and value &gt; acf[lag - 2] and value &gt;= acf[lag]
+        if eligible and (value &gt; best_value or (value == best_value and lag &lt; best_lag)):
+            best_value = value
+            best_lag = lag
+    return best_lag, best_lag != 0
+
+@numba.njit(cache=False, fastmath=False)
+def _window_peak_numba_antigravity(row, start):
+    values = row[start:start + 56].copy()
+    center = _median_copy_numba_antigravity(values)
+    deviations = np.empty(56, dtype=np.float64)
+    for index in range(56):
+        deviations[index] = abs(values[index] - center)
+    scale = 1.4826 * _median_copy_numba_antigravity(deviations)
+    if not np.isfinite(scale) or scale &lt;= 0.0:
+        raise ValueError("window MAD must be positive and finite")
+    z = (values - center) / scale
+    denominator = 0.0
+    for index in range(56):
+        denominator += z[index] * z[index]
+    acf = np.empty(25, dtype=np.float64)
+    for lag in range(1, 26):
+        numerator = 0.0
+        for index in range(56 - lag):
+            numerator += z[index] * z[index + lag]
+        acf[lag - 1] = numerator / denominator
+    return dominant_peak_from_acf_numba_antigravity(acf)
+
+@numba.njit(cache=False, fastmath=False)
+def peak_shift_row_numba_antigravity(row):
+    early, early_present = _window_peak_numba_antigravity(row, 0)
+    late, late_present = _window_peak_numba_antigravity(row, 84)
+    return early, late, early_present, late_present, late - early</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>2.5</strong> LOO raw, E12 rank, strict confirmation과 immutable wrapper를 구현한다.</label>
+    <pre><code>@dataclass(frozen=True, slots=True)
+class ACFPeakLagScoresAntigravity:
+    fit_early_peak_lags: np.ndarray
+    fit_late_peak_lags: np.ndarray
+    fit_peak_presence: np.ndarray
+    query_early_peak_lags: np.ndarray
+    query_late_peak_lags: np.ndarray
+    query_peak_presence: np.ndarray
+    fit_shifts: np.ndarray
+    query_shifts: np.ndarray
+    fit_raw_shift: np.ndarray
+    query_raw_shift: np.ndarray
+    query_ranks: np.ndarray
+    confirmation_mask: np.ndarray
+    fit_normal_max_raw_shift: float
+    backend: str
+
+@numba.njit(cache=False, fastmath=False)
+def assemble_raw_rank_numba_antigravity(fit_shifts, query_shifts):
+    fit_raw = np.empty(fit_shifts.size, dtype=np.float64)
+    for excluded in range(fit_shifts.size):
+        others = np.empty(fit_shifts.size - 1, dtype=np.float64)
+        position = 0
+        for index in range(fit_shifts.size):
+            if index != excluded:
+                others[position] = fit_shifts[index]
+                position += 1
+        fit_raw[excluded] = abs(fit_shifts[excluded] - _median_copy_numba_antigravity(others))
+    center = _median_copy_numba_antigravity(fit_shifts.astype(np.float64))
+    maximum = np.max(fit_raw)
+    query_raw = np.empty(query_shifts.size, dtype=np.float64)
+    ranks = np.empty(query_shifts.size, dtype=np.float64)
+    confirmed = np.empty(query_shifts.size, dtype=np.bool_)
+    for query_index in range(query_shifts.size):
+        raw = abs(query_shifts[query_index] - center)
+        query_raw[query_index] = raw
+        count = 0
+        for fit_index in range(fit_raw.size):
+            if fit_raw[fit_index] &lt;= raw:
+                count += 1
+        ranks[query_index] = (1.0 + count) / (fit_raw.size + 1.0)
+        confirmed[query_index] = raw &gt; 0.0 and raw &gt; maximum
+    return fit_raw, query_raw, ranks, confirmed, maximum</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>2.6</strong> 두 테스트 모듈을 두 번 통과시키고 code map 갱신 후 commit한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_python_reference_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_acf_peak_lag_antigravity
+python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_python_reference_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_acf_peak_lag_antigravity
+python3 scratch/build_codemap_exp471_antigravity.py
+python3 scratch/build_codemap_exp471_antigravity.py --validate-only
+git diff --check
+git add experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity docs/codemap/codemap_exp471_antigravity.*
+git commit -m "feat: add Exp471 Numba ACF peak-lag scorer"</code></pre>
+  </section>
+
+  <h2>Task 3 — Python 기준·결정성·MLX 적격성 smoke</h2>
+  <p><strong>Files:</strong> Create <code>acceleration_antigravity.py</code>, <code>scratch/exp471_acceleration_assessment_antigravity.json</code>; Test <code>tests/test_acceleration_antigravity.py</code>.</p>
+  <p><strong>Produces:</strong> <code>BackendAssessmentAntigravity</code>, <code>RuntimeAssessmentAntigravity</code>, <code>fixed_reference_rows_antigravity()</code>, <code>assess_runtime_antigravity(fit_rows, query_rows, repetitions=21)</code>. Numba는 항상 selected이며 MLX는 finite·parity·exact peak/rank/confirmation·결정성·1.1× 속도와 실패 이유를 기록한다.</p>
+  <section>
+    <label><input type="checkbox" checked disabled> <strong>3.1</strong> backend manifest와 중단 조건 RED 테스트를 작성한다.</label>
+    <pre><code>def test_runtime_records_numba_and_mlx_antigravity(self):
+    result = assess_runtime_antigravity(self.fit_rows, self.query_rows, repetitions=3)
+    self.assertEqual(result.selected_backend, "numba")
+    self.assertEqual(set(result.backends), {"numba", "mlx"})
+    self.assertTrue(result.backends["numba"].python_reference_passed)
+    self.assertTrue(result.backends["numba"].exact_candidate_indices)
+    self.assertTrue(result.backends["numba"].deterministic)
+    self.assertIsNone(result.backends.get("numpy"))
+
+def test_reference_failure_stops_antigravity(self):
+    with self.assertRaisesRegex(RuntimeError, "Python reference"):
+        assess_runtime_antigravity(self.fit_rows, self.query_rows, repetitions=1, reference_tolerance=-1.0)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>3.2</strong> RED를 확인한다.</label>
+    <pre><code>python3 -m unittest experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_acceleration_antigravity</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>3.3</strong> Numba cold/warm, Python 오차와 전체 output bytes 결정성을 측정한다.</label>
+    <pre><code>@dataclass(frozen=True, slots=True)
+class BackendAssessmentAntigravity:
+    backend: str
+    available: bool
+    finite: bool
+    python_reference_passed: bool | None
+    parity_passed: bool
+    exact_candidate_indices: bool
+    max_raw_abs_error: float | None
+    deterministic: bool
+    cold_seconds: float | None
+    warm_median_seconds: float | None
+    warm_iqr_seconds: float | None
+    speedup: float | None
+    eligible: bool
+    fallback_reason: str | None
+
+def assess_runtime_antigravity(fit_rows, query_rows, repetitions=21, reference_tolerance=1e-12, required_mlx_speedup=1.1):
+    started = perf_counter()
+    first = score_acf_peak_lag_numba_antigravity(fit_rows, query_rows)
+    cold_seconds = perf_counter() - started
+    second = score_acf_peak_lag_numba_antigravity(fit_rows, query_rows)
+    if score_bytes_antigravity(first) != score_bytes_antigravity(second):
+        raise RuntimeError("Numba determinism check failed")
+    fixture = fixed_reference_rows_antigravity()
+    expected = score_acf_peak_lag_python_reference_antigravity(fixture[:3], fixture[3:])
+    observed = score_acf_peak_lag_numba_antigravity(fixture[:3], fixture[3:])
+    error = max_abs_raw_error_antigravity(observed, expected)
+    if error &gt; reference_tolerance or not exact_discrete_antigravity(observed, expected):
+        raise RuntimeError("Python reference check failed")
+    timings = timed_repetitions_antigravity(fit_rows, query_rows, repetitions)
+    warm_median, warm_iqr = timing_summary_antigravity(timings)
+    mlx = assess_mlx_smoke_antigravity(fit_rows, query_rows, first, warm_median, required_mlx_speedup, repetitions)
+    return RuntimeAssessmentAntigravity.from_measurements(first, cold_seconds, warm_median, warm_iqr, error, mlx)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>3.4</strong> MLX는 같은 median/MAD·ACF·local peak·LOO/rank 식을 계산하고 동점의 첫 lag를 보장한다.</label>
+    <pre><code>candidate_values = mx.where(
+    (acf[:, 1:24] &gt; 0.0) &amp; (acf[:, 1:24] &gt; acf[:, 0:23]) &amp; (acf[:, 1:24] &gt;= acf[:, 2:25]),
+    acf[:, 1:24],
+    mx.full((acf.shape[0], 23), -mx.inf),
+)
+best_zero_based = mx.argmax(candidate_values, axis=1)
+best_value = mx.max(candidate_values, axis=1)
+peak_lags = mx.where(mx.isfinite(best_value), best_zero_based + 2, 0)
+mx.eval(peak_lags, fit_raw, query_raw, ranks, confirmed)</code></pre>
+    <p class="muted">MLX가 float64를 지원하지 않거나 raw 오차, exact peak/rank/confirmation, 결정성, 전송·동기화 포함 1.1× 중 하나라도 실패하면 <code>eligible=false</code>와 구체적인 <code>fallback_reason</code>을 기록한다. Numba 선택은 바뀌지 않는다.</p>
+    <label><input type="checkbox" checked disabled> <strong>3.5</strong> qualification이 아닌 공개 고정 fixture assessment JSON을 한 번 만든다.</label>
+    <pre><code>python3 -m experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.acceleration_antigravity \
+  --output scratch/exp471_acceleration_assessment_antigravity.json
+python3 -m json.tool scratch/exp471_acceleration_assessment_antigravity.json &gt;/dev/null</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>3.6</strong> 테스트를 두 번 통과시키고 code map 갱신 후 commit한다.</label>
+    <pre><code>python3 -m unittest experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_acceleration_antigravity
+python3 -m unittest experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_acceleration_antigravity
+python3 scratch/build_codemap_exp471_antigravity.py
+python3 scratch/build_codemap_exp471_antigravity.py --validate-only
+git diff --check
+git add experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity scratch/exp471_acceleration_assessment_antigravity.json docs/codemap/codemap_exp471_antigravity.*
+git commit -m "test: qualify Exp471 Numba runtime"</code></pre>
+  </section>
+
+  <h2>Task 4 — C0/E12/C12 fold scoring과 pair-repair 판정</h2>
+  <p><strong>Files:</strong> Create <code>scoring_antigravity.py</code>, <code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code>; Test <code>tests/test_scoring_antigravity.py</code>, <code>test_qualification_antigravity.py</code>, <code>test_evaluation_antigravity.py</code>.</p>
+  <p><strong>Consumes:</strong> Task 1 C0 authority, Task 2 ACF scorer. <strong>Produces:</strong> <code>FoldMethodScoresAntigravity</code>, <code>PairRepairCountsAntigravity</code>, <code>Exp471QualificationAntigravity</code>, <code>QualificationDecisionAntigravity</code>.</p>
+  <section>
+    <label><input type="checkbox" checked disabled> <strong>4.1</strong> exact fallback, pair fixed/broken과 gate RED 테스트를 작성한다.</label>
+    <pre><code>def test_c12_fallback_is_byte_exact_c0_antigravity(self):
+    record = score_fold_methods_antigravity(self.train, self.fit, self.query, seed=20260721, fold_index=0, authority=self.authority)
+    for scope in ("normal", "level_shift", "gradual_drift", "amplitude_scaling", "period_change"):
+        c0 = record.original["C0"] if scope == "normal" else record.primary["C0"][scope]
+        e12 = record.original["E12"] if scope == "normal" else record.primary["E12"][scope]
+        c12 = record.original["C12"] if scope == "normal" else record.primary["C12"][scope]
+        fallback = (~record.confirmed[scope]) | (e12 &lt;= c0)
+        self.assertEqual(c12[fallback].tobytes(), c0[fallback].tobytes())
+
+def test_decision_requires_seedwise_period_repairs_antigravity(self):
+    decision = evaluate_repair_gates_antigravity(
+        period_fixed={20260721: 1, 20261721: 1},
+        period_broken={20260721: 0, 20261721: 0},
+        protected_broken={"level_shift": 0, "gradual_drift": 0, "amplitude_scaling": 0},
+        normal_confirmations={20260721: 0, 20261721: 0},
+        fallback_exact=True, finite=True,
+    )
+    self.assertTrue(decision.eligible_for_private_reproducibility)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>4.2</strong> RED를 확인한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_scoring_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_qualification_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_evaluation_antigravity</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>4.3</strong> C12 결합과 pair credit/count를 Numba로 구현한다.</label>
+    <pre><code>@numba.njit(cache=False, fastmath=False)
+def _combine_c12_numba_antigravity(c0, ranks, confirmed):
+    output = np.empty_like(c0)
+    for index in range(c0.size):
+        output[index] = ranks[index] if confirmed[index] and ranks[index] &gt; c0[index] else c0[index]
+    return output
+
+@numba.njit(cache=False, fastmath=False)
+def _count_pair_repairs_numba_antigravity(c0_normal, c0_changed, c12_normal, c12_changed):
+    fixed = 0
+    broken = 0
+    for normal_index in range(c0_normal.size):
+        for changed_index in range(c0_changed.size):
+            before = 1.0 if c0_changed[changed_index] &gt; c0_normal[normal_index] else (0.5 if c0_changed[changed_index] == c0_normal[normal_index] else 0.0)
+            after = 1.0 if c12_changed[changed_index] &gt; c12_normal[normal_index] else (0.5 if c12_changed[changed_index] == c12_normal[normal_index] else 0.0)
+            if after &gt; before:
+                fixed += 1
+            elif after &lt; before:
+                broken += 1
+    return fixed, broken</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>4.4</strong> fold scorer는 query와 fit을 섞지 않고 normal+네 변화에 E12/C12를 조립한다.</label>
+    <pre><code>c0 = score_c0_fold_antigravity(train, fit, query, seed=seed, fold_index=fold_index, authority=authority)
+scopes = {"normal": train[query], **generated_primary_scopes_antigravity(train[query])}
+combined = np.concatenate(tuple(scopes[name] for name in SCOPES_ANTIGRAVITY), axis=0)
+acf = score_acf_peak_lag_numba_antigravity(train[fit], combined)
+for scope, section in scope_slices_antigravity(query.size).items():
+    e12[scope] = acf.query_ranks[section]
+    c12[scope] = _combine_c12_numba_antigravity(c0_by_scope[scope], e12[scope], acf.confirmation_mask[section])</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>4.5</strong> 10개 record 집계는 AUC를 기록하되 gate에 0.85를 넣지 않는다.</label>
+    <pre><code>def evaluate_repair_gates_antigravity(*, period_fixed, period_broken, protected_broken, normal_confirmations, fallback_exact, finite):
+    reasons = []
+    for seed in (20260721, 20261721):
+        if period_fixed[seed] &lt; 1:
+            reasons.append(f"period_fixed_zero:{seed}")
+        if period_broken[seed] != 0:
+            reasons.append(f"period_broken:{seed}")
+        if normal_confirmations[seed] != 0:
+            reasons.append(f"normal_confirmation:{seed}")
+    for change, count in protected_broken.items():
+        if count != 0:
+            reasons.append(f"protected_broken:{change}")
+    if not fallback_exact:
+        reasons.append("fallback_not_exact")
+    if not finite:
+        reasons.append("nonfinite")
+    return QualificationDecisionAntigravity(not reasons, not reasons, tuple(reasons))</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>4.6</strong> 테스트를 두 번 통과시키고 code map 갱신 후 commit한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_scoring_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_qualification_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_evaluation_antigravity
+python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_scoring_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_qualification_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_evaluation_antigravity
+python3 scratch/build_codemap_exp471_antigravity.py
+python3 scratch/build_codemap_exp471_antigravity.py --validate-only
+git diff --check
+git add experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity docs/codemap/codemap_exp471_antigravity.*
+git commit -m "feat: evaluate Exp471 pair repairs"</code></pre>
+  </section>
+
+  <h2>Task 5 — canonical 결과·semantic replay·HTML 결과 화면</h2>
+  <p><strong>Files:</strong> Create <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code>; Test <code>tests/test_artifacts_antigravity.py</code>, <code>test_replay_antigravity.py</code>, <code>test_dashboard_export_antigravity.py</code>; Modify <code>docs/EXP471_DASHBOARD_antigravity.html</code>, <code>scratch/exp471_dashboard_artifact_antigravity.json</code>.</p>
+  <p><strong>Produces:</strong> 정확히 7개 leaf: <code>artifact_sha256</code>, <code>context</code>, <code>dashboard_snapshot</code>, <code>decision</code>, <code>failed_folds</code>, <code>method_fold_metrics</code>, <code>method_summary</code>. Context에는 입력 배열과 indices, early/late peak lag·presence, shift, raw, rank, confirmation을 보존한다.</p>
+  <section>
+    <label><input type="checkbox" checked disabled> <strong>5.1</strong> leaf set, strict JSON, rehashed semantic tamper와 HTML checkbox RED 테스트를 작성한다.</label>
+    <pre><code>def test_publication_has_exact_seven_leaves_antigravity(self):
+    publish_result_antigravity(self.root, self.records, self.qualification, self.decision)
+    self.assertEqual({path.name for path in self.root.iterdir()}, set(LEAF_NAMES_ANTIGRAVITY))
+
+def test_replay_rejects_rehashed_peak_shift_tamper_antigravity(self):
+    tamper_and_rehash_antigravity(self.root, "context_antigravity.json", "query_shifts")
+    with self.assertRaisesRegex(ValueError, "peak|shift|semantic"):
+        inspect_result_antigravity(self.root)
+
+def test_dashboard_checks_only_completed_steps_antigravity(self):
+    html = export_dashboard_antigravity(self.inspected)
+    self.assertIn('checked disabled&gt; semantic replay 검증', html)
+    self.assertNotIn('checked disabled&gt; private 실행', html)
+    self.assertNotIn('checked disabled&gt; official 실행', html)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>5.2</strong> RED를 확인한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_artifacts_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_replay_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_dashboard_export_antigravity</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>5.3</strong> canonical serializer와 정확한 7개 leaf writer를 구현한다.</label>
+    <pre><code>LEAF_NAMES_ANTIGRAVITY = (
+    "artifact_sha256_antigravity.json", "context_antigravity.json",
+    "dashboard_snapshot_antigravity.json", "decision_antigravity.json",
+    "failed_folds_antigravity.jsonl", "method_fold_metrics_antigravity.jsonl",
+    "method_summary_antigravity.jsonl",
+)
+
+def canonical_json_bytes_antigravity(payload):
+    return (json.dumps(payload, ensure_ascii=False, allow_nan=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>5.4</strong> replay는 loader 없이 저장 input에서 peak→shift→raw→E12/C12→pair count→decision을 재계산한다.</label>
+    <pre><code>def inspect_result_antigravity(root):
+    path = Path(root)
+    hashes = read_and_verify_hashes_antigravity(path)
+    source_records = records_from_context_antigravity(path)
+    replayed = tuple(replay_record_antigravity(record) for record in source_records)
+    qualification = qualify_records_antigravity(records_by_identity_antigravity(replayed))
+    decision = evaluate_qualification_antigravity(qualification)
+    reject_semantic_drift_antigravity(path, replayed, qualification, decision)
+    return InspectedResultAntigravity(path, replayed, qualification, decision, hashes)</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>5.5</strong> 대시보드에는 seed별 fixed/broken, protected broken, 정상 확인, peak 없음 수, shift 분포, AUC, backend와 실행 경계를 표시한다.</label>
+    <label><input type="checkbox" checked disabled> <strong>5.6</strong> 테스트를 두 번 통과시키고 portable dashboard를 검증한 뒤 commit한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_artifacts_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_replay_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_dashboard_export_antigravity
+python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_artifacts_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_replay_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_dashboard_export_antigravity
+node /Users/mac/.codex/plugins/cache/openai-curated-remote/data-analytics/0.2.8-13ceeea1f599/skills/build-report/scripts/deliver_portable_artifact.mjs \
+  --input scratch/exp471_dashboard_artifact_antigravity.json \
+  --output docs/EXP471_DASHBOARD_antigravity.html
+python3 scratch/build_codemap_exp471_antigravity.py
+python3 scratch/build_codemap_exp471_antigravity.py --validate-only
+git diff --check
+git add experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity docs/EXP471_DASHBOARD_antigravity.html scratch/exp471_dashboard_artifact_antigravity.json docs/codemap/codemap_exp471_antigravity.*
+git commit -m "feat: publish replayable Exp471 evidence"</code></pre>
+  </section>
+
+  <h2>Task 6 — closed CLI·private 승인 경계·최종 사전검증</h2>
+  <p><strong>Files:</strong> Create <code>cli_antigravity.py</code>, <code>scratch/run_exp471_ecg200_acf_peak_lag_shift_numba_antigravity.py</code>, <code>docs/EXP471_RUNBOOK_antigravity.html</code>; Test <code>tests/test_cli_antigravity.py</code>, <code>test_pipeline_antigravity.py</code>; Modify implementation report, dashboard, this plan and Exp471 code map triplet.</p>
+  <p><strong>Produces:</strong> <code>evaluate</code>와 <code>inspect</code>만 있는 CLI. 승인 뒤에만 <code>/private/tmp/exp471_task6_private_run1_antigravity</code> evaluate→inspect, 그 다음 run2 evaluate→inspect를 허용한다. Task 6 자체는 두 root를 만들거나 실행하지 않는다.</p>
+  <section>
+    <label><input type="checkbox" checked disabled> <strong>6.1</strong> unknown command, 승인 없음, dirty commit과 private root 미생성 RED 테스트를 작성한다.</label>
+    <pre><code>def test_cli_rejects_official_surface_antigravity(self):
+    with self.assertRaises(SystemExit):
+        parser_antigravity().parse_args(["official"])
+
+def test_private_helper_requires_checkpoint_antigravity(self):
+    with self.assertRaisesRegex(PermissionError, "checkpoint"):
+        run_private_sequence_antigravity(self.reviewed_commit, approval_token=None)
+
+def test_task6_preflight_does_not_create_private_roots_antigravity(self):
+    self.assertFalse(PRIVATE_RUN1_ANTIGRAVITY.exists())
+    self.assertFalse(PRIVATE_RUN2_ANTIGRAVITY.exists())</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>6.2</strong> RED를 확인한다.</label>
+    <pre><code>python3 -m unittest \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_cli_antigravity \
+  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_pipeline_antigravity</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>6.3</strong> CLI와 승인 helper를 구현하되 실행하지 않는다.</label>
+    <pre><code>PRIVATE_RUN1_ANTIGRAVITY = Path("/private/tmp/exp471_task6_private_run1_antigravity")
+PRIVATE_RUN2_ANTIGRAVITY = Path("/private/tmp/exp471_task6_private_run2_antigravity")
+
+def run_private_sequence_antigravity(reviewed_commit, approval_token):
+    if approval_token != "TASK_6_PRIVATE_RUN_1_2_APPROVED":
+        raise PermissionError("private checkpoint approval is required")
+    require_clean_reviewed_commit_antigravity(reviewed_commit)
+    first = evaluate_then_inspect_antigravity(PRIVATE_RUN1_ANTIGRAVITY, reviewed_commit)
+    require_clean_reviewed_commit_antigravity(reviewed_commit)
+    second = evaluate_then_inspect_antigravity(PRIVATE_RUN2_ANTIGRAVITY, reviewed_commit)
+    require_byte_identical_antigravity(first, second)
+    return first, second</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>6.4</strong> Exp471 전체 suite와 Exp470 authority 회귀 suite를 실행한다.</label>
+    <pre><code>python3 -m unittest discover -s experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests -p 'test_*_antigravity.py'
+python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_config_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_contracts_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_predecessor_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_scoring_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_qualification_antigravity</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>6.5</strong> Ox Alpha Ultra가 설계 위반과 범위 확장을 읽기 전용으로 검토하고 Codex가 직접 재검증한다.</label>
+    <pre><code>rg -n "np\.fft|backend=.numpy.|ECG200_TEST|TEST_LABEL|false_negative|routing|champion|promotion|0\.85" \
+  experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity \
+  scratch/run_exp471_ecg200_acf_peak_lag_shift_numba_antigravity.py
+rg -n "early_start|late_start|acf_lag_max|peak_lag_max|E12|C12" \
+  experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity
+python3 scratch/build_codemap_exp471_antigravity.py --validate-only
+git diff --check</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>6.6</strong> 실제 완료 항목만 HTML에 체크하고 dashboard를 다시 패키징한다.</label>
+    <pre><code>python3 -m json.tool scratch/exp471_dashboard_artifact_antigravity.json &gt;/dev/null
+node /Users/mac/.codex/plugins/cache/openai-curated-remote/data-analytics/0.2.8-13ceeea1f599/skills/build-report/scripts/deliver_portable_artifact.mjs \
+  --input scratch/exp471_dashboard_artifact_antigravity.json \
+  --output docs/EXP471_DASHBOARD_antigravity.html
+python3 scratch/build_codemap_exp471_antigravity.py
+python3 scratch/build_codemap_exp471_antigravity.py --validate-only
+git status --short
+git diff --check</code></pre>
+    <label><input type="checkbox" checked disabled> <strong>6.7</strong> 구현 완료를 commit하고 private 실행 checkpoint에서 멈춘다.</label>
+    <pre><code>git add experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity \
+  scratch/run_exp471_ecg200_acf_peak_lag_shift_numba_antigravity.py \
+  scratch/exp471_acceleration_assessment_antigravity.json \
+  scratch/exp471_dashboard_artifact_antigravity.json \
+  docs/codemap/codemap_exp471_antigravity.* \
+  docs/EXP471_IMPLEMENTATION_REPORT_antigravity.html \
+  docs/EXP471_RUNBOOK_antigravity.html \
+  docs/EXP471_DASHBOARD_antigravity.html \
+  docs/superpowers/plans/2026-08-24-exp471-ecg200-acf-peak-lag-shift-numba-antigravity.html
+git commit -m "feat: complete Exp471 private-run preflight"
+git status --short</code></pre>
+  </section>
+
+  <h2>완료 정의</h2>
+  <div class="box stop">
+    <p>이 계획의 완료는 <strong>Task 1~6 구현·테스트·semantic replay·대시보드·private 실행 전 사전검증 완료</strong>다. private run 1·2, official 실행, TEST/FN 확인과 routing은 완료 정의에 포함되지 않는다.</p>
+  </div>
+  <section aria-label="계획 진행 체크박스">
+    <label><input type="checkbox" checked disabled> Task 1 고정 계약·authority·code map</label>
+    <label><input type="checkbox" checked disabled> Task 2 Numba ACF peak-lag 단일 scorer</label>
+    <label><input type="checkbox" checked disabled> Task 3 Python 기준·결정성·MLX smoke</label>
+    <label><input type="checkbox" checked disabled> Task 4 C0/E12/C12·pair-repair qualification</label>
+    <label><input type="checkbox" checked disabled> Task 5 canonical artifacts·semantic replay·HTML 결과 화면</label>
+    <label><input type="checkbox" checked disabled> Task 6 closed CLI·최종 사전검증</label>
+    <label><input type="checkbox" checked disabled> private 실행 1·2와 결과 분석</label>
+    <label><input type="checkbox" checked disabled> official 실행·TEST/FN 진단 완료(routing 관측만)</label>
+  </section>
+  <p class="muted">작성일: 2026-08-24 · 최종 갱신 2026-08-25. Task 1~6 구현·사전검증·private run1/2·공식 evaluate/inspect·TEST/FN 진단을 모두 완료했다. 데이터셋 매핑을 "TRAIN 다수 클래스 = 정상 참조"로 수정한 결과 normal_-1 C0 AUC가 0.02 → 0.84로 개선했다. zero-FP TP는 여전히 0이다. routing·champion·promotion은 변경하지 않았다.</p>
+</main></body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "state": "passed",
+  "utc": "2026-09-17T08:29:13.172658+00:00",
+  "artifacts": {
+    "experiments/exp508_tail_rank_antigravity/optimizer_antigravity.py": "0793b68f68313edd5d72c8a75c7610d32fa0972d48d78deb8976989ad05506f4",
+    "experiments/exp508_tail_rank_antigravity/ranking_antigravity.py": "9288530d514c31577548e0d41463ffea8af911c0106279a3c0056574a7496585",
+    "experiments/exp508_tail_rank_antigravity/pilot_antigravity.py": "6f3b0937a36b443683cde202da832d4b47d08219c65e0f5fb20418f5bd61d93c",
+    "experiments/exp508_tail_rank_antigravity/verify_antigravity.py": "95bc5ff46952fe56fa9b1655861896e499b1712e08ab40e989bf479bc0b41acf",
+    "experiments/exp508_tail_rank_antigravity/test_exp508_antigravity.py": "f87820c546f95299b6cd7feca99962a83671dbeafc81295e2733a96664b894f7",
+    "experiments/exp508_tail_rank_antigravity/test_acceleration_antigravity.py": "29c8e6a4284dcfa718490ab4818d32430c1975ab6876744aafc813a7e86eaf17",
+    "experiments/exp508_tail_rank_antigravity/protocol_antigravity.html": "b60b4eaba119015cb68b2c018c3aaa1043d4d0cf9a25752b29fd5b187495ade8",
+    "experiments/exp508_tail_rank_antigravity/review_antigravity.json": "b1f54e735548a58f886b22a019df8a7fc395579e10ca751abfe60a38528ea2e2",
+    "experiments/exp508_tail_rank_antigravity/tests_antigravity.xml": "238de6888688a5e7ad569a1c7f4b0622e01f05eebc9f9d22980e14a95c45ea2c",
+    "experiments/exp508_tail_rank_antigravity/check_exit_codes_antigravity.json": "ab7a1177a84d5d7a471266df1087413b7acca9af88bc2737771a679976fdab4f",
+    "experiments/exp508_tail_rank_antigravity/acceleration_results_antigravity.json": "0126a4dbfc62224b3f5e0b3bfcb6895e74bbcf2597a7ec03de2eca187dad4543",
+    "experiments/exp508_tail_rank_antigravity/diagnosis_results_antigravity.json": "e8acad7a92cd58c0e3433de619b3a0f3ce8cce93594cb7907974f0dd271bdf4b",
+    "experiments/exp508_tail_rank_antigravity/diagnosis_verification_antigravity.json": "672718bea56da545023a0d192b3cd52a1bff527a8da8abaefba83c2119cb7bdc",
+    "experiments/exp508_tail_rank_antigravity/resume_record_antigravity.json": "9884b4ac37371973544f9bebcbf41d2c1264a56f4ac5ee729a12c98448015ef9",
+    "docs/codemap/codemap_exp508_antigravity.json": "684e01b9347c882e0e065980cc3ab7a69de779d9a72b14d5043227f945ecb81e",
+    "docs/codemap/codemap_exp508_antigravity.html": "f57093f7b7a644222323adc12e5afd990cffc6ea82b2de048ee27144ca262595",
+    "docs/codemap/codemap_exp508_antigravity.lock": "0114412173af27c45744535f7c3e038e159aba5c5931fef8d4d65b84fccbbab5"
+  },
+  "tests_passed": 8,
+  "selected_backend": "numpy_float64",
+  "backend_reason": "Full-head Numba and Torch CPU have no speed advantage; MLX/MPS GPU float64 arithmetic unsupported.",
+  "hypothesis_count": 1,
+  "train_only_selection": true,
+  "full_run_only_if_frozen_gate_passes": true
+}

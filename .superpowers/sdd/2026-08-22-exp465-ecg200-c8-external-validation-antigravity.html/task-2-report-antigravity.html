@@ -1,0 +1,25 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>Exp465 Task 2 report</title>
+<style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#f5fff9;border-left:6px solid #16794b;padding:1rem}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}</style></head>
+<body><main>
+<h1>Exp465 Task 2 report — ECG200 TRAIN과 96→140 보간</h1>
+<p>상태: <code>task_2_review_pass_complete</code>. 구현, 실제 TRAIN smoke, focused double GREEN, 코드맵 갱신과 독립 검토를 완료했다. scoring과 qualification result는 아직 아니다.</p>
+<h2>구현 결과</h2>
+<ul>
+<li><code>sources_antigravity.py</code>: TRAIN 이름 강제, TEST 경로 사전 거부, frozen MD5, <code>rsplit(":", 1)</code> 파싱, exact float64/finite/int ±1 검증, 100×96과 +1 69/-1 31 확인 후 owned C-contiguous read-only 정상 <code>(69, 96)</code> 반환.</li>
+<li><code>interpolation_antigravity.py</code>: 고정 <code>np.linspace(0,1,96)</code>/<code>np.linspace(0,1,140)</code> grid와 행별 단일 <code>np.interp</code>. 첫·끝점 보존, constant/nonlinear 행도 reference와 동일, owned C-contiguous read-only float64 <code>(n, 140)</code> 출력.</li>
+<li>Tests: <code>test_sources_antigravity.py</code>, <code>test_interpolation_antigravity.py</code>.</li>
+</ul>
+<h2>TDD와 실제 TRAIN smoke</h2>
+<table>
+<tr><th>RED source</th><td>구현 전 source suite가 <code>ModuleNotFoundError: sources_antigravity</code>로 실패했다.</td></tr>
+<tr><th>RED interpolation</th><td>같은 실행에서 interpolation test도 <code>ModuleNotFoundError: interpolation_antigravity</code>로 실패했다.</td></tr>
+<tr><th>TRAIN URL/저장 경로</th><td>Zenodo record 11186675 <code>ECG200_TRAIN.ts</code>; 외부 저장 <code>/Users/mac/Documents/Dataset/exp465_ecg200_train_antigravity/ECG200_TRAIN_antigravity.ts</code></td></tr>
+<tr><th>TRAIN 해시</th><td>MD5 <code>808875aeac1c358a90c630fe369327c4</code>; SHA-256 <code>6b855dbcbae2d968937c2416d22bdc2dc74be90d5ce6345f56950fa7e754b3fe</code></td></tr>
+<tr><th>smoke 결과</th><td>100×96, +1 69/-1 31 확인 후 출력 <code>(69, 140)</code> float64 finite read-only; TEST 파일은 다운로드·열기·조회하지 않았다.</td></tr>
+<tr><th>가속화</th><td>작은 CPU parsing/행별 <code>np.interp</code>이며 알고리즘 변경 없는 MLX 1.1× gate 근거가 없어 canonical CPU fallback을 유지한다.</td></tr>
+</table>
+<h2>경계</h2>
+<div class="note"><p>합성 변화, scoring, onset 선택, normalization, smoothing, qualification, evaluation은 구현하지 않았다. official evaluate/inspect <code>0/0</code>, private run <code>0</code>, label query <code>0</code>, 모든 결과 hash <code>null</code>를 유지한다. Task 3 이후는 unchecked다.</p></div>
+<h2>독립 검토</h2>
+<div class="ok"><p>새 Ox Alpha Ultra 읽기 전용 세션이 커밋 경계, 경로 차단, 보간 수식, 테스트, 체크박스와 코드맵 결합을 검토했다. 결과는 <code>SPEC PASS / QUALITY APPROVED</code>다.</p></div>
+</main></body></html>

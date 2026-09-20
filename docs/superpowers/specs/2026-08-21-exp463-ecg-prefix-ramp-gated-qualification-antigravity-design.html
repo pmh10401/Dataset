@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp463 ECG prefix ramp gated qualification 설계</title>
+<style>body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}.box{padding:1rem;margin:1rem 0;background:#f5f7fa}.good{border-left:6px solid #16794b}.stop{border-left:6px solid #b42318}h1,h2{line-height:1.3}</style></head>
+<body><main>
+<h1>Exp463 — 앞부분 기준 경사와 보수적 결합 검증</h1>
+<p><strong>한 줄 목표:</strong> Exp461의 주기 성능을 그대로 보존하면서, 뒤쪽이 확실히 올라가는 경우에만 새 gradual 점수를 적용해 <code>gradual_drift</code>를 개선한다.</p>
+
+<h2>1. 실험 정체성과 범위</h2>
+<table>
+<tr><th>experiment</th><td><code>Exp463</code></td></tr>
+<tr><th>kind</th><td><code>ecg_prefix_ramp_gated_qualification</code></td></tr>
+<tr><th>run identity</th><td><code>exp463-ecg-prefix-ramp-gated-qualification-antigravity-20260821</code></td></tr>
+<tr><th>공식 결과 폴더</th><td><code>/Users/mac/Documents/Dataset/exp463_ecg_prefix_ramp_gated_qualification_antigravity_20260821</code></td></tr>
+<tr><th>전임 실험</th><td>Exp462 terminal commit <code>040422f62406e3ca19038b9609903c4ba76e1694</code></td></tr>
+<tr><th>데이터</th><td><code>ECG5000_normal_2</code> TRAIN <code>1413×140</code></td></tr>
+<tr><th>검증</th><td>seeds <code>20260721</code>, <code>20261721</code> × 기존 시간 순서 blocked fold 5개</td></tr>
+<tr><th>현재 상태</th><td><code>design_written_awaiting_user_review</code>; 구현·private TRAIN·공식 실행 0회</td></tr>
+</table>
+<p>Exp463는 TRAIN-only 후보 자격 검증이다. TEST label, TEST confusion/FN/FP/F1, 라우팅 적용, champion/pending 변경은 범위 밖이다.</p>
+
+<h2>2. Exp462에서 확인한 실패</h2>
+<table><thead><tr><th>방법</th><th>통과</th><th>최소 gradual AUC</th><th>최소 period AUC</th><th>최소 pooled</th></tr></thead><tbody>
+<tr><td><code>hydra_period_rank_max</code></td><td>9/10</td><td>0.8402306222021025</td><td>0.907392736783864</td><td>0.9212266108344651</td></tr>
+<tr><td><code>gradual_signature_local_gap</code></td><td>0/10</td><td>0.6966125185730875</td><td>0.8093657260701171</td><td>0.7431184296564559</td></tr>
+<tr><td><code>hydra_period_gradual_rank_max</code></td><td>3/10</td><td>0.7953196519289775</td><td>0.8960376741612595</td><td>0.9010220185101353</td></tr>
+</tbody></table>
+<div class="box stop"><p>24차원 특징은 점진 변화 자체를 충분히 구분하지 못했다. 약한 gradual 순위를 모든 행에서 <code>max</code>로 합치자 정상 순위가 올라가 gradual과 period AUC가 함께 낮아졌다.</p></div>
+
+<h2>3. 주 후보의 1차원 특징</h2>
+<p>점진 합성은 index <code>56</code>부터 시작한다. 따라서 변화 이전 앞부분만으로 중심과 눈금을 고정한다.</p>
+<ol>
+<li><code>prefix = x[0:56]</code></li>
+<li><code>center = median(prefix)</code></li>
+<li><code>scale = 1.4826 × median(abs(prefix - center))</code>. 0 또는 비유한 값이면 실패한다.</li>
+<li><code>z = (x - center) / scale</code></li>
+<li>길이 140의 고정 벡터 <code>b</code>를 만든다. <code>b[0:56]=0</code>, <code>b[56:140]=linspace(0,1,84)</code>, 이후 L2 norm으로 나눈다.</li>
+<li>부호 있는 경사 점수는 정확히 <code>f = dot(z,b)</code>다.</li>
+</ol>
+<p>이 특징은 합성 gradual 변화가 추가하는 뒤쪽 선형 ramp와 같은 모양을 직접 측정한다. LocalGap, 학습 가중치, fold별 선택은 사용하지 않는다.</p>
+
+<h2>4. 순위와 보수적 결합</h2>
+<ul>
+<li>query 점수 <code>s</code>의 순위는 <code>(1 + count(r_i ≤ s)) / (n + 1)</code>이다.</li>
+<li><code>r461</code>은 reviewed Exp461 <code>hydra_period_rank_max</code> 순위다.</li>
+<li><code>rramp</code>는 앞부분 기준 경사 점수 순위다.</li>
+<li>고정 확신 문턱은 기존 α=0.005에서 파생한 <code>1-α = 0.995</code>다.</li>
+<li>주 후보 <code>hydra_period_ramp_gated_max</code>는 <code>rramp ≥ 0.995</code>이면 <code>max(r461,rramp)</code>, 아니면 정확히 <code>r461</code>다.</li>
+</ul>
+<div class="box good"><p>새 특징이 매우 확실할 때만 기존 점수를 바꾼다. 확신이 낮으면 Exp461로 돌아가므로 period fold 3의 손상을 줄이는 것이 목적이다.</p></div>
+
+<h2>5. 고정 비교표</h2>
+<table><thead><tr><th>ID</th><th>특징·점수</th><th>결합</th><th>역할</th></tr></thead><tbody>
+<tr><td>M0</td><td>Exp461 reviewed score</td><td>없음</td><td>기준선 재현</td></tr>
+<tr><td>M1</td><td>앞부분 기준 1차원 ramp</td><td>없음</td><td>특징 자체 진단</td></tr>
+<tr><td>M2</td><td>M1</td><td><code>rramp ≥ 0.995</code>일 때만 max</td><td><strong>유일한 주 후보</strong></td></tr>
+<tr><td>M3</td><td>M1</td><td>항상 max</td><td>문턱 필요성 확인</td></tr>
+<tr><td>M4</td><td>TRAIN fit 행의 시각별 median template를 뺀 1차원 ramp</td><td>0.995 gated max</td><td>정상 ECG 모양 영향 진단</td></tr>
+<tr><td>M5</td><td>전체 시계열 median/MAD로 정규화한 1차원 ramp</td><td>0.995 gated max</td><td>눈금 흡수 원인 진단</td></tr>
+<tr><td>M6</td><td>Exp462 24D + LocalGap</td><td>항상 max</td><td>이전 실패 재현 대조</td></tr>
+</tbody></table>
+<p>M0과 M6이 전임 결과를 재현하지 못하면 Exp463 결과를 해석하지 않고 중단한다. M4·M5가 좋아 보여도 이번 실험의 주 후보로 바꾸지 않는다.</p>
+
+<h2>6. 합격 조건</h2>
+<p>주 후보 M2만 아래 조건을 모두 만족해야 한다.</p>
+<ul>
+<li>10개 seed-fold 기록 모두 통과</li>
+<li>네 변화 유형 AUC 각각 ≥0.85</li>
+<li>각 기록의 네 유형 평균 AUC ≥0.90</li>
+<li>정상 Wilson 상한 ≤0.05, 모든 점수 유한</li>
+<li>전체 gradual 최소 ≥0.85이며 <code>0.8402306222021025</code>보다 엄격히 큼</li>
+<li>전체 period 최소 ≥<code>0.907392736783864</code></li>
+<li>seed <code>20260721</code> fold <code>3</code> period ≥<code>0.907392736783864</code></li>
+<li>seed <code>20261721</code> fold <code>4</code> period ≥<code>0.9216148584075248</code></li>
+</ul>
+<div class="box stop"><p><strong>중단:</strong> 하나라도 실패하면 공식 실행을 하지 않는다. α, onset, 가중치, seed, fold, 문턱을 바꾸거나 실패 fold를 제외하지 않는다.</p></div>
+
+<h2>7. 가설을 반증하는 결과</h2>
+<table><thead><tr><th>가설</th><th>반증 조건</th></tr></thead><tbody>
+<tr><td>전체 MAD가 ramp를 흡수했다</td><td>M5 gradual 최소가 M1과 같거나 더 높음</td></tr>
+<tr><td>정상 ECG 모양이 경사를 가렸다</td><td>M1은 약하지만 M4만 0.85 이상. 이 경우 M4는 다음 실험에서 새로 사전 등록</td></tr>
+<tr><td>항상 max가 period를 손상했다</td><td>M3이 fold 3 period를 손상하지 않거나 M2도 같은 정도로 손상</td></tr>
+<tr><td>0.995 문턱이 보수성과 개선을 함께 만족한다</td><td>M1은 gradual ≥0.85지만 M2가 기존 0.840 수준에 머묾</td></tr>
+</tbody></table>
+
+<h2>8. 실행·결과 경계</h2>
+<ul>
+<li>구현 후 동일 private TRAIN evaluate→inspect를 정확히 두 번 순차 재현한다.</li>
+<li>두 결과의 모든 fold rows, summaries, decision, dashboard와 leaf bytes/hashes가 같아야 한다.</li>
+<li>Task 5 private gate가 통과하고 fresh review를 받은 뒤에만 별도 사용자 승인으로 공식 실행한다.</li>
+<li>MLX는 같은 입력·seed에서 finite/순서/수치 parity와 1.1배 속도를 모두 만족할 때만 사용한다. 설치하지 않으며 실패하면 NumPy CPU를 사용한다.</li>
+<li>대시보드는 <code>docs/EXP463_DASHBOARD_antigravity.html</code>에 쉬운 한국어로 진행 상황과 aggregate 결과만 기록한다.</li>
+</ul>
+
+<h2>9. 승인 전 고정 사항</h2>
+<table>
+<tr><th>주 후보</th><td><code>hydra_period_ramp_gated_max</code> 하나만</td></tr>
+<tr><th>확신 문턱</th><td><code>0.995</code></td></tr>
+<tr><th>변화 시작점</th><td><code>56</code></td></tr>
+<tr><th>상태</th><td><code>design_written_awaiting_user_review</code></td></tr>
+</table>
+</main></body></html>

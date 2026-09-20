@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp458 대시보드</title>
+  <style>
+    body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+    table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
+    code{background:#eef2f7;padding:.1rem .3rem}
+    .box{background:#f5f7fa;padding:1rem}
+  </style>
+</head>
+<body><main>
+  <h1>Exp458 ECG5000 normal_2 점수 순위 라우팅</h1>
+  <table>
+    <tr><th>진행</th><td>Task 6/6</td></tr>
+    <tr><th>상태</th><td><code>official_evaluation_inspected_complete_qualified_for_external_validation</code></td></tr>
+    <tr><th>현재 판단</th><td><strong>공식 결과가 외부 검증 후보 기준을 통과했다</strong></td></tr>
+    <tr><th>공식 실행</th><td>공식 evaluate 1회 exit 0 / inspect 1회 exit 0 / 결과 폴더 leaf 9개</td></tr>
+    <tr><th>대상</th><td><code>ECG5000_normal_2</code> 하나만 새 AUC 게이트 대상</td></tr>
+    <tr><th>현재 구현</th><td>Task 6 one-shot official lifecycle 완료. reviewed commit <code>2c836e371993b865b87d1b0b96595d0befd6ee3d</code>에서 evaluate와 inspect를 각각 정확히 한 번 실행했다.</td></tr>
+    <tr><th>고정 runtime</th><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code> / Python 3.14.6 / NumPy 2.3.5 / aeon 1.4.0</td></tr>
+  </table>
+
+  <div class="box">
+    <p><strong>고정 진단:</strong> Exp457의 실패 원인은 <strong>상위 0.5%만 이상으로 인정한 지나치게 극단적인 통과선</strong>이었다.</p>
+    <p>Exp458은 같은 TRAIN 점수를 AUC로 다시 요약한다. AUC는 정상보다 이상 점수가 얼마나 꾸준히 높은지 보여주는 값이다.</p>
+  </div>
+
+  <h2>AUC 통과 규칙</h2>
+  <table>
+    <thead><tr><th>조건</th><th>기준</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td>각 합성 이상 AUC</td><td>모두 ≥ 0.85</td><td>네 종류를 모두 충분히 잘 구분해야 한다.</td></tr>
+      <tr><td>평균 AUC</td><td>≥ 0.90</td><td>전체 구분력이 높아야 한다.</td></tr>
+      <tr><td>정상 Wilson 상한</td><td>≤ 0.05</td><td>정상 TRAIN을 지나치게 이상으로 고르지 않아야 한다.</td></tr>
+      <tr><td>구조 게이트</td><td><code>14&gt;5</code></td><td><code>added_count &gt; removed_count</code>를 유지한다.</td></tr>
+    </tbody>
+  </table>
+  <p><strong>두 seed 20260721와 20261721가 각각 모든 gate를 만족해야 한다.</strong> 한 seed라도 Wilson, per-type AUC, pooled AUC 중 하나를 놓치면 normal_2는 baseline으로 남는다.</p>
+
+  <h2>AUC 계산 계약</h2>
+  <p>AUC는 <code>(anomaly&gt;normal wins + 0.5*ties)/(n_normal*n_anomaly)</code>로 계산한다. 점수가 높을수록 더 이상에 가깝다는 기존 방향을 유지하고, tie는 반승으로 계산한다.</p>
+
+  <h2>공식 결과</h2>
+  <p><strong>TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311</strong></p>
+  <p>이 값은 Task 6의 공식 evaluate와 공식 inspect가 동일하게 출력한 결과다. 공식 root는 <code>/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818</code>이며 non-symlink directory, leaf 9개, artifact-map exact recomputation, source-free semantic replay를 통과했다. label_query_count는 0이다.</p>
+  <p>effective route는 <code>ECG5000_normal_2</code> candidate, 다른 ECG 네 개 baseline, ChlorineConcentration 세 개 candidate다. 상태는 <code>routing_candidate_qualified_for_external_validation</code>이며 champion, pending candidate, routing, promotion, external dashboard publication은 바꾸지 않았다.</p>
+
+  <h2>Task 5 실제 TRAIN 후보 검증</h2>
+  <table>
+    <thead><tr><th>항목</th><th>run 1</th><th>run 2</th></tr></thead>
+    <tbody>
+      <tr><td>소요 시간</td><td>98.6050003329292초</td><td>99.41886049997993초</td></tr>
+      <tr><td>route</td><td>candidate</td><td>candidate</td></tr>
+      <tr><td>label query 수</td><td>0</td><td>0</td></tr>
+      <tr><td>canonical payload SHA-256</td><td><code>0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8</code></td><td><code>0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8</code></td></tr>
+      <tr><td>equality proof</td><td colspan="2">qualification=true / route=true / dashboard=true / leaf hashes=true / canonical payload=true</td></tr>
+      <tr><td>임시 root</td><td colspan="2">두 임시 root 모두 cleanup 완료</td></tr>
+      <tr><td>공식 root</td><td colspan="2">Task 5 동안 없음. Task 6에서 공식 root 1개 생성 완료.</td></tr>
+      <tr><td>공식 명령</td><td colspan="2">Task 5 동안 public evaluate 0회 / public inspect 0회. Task 6 공식 lifecycle은 evaluate 1회와 inspect 1회로 종료.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Task 3 실제 TRAIN smoke</h2>
+  <table>
+    <thead><tr><th>항목</th><th>값</th></tr></thead>
+    <tbody>
+      <tr><td>실행 수</td><td>Task 3 read-only smoke 1회, Task 5 private candidate verification 2회</td></tr>
+      <tr><td>소요 시간</td><td>103.54300962504931초</td></tr>
+      <tr><td>TRAIN shape / dtype</td><td>1413×140 / <code>float32</code></td></tr>
+      <tr><td>finite / owned / writeable</td><td>true / true / false</td></tr>
+      <tr><td>SQL query 수</td><td>1</td></tr>
+      <tr><td>label query 수</td><td>0</td></tr>
+      <tr><td>dataset parameter</td><td><code>ECG5000_normal_2</code></td></tr>
+      <tr><td>seed 20260721</td><td>level_shift 0.9796866524522819 / gradual_drift 0.9052489545815847 / amplitude_scaling 0.9951992643379718 / period_change 0.9104679076956519 / pooled 0.9476506947668726 / Wilson 0.00923330730695328 / pass true</td></tr>
+      <tr><td>seed 20261721</td><td>level_shift 0.9761215364958586 / gradual_drift 0.895775202359648 / amplitude_scaling 0.9943593234193259 / period_change 0.9278161686372973 / pooled 0.9485180577280324 / Wilson 0.00923330730695328 / pass true</td></tr>
+    </tbody>
+  </table>
+
+  <h2>기준 통과</h2>
+  <table>
+    <thead><tr><th>기준</th><th>실제값</th><th>통과</th></tr></thead>
+    <tbody>
+      <tr><td>FN ≤ 834</td><td>829</td><td>true</td></tr>
+      <tr><td>FP ≤ 66</td><td>66</td><td>true</td></tr>
+      <tr><td>F1 &gt; 0.5764150943396227</td><td>0.5796148426491311</td><td>true</td></tr>
+    </tbody>
+  </table>
+
+  <h2>공식 artifact hashes</h2>
+  <table>
+    <thead><tr><th>항목</th><th>SHA-256</th></tr></thead>
+    <tbody>
+      <tr><td>comparison metrics</td><td><code>e62292db1796fdafe4b4fbbc2f7b57ce0d65b82c8812694eba24108df2092230</code></td></tr>
+      <tr><td>decision</td><td><code>afcfc86cd0dbd9bcc08e3c59d3da7e256e82e58403b98736c7cdd448f597e6b0</code></td></tr>
+      <tr><td>dashboard snapshot</td><td><code>9b4f95d11766076b23bfa4b670f1dbc9768f6bf8257f11aa5750768ff1fb8eb1</code></td></tr>
+      <tr><td>artifact map</td><td><code>7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>현재 설명</h2>
+  <div class="box">
+    <p>normal_2만 다시 보는 이유는 구조 진단이 <code>14&gt;5</code>로 유일하게 긍정적이었기 때문이다. 나머지 ECG 네 개는 아직 baseline으로 고정한다.</p>
+    <p>Hydra는 기존 aeon CPU를 유지한다. MLX는 Task 5에서도 새로 도입하지 않는다.</p>
+  </div>
+</main></body>
+</html>

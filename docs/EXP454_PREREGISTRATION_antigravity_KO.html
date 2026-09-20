@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp454 사전등록</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}table{width:100%;border-collapse:collapse}th,td{border:1px solid #9aa5b1;padding:.55rem;text-align:left;vertical-align:top}.note{border-left:4px solid #4f6bed;background:#f5f8fc;padding:1rem}</style></head><body><main>
+<h1>Exp454: Exp449 authority 타입 경계 복구 사전등록</h1>
+<p>Exp454는 새로운 성능 기법을 시험하지 않는다. Exp453 evaluate가 실제 Exp449 authority와 복사된 Exp453 클래스를 <code>type(...) is</code>로 비교해 label 전에 실패한 경계만 고친다. 과학 계산, 96개 예측, 12-leaf 형식은 그대로 둔다.</p>
+<div class="note"><strong>유일한 변경:</strong> 실제 Exp449 target authority를 읽은 직후 <code>normalize_exp449_target_authority_antigravity()</code>가 이름·family·candidate·confusion 값을 Exp454 불변 타입으로 한 번만 복사한다. 새 score source가 아니므로 MLX는 쓰지 않고 고정 CPU runtime만 사용한다.</div>
+<h2>고정 정체성</h2><table><tr><th>항목</th><th>고정값</th></tr>
+<tr><td>실험</td><td><code>Exp454</code> / <code>exp453_exp449_authority_boundary_repair</code></td></tr>
+<tr><td>실행 이름</td><td><code>exp454-exp453-exp449-authority-boundary-repair-antigravity-20260814</code></td></tr>
+<tr><td>패키지</td><td><code>experiments/exp454_exp453_exp449_authority_boundary_repair_antigravity</code></td></tr>
+<tr><td>평가 root</td><td><code>/Users/mac/Documents/Dataset/exp454_exp453_exp449_authority_boundary_repair_evaluation_antigravity_20260814</code></td></tr>
+<tr><td>receipt 디렉터리</td><td><code>/Users/mac/Documents/Dataset/exp454_authority_boundary_repair_lifecycle_receipts_antigravity_20260814</code></td></tr>
+<tr><td>failure audit</td><td><code>/Users/mac/Documents/Dataset/exp454_authority_boundary_repair_failure_audit_antigravity.json</code></td></tr>
+<tr><td>Python 실행 파일</td><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code></td></tr>
+<tr><td>Python prefix</td><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314</code></td></tr>
+<tr><td>버전</td><td>Python 3.14.6, NumPy 2.3.5, aeon 1.4.0, scikit-learn 1.7.2</td></tr>
+</table>
+<h2>바꾸지 않는 과학 계산</h2><ul>
+<li>48개 데이터셋, 96개 예측, 16개 family-method 조합</li>
+<li>seed <code>20260721</code>, <code>20261721</code>와 alpha <code>0.005</code></li>
+<li>Exp449 prediction SHA-256 <code>a6054a44fc4e78f354dcf61d2e003284804680cd4197405364fcb5ef8d822e0d</code></li>
+<li>정렬된 index, confusion, FN, FP, F1, bootstrap, decision과 12개 결과 파일</li>
+</ul>
+<h2>선행 실험</h2><p>Exp453는 readiness 1회(exit 0), evaluate 1회(exit 1), inspect 0회로 영구 종료됐다. failure audit SHA-256은 <code>97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276</code>다. Exp453는 다시 실행하지 않는다. 실제 예측은 Exp449의 고정 96개만 사용한다.</p>
+<h2>현재 상태</h2><p>상태는 <code>planned_not_started</code>다. Task 1은 문서와 code map만 만든다. TEST label을 읽지 않고 readiness, evaluate, inspect를 실행하지 않는다. 공식 횟수와 label은 모두 0이며 결과 SHA는 null이다. routing, champion, pending candidate, promotion은 바꾸지 않는다.</p>
+<h2>PyTorch / MLX / MPS 가속 평가</h2>
+<p>Task 1은 거버넌스만 만든다. 이후 과학 계산도 새 score source가 아니라 Exp449의 고정 96개 예측과 Exp453 CPU 경로를 그대로 쓴다. Exp254식 변환은 계속 CPU-only이며 third-party transformer를 GPU용으로 다시 쓰지 않는다.</p>
+<table><tr><th>항목</th><th>기록</th></tr>
+<tr><td>tensor-eligible</td><td>아니오. 할 일은 타입 복사와 작은 정수 confusion/bootstrap이다.</td></tr>
+<tr><td>backend 가용성</td><td>정규 runtime은 CPython 3.14.6과 NumPy 2.3.5다. 공식 경로에 PyTorch, MLX, MPS를 넣지 않는다.</td></tr>
+<tr><td>전송·컴파일 비용</td><td>48개 데이터셋의 작은 정수를 장치로 옮기고 동기화하는 비용이 계산보다 크다.</td></tr>
+<tr><td>결정성·수치 동등성</td><td>공식 결과는 고정 CPU와 같아야 한다. 후보 index와 점수가 달라지면 가속 경로는 버린다.</td></tr>
+<tr><td>정규 CPU fallback</td><td>고정 interpreter와 NumPy CPU가 유일한 정규 경로다.</td></tr>
+<tr><td>가속 채택 조건</td><td>MLX는 알고리즘이 같고, 같은 입력·seed에서 유한하며, 모든 사전등록 alpha에서 후보 index가 같고, 점수 오차가 허용 범위 안이며, 전송·동기화를 포함해 1.1배 이상 빠를 때만 쓴다. 하나라도 실패하면 CPU를 유지한다. 벤치마크 전에는 가속이 정규가 될 수 없다. MLX/MPS 작업은 한 번에 하나만 실행한다.</td></tr>
+</table>
+</main></body></html>

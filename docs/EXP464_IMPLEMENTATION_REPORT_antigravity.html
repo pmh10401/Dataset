@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp464 구현 보고서 — Task 5 reviewed closeout complete</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.note{border-left:6px solid #2457a6;background:#f5f7fa;padding:1rem}.stop{border-left:6px solid #b42318;background:#fff4f2;padding:1rem}</style></head>
+<body><main>
+<h1>Exp464 구현 보고서</h1>
+<p><strong>현재 상태:</strong> <code>stopped_before_official_evaluation_qualification_failed</code>. Task 5 private TRAIN reproducibility를 clean reviewed commit <code>b8646d0fa9bd57dcb1f6ab5e251064d34911a41c</code>에서 완료했고, 두 private run은 evaluate→inspect within-run equality와 run1=run2 equality를 모두 만족했다. Final review is SHIP (spec PASS, quality APPROVED, C/I/M0) and Task 5 is closed 7/7 checked. 하지만 C6 <code>template_residual_centered_ramp_confirmed_max</code>는 10/10이 아니라 9/10이었고 sole failure는 seed <code>20261721</code> fold <code>3</code> gradual_drift AUC <code>0.8402557718424627</code> &lt; <code>0.85</code>였다. C8은 10/10을 통과했지만 non-promotable clue로만 남는다.</p>
+<table>
+<tr><th>approved design</th><td>SHA-256 <code>d0e36ae176598810289fbd5693a5e582ca6f0821a8b8fcd52edd1bcb96ec1f9f</code></td></tr>
+<tr><th>predecessor</th><td>Exp463 terminal closeout <code>147225831e9c13e9df5043fa88757bb03e01b79a</code></td></tr>
+<tr><th>task scope</th><td>Task 4 result pipeline, Task 5 closed CLI/launcher, exactly two private evaluate→inspect reproductions, truth update, and reviewed closeout cleanup with recoverably moved private roots</td></tr>
+<tr><th>out of scope</th><td>official evaluate/inspect, official root creation, TEST label query, package install, Task 6 execution</td></tr>
+<tr><th>official / private / label counts</th><td><code>0 / 2 / 0</code></td></tr>
+<tr><th>Task 3 backend authority</th><td>selected backend: <code>numpy_cpu</code>. Exact fallback reason: the frozen project interpreter cannot import <code>mlx</code>, so MLX-versus-NumPy parity and timing remain not-run. The host interpreter's MLX availability does not authorize an environment change or an MLX claim.</td></tr>
+<tr><th>next action</th><td>no next official action; Task 6 permanently forbidden</td></tr>
+</table>
+
+<h2>Task 4 deliverables</h2>
+<ul>
+<li>다섯 개의 result 모듈: <code>qualification_antigravity.py</code>, <code>evaluation_antigravity.py</code>, <code>artifacts_antigravity.py</code>, <code>replay_antigravity.py</code>, <code>dashboard_export_antigravity.py</code></li>
+<li>다섯 개의 focused test: <code>test_qualification_antigravity.py</code>, <code>test_evaluation_antigravity.py</code>, <code>test_artifacts_antigravity.py</code>, <code>test_replay_antigravity.py</code>, <code>test_dashboard_export_antigravity.py</code></li>
+<li>truth update: dashboard, preregistration, runbook, plan, ledgers, governance test, code map builder/triplet, and reviewed private result report</li>
+</ul>
+
+<div class="note"><p>Task 4는 caller summary나 booleans를 신뢰하지 않는다. 각 row에서 normal score와 네 변화 score만으로 AUC, mean AUC, Wilson upper, finite 상태를 다시 계산하고, C6만 C0 비열화와 historical period floor를 추가 검증한다.</p></div>
+<div class="note"><p>publish는 정확히 7개 leaf만 만들고 artifact map은 self-excluding canonical JSON으로 기록한다. replay는 row payload, summary, decision, dashboard를 다시 계산해 canonical rehash tamper를 거부한다.</p></div>
+<div class="note"><p>private-run result hashes are fixed and disclosed: canonical stdout SHA-256 <code>f41151e67a07b33bae607437501317e61c79d8f5508b62d0886b210b63180111</code>, artifact map SHA-256 <code>8e0cc3391f5acf970fb73a322a2ec313538cd2c4d153114e07b2d480f845bbca</code>, and both private roots matched exactly across all seven leaves before cleanup. The explicit roots were then moved recoverably to <code>/private/tmp/exp464_task5_private_removed_after_review_antigravity_20260821</code>.</p></div>
+<div class="note"><p>checkbox truth는 이제 정확히 <code>35/42</code>다. Task 1–5 heading+step은 checked이고 Task 6만 0/7 unchecked다. reviewed-commit mismatch와 duplicate-process false positive라는 pre-science wrapper failure 두 건은 로그로 보존되지만 scientific reproduction으로 세지지 않는다.</p></div>
+<div class="stop"><p>official command, official root 생성, TEST label query, champion/pending mutation, routing, promotion, Task 6 실행은 여전히 수행하지 않았다. There is no next official action.</p></div>
+</main></body></html>

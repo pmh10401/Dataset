@@ -1,0 +1,8 @@
+{
+  "state": "authorized_exp510",
+  "user_instruction": "진행하자",
+  "utc": "2026-09-17T16:41:16.762049+00:00",
+  "scope": "one A/B separated rank candidate; fixed TRAIN gate then conditional full1117 evaluation",
+  "design_sha256": "2da2aae8e71267d458260ecbb22f9ca914ba711cbe12c80b29a8be430dc33f3a",
+  "prior_exp509_closure_sha256": "c2578d436165834671cd2023845f299d6c76ad7e8c21fc3883b92bb3779f9871"
+}

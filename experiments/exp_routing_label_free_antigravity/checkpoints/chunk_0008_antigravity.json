@@ -1,0 +1,215 @@
+{
+ "GestureMidAirD2_normal_22": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_23": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_24": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_25": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_26": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_3": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_4": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_5": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_6": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_7": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_8": {
+  "status": "single_class"
+ },
+ "GestureMidAirD2_normal_9": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_1": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_10": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_11": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_12": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_13": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 0.9166666666666666,
+    "zf": 0
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 0.9166666666666666,
+    "zf": 0
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.9166666666666666,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "GestureMidAirD3_normal_14": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_15": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_16": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_17": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_18": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_19": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_2": {
+  "status": "ok",
+  "pick": "minirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   }
+  },
+  "auc_ok": true,
+  "zf_ok": true
+ },
+ "GestureMidAirD3_normal_20": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_21": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_22": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_23": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_24": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_25": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_26": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_3": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_4": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_5": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_6": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_7": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_8": {
+  "status": "single_class"
+ },
+ "GestureMidAirD3_normal_9": {
+  "status": "single_class"
+ },
+ "GesturePebbleZ1_normal_1": {
+  "status": "single_class"
+ },
+ "GesturePebbleZ1_normal_2": {
+  "status": "single_class"
+ },
+ "GesturePebbleZ1_normal_3": {
+  "status": "ok",
+  "pick": "multirocket_local_gap",
+  "scores": {
+   "minirocket_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "multirocket_local_gap": {
+    "auc": 0.7272727272727273,
+    "zf": 0
+   },
+   "hydra_local_gap": {
+    "auc": 1.0,
+    "zf": 1
+   },
+   "hydra_multirocket_local_gap": {
+    "auc": 0.8181818181818182,
+    "zf": 0
+   }
+  },
+  "auc_ok": false,
+  "zf_ok": false
+ },
+ "GesturePebbleZ1_normal_4": {
+  "status": "single_class"
+ },
+ "GesturePebbleZ1_normal_5": {
+  "status": "single_class"
+ },
+ "GesturePebbleZ1_normal_6": {
+  "status": "single_class"
+ },
+ "GesturePebbleZ2_normal_1": {
+  "status": "single_class"
+ },
+ "GesturePebbleZ2_normal_2": {
+  "status": "single_class"
+ },
+ "GesturePebbleZ2_normal_3": {
+  "status": "single_class"
+ },
+ "GesturePebbleZ2_normal_4": {
+  "status": "single_class"
+ },
+ "GesturePebbleZ2_normal_5": {
+  "status": "single_class"
+ },
+ "GesturePebbleZ2_normal_6": {
+  "status": "single_class"
+ }
+}

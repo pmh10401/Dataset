@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp460 ECG 엄격 복귀 규칙 구현 계획</title>
+  <style>
+    body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+    h1,h2,h3{line-height:1.3}table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #ccd3dd;padding:.55rem;text-align:left;vertical-align:top}th{background:#eef2f7}
+    code,pre{background:#eef1f5}code{padding:.1rem .3rem}pre{padding:1rem;overflow:auto}.box{background:#f5f7fa;padding:1rem}
+    input{margin-right:.45rem}
+  </style>
+</head>
+<body>
+<main>
+  <h1>Exp460 ECG 엄격 복귀 규칙 구현 계획</h1>
+  <blockquote><strong>작업자 지침:</strong> Task별로 진행하며 각 Task 종료 후 검토한다. 구현 시 <code>superpowers:subagent-driven-development</code> 또는 <code>superpowers:executing-plans</code>를 사용한다. 체크박스는 실제 완료된 항목만 체크한다.</blockquote>
+  <p><strong>목표:</strong> Exp459의 고정된 10개 구간 결과를 이용해 10/10 엄격 복귀 규칙을 평가하고, 안정성과 FN 개선을 동시에 만족하는지 HTML 대시보드에 보여준다.</p>
+  <p><strong>구조:</strong> Exp459 공식 결과를 읽기 전용 과학 입력으로 고정하고, 네 규칙의 route와 혼동행렬을 다시 계산한다. 새 모델이나 새 점수를 만들지 않으며, 결과 저장과 재검사도 이 고정 입력에서 다시 계산한다.</p>
+  <p><strong>기술:</strong> Python 3.14.6, NumPy 2.3.5, 표준 <code>unittest</code>, canonical JSON/JSONL, 정적 HTML.</p>
+  <p><strong>설계서:</strong> <code>docs/superpowers/specs/2026-08-20-exp460-ecg-strict-fallback-antigravity-design.html</code></p>
+
+  <h2>전체 고정 조건</h2>
+  <ul>
+    <li>실험 ID는 <code>Exp460</code>, 종류는 <code>ecg_strict_fallback</code>이다.</li>
+    <li>대상은 <code>ECG5000_normal_2</code> 하나다.</li>
+    <li>규칙 이름과 순서는 <code>always_baseline</code>, <code>always_candidate</code>, <code>majority_8_of_10</code>, <code>strict_10_of_10</code>이다.</li>
+    <li>공식 선택 대상은 <code>strict_10_of_10</code> 하나다.</li>
+    <li>10개 중 하나라도 실패하면 엄격 규칙은 <code>baseline</code>이다.</li>
+    <li>Exp459의 seeds, folds, AUC, threshold, 혼동행렬과 공식 hash는 바꾸지 않는다.</li>
+    <li>새 TRAIN 계산, 새 seed, 새 임계값, TEST 라벨 접근은 금지한다.</li>
+    <li>공식 Task 6은 구현·비공식 재현·최종 검토 후 사용자의 별도 승인을 받아 한 번만 실행한다.</li>
+    <li>새 파일 이름은 모두 <code>antigravity</code>를 포함한다.</li>
+  </ul>
+
+  <h2>파일 구조</h2>
+  <table>
+    <thead><tr><th>파일</th><th>책임</th></tr></thead>
+    <tbody>
+      <tr><td><code>experiments/exp460_ecg_strict_fallback_antigravity/config_antigravity.py</code></td><td>실험 ID, 규칙 순서, 성능 기준, 고정 runtime</td></tr>
+      <tr><td><code>contracts_antigravity.py</code></td><td>고정 입력, 규칙별 비교, 최종 결정 자료형</td></tr>
+      <tr><td><code>predecessor_antigravity.py</code></td><td>Exp459 공식 결과를 Exp460 과학 입력으로 변환</td></tr>
+      <tr><td><code>fallback_antigravity.py</code></td><td>네 규칙의 route 결정</td></tr>
+      <tr><td><code>evaluation_antigravity.py</code></td><td>route별 TP·FP·FN·TN·F1과 성공 조건 계산</td></tr>
+      <tr><td><code>artifacts_antigravity.py</code></td><td>정확한 6개 결과 파일 저장</td></tr>
+      <tr><td><code>replay_antigravity.py</code></td><td>저장 결과를 고정 입력에서 다시 계산</td></tr>
+      <tr><td><code>dashboard_export_antigravity.py</code></td><td>HTML에 넣을 작은 결과 payload 생성</td></tr>
+      <tr><td><code>cli_antigravity.py</code></td><td><code>evaluate</code>와 <code>inspect</code> 명령</td></tr>
+      <tr><td><code>scratch/run_exp460_ecg_strict_fallback_antigravity.py</code></td><td>고정 Python 실행기</td></tr>
+      <tr><td><code>docs/EXP460_DASHBOARD_antigravity.html</code></td><td>진행률, 규칙 비교, 최종 결론</td></tr>
+      <tr><td><code>docs/codemap/codemap_exp460_antigravity.{html,json,lock}</code></td><td>Exp460 호출·영향·테스트 관계</td></tr>
+    </tbody>
+  </table>
+
+  <h2><label><input type="checkbox" checked disabled>Task 1 — 문서, 진행 대시보드, 코드맵</label></h2>
+  <p><strong>산출물:</strong> 재사용 가능한 HTML 문서와 Exp460 전용 코드맵. 과학 코드는 아직 만들지 않는다.</p>
+  <p><strong>파일:</strong> <code>docs/EXP460_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP460_RUNBOOK_antigravity.html</code>, <code>docs/EXP460_IMPLEMENTATION_REPORT_antigravity.html</code>, <code>docs/EXP460_DASHBOARD_antigravity.html</code>, 세 ledger의 Exp460 항목, <code>scratch/build_codemap_exp460_antigravity.py</code>, Exp460 map triplet, <code>tests/test_governance_antigravity.py</code>.</p>
+  <ul>
+    <li><label><input type="checkbox" checked disabled>Step 1 — 문서·ledger·map이 없는 상태를 확인하는 governance RED를 작성한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — 네 HTML 문서에 목표, 네 규칙, 고정 수치, 공식 실행 0회, Task 1/6 진행률을 기록한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — Exp460을 non-promotion 실험으로 ledger에 추가하고 기존 champion/pending 값을 유지한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — Exp460 map builder와 triplet을 만들고, 현재·향후 모듈과 테스트를 20개 이하 노드로 표시한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — governance를 두 번 실행하고 HTML parse, JSON parse, map 검증, diff check를 통과시킨다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — Task 1 heading과 실제 완료 Step을 체크하고 커밋·검토한다.</label></li>
+  </ul>
+  <pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+$PY -m unittest experiments.exp460_ecg_strict_fallback_antigravity.tests.test_governance_antigravity
+$PY scratch/build_codemap_exp460_antigravity.py --validate-only</code></pre>
+
+  <h2><label><input type="checkbox" checked disabled>Task 2 — 고정 입력과 자료형</label></h2>
+  <p><strong>Interfaces</strong></p>
+  <ul>
+    <li>Produces: <code>capture_exp459_fallback_authority_antigravity() -&gt; Exp459FallbackAuthorityAntigravity</code></li>
+    <li>Authority fields: 10개 ordered fold records, 두 seed summaries, Exp459 decision <code>unstable</code>, baseline/candidate confusion, predecessor hashes</li>
+  </ul>
+  <ul>
+    <li><label><input type="checkbox" checked disabled>Step 1 — config/contracts/predecessor import RED와 순서·수치 변조 RED를 작성한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — exact config와 immutable dataclass를 구현한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — Exp459 공식 10개 기록, 두 실패 AUC, 혼동행렬, hash를 읽어 authority로 만드는 함수를 구현한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — 누락·중복·순서 변경·다른 AUC·다른 혼동행렬을 거부하는 표 기반 테스트를 통과시킨다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — focused GREEN 두 번과 Exp459 replay/governance 회귀를 실행한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — map·대시보드·체크박스를 갱신하고 커밋·검토한다.</label></li>
+  </ul>
+  <pre><code>def capture_exp459_fallback_authority_antigravity() -&gt; Exp459FallbackAuthorityAntigravity:
+    """Return the exact frozen Exp459 scientific result needed by Exp460."""</code></pre>
+
+  <h2><label><input type="checkbox" checked disabled>Task 3 — 엄격 복귀 규칙과 성능 계산</label></h2>
+  <p><strong>Interfaces</strong></p>
+  <ul>
+    <li>Consumes: <code>Exp459FallbackAuthorityAntigravity</code></li>
+    <li>Produces: <code>compare_fallback_rules_antigravity(authority) -&gt; FallbackEvaluationAntigravity</code></li>
+    <li>Produces: <code>strict_route_antigravity(authority) -&gt; Literal["baseline", "candidate"]</code></li>
+  </ul>
+  <ul>
+    <li><label><input type="checkbox" checked disabled>Step 1 — 10/10, 9/10, 8/10, 0/10 route RED와 성능 재계산 RED를 작성한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — 네 규칙을 exact order로 계산하는 최소 구현을 작성한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — 엄격 규칙은 <code>all(record.passed)</code>일 때만 candidate가 되게 한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — baseline 609/66/837/70788과 candidate 617/66/829/70788의 F1을 혼동행렬에서 다시 계산한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — 현재 authority에서 다수결은 candidate, 엄격 규칙은 baseline이며 최종 상태가 <code>fallback_triggered_performance_not_improved</code>인지 검증한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — focused GREEN 두 번과 Tasks 1–2 회귀 후 map·대시보드·체크박스를 갱신하고 커밋·검토한다.</label></li>
+  </ul>
+  <pre><code>def strict_route_antigravity(authority):
+    return "candidate" if all(row.passed for row in authority.fold_records) else "baseline"</code></pre>
+
+  <h2><label><input type="checkbox" checked disabled>Task 4 — 결과 저장, 재검사, 대시보드 payload</label></h2>
+  <p><strong>정확한 6개 결과 파일:</strong> <code>context_antigravity.json</code>, <code>rule_comparisons_antigravity.jsonl</code>, <code>failed_folds_antigravity.jsonl</code>, <code>decision_antigravity.json</code>, <code>dashboard_snapshot_antigravity.json</code>, <code>artifact_sha256_antigravity.json</code>.</p>
+  <ul>
+    <li><label><input type="checkbox" checked disabled>Step 1 — 6개 파일 저장과 AUC·route·혼동행렬·결정 변조 replay RED를 작성한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — canonical JSON/JSONL로 6개 파일을 임시 root에 저장한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — replay가 Task 2 authority에서 네 규칙과 성능을 다시 계산해 저장값과 비교하게 한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — dashboard payload를 진행 상태, 네 비교 행, 두 실패 fold, 최종 route, label_query_count 0으로 제한한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — focused GREEN 두 번과 Tasks 2–3 및 Exp459 replay 회귀를 실행한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — HTML 대시보드, map, 체크박스를 갱신하고 커밋·검토한다.</label></li>
+  </ul>
+
+  <h2><label><input type="checkbox" checked disabled>Task 5 — CLI, 비공식 재현, 최종 후보</label></h2>
+  <p><strong>CLI:</strong> <code>evaluate --reviewed-commit LOWER40HEX</code>와 <code>inspect</code>만 제공한다.</p>
+  <ul>
+    <li><label><input type="checkbox" checked disabled>Step 1 — CLI·outside-CWD launcher 부재 RED를 작성한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — lazy CLI와 고정 Python launcher를 구현한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — 임시 root에서 비공식 evaluate→inspect를 두 번 실행하고 6개 파일과 payload가 exact-equal인지 확인한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — Exp460 전체 suite를 두 번, Exp459 전체 suite를 한 번 실행한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — 결과를 HTML report/dashboard와 ledger에 <code>implementation_verified_awaiting_official_evaluation</code>로 기록한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — map/HTML/diff/clean 검증 후 커밋하고 fresh final review를 받는다.</label></li>
+  </ul>
+  <pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+$PY scratch/run_exp460_ecg_strict_fallback_antigravity.py evaluate --reviewed-commit COMMIT
+$PY scratch/run_exp460_ecg_strict_fallback_antigravity.py inspect</code></pre>
+
+  <h2><label><input type="checkbox" checked disabled>Task 6 — 별도 승인 후 공식 결과 보존</label></h2>
+  <p><strong>공식 결과:</strong> reviewed commit <code>ca51813450f26b8a3fada6f39cf810452467297e</code>에서 공식 evaluate와 inspect를 각각 정확히 한 번 실행했고 둘 다 exit 0이었다. 결과는 strict baseline 복귀와 성능 미개선이다.</p>
+  <ul>
+    <li><label><input type="checkbox" checked disabled>Step 1 — 사용자가 Exp460 Task 6 공식 실행을 명시적으로 승인했는지 확인한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 2 — 승인된 clean commit에서 evaluate를 정확히 한 번 실행한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 3 — evaluate 성공 시 inspect를 정확히 한 번 실행한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 4 — 6개 파일, 네 비교, 두 실패 fold, 엄격 baseline route, dashboard equality를 독립 검증한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 5 — 공식 결론과 hash를 HTML dashboard/report, ledger, map에 기록한다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 6 — Task 6 체크박스를 갱신하고 truth commit과 map commit을 만든다.</label></li>
+    <li><label><input type="checkbox" checked disabled>Step 7 — fresh read-only result review에서 Critical/Important 0인지 확인한다.</label></li>
+  </ul>
+  <p><strong>검토 상태:</strong> 로컬 Grok read-only 검토는 HTTP 402 usage balance exhausted로 시작하지 못했다. 이후 fresh read-only result review가 <code>SHIP</code>, Critical/Important/Minor 모두 0으로 공식 결과와 문서의 일치를 확인했다.</p>
+
+  <h2>완료 판단</h2>
+  <p>Exp460의 가장 중요한 결과는 “엄격 복귀가 불안정한 후보를 막았는가?”와 “그 상태에서도 FN 개선이 남았는가?” 두 가지다. 예상대로 baseline으로 돌아가 FN이 837이 되면 규칙은 안전하게 작동했지만 성능 목표는 달성하지 못한 것이다. 이 경우 다음 실험은 임계값을 느슨하게 바꾸는 것이 아니라 <code>period_change</code>에 강한 새 특징을 검증한다.</p>
+</main>
+</body>
+</html>

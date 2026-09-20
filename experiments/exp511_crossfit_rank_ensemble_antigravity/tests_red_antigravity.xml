@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="0.128" timestamp="2026-09-18T08:01:06.275842+09:00" hostname="macui-MacBookPro.local"><testcase classname="experiments.exp511_crossfit_rank_ensemble_antigravity.test_exp511_antigravity" name="test_every_row_has_one_ranking_role_and_three_reference_roles" time="0.000"><failure message="AssertionError: ensemble implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py') = with_name(('ensemble' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py')">def test_every_row_has_one_ranking_role_and_three_reference_roles():
+&gt;       m=module()
+          ^^^^^^^^
+
+experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py:14: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'ensemble'
+
+    def module(name='ensemble'):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(), name+' implementation missing'
+E       AssertionError: ensemble implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py') = with_name(('ensemble' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py')
+
+experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py:9: AssertionError</failure></testcase><testcase classname="experiments.exp511_crossfit_rank_ensemble_antigravity.test_exp511_antigravity" name="test_ensemble_replays_exp510_and_is_exact_mean_of_four_components" time="0.000"><failure message="AssertionError: ensemble implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py') = with_name(('ensemble' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py')">def test_ensemble_replays_exp510_and_is_exact_mean_of_four_components():
+&gt;       m=module()
+          ^^^^^^^^
+
+experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'ensemble'
+
+    def module(name='ensemble'):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(), name+' implementation missing'
+E       AssertionError: ensemble implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py') = with_name(('ensemble' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py')
+
+experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py:9: AssertionError</failure></testcase><testcase classname="experiments.exp511_crossfit_rank_ensemble_antigravity.test_exp511_antigravity" name="test_member_geometry_is_unchanged_when_only_its_ranking_rows_change" time="0.000"><failure message="AssertionError: ensemble implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py') = with_name(('ensemble' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py')">def test_member_geometry_is_unchanged_when_only_its_ranking_rows_change():
+&gt;       m=module();rng=np.random.default_rng(1511);x=rng.normal(size=(32,17));a,b=m.role_folds(32)[2]
+          ^^^^^^^^
+
+experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'ensemble'
+
+    def module(name='ensemble'):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(), name+' implementation missing'
+E       AssertionError: ensemble implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py') = with_name(('ensemble' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py')
+
+experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py:9: AssertionError</failure></testcase><testcase classname="experiments.exp511_crossfit_rank_ensemble_antigravity.test_exp511_antigravity" name="test_small_sample_fallback_and_constant_inputs_remain_finite" time="0.000"><failure message="AssertionError: ensemble implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py') = with_name(('ensemble' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py')">def test_small_sample_fallback_and_constant_inputs_remain_finite():
+&gt;       m=module()
+          ^^^^^^^^
+
+experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py:65: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'ensemble'
+
+    def module(name='ensemble'):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(), name+' implementation missing'
+E       AssertionError: ensemble implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py') = with_name(('ensemble' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py')
+
+experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py:9: AssertionError</failure></testcase><testcase classname="experiments.exp511_crossfit_rank_ensemble_antigravity.test_exp511_antigravity" name="test_promotion_requires_beating_all_six_controls_without_relaxation" time="0.000"><failure message="AssertionError: pilot implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/pilot_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/pilot_antigravity.py') = with_name(('pilot' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py')">def test_promotion_requires_beating_all_six_controls_without_relaxation():
+&gt;       m=module('pilot')
+          ^^^^^^^^^^^^^^^
+
+experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py:81: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'pilot'
+
+    def module(name='ensemble'):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(), name+' implementation missing'
+E       AssertionError: pilot implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/pilot_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/pilot_antigravity.py') = with_name(('pilot' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py')
+
+experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py:9: AssertionError</failure></testcase></testsuite></testsuites>

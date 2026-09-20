@@ -1,0 +1,154 @@
+{
+  "backends": {
+    "mlx": {
+      "available": true,
+      "backend": "mlx",
+      "backend_preparation_seconds": 0.0,
+      "cold_compile_seconds": null,
+      "cold_total_seconds": null,
+      "confirmation_exact": false,
+      "deterministic": false,
+      "eligible": false,
+      "fallback_reason": "RuntimeError: MLX float64 RFFT cannot preserve the frozen oracle: ValueError: float64 is not supported on the GPU",
+      "finite": false,
+      "gate_seconds": null,
+      "max_raw_abs_error": null,
+      "parity_passed": false,
+      "rank_exact": false,
+      "speedup": null,
+      "warm_iqr_seconds": null,
+      "warm_median_seconds": null
+    },
+    "numba": {
+      "available": true,
+      "backend": "numba",
+      "backend_preparation_seconds": 0.10018991678953171,
+      "cold_compile_seconds": 0.44130249973386526,
+      "cold_total_seconds": 0.5741005414165556,
+      "confirmation_exact": true,
+      "deterministic": true,
+      "eligible": false,
+      "fallback_reason": "Numba clean-process backend preparation, cold compile, and one warm execution missed the 1.1x gate",
+      "finite": true,
+      "gate_seconds": 0.5741005414165556,
+      "max_raw_abs_error": 5.551115123125783e-16,
+      "parity_passed": true,
+      "rank_exact": true,
+      "speedup": 0.05559174383559552,
+      "warm_iqr_seconds": 0.0014127083122730255,
+      "warm_median_seconds": 0.032608124893158674
+    },
+    "numpy": {
+      "available": true,
+      "backend": "numpy",
+      "backend_preparation_seconds": 0.0,
+      "cold_compile_seconds": null,
+      "cold_total_seconds": null,
+      "confirmation_exact": true,
+      "deterministic": true,
+      "eligible": false,
+      "fallback_reason": null,
+      "finite": true,
+      "gate_seconds": 0.03191525023430586,
+      "max_raw_abs_error": 0.0,
+      "parity_passed": true,
+      "rank_exact": true,
+      "speedup": 1.0,
+      "warm_iqr_seconds": 0.0004911664873361588,
+      "warm_median_seconds": 0.03191525023430586
+    }
+  },
+  "environment": {
+    "apple_device": {
+      "chip": "Apple M2 Max",
+      "machine": "arm64",
+      "platform": "macOS-26.5.2-arm64-arm-64bit-Mach-O",
+      "processor": "arm"
+    },
+    "llvmlite": "0.46.0",
+    "mlx": "0.32.0",
+    "mlx_metal": "0.32.0",
+    "numba": "0.63.1",
+    "numpy": "2.3.5",
+    "python": "3.14.6"
+  },
+  "fallback_authorization": {
+    "approval_date": "2026-08-24",
+    "approval_document_path": "docs/superpowers/specs/2026-08-24-exp468-numpy-fallback-antigravity-design-amendment.html",
+    "approval_document_sha256": "6780edb2683c992b3df361c72e15542a6e974cf3e7cbbc0df65df2739c0203a9",
+    "authorized": true,
+    "pre_approval_benchmark_sha256": "938d83b0319346270a6cc32b7b6ba3efb88122dc1bf431863d8030f4539fb63b"
+  },
+  "fallback_authorized": true,
+  "fallback_reason": "No eligible backend passed exact parity, determinism, and the clean-process cold 1.1x gate; retain NumPy CPU.",
+  "gate_passed": false,
+  "official_runs": 0,
+  "private_runs": 0,
+  "profile_and_batching_review": {
+    "attempted": true,
+    "improvement": "Keep the combined five-scope batch and sequential direct DFT, but JIT only the DFT transform; reuse the NumPy oracle's vectorized reference/JS reduction to shrink compilation without changing formulas or outputs.",
+    "initial_measurement": {
+      "numba_cold_gate_seconds": 1.2641031672246754,
+      "numba_max_raw_abs_error": 5.967448757360216e-16,
+      "numba_speedup": 0.02543374318247438,
+      "numba_warm_median_seconds": 0.029086542315781116,
+      "numpy_median_seconds": 0.03215087531134486
+    },
+    "profile_finding": "A clean profile attributed 2.194 seconds to Numba compilation of the monolithic transform/reference/JS scorer.",
+    "remeasured_after_improvement": true,
+    "scientific_formula_changed": false,
+    "workload_changed": false
+  },
+  "result": null,
+  "result_hash": null,
+  "schema": "exp468_acceleration_benchmark_v1",
+  "selected_backend": "numpy",
+  "status": "TASK_3_COMPLETE_NUMPY_FALLBACK_AUTHORIZED",
+  "timing_protocol": {
+    "acceleration_preloaded_before_timer": false,
+    "backend_preparation_included": true,
+    "clean_subprocess": true,
+    "gate_definition": "clean_process_backend_preparation_plus_cold_compile_plus_one_warm_10_fold_execution",
+    "numba_clean_process_cold_entries": 1,
+    "numba_warm_full_workload_repetitions": 21,
+    "numpy_full_workload_repetitions": 21,
+    "required_speedup": 1.1,
+    "simultaneous_heavy_backends": false
+  },
+  "workload": {
+    "backend_preparation_timed": true,
+    "dataset_load_interpolation_synthetic_assembly_timed": false,
+    "fit_calibration_reused_across_five_scopes": true,
+    "fit_raw": 552,
+    "fit_sizes_per_seed": [
+      55,
+      55,
+      55,
+      55,
+      56
+    ],
+    "folds_per_seed": 5,
+    "frames": 6210,
+    "length_28_frame_transforms": 6210,
+    "query_raw": 690,
+    "query_sizes_per_seed": [
+      14,
+      14,
+      14,
+      14,
+      13
+    ],
+    "scope_order": [
+      "normal",
+      "level_shift",
+      "gradual_drift",
+      "amplitude_scaling",
+      "period_change"
+    ],
+    "seeds": [
+      20260721,
+      20261721
+    ],
+    "transformed_rows": 1242
+  }
+}

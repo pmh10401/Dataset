@@ -1,0 +1,44 @@
+{
+  "schema": "exp479_population_manifest_v1",
+  "counts": {
+    "included": 1117,
+    "existing_scores": 962,
+    "recovery": 155,
+    "checkpoint_files": 23
+  },
+  "recovery_dataset_sha256": "ce85b1626061c50b6ee92e57948442bc565b84c08c219dff7f2b45a40e453065",
+  "source_hashes": {
+    "exp478_result": "7af31a8849c00af9a3021fea60f9cedc4e0b537b0a1ac483d4f5c5f7ec0d26cc",
+    "score_checkpoints": {
+      "chunk_0000_antigravity.json": "a76777ddea0d7017bf371dabc9c3434f7025598606df452895e049c8808aae9d",
+      "chunk_0001_antigravity.json": "9dca152d61d19776ee8c50e00e0620cad98a8ecf544d3377fe403ff96314d207",
+      "chunk_0002_antigravity.json": "7e290e05333243073306dedfe3c1d64494a07dd7489d70813400e9b3cb32cb7d",
+      "chunk_0003_antigravity.json": "0273dac3a3de419d3a374ce5c541b8f6a6ea72849f4ce472ec9a94d9e8abb359",
+      "chunk_0004_antigravity.json": "65bc9754ab3c634481011500aed3e3d64f4ced6e62c0ca53c8d2d861f610417f",
+      "chunk_0005_antigravity.json": "b7df27f06e7f4e523522989440efbd65a2bef43e0ad06b518638f1fcc55f4342",
+      "chunk_0006_antigravity.json": "e1561dbcdb733d27d7ccc7e05235cb34733544a1da0c102137c76327e138656a",
+      "chunk_0007_antigravity.json": "f61e8666111031c72fdd26a687a4f1a8775f07964adfd115c2fbe8ce1a3099dd",
+      "chunk_0008_antigravity.json": "5363040c5f3e5da1003f5c1dc7e76eef5d33d40599f3acf6d6039b7552bd53b8",
+      "chunk_0009_antigravity.json": "e29dc94586c34a7f151ebd6f60a0a45831160b59817926b6665a7073f45e7c0b",
+      "chunk_0010_antigravity.json": "dcf456026948eb1643597bfb191c9905aa85cf2e8094fd8d9c8843cfca6b9ec4",
+      "chunk_0011_antigravity.json": "4f90caf6bca2a3dcb9d7fd36261665dded396e59edf1f758b3c56331ae3ee105",
+      "chunk_0012_antigravity.json": "3bd5d21410222b3babdeb0b3fe99ecc00f02db0fbe291cf29220f4f9f5b9bb37",
+      "chunk_0013_antigravity.json": "7e528834297cff145b70b767199f3385ea477ebea3a964e68cf57f8c5883b0c8",
+      "chunk_0014_antigravity.json": "f13ee1a25e0ac60e9051187661c6c4f20aee7564905e73f6a823b1d381689efe",
+      "chunk_0015_antigravity.json": "2b7ea4965ddfefeaef512234d042d9fcdbe286d171b76f6a77176e384c1a4a22",
+      "chunk_0016_antigravity.json": "43810e6ac65911f4d5d06385fb11fe5368040352795c2e4baedf22add0c9822f",
+      "chunk_0017_antigravity.json": "4e970c28328f475b242c02d6065b03629a85a061e48361dc311de1ecc6932ae3",
+      "chunk_0018_antigravity.json": "d5e43d9b22b829b4c24860dda7e4c64938a66d6654515c6f82ccc675ba484a7f",
+      "chunk_0019_antigravity.json": "c17ac7ed11457b8d0015d7c56f42b1c7f06485a72a02b4e2e1490ff25b690322",
+      "chunk_0020_antigravity.json": "87eadbd143db8ef8fba30730706b5b91265762e00e58811c5055869acbce9db8",
+      "chunk_0021_antigravity.json": "b1c1afaf37a19c5ca0845b45587c4b70edb9189aaf218e8a8c7233738e18f3c6",
+      "chunk_0022_antigravity.json": "6b5bb44d379988d0f669e61c88e3389e6f17c44397a173cb0b268b8771f5b68c"
+    }
+  },
+  "database": {
+    "path": "/Users/mac/Documents/Dataset/univariate_ts.db",
+    "size_bytes": 1753284608,
+    "inode": 1048138,
+    "expected_sha256": "8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c"
+  }
+}

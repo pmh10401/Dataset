@@ -1,0 +1,192 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp489 결과</title>
+<style>body{font:16px/1.7 system-ui;max-width:1100px;margin:32px auto;padding:0 20px;color:#172033}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccd3dc;padding:8px;text-align:left}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f5f8;padding:16px}</style>
+<h1>Exp489: MiniRocket LocalGap 대 LOF</h1>
+<p>고정 MiniRocket 인코더를 폴드마다 한 번만 맞추고, 같은 특징과 RobustScaler(10,90)로 LocalGap 대조와 LOF 머리를 쌍으로 계산했습니다. 점수를 저장한 뒤에만 TEST 라벨을 열었습니다. 대상은 n_train≥5인 family의 사전식 첫 데이터셋 1개입니다. 제외 family: PigAirwayPressure, PigArtPressure, PigCVP.</p>
+<p>평균 AUC 대조 1.000000, LOF 1.000000. ZF 합 대조 1, LOF 1. AUC 승/패/무 0/0/1, ZF 승/패/무 0/0/1.</p>
+<p>ZF는 평가 정상 최댓값을 엄격히 넘는 이상만 셉니다. 운영 영-오탐 보장이 아닙니다. 한 팔만 비교했고 튜닝은 없습니다. 과거 점수 캐시를 대조로 바꿔 넣지 않았습니다.</p>
+<table><thead><tr><th>데이터셋</th><th>family</th><th>대조 AUC</th><th>LOF AUC</th><th>ΔAUC</th><th>대조 ZF</th><th>LOF ZF</th><th>ΔZF</th></tr></thead><tbody><tr><td><code>ACSF1_normal_0</code></td><td><code>ACSF1</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr></tbody></table>
+<h2>제한</h2>
+<p>이 값은 선택된 125개 대표 데이터셋의 회고 평가입니다. 새 family 일반화나 라우팅 승격을 의미하지 않습니다.</p>
+<h2>재현</h2>
+<pre>PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m experiments.exp489_lof_score_head_antigravity.run_antigravity smoke
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m experiments.exp489_lof_score_head_antigravity.run_antigravity official</pre>
+<pre>{
+  &quot;mode&quot;: &quot;smoke&quot;,
+  &quot;binding&quot;: {
+    &quot;schema&quot;: &quot;exp489_491_binding_v1&quot;,
+    &quot;seed&quot;: 20260721,
+    &quot;protocol&quot;: {
+      &quot;seed&quot;: 20260721,
+      &quot;folds&quot;: 5,
+      &quot;max_train_reference&quot;: 1000,
+      &quot;query_chunk_size&quot;: 128,
+      &quot;requested_kernels&quot;: {
+        &quot;minirocket_local_gap&quot;: 4096,
+        &quot;multirocket_local_gap&quot;: 1024,
+        &quot;hydra_local_gap&quot;: 8,
+        &quot;hydra_multirocket_local_gap&quot;: 1024
+      },
+      &quot;methods&quot;: [
+        &quot;minirocket_local_gap&quot;,
+        &quot;multirocket_local_gap&quot;,
+        &quot;hydra_local_gap&quot;,
+        &quot;hydra_multirocket_local_gap&quot;
+      ],
+      &quot;robust_scaler&quot;: [
+        10,
+        90
+      ],
+      &quot;local_gap_neighbors&quot;: 3,
+      &quot;lof&quot;: {
+        &quot;novelty&quot;: true,
+        &quot;n_neighbors&quot;: &quot;min(3, nref-1)&quot;,
+        &quot;metric&quot;: &quot;minkowski&quot;,
+        &quot;p&quot;: 2,
+        &quot;contamination&quot;: &quot;auto&quot;,
+        &quot;n_jobs&quot;: 1,
+        &quot;anomaly_score&quot;: &quot;-score_samples&quot;
+      },
+      &quot;behavior_b_fraction&quot;: 0.8,
+      &quot;behavior_b_salt&quot;: 104729,
+      &quot;ridge_alpha&quot;: 10.0,
+      &quot;ridge_solver&quot;: &quot;cholesky&quot;
+    },
+    &quot;protocol_sha256&quot;: &quot;5013ff69eadf6fc4da4d17d675754849dd979b8cd9339b5ce966c095755f1908&quot;,
+    &quot;code_sha256&quot;: {
+      &quot;experiments/exp489_lof_score_head_antigravity/run_antigravity.py&quot;: &quot;a5452debba3b0f6c326871556a0f6328fc3d5b8b314d405b422fa4c2bedcf743&quot;,
+      &quot;experiments/exp489_lof_score_head_antigravity/lof_score_head_antigravity.py&quot;: &quot;7e5699987cd3a1d64f3f66afeaa6d786865916ddf09643b30c74771f1f131c21&quot;,
+      &quot;experiments/exp491_gain_prediction_antigravity/runtime_antigravity.py&quot;: &quot;4539d3af54e79d06a69967222180e20db0da904cfc382869e2f9c97a24ef3fde&quot;,
+      &quot;experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py&quot;: &quot;5abaee70a7023b8aaca5755a5d5d9cfb8b09b3500244d3a2f6f78cdcb56a5ec5&quot;,
+      &quot;experiments/exp449_residual_fn_method_qualification_antigravity/representations_antigravity.py&quot;: &quot;fbc9a67b07864b007196832db056605611fd77592a9e404a0cf83dd687298225&quot;,
+      &quot;experiments/exp449_residual_fn_method_qualification_antigravity/local_gap_antigravity.py&quot;: &quot;d9ad3d3ce86003346d4ec5a957cfa26195031a402ef8e77afa7f9a96120dc141&quot;,
+      &quot;experiments/exp479_missing_score_recovery_antigravity/preprocessing_antigravity.py&quot;: &quot;389ed992920116cec9dcd47a2d9321a124952e5becd6dde556b51fa3179f8903&quot;,
+      &quot;experiments/exp479_missing_score_recovery_antigravity/evaluation_antigravity.py&quot;: &quot;2a2404cedaaf6aa753eb25accfd388179c13bccbc604b9b85aa06aee06dff658&quot;
+    },
+    &quot;sources&quot;: {
+      &quot;evidence_database&quot;: &quot;77c53e1afd0af071edf71ef692bd978458dda6a5f8a0fec110736b787fe1b998&quot;,
+      &quot;exp481_result&quot;: &quot;7038b994e422dc93a18927c810ce5e3bdb7601039ba01d2b388895444e09956f&quot;,
+      &quot;exp483_result&quot;: &quot;09205ac93d4a4baa8fa0992a20d89d811d13fbbb2f2a55d51c9be758946ef9cc&quot;,
+      &quot;raw_database&quot;: &quot;8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c&quot;
+    },
+    &quot;preregistration_sha256&quot;: &quot;ecd91b24c6ab90cf5628885d136d323a35c9bfda6d80bc51de2f357482be49d9&quot;,
+    &quot;versions&quot;: {
+      &quot;aeon&quot;: &quot;1.5.0&quot;,
+      &quot;numpy&quot;: &quot;2.3.5&quot;,
+      &quot;scipy&quot;: &quot;1.17.1&quot;,
+      &quot;scikit-learn&quot;: &quot;1.8.0&quot;,
+      &quot;numba&quot;: &quot;0.63.1&quot;,
+      &quot;python&quot;: &quot;3.14.6&quot;
+    },
+    &quot;experiment&quot;: &quot;exp489_lof_score_head&quot;
+  },
+  &quot;acceleration&quot;: {
+    &quot;schema&quot;: &quot;exp489_491_acceleration_v1&quot;,
+    &quot;versions&quot;: {
+      &quot;numpy&quot;: &quot;2.3.5&quot;,
+      &quot;scipy&quot;: &quot;1.17.1&quot;,
+      &quot;scikit-learn&quot;: &quot;1.8.0&quot;,
+      &quot;aeon&quot;: &quot;1.5.0&quot;,
+      &quot;numba&quot;: &quot;0.63.1&quot;,
+      &quot;torch&quot;: &quot;2.13.0&quot;,
+      &quot;mlx&quot;: &quot;0.32.0&quot;,
+      &quot;mlx-metal&quot;: &quot;0.32.0&quot;,
+      &quot;python&quot;: &quot;3.14.6&quot;,
+      &quot;architecture&quot;: &quot;arm64&quot;
+    },
+    &quot;device&quot;: &quot;arm64&quot;,
+    &quot;cpu_policy&quot;: {
+      &quot;logical_cpu_count&quot;: 12,
+      &quot;workers&quot;: 11,
+      &quot;inner_threads&quot;: 1
+    },
+    &quot;pytorch&quot;: {
+      &quot;tensor_eligible_stages&quot;: [
+        &quot;exp491_dense_ridge&quot;
+      ],
+      &quot;selected&quot;: false,
+      &quot;probe&quot;: {
+        &quot;available&quot;: true,
+        &quot;version&quot;: &quot;2.13.0&quot;,
+        &quot;mps_available&quot;: true,
+        &quot;cpu_float64&quot;: true,
+        &quot;mps_float64_finite&quot;: false,
+        &quot;fallback_reason&quot;: &quot;Cannot convert a MPS Tensor to float64 dtype as the MPS framework doesn&#x27;t support float64. Please use float32 instead.&quot;,
+        &quot;probe_seconds&quot;: 0.7848886661231518
+      },
+      &quot;fallback_reason&quot;: &quot;official_aeon_sklearn_cpu_remain_canonical_except_where_a_stage_is_tensor_eligible; dense_ridge_is_tensor_eligible_under_torch_but_not_promoted_without_float64_full_stage_parity_and_1.1x&quot;
+    },
+    &quot;mlx&quot;: {
+      &quot;tensor_eligible_stages&quot;: [
+        &quot;exp491_dense_ridge&quot;
+      ],
+      &quot;selected&quot;: false,
+      &quot;probe&quot;: {
+        &quot;available&quot;: true,
+        &quot;metal_available&quot;: true,
+        &quot;default_device&quot;: &quot;Device(gpu, 0)&quot;,
+        &quot;cpu_solve_seconds&quot;: 0.03232895885594189,
+        &quot;cpu_float64_finite&quot;: true,
+        &quot;probe_seconds&quot;: 0.07531066588126123
+      },
+      &quot;full_stage_seconds&quot;: null,
+      &quot;candidate_index_parity&quot;: null,
+      &quot;numerical_parity&quot;: null,
+      &quot;speedup&quot;: null,
+      &quot;fallback_reason&quot;: &quot;dense_ridge_not_promoted_without_float64_full_stage_parity_and_1.1x&quot;
+    },
+    &quot;mps&quot;: {
+      &quot;selected&quot;: false,
+      &quot;available&quot;: true,
+      &quot;fallback_reason&quot;: &quot;mps_not_canonical_for_frozen_aeon_sklearn_cpu_algorithms&quot;
+    },
+    &quot;stages&quot;: {
+      &quot;exp489_minirocket_lof&quot;: {
+        &quot;tensor_eligible&quot;: false,
+        &quot;pytorch_tensor_eligible&quot;: false,
+        &quot;canonical&quot;: &quot;aeon_minirocket_sklearn_lof_localgap_cpu&quot;,
+        &quot;selected_backend&quot;: &quot;sklearn_aeon_cpu&quot;,
+        &quot;warmup_seconds&quot;: 0.014355457853525877,
+        &quot;measured_stage_seconds&quot;: 0.001847082981839776,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;numba&quot;: {
+          &quot;selected&quot;: false,
+          &quot;fallback_reason&quot;: &quot;official_aeon_MiniRocket_and_sklearn_LocalOutlierFactor_have_no_supported_public_numba_rewrite; retain_existing_cpu_implementations&quot;
+        },
+        &quot;fallback_reason&quot;: &quot;official_aeon_MiniRocket_and_sklearn_LocalOutlierFactor_remain_canonical; do_not_rewrite_third_party_cpu_transformer&quot;
+      },
+      &quot;exp490_rank_quantile&quot;: {
+        &quot;tensor_eligible&quot;: true,
+        &quot;pytorch_tensor_eligible&quot;: true,
+        &quot;canonical&quot;: &quot;numpy_scipy_blas&quot;,
+        &quot;selected_backend&quot;: &quot;numpy_scipy&quot;,
+        &quot;warmup_seconds&quot;: 0.001795874908566475,
+        &quot;measured_stage_seconds&quot;: 0.0008192919194698334,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;numba&quot;: {
+          &quot;selected&quot;: false,
+          &quot;fallback_reason&quot;: &quot;public_numba_compiler_path_for_scipy_spearmanr_and_numpy_quantile_orchestration is_unsupported_or_has_no_measured_speedup; retain_existing_numpy_scipy_blas&quot;
+        },
+        &quot;fallback_reason&quot;: &quot;public_numba_compiler_path_for_scipy_spearmanr_and_numpy_quantile_orchestration is_unsupported_or_has_no_measured_speedup; retain_existing_numpy_scipy_blas&quot;
+      },
+      &quot;exp491_ridge&quot;: {
+        &quot;tensor_eligible&quot;: true,
+        &quot;pytorch_tensor_eligible&quot;: true,
+        &quot;mlx_tensor_eligible&quot;: true,
+        &quot;canonical&quot;: &quot;sklearn_ridge_cholesky_cpu&quot;,
+        &quot;selected_backend&quot;: &quot;sklearn_cpu&quot;,
+        &quot;warmup_seconds&quot;: 0.0007821670733392239,
+        &quot;measured_stage_seconds&quot;: 0.00044220895506441593,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;numba&quot;: {
+          &quot;selected&quot;: false,
+          &quot;fallback_reason&quot;: &quot;sklearn_cholesky_ridge_retained; no_measured_numba_full_stage_float64_parity_and_1.1x&quot;
+        },
+        &quot;mlx_selected&quot;: false,
+        &quot;pytorch_selected&quot;: false,
+        &quot;fallback_reason&quot;: &quot;dense_ridge_acceleration_not_canonical_without_float64_full_stage_parity_and_1.1x; not_promoted&quot;
+      }
+    },
+    &quot;concurrent_gpu_jobs&quot;: 0
+  }
+}</pre>
+</html>

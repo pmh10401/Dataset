@@ -1,0 +1,103 @@
+{
+  "schema": "exp477_official_minimum_zf_routing_result_v1",
+  "generated_at_utc": "2026-08-27T23:56:19.193209+00:00",
+  "source_exp476_result_sha256": "8b6f881d25d0d2865e05c5a5b9ca204f78641e1364bb60d536e7dcc8ec21733f",
+  "artifact_sha256": "b45f4124354d6bd612657b801634c503fa84b3585776cfde4a8f76d19b805545",
+  "inherited_exp476_qualification": {
+    "dataset_count": 962,
+    "family_count": 120,
+    "average_auc": 0.9823409913335234,
+    "average_zf_tp": 2.0405405405405403,
+    "severe_auc_loss_over_0_05": 45,
+    "baseline_average_auc": 0.9820660539157288,
+    "baseline_average_zf_tp": 2.0405405405405403,
+    "baseline_severe_auc_loss_over_0_05": 47
+  },
+  "official_proposal_alignment_qualification": {
+    "proposal_change_count": 1,
+    "final_selection_change_count": 0,
+    "metrics_match_exp476": true,
+    "average_auc": 0.9823409913335234,
+    "average_zf_tp": 2.0405405405405403,
+    "severe_auc_loss_over_0_05": 45
+  },
+  "integration_checks": {
+    "source_qualification_passed": true,
+    "anonymous_training_row_count": 962,
+    "artifact_name_marker_count": 0,
+    "pipeline_mismatch_count": 0,
+    "maximum_candidate_count": 1,
+    "deterministic": true,
+    "ragged_dataset_verified": "AllGestureWiimoteY_normal_3",
+    "proposal_alignment_change_count": 1,
+    "final_selection_change_count": 0,
+    "qualification_metrics_match_exp476": true,
+    "overall_pass": true
+  },
+  "end_to_end_rows": [
+    {
+      "dataset": "Crop_normal_1",
+      "proposal": "multirocket_local_gap",
+      "official_method": "minirocket_local_gap",
+      "pipeline_candidates": [
+        "minirocket_local_gap"
+      ],
+      "normal_train_rows": 800,
+      "median_width": 46.0
+    },
+    {
+      "dataset": "ECG5000_normal_2",
+      "proposal": "hydra_local_gap",
+      "official_method": "minirocket_local_gap",
+      "pipeline_candidates": [
+        "minirocket_local_gap"
+      ],
+      "normal_train_rows": 1413,
+      "median_width": 140.0
+    },
+    {
+      "dataset": "Wafer_normal_-1",
+      "proposal": "multirocket_local_gap",
+      "official_method": "minirocket_local_gap",
+      "pipeline_candidates": [
+        "minirocket_local_gap"
+      ],
+      "normal_train_rows": 609,
+      "median_width": 152.0
+    },
+    {
+      "dataset": "TwoLeadECG_normal_1",
+      "proposal": "minirocket_local_gap",
+      "official_method": "minirocket_local_gap",
+      "pipeline_candidates": [
+        "minirocket_local_gap"
+      ],
+      "normal_train_rows": 464,
+      "median_width": 82.0
+    },
+    {
+      "dataset": "FaceFour_normal_1",
+      "proposal": "multirocket_local_gap",
+      "official_method": "minirocket_local_gap",
+      "pipeline_candidates": [
+        "minirocket_local_gap"
+      ],
+      "normal_train_rows": 17,
+      "median_width": 350.0
+    },
+    {
+      "dataset": "AllGestureWiimoteY_normal_3",
+      "proposal": "hydra_local_gap",
+      "official_method": "minirocket_local_gap",
+      "pipeline_candidates": [
+        "minirocket_local_gap"
+      ],
+      "normal_train_rows": 80,
+      "median_width": 90.5
+    }
+  ],
+  "acceleration_assessment": {
+    "mlx_eligible": false,
+    "reason": "Official integration adds no new feature or score-source computation."
+  }
+}

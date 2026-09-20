@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>Exp471 Task 3 구현 brief</title></head><body><main>
+<h1>Exp471 Task 3 — 결정성·Python 기준·MLX 적격성 smoke</h1>
+
+<h2>목표와 경계</h2>
+<p>Task 2 scorer의 계산 의미를 바꾸지 않고 공개 고정 fixture에서 Python 기준 일치, Numba 결정성·속도, MLX parity·속도 적격성만 측정한다. 선택 backend는 항상 Numba다. 실제 ECG200 데이터 평가, qualification, private/official 실행, TEST/FN 접근, routing, artifact publication은 하지 않는다.</p>
+
+<h2>소유 파일</h2>
+<ul>
+  <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/acceleration_antigravity.py</code></li>
+  <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests/test_acceleration_antigravity.py</code></li>
+  <li><code>scratch/exp471_acceleration_assessment_antigravity.json</code></li>
+  <li>Task 3 report, 코드 맵 triplet, 계획·설계·구현 보고·대시보드의 Task 3 상태</li>
+</ul>
+
+<h2>필수 계약</h2>
+<ul>
+  <li><code>BackendAssessmentAntigravity</code>, <code>RuntimeAssessmentAntigravity</code>, <code>fixed_reference_rows_antigravity()</code>, <code>assess_runtime_antigravity(...)</code>를 제공한다.</li>
+  <li>Numba cold 1회와 warm 반복 시간을 전송·동기화까지 포함해 기록한다. warm median과 IQR을 기록하고 repetitions는 양의 정수만 허용한다.</li>
+  <li>동일 입력의 Numba 전체 결과 bytes가 반복마다 같아야 한다. 다르면 즉시 <code>RuntimeError</code>다.</li>
+  <li>별도 공개 고정 fixture에서 Python과 Numba의 peak, presence, shift, rank, confirmation은 정확히 같고 raw/max 오차는 기본 <code>1e-12</code> 이하여야 한다. 실패하면 즉시 <code>RuntimeError</code>다.</li>
+  <li>backend manifest에는 정확히 <code>numba</code>와 <code>mlx</code>만 둔다. NumPy backend나 자동 fallback scorer는 만들지 않는다.</li>
+  <li>MLX는 Task 2와 같은 median/MAD, biased ACF lag 1..25, local peak lag 2..24, 작은 lag 동점, LOO raw, rank, strict confirmation을 계산한다. finite, exact discrete parity, raw 오차, 결정성, transfer/sync 포함 속도를 검사한다.</li>
+  <li>MLX가 없거나 float64를 보존하지 못하거나 parity·결정성·1.1× 중 하나라도 실패하면 <code>eligible=false</code>와 구체적인 <code>fallback_reason</code>을 남긴다. 오류 때문에 Numba 선택을 바꾸거나 NumPy로 계산하지 않는다.</li>
+  <li>Python, NumPy, Numba, llvmlite, MLX, mlx-metal 버전과 장치·플랫폼을 JSON manifest에 기록한다. 얻을 수 없는 값은 비밀정보 없이 <code>null</code> 또는 설명 문자열로 기록한다.</li>
+  <li>CLI는 공개 fixture assessment JSON만 지정 경로에 쓴다. 출력 JSON은 finite하고 정렬된 key·들여쓰기로 재현 가능해야 한다.</li>
+</ul>
+
+<h2>TDD 순서와 테스트</h2>
+<ol>
+  <li>production 파일보다 먼저 테스트를 만들고 missing-module RED를 실행 기록에 남긴다.</li>
+  <li>고정 fixture shape/dtype/C-contiguous/writeable=false와 외부 데이터 미사용을 검사한다.</li>
+  <li>Numba가 Python 기준을 통과하고 전체 bytes가 결정적이며 선택 backend가 항상 <code>numba</code>인지 검사한다.</li>
+  <li>backend key가 정확히 <code>{numba, mlx}</code>이고 NumPy가 없으며 모든 manifest 필드가 직렬화되는지 검사한다.</li>
+  <li>음수 reference tolerance가 Python 기준 STOP을 일으키고, 잘못된 repetitions·speedup·입력은 거부되는지 검사한다.</li>
+  <li>실제 MLX가 가능한 환경에서는 실제 smoke를 실행한다. 적격이면 모든 gate와 speedup을 만족해야 하고, 부적격이면 비어 있지 않은 fallback reason이 있어야 한다.</li>
+  <li>같은 입력 assessment 두 번의 계산 결과·gate 결과는 같게 검사하되 wall-clock timing 숫자 자체의 byte 동일성은 요구하지 않는다.</li>
+</ol>
+
+<h2>완료 규칙</h2>
+<p>Task 3 테스트를 연속 두 번 통과시키고 Task 1–2 회귀 22개를 통과시킨다. 공개 fixture assessment JSON을 한 번 생성하고 문법·finite·schema를 검사한다. Task 3 brief/report·production/test/JSON을 코드 맵 existing 노드와 fingerprints로 옮겨 generate/validate-only를 통과시킨다.</p>
+<p>계획서 3.1–3.6, 완료 정의 Task 3, 설계서 Task 3, 구현 보고와 대시보드 Task 3만 완료 체크한다. <code>completed_tasks=3</code>, Task 4 next, private/official/TEST/FN/routing 0을 유지한다. 대시보드는 portable builder로 1440/390 검증한다.</p>
+<p>모든 변경은 <code>test(exp471): qualify numba runtime antigravity</code>로 커밋한다. 이 worktree에서 다른 에이전트 변경을 되돌리지 않는다.</p>
+</main></body></html>

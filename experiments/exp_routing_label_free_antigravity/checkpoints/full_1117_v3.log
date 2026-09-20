@@ -1,0 +1,41 @@
+[14:54:23] total datasets: 1119
+[14:54:23] loaded 0 from checkpoints
+[14:54:23] pending: 1119
+[14:56:27] chunk 0: done=50 ok=47 auc=42 zf=42 total_done=50 elapsed=123s
+[14:57:36] chunk 1: done=50 ok=24 auc=14 zf=16 total_done=100 elapsed=193s
+[17:44:10] total datasets: 1119
+[17:44:10] loaded 100 from checkpoints
+[17:44:10] pending: 1019
+[17:54:06] total datasets: 1119
+[17:54:06] loaded 100 from checkpoints
+[17:54:06] pending: 1019
+[18:03:53] chunk 2: done=50 ok=49 auc=36 zf=37 total_done=150 elapsed=586s
+[18:07:23] chunk 3: done=50 ok=40 auc=32 zf=30 total_done=200 elapsed=796s
+[18:27:31] chunk 4: done=50 ok=50 auc=28 zf=34 total_done=250 elapsed=2004s
+[18:32:45] chunk 5: done=50 ok=50 auc=44 zf=44 total_done=300 elapsed=2319s
+[19:23:15] chunk 6: done=50 ok=50 auc=36 zf=38 total_done=350 elapsed=5348s
+[19:23:32] chunk 7: done=50 ok=15 auc=15 zf=15 total_done=400 elapsed=5366s
+[19:23:35] chunk 8: done=50 ok=3 auc=1 zf=1 total_done=450 elapsed=5368s
+[20:02:05] chunk 9: done=50 ok=50 auc=28 zf=36 total_done=500 elapsed=7679s
+[20:13:00] chunk 10: done=50 ok=40 auc=25 zf=31 total_done=550 elapsed=8334s
+[20:32:53] chunk 11: done=50 ok=50 auc=42 zf=40 total_done=600 elapsed=9526s
+[20:37:38] chunk 12: done=50 ok=50 auc=46 zf=46 total_done=650 elapsed=9812s
+[20:57:29] chunk 13: done=50 ok=46 auc=31 zf=36 total_done=700 elapsed=11003s
+[21:04:50] chunk 14: done=50 ok=39 auc=33 zf=34 total_done=750 elapsed=11443s
+[21:12:19] chunk 15: done=50 ok=50 auc=43 zf=43 total_done=800 elapsed=11893s
+[21:22:35] chunk 16: done=50 ok=50 auc=49 zf=49 total_done=850 elapsed=12509s
+[21:30:37] chunk 17: done=50 ok=50 auc=43 zf=46 total_done=900 elapsed=12990s
+[21:48:31] chunk 18: done=50 ok=40 auc=27 zf=28 total_done=950 elapsed=14064s
+[21:53:43] chunk 19: done=50 ok=50 auc=35 zf=33 total_done=1000 elapsed=14377s
+[23:05:31] chunk 20: done=50 ok=50 auc=37 zf=29 total_done=1050 elapsed=18684s
+[23:37:38] chunk 21: done=50 ok=50 auc=31 zf=16 total_done=1100 elapsed=20611s
+[23:42:10] chunk 22: done=19 ok=19 auc=11 zf=13 total_done=1119 elapsed=20884s
+[23:42:10] === SUMMARY ===
+[23:42:10] Total datasets evaluated: 1119
+[23:42:10]   ok: 962
+[23:42:10]   single_class: 109
+[23:42:10]   insufficient: 27
+[23:42:10]   non_finite: 20
+[23:42:10]   skipped_size: 1
+[23:42:10] AUC correct: 729/962 (75.8%)
+[23:42:10] ZF correct : 737/962 (76.6%)

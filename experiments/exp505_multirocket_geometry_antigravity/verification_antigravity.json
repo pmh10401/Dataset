@@ -1,0 +1,29 @@
+{
+  "state": "passed_train_screen",
+  "datasets": 50,
+  "folds": 250,
+  "selected": "oas_distance",
+  "unrestricted_winner": "oas_distance",
+  "best_new_candidate": "multirocket_joint",
+  "new_candidate_worst_proxy": 0.6445619006297852,
+  "anchor_worst_proxy": 0.6522197414956119,
+  "new_candidate_margin": -0.0076578408658266595,
+  "required_proxy_margin": 0.02,
+  "eligible": [
+    "MiniRocket",
+    "oas_distance",
+    "multirocket_distance",
+    "multirocket_joint"
+  ],
+  "normal_tail": {
+    "MiniRocket": 2.9277101049968524,
+    "oas_distance": 2.5555495038907714,
+    "multirocket_distance": 3.101238923172245,
+    "multirocket_joint": 3.2389886689617704
+  },
+  "anchor_fold_recalls_exact": true,
+  "source_hashes_passed": true,
+  "pilot_sha256": "e343aec2b3ed90b20cef774c8b0fb78602b756d4cff0b1e58d3bf69dbb05ca70",
+  "full_run_skipped": true,
+  "test_labels_read": false
+}

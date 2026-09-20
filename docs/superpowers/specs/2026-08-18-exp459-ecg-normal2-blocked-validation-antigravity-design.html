@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp459 ECG normal_2 연속 구간 독립 검증 설계</title>
+  <style>
+    body{max-width:1040px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+    h1,h2{line-height:1.3} table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
+    code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}
+    .box{background:#f5f7fa;padding:1rem;margin:1rem 0}.ok{color:#087a45}.warn{color:#9a5b00}
+    input[type=checkbox]{margin-right:.45rem}
+  </style>
+</head>
+<body><main>
+  <h1>Exp459 — ECG5000 normal_2 연속 구간 독립 검증</h1>
+  <p><strong>목표:</strong> Exp458에서 통과한 <code>ECG5000_normal_2</code> 후보 판단이 특정 TRAIN 행 배치에만 맞은 우연이 아닌지 확인한다.</p>
+  <p><label><input type="checkbox" checked disabled>사용자 승인 설계 반영</label></p>
+
+  <h2>1. 결론부터</h2>
+  <div class="box">
+    <p>Exp458은 FN을 836에서 829로 7개 줄이고, FP를 64에서 66으로 2개 늘렸으며, F1을 0.5754716981에서 0.5796148426으로 높였다.</p>
+    <p>Exp459에서는 방법이나 통과선을 다시 고르지 않는다. TRAIN 행을 저장 순서대로 5개 연속 구간으로 나누고, 매번 한 구간을 학습에서 빼고 검사한다. <strong>10개 판단(5구간×2seed)이 모두 통과할 때만</strong> Exp458 라우팅을 안정적인 후보로 인정한다.</p>
+  </div>
+
+  <h2>2. 이 검증이 독립적인 이유와 한계</h2>
+  <ul>
+    <li>검증할 행은 해당 fold의 Hydra와 LocalGap 기준을 만드는 데 사용하지 않는다.</li>
+    <li>1413개 TRAIN 행은 각각 정확히 한 번만 검증 구간에 들어간다.</li>
+    <li>무작위로 행을 섞지 않으므로 서로 가까운 저장 구간의 차이를 숨기지 않는다.</li>
+    <li class="warn">DB에 실제 측정 시각 열이 없으므로 이것을 달력 시간 검증이라고 부르지 않는다. 정확한 이름은 <strong>저장 순서 기반 연속 구간 검증</strong>이다.</li>
+    <li>같은 ECG5000 TRAIN 자료를 다시 나누는 검증이므로, 다른 병원·기기·데이터셋에 대한 외부 검증은 아니다.</li>
+  </ul>
+
+  <h2>3. 실험 정체성과 고정 기준</h2>
+  <ul>
+    <li>실험: <code>Exp459</code></li>
+    <li>종류: <code>ecg_normal2_blocked_validation</code></li>
+    <li>실행 이름: <code>exp459-ecg-normal2-blocked-validation-antigravity-20260818</code></li>
+    <li>공식 결과 폴더: <code>/Users/mac/Documents/Dataset/exp459_ecg_normal2_blocked_validation_antigravity_20260818</code></li>
+    <li>기준 커밋: Exp458 최종 커밋 <code>fc530cd2b392394aa7ffbd1408bc06d5b1b7c806</code></li>
+    <li>Exp458 공식 artifact map: <code>7ef36f232db5d2f2396f3dcdeda15af2e93c34e18a6e05dc411e37fe855737f9</code></li>
+    <li>대상: <code>ECG5000_normal_2</code> TRAIN 1413행×140값</li>
+    <li>seed: <code>20260721</code>, <code>20261721</code></li>
+    <li>방법: 기존 aeon Hydra CPU + LocalGap, 이웃 수 3</li>
+    <li>합성 이상: <code>level_shift</code>, <code>gradual_drift</code>, <code>amplitude_scaling</code>, <code>period_change</code></li>
+  </ul>
+
+  <h2>4. 다섯 연속 구간</h2>
+  <p>TRAIN 행 번호 <code>0..1412</code>를 섞지 않고 <code>numpy.array_split</code>과 같은 규칙으로 앞에서부터 나눈다.</p>
+  <table>
+    <thead><tr><th>fold</th><th>검증 행 범위</th><th>검증 행 수</th><th>학습 행 수</th></tr></thead>
+    <tbody>
+      <tr><td>0</td><td>0–282</td><td>283</td><td>1130</td></tr>
+      <tr><td>1</td><td>283–565</td><td>283</td><td>1130</td></tr>
+      <tr><td>2</td><td>566–848</td><td>283</td><td>1130</td></tr>
+      <tr><td>3</td><td>849–1130</td><td>282</td><td>1131</td></tr>
+      <tr><td>4</td><td>1131–1412</td><td>282</td><td>1131</td></tr>
+    </tbody>
+  </table>
+  <p>각 fold에서 나머지 네 구간으로 표현과 LocalGap 기준을 만들고, 빠진 구간의 정상 행과 그 행에서 만든 네 합성 이상만 점수화한다. fit 행과 검증 행은 겹치지 않는다.</p>
+
+  <h2>5. 바꾸지 않는 통과선</h2>
+  <p>각 fold와 각 seed가 아래 조건을 모두 만족해야 한다. Exp459 결과를 본 뒤 숫자를 완화하거나 강화하지 않는다.</p>
+  <table>
+    <thead><tr><th>조건</th><th>고정 통과선</th><th>설명</th></tr></thead>
+    <tbody>
+      <tr><td>종류별 AUC</td><td>네 종류 모두 ≥ 0.85</td><td>한 종류라도 약하면 그 fold는 실패한다.</td></tr>
+      <tr><td>평균 AUC</td><td>≥ 0.90</td><td>네 AUC의 단순 평균이다.</td></tr>
+      <tr><td>정상 오경보 Wilson 상한</td><td>≤ 0.05</td><td>Exp458의 <code>p≤0.005</code> 정상 경보 계산을 그대로 쓴다.</td></tr>
+      <tr><td>점수와 행 사용</td><td>유한값, 중복 0, 누락 0</td><td>모든 TRAIN 행이 한 번만 검증되어야 한다.</td></tr>
+    </tbody>
+  </table>
+  <p>AUC는 Exp458과 같은 <code>(합성&gt;정상 승리 + 0.5×동점)/(정상×합성 쌍)</code> 공식을 쓴다.</p>
+
+  <h2>6. 최종 판단</h2>
+  <table>
+    <thead><tr><th>상태</th><th>조건</th><th>다음 행동</th></tr></thead>
+    <tbody>
+      <tr><td><code>stable</code></td><td>5 fold × 2 seed = 10개가 모두 통과</td><td>Exp458 라우팅을 다음 외부 데이터 검증 후보로 유지</td></tr>
+      <tr><td><code>unstable</code></td><td>10개 중 하나라도 실패</td><td>승격 중단, 실패 fold의 종류별 AUC와 Wilson만 분석</td></tr>
+      <tr><td><code>not_started</code></td><td>공식 검증 전</td><td>결과를 추정하지 않음</td></tr>
+    </tbody>
+  </table>
+  <p>실패했을 때 같은 Exp459 안에서 임계값, fold 수, seed 또는 합성 이상을 바꾸지 않는다.</p>
+
+  <h2>7. 성능 결과의 해석</h2>
+  <ul>
+    <li>Exp459는 TEST 라벨을 다시 읽거나 새 혼동행렬을 만드는 실험이 아니다.</li>
+    <li><code>stable</code>이면 Exp458의 고정 라우팅 결과 TP 617 / FP 66 / FN 829 / TN 70788 / F1 0.5796148426491311을 <strong>구간 변화에도 안정적인 후보</strong>로 해석한다.</li>
+    <li><code>unstable</code>이면 Exp458 공식 결과는 그대로 보존하지만 운영 승격 근거로 사용하지 않는다.</li>
+    <li>champion, pending candidate, 실제 운영 route는 자동으로 바꾸지 않는다.</li>
+  </ul>
+
+  <h2>8. 구성 요소와 데이터 흐름</h2>
+  <ol>
+    <li><strong>Exp458 권한 확인:</strong> 공식 9-leaf 결과와 reviewed commit을 읽기 전용으로 확인한다.</li>
+    <li><strong>TRAIN 입력:</strong> <code>ECG5000_normal_2</code> TRAIN을 정확히 한 번 읽고, TEST 라벨 조회 수는 0으로 유지한다.</li>
+    <li><strong>연속 fold 생성:</strong> 행 순서를 유지한 다섯 query 구간과 그 보완 fit 구간을 만든다.</li>
+    <li><strong>점수 계산:</strong> fold마다 Hydra/LocalGap을 fit 구간에만 맞추고 query 구간을 점수화한다.</li>
+    <li><strong>판정:</strong> fold·seed별 네 AUC, 평균 AUC, Wilson 상한을 계산한다.</li>
+    <li><strong>저장과 재검사:</strong> 입력 구간, 결과, 최종 판단을 저장하고 원자료에서 다시 계산한다.</li>
+    <li><strong>HTML 대시보드:</strong> 10개 판단과 실패 이유를 쉬운 표로 표시한다.</li>
+  </ol>
+
+  <h2>9. 결과 파일과 대시보드</h2>
+  <p>구현 계획에서 exact leaf 목록을 고정하되, 최소한 아래 내용을 저장한다.</p>
+  <ul>
+    <li>Exp458 predecessor identity와 runtime</li>
+    <li>다섯 fold의 정확한 fit/query 범위와 행 수</li>
+    <li>두 seed × 다섯 fold의 종류별 AUC, 평균 AUC, 정상 경보, Wilson 상한</li>
+    <li>10개 통과 여부와 최종 <code>stable/unstable</code> 판단</li>
+    <li>artifact hash map과 source-free replay 결과</li>
+  </ul>
+  <p><code>docs/EXP459_DASHBOARD_antigravity.html</code>은 진행 단계, fold별 결과, 최종 판단, Exp458 고정 성능을 표시한다. 원시 TRAIN 행, TEST 라벨, 데이터베이스 경로는 화면에 노출하지 않는다.</p>
+
+  <h2>10. 검증 체크리스트</h2>
+  <ul>
+    <li><label><input type="checkbox" disabled>1413행이 283/283/283/282/282로 나뉘는지 검증</label></li>
+    <li><label><input type="checkbox" disabled>각 fold의 fit/query 교집합이 비어 있는지 검증</label></li>
+    <li><label><input type="checkbox" disabled>모든 행이 query로 정확히 한 번 등장하는지 검증</label></li>
+    <li><label><input type="checkbox" disabled>무작위 shuffle이 사용되지 않는지 검증</label></li>
+    <li><label><input type="checkbox" disabled>Exp458 AUC·Wilson 통과선이 byte-level로 동일한지 검증</label></li>
+    <li><label><input type="checkbox" disabled>한 fold 또는 한 seed 실패 시 최종 unstable인지 검증</label></li>
+    <li><label><input type="checkbox" disabled>비공식 실제 TRAIN 계산 두 번의 결과가 동일한지 검증</label></li>
+    <li><label><input type="checkbox" disabled>source-free replay가 저장 결과를 독립 재계산하는지 검증</label></li>
+    <li><label><input type="checkbox" disabled>Exp458 공식 9-leaf 결과가 변경되지 않았는지 검증</label></li>
+    <li><label><input type="checkbox" disabled>별도 승인 전 Exp459 공식 실행 0회인지 검증</label></li>
+  </ul>
+
+  <h2>11. MLX와 계산 자원</h2>
+  <p>Hydra는 aeon의 기존 CPU 구현을 그대로 유지한다. MLX로 다시 쓰면 고정 방법이 달라지므로 적용하지 않는다. fold는 순차 실행하고, 동시에 여러 Hydra/MLX 작업을 실행하지 않는다.</p>
+
+  <h2>12. 기존 테스트의 알려진 상태</h2>
+  <p>Exp459 작업 폴더 시작점에서 Exp458 테스트 62개 중 60개가 통과했다. 실패한 2개는 Task 5 시절의 “Exp458 공식 root가 없어야 한다”는 조건을 유지한 검사다. Task 6에서 root가 정상 생성된 현재 truth와 맞지 않으며 과학 계산 실패가 아니다. Exp459 구현 전 선행 정리로 해당 테스트를 공식 완료 상태와 임시 root 검사로 분리한다. Exp458 결과 파일은 수정하지 않는다.</p>
+
+  <h2>13. 구현 경계</h2>
+  <ul>
+    <li>예정 패키지: <code>experiments/exp459_ecg_normal2_blocked_validation_antigravity/</code></li>
+    <li>예정 실행기: <code>scratch/run_exp459_ecg_normal2_blocked_validation_antigravity.py</code></li>
+    <li>예정 코드맵: <code>docs/codemap/codemap_exp459_antigravity.html/json/lock</code></li>
+    <li>모든 새 파일 이름에 <code>antigravity</code>를 포함한다.</li>
+    <li>Exp458 제품 코드와 공식 결과는 변경하지 않는다.</li>
+    <li>구현·비공식 검증·독립 검토가 끝나도 공식 실행은 별도 사용자 승인 전 수행하지 않는다.</li>
+  </ul>
+
+  <h2>14. 승인 상태</h2>
+  <p class="ok"><strong>승인됨:</strong> 저장 순서를 유지한 다섯 연속 구간과 두 seed의 10개 판단을 모두 통과해야 stable로 인정한다.</p>
+</main></body>
+</html>

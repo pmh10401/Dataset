@@ -1,0 +1,103 @@
+{
+  "artifact_kind": "exp421_train_only_acceleration_source_manifest",
+  "schema_version": 1,
+  "git_commit": "eb9733b12be6a25f14b62c9c8d988a5bd43d350b",
+  "sources": [
+    {
+      "path": "docs/EXP421_PREREGISTRATION_KO.md",
+      "sha256": "893d84268329abbbf80f4a1ec30faada0b3b8fa3c797dab697c8fabc22a8020d"
+    },
+    {
+      "path": "docs/EXP421_RUNBOOK_KO.md",
+      "sha256": "cd7360b27c15f4d6900debc02fce2279d9598ce1d3cbb01644e8824da3772870"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-08-01-exp421-mps-batched-acceleration.md",
+      "sha256": "208e58cb10a87638d4d685080a25d7007337eb02196f4544f19e83ff78298fcb"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-08-01-exp421-mps-batched-acceleration-design.md",
+      "sha256": "39a85804155f3c04934d98ecfac445083b4a2cc708a6c390bff58cab18602a7d"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/__init__.py",
+      "sha256": "6b87425a88f6e3d2b501a19686aee18858b564c81b691c4286c7bc3e8ecdbead"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/batch_inference.py",
+      "sha256": "d50453c46ebe99800b3c7a2c197e1c35395dc065d54fb024ef920624095a33bb"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/benchmark.py",
+      "sha256": "07ff78f989a3a5eb5653ca4a64abce6b423f80475a7959244d37cfb61d74d693"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/calibration.py",
+      "sha256": "d66bcfa70953f555744a0e7274087da144b08307f1ad82d497d043737cc631d8"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/config.py",
+      "sha256": "8095cab1636208d4f129733342491fdc7c925eb59e0f936a787a71e7ff3578c0"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/contracts.py",
+      "sha256": "6b57fc0c33a9b29b7310b97971350387874020b4be625106b2d439d9653a9d6c"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/manifest.py",
+      "sha256": "83652a2bdb78b55f1bf405e2f713101ed720eaba2efb9beae26b883b47f664b5"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/perturbations.py",
+      "sha256": "0cec473227d7ee6752e2ec1bf63d2407860833440bf6ac5fe2b6c7cb47c5aa89"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/policy.py",
+      "sha256": "7f4c39c6704b7360d1643cef7f0999427a81f253d43080cd760b8f3d2cc0a085"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/tests/__init__.py",
+      "sha256": "3c4b77f8dd9227b2fa54c49334960102afb08d88b945e3f794497c5f2d13469f"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/tests/test_batch_inference.py",
+      "sha256": "6df7ac452b3cef7136feb1e59d616de8f322f9bbae41e80f896855ce2f81e586"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/tests/test_benchmark_boundary.py",
+      "sha256": "4970d76ea56e5d5b68e82dd1b8f0dd379eae9a895889e08a4f5978f6a2cfab66"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/tests/test_calibration.py",
+      "sha256": "34370472048c66d78c59b5470bd78820fb1889954c80c80e4db1add1f1e60722"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/tests/test_cli.py",
+      "sha256": "3bb444ba3188d0a94f08068edd10c8b4d8ad3d21a31fdd582de3eb8f1b72da7a"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/tests/test_config.py",
+      "sha256": "f0003dca49ecf05325ca38d9e6e4df99a0f515caaa4e7670e4f38a920d2022f3"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/tests/test_contracts.py",
+      "sha256": "b2876975e6af36f0b5d4e98673c54f44890976e6203f42210677bc6ce5325eb0"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/tests/test_manifest.py",
+      "sha256": "afc90f8996be3fb968df634c5040d88129390a8492387d327c0d39540c94fdb5"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/tests/test_perturbations.py",
+      "sha256": "262205e26bd89d450a2b5b5c5e3aac900ea2635e732df54d92e9eea22462dbfc"
+    },
+    {
+      "path": "experiments/exp421_mps_batched_acceleration/tests/test_policy.py",
+      "sha256": "26188cb75e8ea6ee774b5a4f9ed3c7415c9e7904602b93fe26cab3e387fd3705"
+    },
+    {
+      "path": "scratch/run_exp421_mps_batched_acceleration.py",
+      "sha256": "d281add2627a1dcee04007dd82545eb2a53e0dabe99c53f6256c1876ad72dacc"
+    }
+  ]
+}

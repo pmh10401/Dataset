@@ -1,0 +1,13 @@
+{
+  "state": "stopped_at_user_request",
+  "reason": "이번까지만 실험하고 중지하자.",
+  "utc": "2026-09-17T03:58:48.771463+00:00",
+  "last_experiment": "exp507",
+  "last_result_sha256": "a6defdf31246128be4a015138372f2cde51a624196e2a077e11444e75e8ba492",
+  "last_primary_relative_gain": 0.03353804149966777,
+  "observed_target_met": false,
+  "best_observed_experiment": "exp502",
+  "best_primary_relative_gain": 0.037305683708692694,
+  "new_experiments_authorized": false,
+  "current_full_process_exit_code": 0
+}

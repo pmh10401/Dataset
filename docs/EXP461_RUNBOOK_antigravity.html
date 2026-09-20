@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp461 실행 가이드</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
+<body><main>
+  <h1>Exp461 실행 가이드</h1>
+  <p><strong>Task 5 terminal operator boundary:</strong> Exp461 Task 5 ended at <code>stopped_before_official_evaluation_qualification_failed</code>. The private TRAIN qualification failed, so Task 6 is forbidden and this document records only the preserved no-official-run boundary.</p>
+  <table>
+    <tr><th>run identity</th><td><code>exp461-ecg-period-signature-qualification-antigravity-20260820</code></td></tr>
+    <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp461_ecg_period_signature_qualification_antigravity_20260820</code> must stay absent</td></tr>
+    <tr><th>fixed interpreter</th><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code></td></tr>
+    <tr><th>official command count</th><td>0</td></tr>
+    <tr><th>label query count</th><td>0</td></tr>
+    <tr><th>current task</th><td>Terminal Task 5 qualification failed / Task 6 forbidden</td></tr>
+  </table>
+  <div class="box">
+    <p><strong>Current count truth:</strong> official command count 0, label query count 0, result root absent.</p>
+    <p><strong>Do not run official evaluate:</strong> Task 5 failed the frozen TRAIN qualification gate. Do not run official evaluate for Exp461.</p>
+    <p><strong>Do not run official inspect:</strong> 공식 root가 없으므로 bare inspect도 실행하지 않는다.</p>
+    <p><strong>Current allowance:</strong> result-preserving tests, strict JSON parse, HTML parse, map validate-only, <code>git diff --check</code>, official root absence check, and label0 checks only.</p>
+    <p><strong>Forbidden official commands, retained for identification only:</strong> 아래 명령은 Task 5 결과에 따라 실행하지 않는다.</p>
+    <pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+"$PY" scratch/run_exp461_ecg_period_signature_qualification_antigravity.py evaluate --reviewed-commit LOWER40HEX
+"$PY" scratch/run_exp461_ecg_period_signature_qualification_antigravity.py inspect</code></pre>
+  </div>
+</main></body></html>

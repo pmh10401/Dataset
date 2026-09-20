@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp458 Task 5 Report</title>
+  <style>
+    body{max-width:1080px;margin:2rem auto;padding:0 1rem;font:16px/1.65 system-ui;color:#172033}
+    h1,h2{line-height:1.25} table{width:100%;border-collapse:collapse;margin:1rem 0}
+    th,td{border:1px solid #aab3bf;padding:.5rem;text-align:left;vertical-align:top}
+    code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}
+    pre{background:#101827;color:#eef4ff;padding:1rem;overflow:auto}
+    .ok{color:#087a45}.warn{color:#8a5a00}
+  </style>
+</head>
+<body><main>
+  <h1>Exp458 Task 5 — closed CLI and private TRAIN reproducibility report</h1>
+  <p><strong>Status:</strong> <code>implementation_verified_awaiting_official_evaluation</code>. Task 5 is complete; Task 6 remains unchecked and unrun.</p>
+  <p><strong>Official boundary:</strong> public <code>evaluate</code> invocations 0, public <code>inspect</code> invocations 0, TEST label queries 0, official root absent, official result hashes null.</p>
+
+  <h2>Implemented files</h2>
+  <ul>
+    <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/cli_antigravity.py</code></li>
+    <li><code>scratch/run_exp458_ecg_normal2_rank_confidence_routing_antigravity.py</code></li>
+    <li><code>experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests/test_cli_antigravity.py</code></li>
+    <li>Updated dashboard, implementation report, plan, governance test, three ledgers, and Exp458 codemap triplet.</li>
+  </ul>
+
+  <h2>RED/GREEN record</h2>
+  <table>
+    <thead><tr><th>Stage</th><th>Command</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>RED 1</td><td><code>$PY -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_cli_antigravity</code></td><td>8 tests ran; failures were missing <code>cli_antigravity.py</code>, missing launcher, plus one test-harness syntax issue.</td></tr>
+      <tr><td>RED 2</td><td>same focused CLI command</td><td>8 tests ran; intended missing CLI/launcher failures remained after fixing the test harness.</td></tr>
+      <tr><td>GREEN focused</td><td>same focused CLI command</td><td>Passed 3 times after implementation/correction: <code>Ran 8 tests ... OK</code>.</td></tr>
+      <tr><td>Full Exp458 synthetic</td><td><code>$PY -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td>Original Task5 final two full-suite passes succeeded: <code>Ran 58 tests ... OK</code> and <code>Ran 58 tests ... OK</code>. Round 1 added launcher seam coverage, so the current suite reports 59 tests.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Actual TRAIN candidate runs</h2>
+  <p>Executed exactly twice, sequentially, in one process, through the private dependency seam. No public CLI command was invoked. Each run used a different temporary non-official root, then removed it.</p>
+  <p><strong>Stable evidence file:</strong> <code>.superpowers/sdd/2026-08-18-exp458-ecg-normal2-rank-confidence-routing-antigravity.html/task-5-actual-run-evidence-antigravity.json</code>. This file preserves the already-completed session output; no live TRAIN/Hydra rerun was performed in round 1.</p>
+  <table>
+    <thead><tr><th>Run</th><th>Elapsed</th><th>Exit</th><th>Route</th><th>Label queries</th><th>Payload SHA-256</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>98.6050003329292s</td><td>0</td><td>candidate</td><td>0</td><td><code>0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8</code></td></tr>
+      <tr><td>2</td><td>99.41886049997993s</td><td>0</td><td>candidate</td><td>0</td><td><code>0150a4243a287131adf433f0f04503974440f88cb79cf6a14e18257e55226fa8</code></td></tr>
+    </tbody>
+  </table>
+  <p>Equality proof: qualification equal, route equal, dashboard equal, all 9 leaf hashes equal, canonical payload hash equal. Official root was absent before run 1, between runs, after run 2, and after cleanup.</p>
+
+  <h2>TRAIN evidence</h2>
+  <table>
+    <thead><tr><th>Seed</th><th>level_shift</th><th>gradual_drift</th><th>amplitude_scaling</th><th>period_change</th><th>pooled</th><th>Wilson</th><th>pass</th></tr></thead>
+    <tbody>
+      <tr><td>20260721</td><td>0.9796866524522819</td><td>0.9052489545815847</td><td>0.9951992643379718</td><td>0.9104679076956519</td><td>0.9476506947668726</td><td>0.00923330730695328</td><td>true</td></tr>
+      <tr><td>20261721</td><td>0.9761215364958586</td><td>0.895775202359648</td><td>0.9943593234193259</td><td>0.9278161686372973</td><td>0.9485180577280324</td><td>0.00923330730695328</td><td>true</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Projected candidate metrics</h2>
+  <table>
+    <thead><tr><th>Method</th><th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>F1</th></tr></thead>
+    <tbody>
+      <tr><td>always_baseline</td><td>609</td><td>66</td><td>837</td><td>70788</td><td>0.5742574257425742</td></tr>
+      <tr><td>family_wide_local_gap</td><td>611</td><td>63</td><td>835</td><td>70791</td><td>0.5764150943396227</td></tr>
+      <tr><td>oracle_per_dataset</td><td>618</td><td>64</td><td>828</td><td>70790</td><td>0.5808270676691729</td></tr>
+      <tr><td>normal2_rank_router</td><td>617</td><td>66</td><td>829</td><td>70788</td><td>0.5796148426491311</td></tr>
+    </tbody>
+  </table>
+  <p>Criteria: FN 829 ≤ 834 pass; FP 66 ≤ 66 pass; F1 0.5796148426491311 &gt; 0.5764150943396227 pass.</p>
+
+  <h2>Verification</h2>
+  <ul>
+    <li><span class="ok">PASS</span> Exp458 full synthetic suite twice: 58 tests OK, 58 tests OK.</li>
+    <li><span class="ok">PASS</span> Exp457 non-governance science/product suite: 46 tests OK.</li>
+    <li><span class="ok">PASS</span> Exp456 non-governance product/science suite: 30 tests OK.</li>
+    <li><span class="ok">PASS</span> Exp457 byte guard from <code>6e8e500d19afcb17907ef53ad1527b5781c6d007</code>.</li>
+    <li><span class="ok">PASS</span> <code>py_compile</code> on new/changed Exp458 Python files and map builder.</li>
+    <li><span class="ok">PASS</span> Exp458 map <code>--validate-only</code>.</li>
+    <li><span class="ok">PASS</span> <code>git diff --check</code>.</li>
+    <li><span class="ok">PASS</span> Official root absence check.</li>
+    <li><span class="warn">Historical governance only:</span> Exp457 full package and explicit Exp457 map validate fail with <code>invalid source parent</code> because its map is bound to older HEAD rules. Exp456 full package and explicit Exp456 map validate fail with old map fingerprint/report expectations. Non-governance predecessor science/product suites passed.</li>
+  </ul>
+
+  <h2>Commit chain</h2>
+  <ul>
+    <li>Original Task5 functional implementation: <code>5f0876ddd6404318476804706ff6da92a6b24137</code> — <code>feat(exp458): freeze normal2 rank candidate</code></li>
+    <li>Original Task5 functional test follow-up: <code>9278c5ad8ba4ef5fb130a8dce5fc37a4cfe69b7e</code> — <code>test(exp458): bound task5 plan checkbox assertions</code></li>
+    <li>Original Task5 map child: <code>ac891ffcf79fccdcd9efa0783c64c29704f1e63a</code> — <code>chore(exp458): sync task5 codemap after governance assertion</code></li>
+    <li>Round 1 functional/evidence fix: <code>a87aeed7cf830628e94921b5ff19a9eb76942ddd</code> — <code>fix(exp458): preserve task5 evidence and test launcher seam</code></li>
+    <li>Round 1 map child: <code>b9b8817f00f60cfa1cc953e4c85d302ab44ba259</code> — <code>chore(exp458): sync task5 codemap round1</code></li>
+    <li>Round 2 convention: one report/test-evidence functional commit followed by one map-only child bound to that clean functional parent.</li>
+  </ul>
+
+  <h2>Self-review</h2>
+  <ul>
+    <li>The public parser accepts only <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>; abbreviations, overrides, retries, extra args, and help tokens are rejected.</li>
+    <li><code>main_antigravity</code> parses before loading selected phase; public evaluate validates clean current commit before loading candidate dependencies.</li>
+    <li>Private verification did not use the public official CLI or official root and did not access TEST labels.</li>
+    <li>Task 6 remains unchecked and requires explicit separate approval.</li>
+  </ul>
+
+  <h2>Concerns</h2>
+  <p>No Task5 blocking concern remains. The only caveat is historical predecessor governance-map validation tied to older HEAD/map assumptions; the predecessor non-governance science/product tests passed.</p>
+
+  <h2>Round 1/5 follow-up</h2>
+  <ul>
+    <li>Added stable actual-run evidence JSON with command semantics, session completion, temp-root identities, per-run AUC/pooled/Wilson/pass, route, comparisons, criteria, 9 leaf hash map, canonical hash construction, no exclusions, cleanup, and root-absence facts.</li>
+    <li>Added a RED/GREEN outside-CWD subprocess test that executes the actual launcher via <code>runpy.run_path</code>, uses a private in-memory test seam, performs synthetic non-official-root <code>evaluate --reviewed-commit LOWER40HEX</code>, writes 9 leaves, then runs bare <code>inspect</code> against the same root and verifies equal dashboard payloads.</li>
+    <li>The private seam is not a public CLI option or environment override. It requires an in-process module named <code>_exp458_cli_private_test_antigravity</code> with exact capability <code>exp458_cli_private_test_antigravity_v1</code>.</li>
+    <li>No real Hydra/TRAIN process was rerun in this round.</li>
+  </ul>
+
+  <h2>Round 2/5 test evidence refresh</h2>
+  <p>No live TRAIN/Hydra process was run. The current CLI focused suite was run twice and the current full Exp458 synthetic suite was run twice.</p>
+  <table>
+    <thead><tr><th>Run</th><th>Exact command</th><th>unittest count/time</th><th>shell timing</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>CLI focused 1</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_cli_antigravity</code></td><td><code>Ran 9 tests in 0.342s</code></td><td><code>0.33s user 0.06s system 93% cpu 0.426 total</code></td><td>OK</td></tr>
+      <tr><td>CLI focused 2</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_cli_antigravity</code></td><td><code>Ran 9 tests in 0.337s</code></td><td><code>0.34s user 0.06s system 98% cpu 0.407 total</code></td><td>OK</td></tr>
+      <tr><td>Full synthetic 1</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td><code>Ran 59 tests in 2.791s</code></td><td><code>2.27s user 0.48s system 86% cpu 3.169 total</code></td><td>OK</td></tr>
+      <tr><td>Full synthetic 2</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td><code>Ran 59 tests in 2.416s</code></td><td><code>2.28s user 0.44s system 97% cpu 2.776 total</code></td><td>OK</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Final whole-branch fix wave — runtime provenance binding</h2>
+  <p>No live TRAIN/Hydra process was run in this final wave, and no official command/root was invoked. The result-relevant fix binds the public evaluate and replay path to the exact runtime: executable <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code>, prefix <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314</code>, Python <code>3.14.6</code>, NumPy <code>2.3.5</code>, aeon <code>1.4.0</code>.</p>
+  <ul>
+    <li>Corrected Exp458 plan/runtime documentation from the stale NumPy value to NumPy 2.3.5.</li>
+    <li>Added exact runtime fields to the frozen config and a validated <code>RuntimeProvenanceAntigravity</code> contract.</li>
+    <li>Public evaluate now validates runtime provenance before qualification, authority capture, publisher, inspector, or root creation.</li>
+    <li>Publication still has exactly 9 leaves; <code>context_antigravity.json</code> now records runtime provenance inside the existing leaf.</li>
+    <li>Inspect remains label/source-free and validates recorded runtime provenance as part of semantic replay, without importing qualification.</li>
+    <li>Replay rejects a rehashed runtime-provenance tamper.</li>
+    <li>Ledgers now carry the Exp458 runtime contract while official evaluate/inspect counts, official root status, official hashes, Task 6 unchecked status, and historical actual-run evidence remain unchanged.</li>
+  </ul>
+  <h3>Final-wave RED/GREEN</h3>
+  <table>
+    <thead><tr><th>Stage</th><th>Command</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>RED affected slice</td><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_config_antigravity experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_contracts_antigravity experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_artifacts_antigravity experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_replay_antigravity experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_cli_antigravity -v</code></td><td><code>Ran 29 tests</code>; failed with missing runtime config fields, missing runtime contract import, missing context runtime, replay runtime KeyError, and CLI reaching qualifier before runtime mismatch.</td></tr>
+      <tr><td>GREEN affected slice</td><td>same affected slice</td><td><code>Ran 29 tests in 0.572s</code>, OK.</td></tr>
+      <tr><td>Pre-map synthetic slice</td><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest</code> over all Exp458 non-governance modules</td><td><code>Ran 60 tests in 3.243s</code>, OK.</td></tr>
+    </tbody>
+  </table>
+  <h3>Final-wave commits</h3>
+  <ul>
+    <li>Functional runtime-provenance fix: <code>8ca305cb36a0108cb0d7afe9b9c428e5e5df3ce2</code> — <code>fix(exp458): bind runtime provenance</code></li>
+    <li>Map/report child: exact child SHA is returned in the task final response; the map lock source parent is the functional commit above.</li>
+  </ul>
+  <h3>Final-wave verification</h3>
+  <table>
+    <thead><tr><th>Run</th><th>Exact command</th><th>unittest count/time</th><th>shell timing</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>CLI focused 1</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_cli_antigravity</code></td><td><code>Ran 10 tests in 0.378s</code></td><td><code>0.37s user 0.07s system 94% cpu 0.462 total</code></td><td>OK</td></tr>
+      <tr><td>CLI focused 2</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest experiments.exp458_ecg_normal2_rank_confidence_routing_antigravity.tests.test_cli_antigravity</code></td><td><code>Ran 10 tests in 0.361s</code></td><td><code>0.36s user 0.07s system 98% cpu 0.435 total</code></td><td>OK</td></tr>
+      <tr><td>Full synthetic 1</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td><code>Ran 62 tests in 2.758s</code></td><td><code>2.33s user 0.48s system 89% cpu 3.129 total</code></td><td>OK</td></tr>
+      <tr><td>Full synthetic 2</td><td><code>TIMEFORMAT='elapsed_seconds=%R'; time /Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python -m unittest discover -s experiments/exp458_ecg_normal2_rank_confidence_routing_antigravity/tests -p 'test_*_antigravity.py'</code></td><td><code>Ran 62 tests in 2.649s</code></td><td><code>2.32s user 0.46s system 92% cpu 3.002 total</code></td><td>OK</td></tr>
+    </tbody>
+  </table>
+  <ul>
+    <li><span class="ok">PASS</span> Exp458 codemap <code>--validate-only</code>.</li>
+    <li><span class="ok">PASS</span> <code>py_compile</code> for touched Exp458 Python files, launcher, and map builder.</li>
+    <li><span class="ok">PASS</span> <code>git diff --check</code>.</li>
+    <li><span class="ok">PASS</span> Exp457 byte guard from <code>6e8e500d19afcb17907ef53ad1527b5781c6d007</code>.</li>
+    <li><span class="ok">PASS</span> official root absence check.</li>
+    <li><span class="ok">PASS</span> targeted Exp458 stale-runtime scan: no stale runtime numeric value or generic Python 3.14/NumPy wording outside deliberate negative tests.</li>
+  </ul>
+</main></body>
+</html>

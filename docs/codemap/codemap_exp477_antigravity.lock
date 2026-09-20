@@ -1,0 +1,29 @@
+{
+  "schema": "exp477_official_minimum_zf_integration_codemap_lock_v1",
+  "current_commit": "82daefaeac56ecc2391fd9457c6ded1ecf9b1787",
+  "frozen_exp476_result_sha256": "8b6f881d25d0d2865e05c5a5b9ca204f78641e1364bb60d536e7dcc8ec21733f",
+  "triplet": [
+    "docs/codemap/codemap_exp477_antigravity.html",
+    "docs/codemap/codemap_exp477_antigravity.json",
+    "docs/codemap/codemap_exp477_antigravity.lock"
+  ],
+  "represented_paths": [
+    "experiments/exp476_minimum_zf_fallback_routing_antigravity/policy_antigravity.py",
+    "experiments/exp476_minimum_zf_fallback_routing_antigravity/results_antigravity.json",
+    "experiments/exp474_conservative_fallback_routing_antigravity/train_features_antigravity.json",
+    "experiments/exp_routing_label_free_antigravity/official_exp476_policy_artifact_antigravity.json",
+    "experiments/exp_routing_label_free_antigravity/conservative_policy_antigravity.py",
+    "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py",
+    "experiments/exp_routing_label_free_antigravity/pipeline_integration_antigravity.py",
+    "experiments/exp_routing_label_free_antigravity/tests/test_conservative_policy_antigravity.py",
+    "experiments/exp_routing_label_free_antigravity/tests/test_official_router_antigravity.py",
+    "experiments/exp_routing_label_free_antigravity/tests/test_pipeline_integration_antigravity.py",
+    "experiments/exp_routing_label_free_antigravity/tests/test_exp477_dashboard_antigravity.py",
+    "scratch/build_exp477_official_policy_artifact_antigravity.py",
+    "experiments/exp477_official_minimum_zf_routing_antigravity/run_antigravity.py",
+    "experiments/exp477_official_minimum_zf_routing_antigravity/results_antigravity.json",
+    "docs/EXP477_DASHBOARD_antigravity.html"
+  ],
+  "official_policy_artifact_sha256": "b45f4124354d6bd612657b801634c503fa84b3585776cfde4a8f76d19b805545",
+  "result_sha256": "e794cc506d7579fc63e2fe96ccfebc794a330975f6a4375889419263bc877949"
+}

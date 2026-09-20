@@ -1,0 +1,21 @@
+{
+  "state": "complete_verified_user_requested_stop",
+  "stop_after_this_comparison": true,
+  "new_hypotheses_authorized": false,
+  "implementer": "grok-4.6",
+  "reasoning_effort": "high",
+  "worktree": "/private/tmp/exp507_grok_roughness_compat_antigravity",
+  "brief_sha256": "1f3341b8d5a04848a4b6f6fc9301d144f8d06378cc41cbf72c6a061feb7fdc8d",
+  "official_pilot_started": true,
+  "official_test_started": true,
+  "parent_failed_experiment": "exp506",
+  "exec_session_id": 23054,
+  "grok_session": "01a0ad6f-ef49-7d70-8431-3a5c90a8dea5",
+  "response_exec_session": 20559,
+  "tests_passed": 6,
+  "train_parent_parity_exact": true,
+  "official_process_exit_code": 0,
+  "independent_verification_passed": true,
+  "observed_target_met": false,
+  "primary_relative_gain": 0.03353804149966777
+}

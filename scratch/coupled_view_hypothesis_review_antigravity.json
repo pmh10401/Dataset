@@ -1,0 +1,13 @@
+{
+  "state": "not_to_run_user_requested_stop_after_current_candidate",
+  "reviewer": "Sol independent read-only review",
+  "basis": "Exp502 TRAIN worst .682594264 vs rawOAS .65221974; official installed MiniRocket multivariate code",
+  "hypothesis": "Jointly encode raw and centered x^2 as two channels with official MiniRocket before PPV, then OAS3NN; compare pure coupled and raw+coupled geometry.",
+  "distinction": "Official MiniRocket can mix selected channels before PPV, unlike separate encoders then concatenation; some combinations single-channel.",
+  "conditions": [
+    "Raw baseline unchanged; direct(n,2,L)float32 official encoder withbothchannelsrightpaddedto9.",
+    "Verify actualmixed-channel combinations on TRAIN encoder.",
+    "Samefrozen50/5 gate; noTESTselection or causality claim."
+  ],
+  "next_action": "None; user requested no further experiments after current roughness compatibility comparison."
+}

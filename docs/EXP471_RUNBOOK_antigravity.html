@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp471 실행 runbook</title>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:920px;margin:40px auto;padding:0 20px;line-height:1.7;color:#17202a}
+    h1,h2{line-height:1.25}pre{background:#f4f6f8;border-left:4px solid #5d6d7e;padding:12px;overflow-x:auto}
+    .stop{background:#fdecea;border-left:5px solid #c0392b;padding:12px 16px}.note{background:#f5f7fa;border-left:4px solid #567;padding:12px 16px}
+    code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.94em}
+  </style>
+</head>
+<body><main>
+  <h1>Exp471 실행 runbook</h1>
+  <p>이 문서는 Task 6에서 만든 closed CLI와 승인된 private checkpoint 절차만 다룹니다. 현재 상태는 <strong>private run1·run2 PASS, byte 재현성 확인 완료</strong>입니다.</p>
+
+  <h2>1. CLI 표면</h2>
+  <p><code>evaluate</code>와 <code>inspect</code>만 허용합니다. root 인수는 아래 두 고정 경로만 받고, commit은 현재 HEAD와 같은 40자 소문자 hex여야 합니다. launcher는 저장소 밖 작업 디렉터리에서도 동작합니다.</p>
+  <pre><code>python3 scratch/run_exp471_ecg200_acf_peak_lag_shift_numba_antigravity.py evaluate +  --root /private/tmp/exp471_task6_private_run1_antigravity +  --commit &lt;REVIEWED_COMMIT&gt;
+
+python3 scratch/run_exp471_ecg200_acf_peak_lag_shift_numba_antigravity.py inspect +  --root /private/tmp/exp471_task6_private_run1_antigravity</code></pre>
+
+  <h2>2. 사전 조건</h2>
+  <ol>
+    <li><code>&lt;REVIEWED_COMMIT&gt;</code>이 현재 HEAD이고 worktree가 clean인지 확인합니다.</li>
+    <li><code>/private/tmp/exp471_task6_private_run1_antigravity</code>와 run2 경로가 존재하지 않는지 확인합니다.</li>
+    <li>사용자가 private run 1·2를 명시적으로 승인했는지 확인합니다.</li>
+  </ol>
+  <pre><code>git rev-parse HEAD
+git status --porcelain
+test ! -e /private/tmp/exp471_task6_private_run1_antigravity
+test ! -e /private/tmp/exp471_task6_private_run2_antigravity</code></pre>
+
+  <h2>3. 승인 후 순서</h2>
+  <p>Python helper는 잘못되거나 없는 token을 거부하고, clean 검사 → root 부재 검사 → run1 evaluate→inspect → clean 재검사 → run2 evaluate→inspect → 정확히 7개 leaf raw byte 비교 순서를 강제합니다.</p>
+  <pre><code>from pathlib import Path
+import sys
+sys.path.insert(0, "/Users/mac/Documents/Time Series/.worktrees/exp471-task6-ox-antigravity")
+from scratch import run_exp471_ecg200_acf_peak_lag_shift_numba_antigravity as launcher
+
+launcher.run_private_sequence_antigravity(
+    "&lt;REVIEWED_COMMIT&gt;",
+    "TASK_6_PRIVATE_RUN_1_2_APPROVED",
+)</code></pre>
+
+  <div class="note">
+    <p><strong>실행 기록(2026-08-25):</strong> 사용자 승인 token으로 run1→run2를 실행했다. reviewed commit은 <code>7ebffae7af0b07fad8a18c38f19abb33ee90f394</code>다. 두 실행의 semantic replay와 7개 leaf raw byte 비교를 모두 통과했다.</p>
+  </div>
+
+  <h2>4. 성공 판정</h2>
+  <ul>
+    <li>run1과 run2 모두 inspect가 semantic replay를 통과해야 합니다.</li>
+    <li><code>artifact_sha256_antigravity.json</code>과 나머지 여섯 canonical leaf의 raw bytes가 두 root에서 완전히 같아야 합니다.</li>
+    <li>한쪽이라도 실패하거나 byte가 다르면 run2 이후 즉시 중단하고 결과를 FAIL로 보존합니다.</li>
+    <li>private PASS여도 official 실행, TEST/FN 확인, routing은 별도 승인 없이 금지입니다.</li>
+  </ul>
+
+  <h2>5. 공식 실행 기록(승인 후)</h2>
+  <div class="note">
+    <p><strong>2026-08-25:</strong> 사용자 승인으로 일회성 공식 lifecycle을 실행했다. launcher <code>scratch/run_exp471_official_lifecycle_antigravity.py</code>, reviewed commit <code>cdf5347d1bf0f456b472b347dbbb45e8a43b34a2</code>. 공식 root <code>/Users/mac/Documents/Dataset/exp471_ecg200_acf_peak_lag_shift_numba_antigravity_20260825</code>에 evaluate→inspect 각 1회(exit 0)로 종료했고 7개 leaf는 private run1과 동일하다.</p>
+  </div>
+
+  <h2>6. TEST/FN 진단 기록(승인 후)</h2>
+  <div class="note">
+    <p><strong>2026-08-25:</strong> 사용자 승인으로 관측용 진단을 실행했다. launcher <code>scratch/run_exp471_test_fn_diagnostic_antigravity.py</code>, 승인 token <code>TASK6_TEST_FN_DIAGNOSTIC_APPROVED</code>. 커밋 <code>651dd0cc</code>(combined-matrix 수정)에서 두 seed 순차 실행, exit 0. 산출 root는 <code>/Users/mac/Documents/Dataset/exp471_ecg200_test_fn_diagnostic_antigravity_20260825</code>이며 routing·champion·promotion은 변경하지 않았다.</p>
+    <p>요약: normal_1 FN 2개는 C0 AUC 0.9923으로 분리되지만 zero-FP TP 0. normal_-1 FN 1개는 C0 AUC 0.0204(역방향). E12/C12는 이 데이터셋에서 FN 해소 기여 0.</p>
+  </div>
+  <div class="note">
+    <p><strong>2026-08-25(2차):</strong> 사용자 지시로 데이터셋 매핑을 수정했다. 각 데이터셋의 TRAIN label-0 행 전부를 자체 정상 참조로 사용하도록 커밋 <code>aa942cfb</code>에서 변경. 이전 결과는 <code>_superseded_shared_train</code>으로 보존. normal_-1 C0 AUC가 0.0204 → 0.8367로 개선했고, zero-FP TP는 여전히 0이다.</p>
+  </div>
+  <div class="note">
+    <p><strong>2026-08-25(3차):</strong> Exp472 진단 결과를 반영해 C0을 rank에서 raw 거리로 전환했다. 커밋 <code>f744428d</code>. 이전 공식 root는 <code>_rank_based</code> suffix로 보존. 새 공식 lifecycle을 실행했고 decision passed=true, 공식 root = private run1 byte 일치. Synthetic pooled AUC −0.024 열화, TEST zero-FP TP 0→2 개선.</p>
+  </div>
+</main></body></html>

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp468 구현 보고서</title>
+<style>body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left-color:#b42318}.ok{background:#eefbf4;border-left-color:#16794b}</style>
+</head>
+<body><main>
+<h1>Exp468 구현 보고서</h1>
+<div class="box stop"><h2>기술 요약</h2><p>현재 상태는 <code>task_6_complete_qualification_failed_reproducible</code>이다. 승인된 helper로 reviewed commit <code>49717a2c97be41db9762afcfe3a1c5c153f8f027</code>에서 private 실행 1·2를 순차 수행했다. 두 root의 파일 7개는 이름, SHA-256, 실제 바이트가 모두 같아 재현성은 통과했다. 그러나 C10의 고정 자격 기준은 <code>0/10</code>으로 실패했다. official 실행은 0회이고 TEST/FN, routing, champion, pending, promotion은 건드리지 않았다.</p></div>
+
+<h2>Task 6 실제 TRAIN-only 결과</h2>
+<p>쉽게 말하면 계산은 매번 똑같았지만 방법의 성능이 부족했다. 10개 fold 모두 period AUC 합격선 <code>0.85</code>보다 낮았다. 8개 fold에서는 C10이 C0와 같아 개선이 없었고 period 확인도 0개였다. 두 seed의 fold 1에서만 각각 <code>+0.005102</code>, <code>+0.007653</code> 개선됐지만, 같은 seed에서 정상 데이터도 1번씩 잘못 확인했다. 최고 C10 period AUC는 <code>0.826531</code>이다. level shift, gradual drift, amplitude scaling의 최소 차이는 모두 <code>0</code>이라 보호 성능은 나빠지지 않았다.</p>
+<table><thead><tr><th>seed</th><th>fold</th><th>C0 period AUC</th><th>C10 period AUC</th><th>차이</th><th>period 확인</th><th>판정</th></tr></thead><tbody>
+<tr><td>20260721</td><td>0</td><td>0.688776</td><td>0.688776</td><td>0</td><td>0</td><td>FAIL</td></tr><tr><td>20260721</td><td>1</td><td>0.778061</td><td>0.783163</td><td>+0.005102</td><td>1</td><td>FAIL</td></tr><tr><td>20260721</td><td>2</td><td>0.823980</td><td>0.823980</td><td>0</td><td>0</td><td>FAIL</td></tr><tr><td>20260721</td><td>3</td><td>0.813776</td><td>0.813776</td><td>0</td><td>0</td><td>FAIL</td></tr><tr><td>20260721</td><td>4</td><td>0.801775</td><td>0.801775</td><td>0</td><td>0</td><td>FAIL</td></tr>
+<tr><td>20261721</td><td>0</td><td>0.686224</td><td>0.686224</td><td>0</td><td>0</td><td>FAIL</td></tr><tr><td>20261721</td><td>1</td><td>0.788265</td><td>0.795918</td><td>+0.007653</td><td>1</td><td>FAIL</td></tr><tr><td>20261721</td><td>2</td><td>0.826531</td><td>0.826531</td><td>0</td><td>0</td><td>FAIL</td></tr><tr><td>20261721</td><td>3</td><td>0.826531</td><td>0.826531</td><td>0</td><td>0</td><td>FAIL</td></tr><tr><td>20261721</td><td>4</td><td>0.784024</td><td>0.784024</td><td>0</td><td>0</td><td>FAIL</td></tr>
+</tbody></table>
+<p>두 실행의 artifact map SHA-256은 모두 <code>ba919b1df145376f1db027ae71bf38d523c530b1c2b129cddca0cab8375c15aa</code>다. <code>diff -qr</code>도 차이 없이 종료했다. 실패 뒤 재실행이나 임계값 조정은 하지 않았다.</p>
+
+<h2>Task 5 publication·replay·dashboard 완료 범위</h2>
+<ul>
+<li><code>artifacts_antigravity.py</code>는 publish 전에 <code>qualify_antigravity(records)</code>와 <code>evaluate_qualification_antigravity(...)</code>를 다시 호출해 전달된 qualification/decision과 exact equality를 확인한다. 새 root는 기존 경로를 덮지 않으며 <code>artifact_sha256_antigravity.json</code>은 자기 자신을 제외한 정확한 여섯 leaf digest만 기록한다.</li>
+<li>context는 seed-major 열 개 record의 동일한 <code>69×140</code> little-endian float64 C-order input, fit/query exact indices, C0/S10/C10 scores, per-scope raw JS/rank/strict confirmation, fit LOO raw JS, fit normal max, AUC와 failure reasons를 보존한다. backend는 <code>numpy</code>이고 승인 문서 SHA <code>6780edb2683c992b3df361c72e15542a6e974cf3e7cbbc0df65df2739c0203a9</code>, pre-approval benchmark SHA <code>938d83b0319346270a6cc32b7b6ba3efb88122dc1bf431863d8030f4539fb63b</code>를 고정한다.</li>
+<li><code>replay_antigravity.py</code>는 정확한 seven-leaf/canonical bytes/hash를 먼저 확인하고 ECG200 loader를 호출하지 않는다. 저장 raw/fit max/rank/confirmation/C10/AUC/delta/normal confirmation/decision/context/summary/dashboard와 metric provenance를 바꾼 뒤 outer hash를 다시 맞춰도 Task 4 raw replay와 결정적 projection 비교에서 거부한다.</li>
+<li><code>dashboard_export_antigravity.py</code>가 root 안에 쓰는 snapshot은 실행 경로·run 번호를 넣지 않는 중립 결과라 <code>comparison_status=not_yet_compared</code>를 유지한다. 사용자용 최종 대시보드는 두 root를 외부에서 비교한 뒤 private 실행과 byte equality 체크박스를 모두 체크한다.</li>
+</ul>
+<h2>Task 1 완료 범위</h2>
+<ul>
+<li><code>config_antigravity.py</code>는 TRAIN-only identity, seed/fold, 5×28 창, 대칭 Hann 수학 기준, RFFT·epsilon·자연로그 JS, 네 변화 순서, C0/S10/C10 역할, period 기준과 설계 SHA-256을 exact-type frozen dataclass로 고정한다.</li>
+<li><code>contracts_antigravity.py</code>는 fold와 qualification 형식을 불변으로 제공한다. 두 AUC tuple은 config의 네 변화 순서에 묶이며 exact finite float와 <code>[0,1]</code> 범위만 허용한다.</li>
+<li>qualification은 seed-major 10개 fold, seed 순서의 immutable count mapping, seed당 정상 trial 69개, label query 0, 실행 전 artifact hash <code>null</code>을 강제한다.</li>
+<li>Task 1은 passed/reason 일치와 타입·범위·순서·불변성만 검사한다. period 합격과 보호 변화 기준의 실제 계산은 Task 4에 남겼다.</li>
+</ul>
+<h2>Task 3 완료 범위와 승인 예외</h2>
+<ul>
+<li><code>local_stft_antigravity.py</code>는 exact float64 width 140에서 suffix <code>[56:140]</code>, 시작점 <code>(0,14,28,42,56)</code>, 길이 28의 완전한 다섯 창만 사용한다.</li>
+<li>각 창은 평균 제거, 대칭 Hann <code>0.5-0.5*cos(2*pi*n/27)</code>, 길이-28 RFFT, DC 제외·Nyquist 포함 14 bin, bin당 <code>1e-12</code>, frame L1 정규화를 적용한다. 직접 DFT fixture가 NumPy oracle과 <code>atol=1e-15</code>로 일치한다.</li>
+<li>fit raw는 각 행을 제외한 frame별 성분 중앙값 reference, query raw는 전체 fit reference를 사용한다. reference는 frame별 합 1로 재정규화한다. query를 fit에 섞는 leakage fixture와 duplicate/tied median fixture를 통과한다.</li>
+<li>자연로그 Jensen–Shannon의 다섯 frame 중앙값을 raw S10으로 사용한다. rank는 <code>(1+count(fit_raw&lt;=query_raw))/(n_fit+1)</code>, confirmation은 raw가 0과 fit 최댓값을 모두 엄격히 넘을 때만 true다.</li>
+<li>승인 수식에 없는 수치 clamp는 없다. <code>1.999998644061338e-20</code>의 작은 양의 JS와 raw가 0으로 바뀌지 않고 strict confirmation의 <code>raw&gt;0</code> 의미를 보존하는 회귀 검사를 통과한다.</li>
+<li>결과 배열은 finite exact float64/bool, shape, 최대값과 backend를 검증하고 소유 복사본을 read-only로 보존한다.</li>
+</ul>
+<h2>전체 10-fold 가속 결과</h2>
+<p>ECG200 TRAIN 정상 69행만 사용했다. 두 seed 각각 query 크기 <code>(14,14,14,14,13)</code>, fit 크기 <code>(55,55,55,55,56)</code>이며, normal과 네 합성 query를 fold별 combined batch 한 번으로 점수화해 fit calibration을 공유했다. 전체 workload는 fit raw 552개, query raw 690개, 변환 행 1,242개, 길이-28 frame 6,210개다. 데이터 load·보간·합성·조립은 timing 밖이고 backend 준비·host 반환은 timing 안이다.</p>
+<table>
+<thead><tr><th>backend</th><th>warm median</th><th>IQR</th><th>backend 준비</th><th>cold compile</th><th>gate 시간</th><th>NumPy 대비</th><th>parity·판정</th></tr></thead>
+<tbody>
+<tr><td>NumPy</td><td><code>0.0319152502s</code></td><td><code>0.0004911665s</code></td><td><code>0s</code></td><td>해당 없음</td><td><code>0.0319152502s</code></td><td><code>1.0x</code></td><td>oracle·CPU fallback</td></tr>
+<tr><td>Numba 개선 후</td><td><code>0.0326081249s</code></td><td><code>0.0014127083s</code></td><td><code>0.1001899168s</code></td><td><code>0.4413024997s</code></td><td><code>0.5741005414s</code></td><td><code>0.0555917438x</code></td><td>finite, raw max error <code>5.551115e-16</code>, rank/confirmation exact, deterministic. 속도 gate 실패</td></tr>
+<tr><td>MLX/MPS</td><td colspan="6">측정 불가</td><td>GPU float64 RFFT 미지원으로 parity 실패</td></tr>
+</tbody>
+</table>
+<p>NumPy와 Numba는 각각 전체 workload 21회를 순차 실행했다. raw workload 조립 뒤 clean child process를 시작하고, acceleration module·Numba import와 Hann/twiddle 생성 직전에 timer를 시작했다. 기록한 gate <code>0.5741005414s</code>는 backend 준비 <code>0.1001899168s</code>, cold compile <code>0.4413024997s</code>, warm 전체 실행 <code>0.0326081249s</code>를 모두 포함한다. child는 acceleration module이 timer 전에 preload되지 않았음을 검증한다. 초기 profile 개선은 유지했으며 수식·workload는 바꾸지 않았다.</p>
+<h2>NumPy fallback 승인과 불변 선택 계약</h2>
+<p>승인 문서는 <code>docs/superpowers/specs/2026-08-24-exp468-numpy-fallback-antigravity-design-amendment.html</code>이며 SHA-256은 benchmark artifact의 <code>fallback_authorization.approval_document_sha256</code>에 기록한다. 승인 전 benchmark 전체 바이트 SHA-256 <code>938d83b0319346270a6cc32b7b6ba3efb88122dc1bf431863d8030f4539fb63b</code>도 함께 보존한다.</p>
+<p><code>backend_selection_antigravity.py</code>는 기존 <code>AccelerationAssessmentAntigravity</code>를 수정하지 않고 별도의 frozen decision을 만든다. 가속 성공을 주장하려면 선택 backend가 NumPy가 아니고 <code>eligible</code>, <code>parity_passed</code>, <code>deterministic</code>, <code>speedup&gt;=1.1</code>을 모두 만족해야 한다. 실패 fallback은 모든 non-NumPy 후보의 비어 있지 않은 실패 이유와 64자리 lowercase 승인 SHA-256을 요구한다. 승인 없이 실패 assessment를 Task 4용으로 확정하면 <code>PermissionError</code>가 발생한다.</p>
+<h2>왜 Numba 또는 MPS 추가 최적화로 통과할 수 없는가</h2>
+<p>NumPy 기준 <code>31.915ms</code>에서 1.1배 빨라지려면 후보의 준비·컴파일·계산·반환 전체가 <code>29.014ms</code> 이하여야 한다. 그러나 Numba는 실제 계산과 컴파일을 시작하기 전 backend 준비만 <code>100.190ms</code>이며, warm 전체 실행도 <code>32.608ms</code>다. 따라서 준비 뒤 계산 시간이 0초라고 가정해도 이 gate를 통과할 수 없다.</p>
+<p>Apple GPU와 현재 MLX/MPS runtime은 고정 수식에 필요한 float64/complex128 RFFT를 지원하지 않는다. float32 경로는 raw <code>atol=1e-12</code>를 보존할 수 없으며, GPU 초기화·전송 시간도 길이 28의 작은 frame 6,210개에서 회수되지 않는다. 이 결론을 뒤집으려면 동일 clean-process workload에서 모든 준비·전송·동기화를 포함한 총시간 <code>29.014ms</code> 이하, raw 오차 <code>≤1e-12</code>, exact rank/confirmation, 반복 결정성을 동시에 새로 증명해야 한다.</p>
+<p><strong>승인 반영:</strong> 과학 수식과 결과 검증, gate와 허용오차를 그대로 유지하고 현재 가장 빠른 적격 경로인 NumPy CPU로 Task 4의 성능 평가를 진행한다. 이는 Numba 또는 MLX가 가속 gate를 통과했다는 뜻이 아니다.</p>
+<h2>Task 2 완료 범위</h2>
+<ul>
+<li><code>sources_antigravity.py</code>, <code>interpolation_antigravity.py</code>, <code>synthetic_antigravity.py</code>, <code>predecessor_antigravity.py</code>는 Exp466의 다섯 공개 함수를 직접 import하고 같은 객체로 re-export한다.</li>
+<li>승인 TRAIN의 MD5 <code>808875aeac1c358a90c630fe369327c4</code>와 정상 <code>69×96</code> 경계를 실제 loader로 확인했다. TEST 이름은 파일 열기 전에 거부되며 TEST 데이터·라벨·실제 FN은 열지 않았다.</li>
+<li>승인 TRAIN을 <code>96→140</code>으로 보간한 고정 1-fold fixture에서 C0 정상 배열과 <code>level_shift</code>, <code>gradual_drift</code>, <code>amplitude_scaling</code>, <code>period_change</code> 배열의 dtype·shape·bytes가 Exp466과 같음을 확인한다.</li>
+<li>새 loading, interpolation, synthetic 또는 scoring 로직은 추가하지 않았다. 실제 score 계산은 focused parity test 범위에만 한정했다.</li>
+</ul>
+<h2>Task 4 완료 범위 (보존된 과학·판정 계약)</h2>
+<ul>
+<li><code>scoring_antigravity.py</code>는 checked Task 3 benchmark와 승인 문서 bytes를 읽어 immutable NumPy decision을 복원한다. 승인 SHA, 실패한 가속 gate, 승인 fallback, 선택 backend가 하나라도 다르면 Task 4 점수를 만들지 않는다. 공개 scorer에는 backend selector가 없다.</li>
+<li>각 fold에서 C0는 exact Exp466 adapter를 사용하고, normal과 네 합성 query를 한 combined NumPy S10 batch로 계산해 fit LOO calibration 하나를 공유한다. query는 reference에 들어가지 않는다.</li>
+<li><code>FoldMethodScoresAntigravity</code>는 C0/S10/C10, fit·query raw JS, strict confirmation, fit maximum, seed/fold, 원본 <code>69×140</code> 입력과 exact fit/query index, backend <code>numpy</code>를 소유한 C-contiguous read-only 배열로 보존한다.</li>
+<li>C10은 <code>confirmed</code>에서만 <code>max(C0,S10)</code>이고 나머지는 C0와 array-equal이다. confirmation은 <code>query_raw&gt;0</code>이면서 <code>query_raw&gt;max(fit_raw)</code>인 strict 경계다.</li>
+<li><code>blocked_fold_indices_antigravity()</code>는 query 크기 <code>(14,14,14,14,13)</code>과 fit 크기 <code>(55,55,55,55,56)</code>의 exact public folds를 만든다. qualification은 fold 교환, seed-major order drift, OOF 누락·중복, TRAIN bytes drift를 replay 전에 거부한다.</li>
+<li>qualification은 Task 4 assembler를 신뢰하지 않고 raw input에서 C0, 네 합성 scope, NumPy S10 raw/rank/confirmation, C10을 다시 계산해 exact equality를 요구한다. AUC는 각 fold의 normal query와 같은 fold·행의 변화 query 사이에서 <code>mann_whitney_auc_antigravity(normal, changed)</code>로 계산하며 pooled AUC나 mean gate를 만들지 않는다.</li>
+<li>failure reason은 <code>nonfinite_scores</code>, period threshold, period strict C0 improvement, period confirmation, 세 보호 변화, normal confirmation 순서를 보존한다. evaluation은 10/10과 seed별 normal confirmation 0만 읽고 Task 5 private reproducibility 가능 여부를 표시하며 routing/champion/pending/promotion/TEST-label flag는 모두 false다.</li>
+</ul>
+<h2>10-fold TRAIN-only 합성 fixture 결과</h2>
+<p>테스트 전용 <code>69×140</code> 결정론적 TRAIN-only stand-in으로 두 seed×다섯 blocked folds를 실제 score·replay했다. exact fold row <code>10</code>개와 seed당 OOF <code>69</code>개를 만들고 모든 retained C0/S10/C10 증거의 독립 replay를 통과했다. 이 비과학 fixture의 gate 결과는 <code>0/10</code>이고 normal confirmation은 seed별 <code>2</code>개라서 <code>qualification_failed_blocked_before_private_run</code>이다. 이는 gate와 failure path를 실행하기 위한 테스트 결과이며 ECG200 실제 qualification 결과가 아니다.</p>
+<h2>TDD 증거</h2>
+<table>
+<tr><th>Task 1 RED/GREEN</th><td>focused suite의 10개 검사가 새 config/contracts 모듈 부재로 실패한 뒤 최소 config/contracts 구현으로 <code>10/10</code> 통과했다.</td></tr>
+<tr><th>Task 2 RED</th><td>production adapter 작성 전에 새 네 test module을 실행했고, 새 Exp468 source/interpolation/synthetic/predecessor 모듈 부재로 <code>4</code>개 import error가 발생했다.</td></tr>
+<tr><th>Task 2 GREEN</th><td>다섯 exact re-export 뒤 focused suite의 <code>8/8</code> 검사가 통과한다. 최종 검증에서는 같은 명령을 두 번 실행하고 Exp466 lower regression도 실행한다.</td></tr>
+<tr><th>Task 3 RED</th><td>production 작성 전에 두 새 test module을 실행했고 <code>local_stft_antigravity</code>, <code>acceleration_antigravity</code> 부재로 정확히 두 import error가 발생했다.</td></tr>
+<tr><th>Task 3 GREEN</th><td>수식·LOO·leakage·경계·불변성·Numba parity·고정 gate 계약을 포함한 focused suite <code>17/17</code>가 통과한다. review fix round 1에서 small-positive JS clamp, clean-subprocess preparation timing, 직접 5×14 DFT bin parity의 RED를 각각 확인한 뒤 GREEN으로 전환했다.</td></tr>
+<tr><th>Task 3 fallback RED/GREEN</th><td>production selection 모듈 전에 승인·gate·실패 이유·SHA·불변성 계약을 작성했고 모듈 부재로 1개 import error가 발생했다. 최소 immutable decision 구현과 승인 근거 연결 뒤 새 검사 <code>5/5</code>가 통과한다.</td></tr>
+<tr><th>Task 4 RED</th><td>세 새 test module을 모두 production보다 먼저 만들었다. focused 명령은 <code>scoring_antigravity</code>, <code>qualification_antigravity</code>, <code>evaluation_antigravity</code> 부재로 정확히 <code>3</code>개 <code>ModuleNotFoundError</code>와 함께 실패했다.</td></tr>
+<tr><th>Task 4 GREEN</th><td>최소 구현 뒤 focused <code>14/14</code>, 전체 Exp468 <code>54/54</code>, Exp466 lower regression <code>56/56</code>가 통과한다. raw replay 변조 검사는 C0, fit raw, query raw, rank, confirmation, C10을 각각 바꾸어 모두 거부됨을 확인한다.</td></tr>
+<tr><th>Task 5 RED</th><td>production 작성 전에 세 새 test module을 실행했고 artifacts/replay/dashboard export 모듈 부재로 정확히 <code>3</code>개 <code>ModuleNotFoundError</code>가 발생했다.</td></tr>
+<tr><th>Task 5 GREEN</th><td>최소 구현 뒤 focused <code>12/12</code> 테스트를 두 번 실행하고, 전체 Exp468 <code>66/66</code>, Exp466 lower regression <code>56/56</code>, portable HTML, JSON/map, diff checks를 확인했다. publication은 7 leaves, provenance가 직접 포함된 30 metric rows, 3 summary rows이며 canonical/self-excluding 경계와 raw-input scorer replay, repaired outer hash를 포함한 semantic tamper matrix를 거부한다. qualification PASS는 <code>awaiting_private_reproducibility</code>, FAIL은 <code>qualification_failed_blocked_before_private_run</code>으로 표시하고 private run 1·2는 항상 <code>not_run</code>이다.</td></tr>
+<tr><th>Task 6 RED/GREEN</th><td>production CLI·pipeline 전에 새 Task 6 test module을 실행해 모듈 부재로 정확히 <code>2</code>개 import error를 기록했다. 최소 구현과 sequence-path 보완 뒤 focused <code>9/9</code>를 같은 수정 상태에서 두 번, 전체 Exp468 <code>75/75</code>, Exp466 lower regression <code>56/56</code>를 통과했다. exact parser/root 경계, source-free delayed inspect, wrong HEAD·dirty porcelain 차단, exact blocked-index bytes와 2×5 seed-major 순서, direct-stage count, 공식 helper의 동일 reviewed commit·clean check·성공 후 상태 전이·두 번째 단계 fail-stop을 synthetic/temp 경계에서 확인한다.</td></tr>
+<tr><th>Task 6 경계</th><td>Task 6 Steps 1~3은 exact CLI surface, TRAIN-only direct-stage sequence, retained-input inspect replay, clean reviewed commit 확인과 fail-stop sequence state를 synthetic/temp 경계에서 추가하고, OpenRouter Ox Alpha Ultra와 로컬 Sol의 독립 검토를 모두 <code>CLEAN</code>으로 닫았다. private/official 실행, ECG200 TEST 파일·라벨·실제 FN은 열지 않았다.</td></tr>
+</table>
+<div class="box"><p><code>hann_definition="numpy_hanning_symmetric"</code>은 <code>w[n]=0.5-0.5*cos(2*pi*n/27)</code>을 뜻한다. 이는 NumPy, Numba, MLX 중 실행 backend를 선택하는 필드가 아니다.</p></div>
+<h2>제한·robustness·다음 단계</h2>
+<ul>
+<li>Task 3과 Step 5는 승인 fallback 예외의 감사 연결을 완료했기 때문에 체크한다. 가속 gate 자체는 계속 실패 상태다.</li>
+<li>선택 backend는 <code>numpy</code>이며 이는 gate 합격이 아니라 사용자가 명시적으로 승인한 CPU fallback이다.</li>
+<li>Task 4의 10-fold fixture와 달리 위 Task 6 표는 실제 ECG200 TRAIN-only qualification 결과다.</li>
+<li>Exp468 안에서는 threshold, fold, confirmation을 바꾸거나 다시 실행하지 않는다. 다음 새 실험은 period 변화에서만 켜지고 정상 데이터에서는 꺼지는 확인 신호에 집중한다.</li>
+<li>열린 질문은 cold-start gate를 유지한 별도 사전등록 실험에서 AOT 또는 이미 컴파일된 dense transform이 정당화될 수 있는지다. Exp468의 고정 기준은 바꾸지 않는다.</li>
+</ul>
+<h2>Self-review와 commit</h2>
+<p>Task 4 brief의 파일 소유권, immutable evidence, exact blocked-fold·replay·gate·evaluation 경계를 코드와 테스트에 대조했다. Task 5 시작점이자 Task 4 완료 커밋의 기준 SHA는 <code>d027cced7893a256a51978ce67dcd9590bfcbd35</code>이고, 이 보고서를 포함하는 enclosing commit은 self-referential SHA를 파일 안에 고정할 수 없으므로 <code>git rev-parse HEAD</code>로 식별한다. 구체적인 우려는 scorer import가 checked benchmark JSON과 승인 HTML의 존재·bytes에 의존한다는 점이다. 이는 승인 drift를 즉시 차단하지만 Task 5 packaging도 두 근거 파일을 보존해야 한다.</p>
+<div class="box stop"><p><strong>실행 truth:</strong> <code>task_6_complete_qualification_failed_reproducible</code>. private 실행 <code>2</code>회, official 실행 <code>0</code>회, 비교 파일 <code>7/7</code> byte-identical, C10 통과 <code>0/10</code>, label query <code>0</code>회다. TEST/FN과 routing은 열지 않았다.</p></div>
+</main></body>
+</html>

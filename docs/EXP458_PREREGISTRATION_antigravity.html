@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp458 사전등록</title>
+  <style>
+    body{max-width:960px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+    code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}
+    table{width:100%;border-collapse:collapse}
+    th,td{border:1px solid #9aa5b1;padding:.55rem;text-align:left;vertical-align:top}
+    .note{border-left:4px solid #4f6bed;background:#f5f8fc;padding:1rem}
+  </style>
+</head>
+<body><main>
+  <h1>Exp458 사전등록</h1>
+  <p><strong>상태:</strong> <code>planned_not_started</code>. 승인 설계 SHA256은 <code>52abe997c0e14badc2c886b888e3b2b2074cf002216891f173ab3b1dd6d7ea5d</code>다.</p>
+  <div class="note">
+    <strong>고정 진단:</strong> Exp457의 실패 원인은 <strong>상위 0.5%만 이상으로 인정한 지나치게 극단적인 통과선</strong>이었다.
+    Exp458은 <code>ECG5000_normal_2</code> 하나만 다시 보고, TRAIN 점수 순위를 AUC로 요약해 같은 구조 게이트와 최종 성능 기준 위에서 판단한다.
+  </div>
+
+  <h2>고정 범위</h2>
+  <table>
+    <tr><th>항목</th><th>값</th></tr>
+    <tr><td>실험</td><td><code>Exp458</code> / <code>ecg_normal2_rank_confidence_routing</code></td></tr>
+    <tr><td>실행 이름</td><td><code>exp458-ecg-normal2-rank-confidence-routing-antigravity-20260818</code></td></tr>
+    <tr><td>공식 결과 폴더</td><td><code>/Users/mac/Documents/Dataset/exp458_ecg_normal2_rank_confidence_routing_antigravity_20260818</code></td></tr>
+    <tr><td>대상</td><td><code>ECG5000_normal_2</code>만 AUC 게이트 대상. 나머지 ECG 네 개는 baseline 고정.</td></tr>
+    <tr><td>seed</td><td><code>20260721</code>, <code>20261721</code></td></tr>
+    <tr><td>합성 이상</td><td><code>level_shift</code>, <code>gradual_drift</code>, <code>amplitude_scaling</code>, <code>period_change</code></td></tr>
+    <tr><td>AUC 기준</td><td>각 합성 이상 AUC 모두 ≥ 0.85, 평균 AUC ≥ 0.90, 정상 Wilson 상한 ≤ 0.05</td></tr>
+    <tr><td>구조 게이트</td><td><code>added_count &gt; removed_count</code>이며 현재 <code>14&gt;5</code> 진단을 사용한다.</td></tr>
+    <tr><td>최종 합격선</td><td>FN ≤ 834, FP ≤ 66, F1 &gt; 0.5764150943396227</td></tr>
+  </table>
+
+  <h2>예상 후보 결과</h2>
+  <p>Projected TP 617 FP 66 FN 829 TN 70788 F1 0.5796148426491311 is conditional, not an official result.</p>
+  <p>이 값은 <strong>공식 결과가 아니라 예상 후보 결과</strong>다. TEST 성능을 보고 기준을 정하지 않았으며, Task 1에서는 evaluate/inspect를 실행하지 않는다.</p>
+
+  <h2>실행·label 경계</h2>
+  <p>Task 1은 문서와 code map만 만든다. official evaluate/inspect, TEST label, 공식 결과 폴더 생성은 모두 금지다. 공식 실행 횟수와 label query count는 0이며 결과 SHA는 모두 null이다. routing, champion, pending candidate, promotion은 바꾸지 않는다.</p>
+
+  <h2>장치와 구현 경계</h2>
+  <p>Hydra는 기존 aeon CPU 경로를 유지한다. AUC 계산은 작은 순위 요약이므로 새 MLX 경로를 만들지 않는다. 예정 패키지와 CLI는 code map에 future 경계로만 기록하고, Task 1에서는 구현이 존재한다고 주장하지 않는다.</p>
+</main></body>
+</html>

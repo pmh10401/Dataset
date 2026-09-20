@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp457 대시보드</title>
+  <style>
+    body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+    table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
+    code{background:#eef2f7;padding:.1rem .3rem}.ok{color:#087a45}.bad{color:#a11}.box{background:#f5f7fa;padding:1rem}.small{font-size:.9rem}
+  </style>
+</head>
+<body><main>
+  <h1>Exp457 ECG5000 TRAIN 확신 라우팅</h1>
+  <table>
+    <tr><th>진행</th><td>Task 5/6</td></tr>
+    <tr><th>상태</th><td><code>stopped_before_official_evaluation_train_gate_failed</code></td></tr>
+    <tr><th>결과</th><td><strong>아직 공식 결과 없음</strong></td></tr>
+    <tr><th>공식 실행</th><td>evaluate 0회 / inspect 0회 / 결과 폴더 없음</td></tr>
+    <tr><th>후보 검증</th><td>real TRAIN candidate qualification reproduced exactly twice outside the official result root</td></tr>
+    <tr><th>종료 결정</th><td><strong>사용자가 공식 TEST 평가를 실행하지 않기로 결정</strong></td></tr>
+  </table>
+
+  <h2>최종 중단 결정</h2>
+  <div class="box">
+    <p><strong>FN 836 / FP 64 / F1 0.5754716981132075</strong></p>
+    <p>재현 가능한 TRAIN 후보 결과에서 FN과 F1 합격선을 넘지 못했다. 따라서 사용자가 공식 TEST 평가를 실행하지 않기로 결정했고, Task 6 evaluate·inspect는 모두 실행하지 않았다.</p>
+  </div>
+
+  <h2>먼저 보는 결론</h2>
+  <div class="box">
+    <p><strong>다섯 ECG 후보가 모두 TRAIN 신뢰도 게이트를 통과하지 못했다.</strong> 따라서 보수적 규칙은 ECG 다섯 개를 모두 기존 baseline으로 되돌렸다.</p>
+    <p>비공식 임시 재집계는 FN 836, FP 64, F1 0.5754716981132075였다. FP 기준만 통과하고 FN·F1 기준은 실패했다. 두 번의 계산에서 아래 수치와 판단이 모두 정확히 같았다.</p>
+  </div>
+
+  <h2>데이터셋별 Gate 1과 route</h2>
+  <table>
+    <thead><tr><th>데이터셋</th><th>seed 20260721<br>Wilson / pooled</th><th>seed 20261721<br>Wilson / pooled</th><th>Gate 1</th><th>구조 게이트</th><th>최종 route</th></tr></thead>
+    <tbody>
+      <tr><td>ECG5000_normal_1</td><td>0.007865767546202248 / 0.4842612419700214</td><td>0.007865767546202248 / 0.6288008565310492</td><td class="bad">실패</td><td class="bad">실패 (12 추가, 20 제거)</td><td>baseline</td></tr>
+      <tr><td>ECG5000_normal_2</td><td>0.00923330730695328 / 0.22770700636942676</td><td>0.00923330730695328 / 0.24150743099787686</td><td class="bad">실패</td><td class="ok">통과 (14 추가, 5 제거)</td><td>baseline</td></tr>
+      <tr><td>ECG5000_normal_3</td><td>0.048113585065137326 / 0.0</td><td>0.048113585065137326 / 0.0</td><td class="bad">실패</td><td class="bad">실패 (동률)</td><td>baseline</td></tr>
+      <tr><td>ECG5000_normal_4</td><td>0.024184232814371848 / 0.0</td><td>0.024184232814371848 / 0.0</td><td class="bad">실패</td><td class="bad">실패 (동률)</td><td>baseline</td></tr>
+      <tr><td>ECG5000_normal_5</td><td>0.16817922405261626 / 0.0</td><td>0.16817922405261626 / 0.0</td><td class="bad">실패</td><td class="bad">실패 (0 추가, 1 제거)</td><td>baseline</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Wilson은 정상 TRAIN을 이상으로 잘못 고를 가능성의 보수적인 상한이며 0.05 이하여야 한다. pooled는 네 합성 이상을 찾은 평균 비율이며 0.70 이상이어야 한다.</p>
+
+  <h2>네 합성 이상 감도</h2>
+  <table>
+    <thead><tr><th>데이터셋 / seed</th><th>level shift</th><th>gradual drift</th><th>amplitude scaling</th><th>period change</th></tr></thead>
+    <tbody>
+      <tr><td>normal_1 / 20260721</td><td>0.939186295503212</td><td class="bad">0.45610278372591007</td><td>0.5314775160599572</td><td class="bad">0.010278372591006424</td></tr>
+      <tr><td>normal_1 / 20261721</td><td>0.9516059957173447</td><td>0.6334047109207709</td><td>0.8997858672376874</td><td class="bad">0.030406852248394005</td></tr>
+      <tr><td>normal_2 / 20260721</td><td class="bad">0.29865534324133053</td><td class="bad">0.03255484784147204</td><td>0.5435244161358811</td><td class="bad">0.036093418259023353</td></tr>
+      <tr><td>normal_2 / 20261721</td><td class="bad">0.3036093418259023</td><td class="bad">0.03680113234253362</td><td>0.5994338287331918</td><td class="bad">0.026185421089879687</td></tr>
+      <tr><td>normal_3 / 두 seed</td><td class="bad">0.0</td><td class="bad">0.0</td><td class="bad">0.0</td><td class="bad">0.0</td></tr>
+      <tr><td>normal_4 / 두 seed</td><td class="bad">0.0</td><td class="bad">0.0</td><td class="bad">0.0</td><td class="bad">0.0</td></tr>
+      <tr><td>normal_5 / 두 seed</td><td class="bad">0.0</td><td class="bad">0.0</td><td class="bad">0.0</td><td class="bad">0.0</td></tr>
+    </tbody>
+  </table>
+  <p class="small">종류별 감도는 각각 0.50 이상이어야 한다. normal_1은 특히 period change, normal_2는 level/drift/period가 약했다. normal_3·4·5는 TRAIN 수가 작아 고정 alpha 0.005에서 가장 작은 가능한 경험적 p-value조차 기준 아래로 내려가지 못했다.</p>
+
+  <h2>비공식 임시 재집계</h2>
+  <table>
+    <thead><tr><th>방법</th><th>FN</th><th>FP</th><th>F1</th><th>용도</th></tr></thead>
+    <tbody>
+      <tr><td>always_baseline</td><td>837</td><td>66</td><td>0.5742574257425742</td><td>기존 기준</td></tr>
+      <tr><td>family_wide_local_gap</td><td>835</td><td>63</td><td>0.5764150943396227</td><td>비교 기준</td></tr>
+      <tr><td>oracle_per_dataset</td><td>828</td><td>64</td><td>0.5808270676691729</td><td>가능한 최대치 참고</td></tr>
+      <tr><td>ecg_train_confidence_router</td><td>836</td><td>64</td><td>0.5754716981132075</td><td>Task 5 임시 후보 결과</td></tr>
+    </tbody>
+  </table>
+  <table><tr><th>FN ≤ 834</th><td class="bad">실패: 836</td></tr><tr><th>FP ≤ 66</th><td class="ok">통과: 64</td></tr><tr><th>F1 &gt; 0.5764150943396227</th><td class="bad">실패: 0.5754716981132075</td></tr></table>
+
+  <p class="box">ChlorineConcentration 세 데이터셋은 고정된 MultiRocket 후보를 사용한다. ECG는 모두 baseline으로 돌아갔다. TEST confusion/FN/FP/F1은 route를 정하는 데 쓰지 않았고 route가 고정된 뒤 재집계에만 사용했다.</p>
+  <p class="box">Gate 1 numeric evidence and evaluation provenance are semantically recomputed. 공식 aeon Hydra는 CPU 구현을 유지하며 MLX는 적용하지 않는다.</p>
+</main></body>
+</html>

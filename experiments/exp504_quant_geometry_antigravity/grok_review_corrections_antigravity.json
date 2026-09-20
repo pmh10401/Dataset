@@ -1,0 +1,20 @@
+{
+  "edits": [
+    {
+      "file": "acceleration_antigravity.py",
+      "old": "import aeon,numba,torch\nfrom threadpoolctl import threadpool_limits",
+      "new": "import numba,torch\nfrom importlib.metadata import version\nfrom threadpoolctl import threadpool_limits"
+    },
+    {
+      "file": "acceleration_antigravity.py",
+      "old": "versions={'aeon':aeon.__version__,'torch':torch.__version__,'numba':numba.__version__,'mlx':old['mlx'],'mlx-metal':old.get('mlx-metal',old['mps'])}",
+      "new": "versions={n:version(n) for n in ('aeon','torch','numba','numpy','mlx','mlx-metal')}"
+    },
+    {
+      "file": "test_exp504_antigravity.py",
+      "old": "    np.testing.assert_allclose(np.asarray(head.quant_encoder.transform(collection),dtype=np.float64),expected,rtol=1e-10,atol=1e-8)\n",
+      "new": "    np.testing.assert_allclose(np.asarray(head.quant_encoder.transform(collection),dtype=np.float64),expected,rtol=1e-10,atol=1e-8)\n\ndef test_constant_series_cap_and_score():\n    out=cap_series(np.full((2,777),2.5))\n    np.testing.assert_array_equal(out,np.float32(2.5))\n    scores=QuantHeads(np.zeros((4,128))).score(np.zeros((3,128)))\n    assert set(scores)==set(QuantHeads.names) and all(v.shape==(3,) and np.isfinite(v).all() for v in scores.values())\n"
+    }
+  ],
+  "note": "versions now use importlib.metadata; constant-series test appended. Model/selection unchanged."
+}

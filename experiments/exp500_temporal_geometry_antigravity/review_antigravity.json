@@ -1,0 +1,9 @@
+{
+  "reviewer": "sol_advisor_sol_reviewer",
+  "verdict": "resolved_fix_first",
+  "finding": "Possible population mismatch: protocol names same metadata-selected Exp499 population while implementation loads original Exp495 source",
+  "resolution": "All 50 complete population records and original source hash are exactly equal between Exp499 and Exp500. No population mismatch or reselection occurred. Preserve frozen pilot/protocol; add explicit equality assertion to independent verifier.",
+  "exp499_manifest_sha256": "85a82bb6044e36fc54abfeab8449f2e6f3fa83202673b1214725c1e412e9562d",
+  "equal_population": true,
+  "other_blockers": []
+}

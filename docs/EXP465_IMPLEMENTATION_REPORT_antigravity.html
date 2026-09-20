@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp465 구현 보고서</title>
+<style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.ok{background:#f5fff9;border-left:6px solid #16794b;padding:1rem}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}</style></head>
+<body><main>
+<h1>Exp465 구현 보고서</h1>
+<p>이 문서는 Exp465 Task 1–5의 구현 범위와 검증 근거를 기록한다. 현재 상태는 reviewed closeout인 <code>task_5_reviewed_closeout_qualification_failed</code>다. Ox Alpha Ultra와 Sol 최종 검토는 각각 <code>SPEC PASS / SCIENCE APPROVED</code>였고 AUC와 stdout hash를 독립 재계산했다.</p>
+<h2>Task 5 private 결과</h2>
+<div class="note"><p>검토된 commit <code>fd997fcf…58693</code>에서 서로 다른 private 폴더로 두 번 순차 실행했다. 두 결과는 출력, 7개 파일, 해시, 행, 요약, 판정과 대시보드가 모두 정확히 같았다. 그러나 C8은 <code>0/10</code>으로 qualification에 실패했다.</p></div>
+<table>
+<tr><th>실패 지점</th><td>period-change 최저 AUC <code>0.6862244898 &lt; 0.85</code>, 최저 평균 AUC <code>0.8679846939 &lt; 0.90</code></td></tr>
+<tr><th>지킨 조건</th><td>모든 점수 finite, 두 seed 정상 confirmation 모두 0, gradual·period에서 C0보다 나빠진 기록 0</td></tr>
+<tr><th>재현 근거</th><td>stdout SHA-256 <code>0436fbbd727815daf2cecdac353b380d0624b923ff74f43a03197536f894f891</code>; artifact map SHA-256 <code>0532bf2d09adb4b2086d0ccf109a204c0e6e0fec4dc260889fb733072b29536f</code></td></tr>
+<tr><th>결정</th><td><code>qualification_failed_blocked_before_routing_research</code>. Task 6, 라우팅 연구, promotion과 공식 실행은 열지 않는다.</td></tr>
+</table>
+<h2>Task 4 구현 범위와 검증</h2>
+<ul>
+<li>저장된 합격 표시를 믿지 않고 normal 및 네 합성 변화의 원점수에서 AUC·평균·유한값 여부를 다시 계산한다.</li>
+<li>C8은 10개 기록 모두 통과하고, seed별 정상 confirmation이 0이며, gradual·period AUC가 같은 기록의 C0보다 낮지 않을 때만 통과한다.</li>
+<li>normal×gradual/period fixed·broken 수와 Wilson 상한은 설명값으로만 보존한다.</li>
+<li>일곱 결과 파일을 canonical 형식으로 만들고, 재생 시 score·AUC·Wilson·confirmation·요약·판정·대시보드 변조를 거부한다.</li>
+<li>최종 집중 검사 9개를 두 번, Task 3 점수 회귀 검사 3개와 전체 Exp465 검사를 통과했다. <code>compileall</code>과 <code>git diff --check</code>도 통과했다.</li>
+</ul>
+<p>Task 4의 집계와 JSON 생성은 작은 CPU 작업이다. MLX를 위해 판정 수학을 다시 쓰면 exact 경계가 바뀌고 1.1배 속도 조건을 정당화할 수 없어 CPU를 유지했다.</p>
+<div class="note"><p>첫 검토의 지적을 반영해 seed마다 정확히 69개 OOF를 재생에서도 강제하고, Wilson을 seed 단위 0/69로 계산하며, C0는 보존된 입력과 fold 인덱스로 exact Exp464 scorer를 다시 실행한다. C6/C8은 원시 벡터 근거에서 다시 계산한다. 최종 fresh 검토 결과는 <code>SPEC PASS / QUALITY APPROVED</code>다.</p></div>
+<h2>Task 2 구현 범위</h2>
+<ul>
+<li><code>sources_antigravity.py</code>: TRAIN 이름 강제, TEST 경로 사전 거부, MD5 gate, <code>rsplit(":", 1)</code> 파싱, float64/finite/int ±1 검증, 100×96과 69/31 확인 후 정상 69×96 read-only 반환.</li>
+<li><code>interpolation_antigravity.py</code>: 고정 <code>np.linspace</code> 그리드와 행별 단일 <code>np.interp</code>로만 96→140 변환. 첫·끝점 보존, owned/C-contiguous/read-only float64 출력.</li>
+<li>Tests: source RED 5건과 interpolation RED 5건을 먼저 작성해 import failure로 확인한 뒤 GREEN으로 전환했다.</li>
+</ul>
+<h2>Task 3 구현 범위와 검증</h2>
+<ul>
+<li><code>scoring_antigravity.py</code>: Exp465-local frozen/slots <code>FoldMethodScoresAntigravity</code>, fixed C0/C6/C8 projection, and one direct call to Exp464 <code>score_fold_methods_antigravity</code>. It copies no C0, synthetic generator, C6, or C8 mathematics.</li>
+<li>Tests: fixed finite 20×140 fixture with sorted fit/query indices covers both frozen seeds and all five folds (10 calls), exact equality for all 13 fields and every nested value, read-only mapping checks, plus a scorer-call spy proving every entrypoint invocation calls the imported Exp464 scorer exactly once.</li>
+</ul>
+<h2>Task 2 실제 TRAIN smoke과 가속화 판단</h2>
+<table>
+<tr><th>TRAIN 저장 경로</th><td><code>/Users/mac/Documents/Dataset/exp465_ecg200_train_antigravity/ECG200_TRAIN_antigravity.ts</code></td></tr>
+<tr><th>URL / MD5 / SHA-256</th><td>Zenodo record 11186675 <code>ECG200_TRAIN.ts</code>; MD5 <code>808875aeac1c358a90c630fe369327c4</code>; SHA-256 <code>6b855dbcbae2d968937c2416d22bdc2dc74be90d5ce6345f56950fa7e754b3fe</code></td></tr>
+<tr><th>smoke 결과</th><td>TRAIN 100×96, +1 69개/-1 31개, 정상 출력 69×140 finite read-only; TEST 파일은 다운로드·열기·조회하지 않았다.</td></tr>
+<tr><th>가속화</th><td>작은 CPU parsing/행별 <code>np.interp</code>이며 알고리즘 변경 없는 MLX 1.1× gate 근거가 없어 canonical CPU fallback을 유지한다.</td></tr>
+</table>
+<h2>Task 3 가속화 판정</h2>
+<table>
+<tr><th>PyTorch / MPS</th><td>tensor-eligible downstream Exp464 workload exists, but Task 3 is an immutable boundary projection and does not own or rewrite that scorer.</td></tr>
+<tr><th>MLX availability</th><td>repository Python has MLX 0.32.0 on <code>Device(gpu,0)</code>; pinned runtime has no MLX. PyTorch 2.13.0 is present in both runtimes.</td></tr>
+<tr><th>Ruling</th><td>The whole scoring stage can be accelerated only by rewriting the official Exp464 CPU scorer, violating acceleration policy condition 1. No benchmark was run because it would change the algorithm under assessment.</td></tr>
+<tr><th>Record</th><td>CPU fallback; transfer/sync timing N/A; CPU-vs-MLX parity N/A; canonical implementation remains Exp464 CPU scoring followed by exact projection.</td></tr>
+</table>
+<h2>구현 범위</h2>
+<ul>
+<li><code>config_antigravity.py</code>: ECG200 <code>100×96</code>, 정상 69, method order <code>("C0","C6","C8")</code>, primary <code>C8</code>, seeds/folds/onset/cosine, 네 유형 AUC <code>0.85</code>, 평균 <code>0.90</code>, 10/10, 정상 confirmation 0, official/label 0을 frozen dataclass로 고정했다.</li>
+<li><code>contracts_antigravity.py</code>: score/result contract와 초기 governance snapshot을 immutable contract로 추가하고 bool/int alias, mutable container, reordered mapping, mean drift, passed/reason 불일치, changed governance를 거부한다.</li>
+<li>한국어 사용자 문서 4종(대시보드·사전등록·runbook·보고서)과 versioned code-map triplet 작성기를 만들었다.</li>
+<li>세 truth ledger에 Exp465 Task 1 상태를 additive로 등록했고 Exp464 기록은 바꾸지 않았다.</li>
+</ul>
+<h2>TDD와 검증 근거</h2>
+<table>
+<tr><th>RED</th><td>보존된 config test가 missing-module error로 실패하는 것을 확인했다.</td></tr>
+<tr><th>GREEN</th><td>지정 interpreter로 config/contracts/governance suite를 동일하게 두 번 실행했고 총 8 tests를 두 번 모두 통과했다.</td></tr>
+<tr><th>code map</th><td><code>scratch/build_codemap_exp465_antigravity.py --validate-only</code>를 실행해 triplet fingerprint, embedded graph, evidence, source-parent binding을 읽기 전용으로 검증했다.</td></tr>
+<tr><th>diff hygiene</th><td><code>git diff --check</code>를 실행했고 whitespace error가 없었다.</td></tr>
+</table>
+<h2>가속화 판단과 안전 경계</h2>
+<div class="ok"><p>Task 1에는 tensor workload가 없다. PyTorch·MLX·MPS는 설계에 따라 나중에 점수 단계에서 다시 평가하며, 현재는 canonical CPU fallback만 기록한다. MLX 채택 조건은 candidate index 일치, 수치 허용 범위, transfer/sync 포함 1.1배 속도, manifest 증거다.</p></div>
+<div class="note"><p>새 Ox Alpha Ultra 세션의 Task 3 독립 검토 결과는 <code>SPEC PASS / QUALITY APPROVED</code>이며 지적 사항이 없다. 계획의 Task 3 heading과 Step 6을 checked로 바꿨다. 이는 점수 모듈 구현 완료를 뜻하며 qualification 성능 결과를 뜻하지 않는다.</p></div>
+</main></body></html>

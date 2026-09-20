@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp480 구현 결과 보고서</title><style>
+body{font-family:system-ui,-apple-system,sans-serif;max-width:960px;margin:30px auto;padding:0 20px 60px;line-height:1.65;color:#182230}.verdict{border-left:5px solid #175cd3;background:#eff8ff;padding:12px 16px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #d8dee8;padding:8px;text-align:left}
+</style></head><body><h1>Exp480 구현 결과</h1>
+<p class="verdict"><strong>개선 실패 보존</strong></p>
+<p>FN(False Negative)은 실제 이상을 놓친 수라서 낮을수록 좋습니다. ZF는 거짓 경보 없이 잡은 이상 수를 나타내며 높을수록 좋습니다. 이 실험은 ZF 합계와 family 평균을 두 기준 방식과 비교했습니다.</p>
+<p>AUC는 이상과 정상을 구분하는 정도입니다. 전체 평균 AUC와 family 평균 AUC가 두 기준 방식보다 낮아지지 않는지도 함께 확인했습니다.</p>
+<table><thead><tr><th>방식</th><th>ZF 합계</th><th>family 평균 ZF</th><th>평균 AUC</th><th>family 평균 AUC</th></tr></thead><tbody><tr><td>항상 MiniRocket</td><td>2110</td><td>2.93763</td><td>0.983141</td><td>0.971214</td></tr><tr><td>현재 row-KNN</td><td>2111</td><td>2.94402</td><td>0.983287</td><td>0.971843</td></tr><tr><td>Exp480</td><td>2107</td><td>2.93138</td><td>0.982251</td><td>0.969494</td></tr></tbody></table>
+<p>공식 라우터는 바꾸지 않았습니다. 이 보고서는 자격 검증 결과만 설명합니다.</p>
+</body></html>

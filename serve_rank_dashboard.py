@@ -2700,6 +2700,59 @@ EXPERIMENTS[EXP328_ID] = {
     "artifact_paths": [EXP328_ROOT / "status.json", EXP328_ROOT / "exp328_results.csv", EXP328_ROOT / "exp328_summary.csv", EXP328_ROOT / "exp328_fn_detail.csv"],
     "expected_datasets": 251,
 }
+
+EXP400_402_ROOT = DATA_DIR / "exp400_402_exp397_shadow_validation"
+EXPERIMENTS["experiment_400_402_exp397_shadow_validation"] = {
+    "label": "Exp400-402 - Exp397 검토 순위 Shadow 검증",
+    "history_status": "retrospective_shadow_replay",
+    "comparison_eligible": False,
+    "scope": "retrospective_shadow_replay",
+    "status_reason": "과거 1,117개 데이터셋으로 검토 순위와 Shadow 원장 준비 상태를 검증; 실제 운영 검증 아님",
+    "autonomous_metric_scope": "Exp291 자동 경보 2,218건 변경 없음",
+    "review_metric_scope": "Exp292 Standard 806건의 human-assisted 검토 순위",
+    "detail_csv": EXP400_402_ROOT / "exp401_dataset_top1.csv",
+    "summary_csv": EXP400_402_ROOT / "exp401_precision_at_k.csv",
+    "status_json": EXP400_402_ROOT / "status.json",
+    "stdout_log": EXP400_402_ROOT / "exp400_402_stdout.log",
+    "artifact_paths": [
+        EXP400_402_ROOT / "status.json",
+        EXP400_402_ROOT / "exp400_prediction_manifest.json",
+        EXP400_402_ROOT / "exp401_evaluation_manifest.json",
+        EXP400_402_ROOT / "exp402_readiness_report.json",
+        EXP400_402_ROOT / "EXP402_READINESS_REPORT.md",
+    ],
+    "expected_datasets": 1117,
+    "automatic_policy_changed": False,
+    "retrospective": True,
+    "prospective": False,
+}
+
+EXP403_408_ROOT = DATA_DIR / "exp403_408_feature_ml_validation"
+EXPERIMENTS["experiment_403_408_feature_ml_validation"] = {
+    "label": "Exp403-408 - TRAIN-only feature/ML validation",
+    "history_status": "retrospective_shadow_replay",
+    "comparison_eligible": False,
+    "scope": "train_only_feature_ml_validation",
+    "status_reason": "기존 Hard/Standard/Priority는 유지하고 TRAIN-only 신뢰도와 Shadow 후보를 후향 검증",
+    "autonomous_metric_scope": "Exp291 Hard 2,218건 변경 없음",
+    "review_metric_scope": "Exp406-408 research Shadow와 Exp405 retrospective counterfactual",
+    "detail_csv": EXP403_408_ROOT / "exp403_408_results.csv",
+    "summary_csv": EXP403_408_ROOT / "exp403_408_summary.csv",
+    "status_json": EXP403_408_ROOT / "status.json",
+    "stdout_log": EXP403_408_ROOT / "exp403_408_stdout.log",
+    "artifact_paths": [
+        EXP403_408_ROOT / "status.json",
+        EXP403_408_ROOT / "checkpoints",
+        EXP403_408_ROOT / "exp403_408_results.csv",
+        EXP403_408_ROOT / "exp403_408_summary.csv",
+    ],
+    "expected_datasets": 1117,
+    "automatic_policy_changed": False,
+    "retrospective": True,
+    "prospective": False,
+    "live_status_only": True,
+}
+
 EXP329_330_META = {
     329: ("experiment_329_large_candidate_train_verifier", "큰 데이터셋 후보 2차 검증", "기존 검토·다중 근거 후보를 고정 규칙으로 Shadow 검증"),
     330: ("experiment_330_large_learned_normal_representation", "큰 데이터셋 학습형 정상 표현", "다중 해상도 PCA/KNN 정상 표현으로 기존 top-64 밖 FN 도달 가능성 평가"),
@@ -3960,8 +4013,8 @@ def read_heartbeat():
     return value
 
 
-def read_experiment_status(exp_id, info=None, *, now=None, max_age_seconds=120):
-    """Read the active experiment's atomic status file when it is fresh."""
+def read_experiment_status(exp_id, info=None, *, now=None, max_age_seconds=120, expected_run_id=None, expected_run_started_unix=None):
+    """Read only the active experiment's fresh atomic status file."""
 
     if not exp_id:
         return {}
@@ -3975,6 +4028,10 @@ def read_experiment_status(exp_id, info=None, *, now=None, max_age_seconds=120):
         return {}
     recorded_id = value.get("experiment_id") or value.get("id")
     if recorded_id != exp_id or value.get("status") not in {"running", "completed", "failed"}:
+        return {}
+    if expected_run_id is not None and value.get("run_id") != expected_run_id:
+        return {}
+    if expected_run_started_unix is not None and as_float(value.get("run_started_unix")) != float(expected_run_started_unix):
         return {}
     updated = as_float(value.get("updated_unix"))
     if updated is None:
@@ -5851,9 +5908,16 @@ def build_status(include_details=True):
     if external_live_run.get("status") == "running":
         running = external_live_run
     heartbeat = read_heartbeat()
-    active_status = read_experiment_status(running.get("id"))
+    active_status = read_experiment_status(
+        running.get("id"),
+        expected_run_id=running.get("run_id"),
+        expected_run_started_unix=running.get("run_started_unix"),
+    )
     if active_status.get("status") == "running":
         heartbeat = active_status
+    active_info = experiment_info(running.get("id"))
+    if active_info.get("live_status_only"):
+        return build_atomic_status_only(state, running, active_info, active_status, include_details)
     paths = active_paths(state)
     if external_live_run:
         paths = {
@@ -6098,6 +6162,102 @@ def build_status(include_details=True):
     return payload
 
 
+def build_atomic_status_only(state, running, info, status, include_details):
+    """Build Exp403-408 live data solely from its atomic status payload."""
+    status = dict(status or {})
+    unavailable = not status
+    if unavailable:
+        status = {
+            "status": "running",
+            "run_id": running.get("run_id"),
+            "stage": "status_unavailable",
+            "current_dataset": "",
+            "completed": 0,
+            "total": expected_for_experiment(info, EXPECTED_DATASETS),
+            "errors": 0,
+        }
+    done = safe_int(status.get("completed")) or 0
+    expected = safe_int(status.get("total")) or expected_for_experiment(info, EXPECTED_DATASETS)
+    progress = as_float(status.get("progress_percent"))
+    progress = progress if progress is not None else (done / expected * 100 if expected else 0.0)
+    atomic_errors = safe_int(status.get("errors")) or 0
+    atomic_error_events = [
+        {
+            "dataset_name": status.get("current_dataset") or f"atomic-error-{index + 1}",
+            "reason": status.get("last_error") or "stage_error",
+            "family": status.get("stage") or "unknown_stage",
+        }
+        for index in range(atomic_errors)
+    ]
+    throughput_value = as_float(status.get("throughput_per_minute"))
+    eta = as_float(status.get("eta_seconds"))
+    atomic_coverage = coverage_snapshot_from_counts(done, expected, atomic_error_events)
+    atomic_coverage["error_datasets"] = atomic_errors
+    atomic_coverage["remaining_or_missing"] = max(0, expected - done)
+    queue_items = experiment_queue_snapshot(
+        state, expected, experiment_ids=[running.get("id")], heartbeat=status
+    )
+    payload = {
+        "running": bool(running.get("id")),
+        "active_experiment": running.get("id"),
+        "active_label": info.get("label", running.get("id")),
+        "last_completed_experiment": None,
+        "last_completed_label": None,
+        "running_state": running,
+        "process": process_tree_snapshot(running.get("child_pid") or running.get("pid")),
+        "system": system_resource_snapshot(),
+        "queue": list(state.get("queue") or []),
+        "queue_items": queue_items,
+        "unified_experiments": [],
+        "dataset_context": {},
+        "catalog_count": len(set(EXPERIMENTS) | set(HISTORICAL_EXPERIMENT_META)),
+        "datasets_done": done,
+        "expected_datasets": expected,
+        "progress_percent": progress,
+        "rows": None,
+        "current_dataset": status.get("current_dataset"),
+        "current_meta": str(status.get("stage") or ""),
+        "recent_datasets": [],
+        "summary": [],
+        "coverage": atomic_coverage,
+        "error_summary": error_summary(atomic_error_events),
+        "warning_summary": [],
+        "throughput": {
+            "recent_datasets_per_minute": throughput_value,
+            "average_datasets_per_minute": throughput_value,
+            "recent_eta_seconds": eta,
+            "eta_basis": "atomic status.json",
+        },
+        "best": None,
+        "runtime_health": runtime_health_snapshot(status),
+        "external_validation": [],
+        "log_tail": "",
+        "elapsed_seconds": as_float(status.get("elapsed_seconds")),
+        "eta_seconds": eta,
+        "stage": status.get("stage"),
+        "errors": atomic_errors,
+        "device": status.get("device"),
+        "checkpoint_sha256": status.get("checkpoint_sha256"),
+        "throughput_per_minute": throughput_value,
+        "status_unavailable": unavailable,
+        "updated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "server": server_instance_metadata(),
+    }
+    if include_details:
+        payload.update(
+            {
+                "metric_glossary": metric_glossary_snapshot(),
+                "experiment_history": [],
+                "completed_results": [],
+                "experiment_compare": [],
+                "strategy_details": [],
+                "operational_best": None,
+                "hard_confidence": {},
+            }
+        )
+    return payload
+
+
 def experiment_queue_snapshot(state, expected, experiment_ids=None, heartbeat=None):
     completed = set(state.get("completed", []))
     history = history_by_id(state)
@@ -6113,6 +6273,39 @@ def experiment_queue_snapshot(state, expected, experiment_ids=None, heartbeat=No
     for exp_id in ordered:
         info = experiment_info(exp_id)
         if not info:
+            continue
+        if info.get("live_status_only"):
+            live = read_experiment_status(
+                exp_id,
+                info,
+                expected_run_id=(running.get("run_id") if exp_id == running_id else None),
+                expected_run_started_unix=(running.get("run_started_unix") if exp_id == running_id else None),
+            )
+            status = str(live.get("status")) if live else "pending"
+            if not live:
+                if exp_id == running_id:
+                    status = "running"
+                elif exp_id in completed:
+                    status = "completed"
+                elif exp_id in queued:
+                    status = "queued"
+            item_expected = safe_int(live.get("total")) if live else None
+            item_expected = item_expected if item_expected is not None else expected_for_experiment(info, expected)
+            done = safe_int(live.get("completed")) if live else 0
+            done = done if done is not None else 0
+            if status == "queued" and not live:
+                done = 0
+            rows.append(
+                {
+                    "id": exp_id,
+                    "label": info.get("label", exp_id),
+                    "status": status,
+                    "datasets_done": done,
+                    "expected_datasets": item_expected,
+                    "progress_percent": as_float(live.get("progress_percent")) if live else 0.0,
+                    "rows": None,
+                }
+            )
             continue
         detail_rows = read_csv_rows(info["detail_csv"])
         item_expected = expected_for_experiment(info, expected)

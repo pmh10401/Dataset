@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Exp473 Phase 2 결과 - antigravity</title>
+<style>
+body{font-family:-apple-system,sans-serif;max-width:900px;margin:40px auto;padding:0 20px;color:#222;line-height:1.6}
+h1{border-bottom:3px solid #2b6cb0;padding-bottom:8px}
+h2{color:#2b6cb0;margin-top:32px}
+table{border-collapse:collapse;width:100%;margin:16px 0}
+th,td{border:1px solid #ccc;padding:8px 12px;text-align:center}
+th{background:#edf2f7}
+.bad{background:#fed7d7}
+.warn{background:#fefcbf}
+.note{background:#ebf8ff;border-left:4px solid #2b6cb0;padding:12px 16px;margin:16px 0}
+</style>
+</head>
+<body>
+<h1>Exp473 Phase 2 — 대형 데이터셋 샘플링 진단 (antigravity)</h1>
+
+<h2>한눈에 보기</h2>
+<p><strong>목표:</strong> Phase 1에서 다루지 못한 큰 데이터셋(Yoga 2개, FordA/B)을 TRAIN 500개만 뽑아 계산 시간을 줄이고 raw C0 성능 확인</p>
+<div class="note">
+<strong>핵심 발견:</strong><br>
+• AUC는 모두 0.81~0.91로 나쁘지 않음<br>
+• 그러나 Yoga 두 데이터셋은 zero-FP TP가 0~2개로 꼬리 회복이 거의 안 됨<br>
+• FordA/B는 seed에 따라 편차가 커서 참조 표본 선택에 민감<br>
+→ 이 4개 데이터셋은 raw C0만으로는 부족하며 별도 후처리 또는 라우팅 전략 필요
+</div>
+
+<h2>상세 결과 (TRAIN 500개 샘플링)</h2>
+<table>
+<tr><th>데이터셋</th><th>AUC (s1/s2)</th><th>zero-FP TP</th><th>TP@FP≤3</th><th>TP@FP≤10</th><th>전체 이상</th></tr>
+<tr><td>Yoga_normal_1</td><td>0.867 / 0.856</td><td class="bad">0 / 0</td><td>0 / 1</td><td>0 / 1</td><td>31</td></tr>
+<tr><td>Yoga_normal_2</td><td>0.889 / 0.914</td><td class="bad">0 / 0</td><td>0 / 0</td><td>2 / 4</td><td>36</td></tr>
+<tr><td>FordA_normal_-1</td><td>0.832 / 0.873</td><td class="warn">1 / 5</td><td>8 / 5</td><td>9 / 7</td><td>51</td></tr>
+<tr><td>FordB_normal_-1</td><td>0.809 / 0.824</td><td class="bad">0 / 0</td><td>0 / 4</td><td>0 / 4</td><td>46</td></tr>
+</table>
+
+<h2>해석</h2>
+<ul>
+<li><strong>AUC 준수:</strong> 4개 모두 0.81 이상, Yoga_normal_2는 0.91</li>
+<li><strong>꼬리(Top FP) 회복 약함:</strong> Yoga는 normal 최대값을 넘는 이상치가 없어 zero-FP 조건에서 잡지 못함</li>
+<li><strong>Seed 민감도:</strong> FordA/B는 참조 500개 선택에 따라 zero-FP TP가 0~5까지 변동 → 참조 표본 안정화 필요</li>
+</ul>
+
+<h2>다음 단계 제안</h2>
+<ol>
+<li>Yoga 계열: LocalGap + 주파수/엔트로피 결합 등 보조 신호 탐색</li>
+<li>Ford 계열: 여러 seed 평균 또는 k-fold 참조 앙상블로 안정성 확보</li>
+<li>Phase 1(강력) + Phase 2(보완 필요) 결과를 합쳐 라우팅 규칙 설계</li>
+</ol>
+
+<h2>실험 정보</h2>
+<p>커밋: <code>0ab5a371</code> | 스키마: exp473_fn_focus_extension_v1 | 승인 토큰: EXP473_FN_FOCUS_EXTENSION_APPROVED<br>
+출력 위치: /Users/mac/Documents/Dataset/exp473_fn_focus_extension_phase2_antigravity_20260825</p>
+</body>
+</html>

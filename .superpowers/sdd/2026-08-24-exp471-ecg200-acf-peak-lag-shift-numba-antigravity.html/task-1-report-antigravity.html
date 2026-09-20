@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp471 Task 1A report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; line-height: 1.55; color: #17202a; max-width: 1040px; margin: 0 auto; padding: 24px; }
+    h1, h2 { line-height: 1.25; }
+    pre { background: #f4f6f8; border-left: 4px solid #5d6d7e; padding: 12px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.94em; }
+    .pass { color: #196f3d; font-weight: 700; }
+    .fail { color: #922b21; font-weight: 700; }
+    .note { background: #fef9e7; border-left: 4px solid #d4ac0d; padding: 12px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Exp471 Task 1A — bounded RED/GREEN report</h1>
+  <p>Scope: Task 1A tests and six minimum production files only. This report records the actual focused verification performed on 2026-08-24.</p>
+
+  <h2>1. RED evidence</h2>
+  <p>Command:</p>
+  <pre><code>python3 -m unittest experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_config_antigravity tests.test_contracts_antigravity tests.test_predecessor_antigravity</code></pre>
+  <p>Expected RED occurred before production creation:</p>
+  <pre><code>Ran 8 tests in 0.093s
+
+FAILED (errors=11)</code></pre>
+  <p>All failures were import failures with no production implementation present. Representative outcomes:</p>
+  <pre><code>ModuleNotFoundError: No module named 'experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.config_antigravity'
+ModuleNotFoundError: No module named 'experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.contracts_antigravity'
+ModuleNotFoundError: No module named 'experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.interpolation_antigravity'</code></pre>
+
+  <h2>2. Path reconciliation</h2>
+  <div class="note">
+    <p>The brief listed the contracts/predecessor test names at a literal top-level <code>tests/</code> prefix while its exact GREEN command required both under the Exp471 package namespace. To satisfy the authoritative run command without adding package-marker exception files, those two behavior-identical tests were placed at their package-resolved paths before GREEN verification. No production behavior changed during this correction.</p>
+  </div>
+
+  <h2>3. GREEN evidence</h2>
+  <p>Focused command, run twice after creating the six production files:</p>
+  <pre><code>python3 -m unittest experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_config_antigravity experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_contracts_antigravity experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_predecessor_antigravity</code></pre>
+  <p>First result:</p>
+  <pre class="pass"><code>........
+----------------------------------------------------------------------
+Ran 8 tests in 0.286s
+
+OK</code></pre>
+  <p>Second result:</p>
+  <pre class="pass"><code>........
+----------------------------------------------------------------------
+Ran 8 tests in 0.130s
+
+OK</code></pre>
+
+  <h2>4. Exp470 baseline evidence</h2>
+  <p>Command:</p>
+  <pre><code>python3 -m unittest experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_config_antigravity experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_contracts_antigravity experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_predecessor_antigravity</code></pre>
+  <p>Result:</p>
+  <pre class="pass"><code>.........
+----------------------------------------------------------------------
+Ran 9 tests in 0.111s
+
+OK</code></pre>
+
+  <h2>5. Files delivered</h2>
+  <ul>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests/test_config_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests/test_contracts_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests/test_predecessor_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/config_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/sources_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/interpolation_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/synthetic_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/predecessor_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/contracts_antigravity.py</code></li>
+  </ul>
+
+  <h2>6. Self-review</h2>
+  <ul>
+    <li>Config validates exact runtime types, tuple ordering, frozen mutation rejection, and every preregistered Task 1A value.</li>
+    <li>The five authority modules contain direct Exp470 re-exports only; the predecessor test checks five <code>is</code> object-identity assertions against the Exp470 exports.</li>
+    <li>Contracts preserve the Exp470 immutable mapping and ten-row seed-major pattern, rename fold scores to <code>c12_per_type_auc</code>, enforce strict counts/bools/finite AUCs, retain <code>label_query_count=0</code>, and validate an optional lowercase 64-hex SHA-256.</li>
+    <li><code>git diff --check -- experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity</code> passed; Git status showed only the new Exp471 task directory, and no transient top-level test file remained.</li>
+    <li>No package-marker exception was introduced.</li>
+  </ul>
+
+  <h2>7. Task 1B final evidence</h2>
+  <ul>
+    <li>Exp471 code map generation and validate-only both passed; JSON and lock syntax checks passed.</li>
+    <li>The focused 8-test suite passed twice, and the Exp470 9-test baseline passed once.</li>
+    <li>The portable dashboard builder reported validation, package, and verification all passed at 1440px and 390px.</li>
+    <li>Plan, design, implementation report, and dashboard now check only Task 1; Tasks 2–6 and all run boundaries remain unchecked.</li>
+    <li><code>git diff --check</code> passed.</li>
+  </ul>
+
+  <h2>8. Execution boundary</h2>
+  <p>No experiment, private execution, official execution, routing execution, TEST access, or FN access occurred. Task 1A performed imports, unit-test validation, Git read-only review, and this report write only.</p>
+</main>
+</body>
+</html>

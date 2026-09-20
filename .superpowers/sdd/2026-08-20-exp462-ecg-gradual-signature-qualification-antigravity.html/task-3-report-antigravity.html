@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp462 Task 3 report antigravity</title>
+<style>body{max-width:1100px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.12rem .3rem}.box{padding:1rem;background:#f5f7fa;border-left:6px solid #3569a8}</style></head>
+<body><main>
+<h1>Exp462 Task 3 report</h1>
+<p><strong>Status:</strong> Task 3 complete after focused review C/I/M 0. Task 3 plan checkboxes were intentionally unchecked until review and are now checked in the implementation plan.</p>
+<table>
+<tr><th>scope</th><td>Created <code>gradual_features_antigravity.py</code>, <code>scoring_antigravity.py</code>, <code>test_gradual_features_antigravity.py</code>, and <code>test_scoring_antigravity.py</code>. Updated dashboard, implementation report, plan text, governance assertions, and Exp462 codemap surfaces.</td></tr>
+<tr><th>feature boundary</th><td><code>gradual_signature_antigravity(values)</code> validates one finite floating row of exact length <code>140</code>, uses views <code>[0:140]</code>, <code>[0:70]</code>, <code>[70:140]</code>, and returns owned C-contiguous read-only finite <code>float64</code> shape <code>(24,)</code>.</td></tr>
+<tr><th>score boundary</th><td><code>score_fold_methods_antigravity(train, fit_indices, query_indices, *, seed, fold_index)</code> returns methods in exact order <code>hydra_period_rank_max</code>, <code>gradual_signature_local_gap</code>, <code>hydra_period_gradual_rank_max</code>.</td></tr>
+<tr><th>baseline</th><td>Exp461 reviewed score path is delegated by the public scorer. Task 3 does not copy or alter the Exp461 scorer.</td></tr>
+<tr><th>rank and primary</th><td>Rank uses <code>(1 + count(r_i ≤ s)) / (n + 1)</code>. Primary uses exact elementwise <code>maximum(exp461_rank, gradual_rank)</code>.</td></tr>
+</table>
+<h2>TDD evidence</h2>
+<table>
+<tr><th>RED</th><td><code>python3 -m unittest experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_gradual_features_antigravity experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_scoring_antigravity</code> failed with six expected missing-module errors for Task 3 production modules.</td></tr>
+<tr><th>GREEN 1</th><td>Focused Task 3 suite: <code>Ran 6 tests</code>, <code>OK</code>.</td></tr>
+<tr><th>GREEN 2</th><td>Focused Task 3 suite repeated after map/doc synchronization: <code>Ran 6 tests</code>, <code>OK</code>.</td></tr>
+<tr><th>Task 2 regression</th><td><code>python3 -m unittest</code> focused Task 2 public interface suite: <code>Ran 9 tests</code>, <code>OK</code>.</td></tr>
+<tr><th>Governance regression</th><td><code>python3 -m unittest experiments.exp462_ecg_gradual_signature_qualification_antigravity.tests.test_governance_antigravity</code>: <code>Ran 2 tests</code>, <code>OK</code>.</td></tr>
+<tr><th>Map and compile</th><td><code>scratch/build_codemap_exp462_antigravity.py --validate-only</code> passed; <code>py_compile</code> passed for Task 3 modules, tests, and map builder.</td></tr>
+<tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp462_ecg_gradual_signature_qualification_antigravity_20260820</code> exists <code>false</code>, symlink <code>false</code>.</td></tr>
+<tr><th>review closeout</th><td>Focused review verified exact 24D feature formula/order, strict rejection and immutability, Exp461 baseline delegation, LocalGap seed/index flow, rank formula, elementwise max, no Task 4/TEST/routing access, truthful MLX assessment and CPU selection, status truth before closeout, and clean worktree. Verdict C/I/M 0.</td></tr>
+</table>
+<h2>Backend decision</h2>
+<table>
+<tr><th>selected backend</th><td><code>numpy_cpu</code></td></tr>
+<tr><th>runtime</th><td>Python <code>3.14.6</code>, NumPy <code>2.4.6</code>, MLX <code>0.32.0</code>, <code>mlx.metal</code> unavailable with <code>ModuleNotFoundError</code>, device <code>Device(gpu, 0)</code>.</td></tr>
+<tr><th>same-input smoke</th><td>32 synthetic rows, same feature definition. CPU <code>0.011300167068839073</code>s; MLX transfer/sync smoke <code>0.04128483310341835</code>s.</td></tr>
+<tr><th>parity</th><td>finite parity <code>true</code>, order parity <code>true</code>, numeric max abs diff <code>0.0</code>.</td></tr>
+<tr><th>fallback reason</th><td>MLX did not satisfy the 1.1x speed gate including transfer/sync; observed speedup <code>0.274</code>. No package installation was attempted.</td></tr>
+</table>
+<div class="box">Official evaluate/inspect remain at <code>0</code>, official root remains absent, label query count remains <code>0</code>, and Task 4+ work was not started.</div>
+</main></body></html>

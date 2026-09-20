@@ -1,0 +1,9 @@
+{
+  "state": "passed",
+  "metric_vectors_checked": 1000,
+  "auc_max_abs_error": 2.220446049250313e-16,
+  "zf_exact": true,
+  "route_summaries_checked": 24,
+  "prior_artifacts_unchanged": true,
+  "label_boundary_metadata_unchanged": true
+}

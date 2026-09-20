@@ -1,0 +1,10 @@
+[
+  {
+    "stage": "tests",
+    "exit_code": 0
+  },
+  {
+    "stage": "acceleration",
+    "exit_code": 0
+  }
+]

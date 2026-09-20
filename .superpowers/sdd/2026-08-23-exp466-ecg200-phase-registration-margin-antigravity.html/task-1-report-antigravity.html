@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp466 Task 1 구현 보고</title>
+<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}.ok{background:#f5fff9;border-left:6px solid #16794b;padding:1rem}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style>
+</head>
+<body><main>
+<h1>Exp466 Task 1 구현 보고</h1>
+<p>상태: <code>task_1_authority_contract_documents_committed</code>. 실험 truth 상태는 <code>planned_implementation_not_started</code>이며, 이 보고서는 Task 1 골격만 다룬다.</p>
+<h2>변경 파일과 인터페이스</h2>
+<ul>
+<li><code>experiments/exp466_ecg200_phase_registration_margin_antigravity/config_antigravity.py</code>: <code>FROZEN_CONFIG_ANTIGRAVITY</code>와 frozen exact-type config.</li>
+<li><code>experiments/exp466_ecg200_phase_registration_margin_antigravity/contracts_antigravity.py</code>: <code>Exp466PhaseEvidenceAntigravity</code>, <code>Exp466FoldResultAntigravity</code>, <code>Exp466QualificationAntigravity</code>.</li>
+<li><code>test_config_antigravity.py</code>, <code>test_contracts_antigravity.py</code>: frozen 값·불변성·finite/SHA/69-count/seed-order/zero-use contract의 focused TDD 검증.</li>
+<li><code>docs/EXP466_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP466_RUNBOOK_antigravity.html</code>, <code>docs/EXP466_IMPLEMENTATION_REPORT_antigravity.html</code>, 기존 <code>docs/EXP466_DASHBOARD_antigravity.html</code>의 Task 1 필드.</li>
+<li><code>RESEARCH_STATE.json</code>, <code>EXPERIMENT_CATALOG.json</code>, <code>CHAMPION_LEDGER.json</code>: Exp466 <code>planned_implementation_not_started</code> entry만 additive로 추가.</li>
+<li><code>scratch/build_codemap_exp466_antigravity.py</code>, <code>docs/codemap/codemap_exp466_antigravity.{html,json,lock}</code>: Exp465 baseline과 Exp466 caller/effect/test 관계를 기록하고 검증.</li>
+</ul>
+<h2>정확한 RED와 GREEN 증거</h2>
+<table>
+<tr><th>RED</th><td><code>python3 -m unittest experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_config_antigravity experiments.exp466_ecg200_phase_registration_margin_antigravity.tests.test_contracts_antigravity</code> → 7 tests, 14 errors, exit 1. 모든 error는 새 <code>config_antigravity</code> 또는 <code>contracts_antigravity</code>의 <code>ModuleNotFoundError</code>였고, 구현 부재라는 의도된 원인으로 실패했다.</td></tr>
+<tr><th>GREEN 1</th><td>같은 명령 → <code>.......</code>, 7 tests, <code>OK</code>, exit 0, 0.006초.</td></tr>
+<tr><th>GREEN 2</th><td>같은 명령 → <code>.......</code>, 7 tests, <code>OK</code>, exit 0, 0.005초.</td></tr>
+<tr><th>코드맵</th><td id="exp466-task1-map-result-antigravity"><code>python3 scratch/build_codemap_exp466_antigravity.py --validate-only</code> → exit 0. graph 16 nodes / 14 edges / unknown 0, caller/effect/test 답 3개와 tracked fingerprints 18개를 검증했다.</td></tr>
+<tr><th>diff-check</th><td id="exp466-task1-diff-result-antigravity"><code>git diff --check</code> → exit 0, 출력 없음. 세 ledger와 Exp466 graph/lock을 포함한 5개 JSON도 모두 parse됐다.</td></tr>
+<tr><th>commit hash</th><td id="exp466-task1-commit-antigravity">Task 1 구현 commit <code>5de243dede76c175c160d9612cc5b834900e559f</code> (<code>feat: freeze Exp466 authority and contracts</code>).</td></tr>
+<tr><th>fresh review</th><td>Terra High가 brief·보고서·전체 diff를 독립 검토해 <code>SPEC PASS</code>, <code>QUALITY PASS</code>, 지적 0건을 기록했다.</td></tr>
+</table>
+<h2>코드맵 질문 답</h2>
+<table>
+<tr><th>무엇이 호출하는가?</th><td>config는 contracts와 focused tests, 이후 Tasks 2–4의 source/scoring/qualification이 호출한다. contracts는 이후 phase scoring, qualification, replay, publication이 호출한다. truth 문서·ledger·dashboard는 governance/audit가 읽고 map builder는 Task 1 closeout이 호출한다.</td></tr>
+<tr><th>무엇에 영향을 주는가?</th><td>TRAIN-only 자료 계약, C0/P9/C9 순서, C9 단독 primary, warp 1.25/shared 67, AUC와 confirmation gate, 불변 evidence/fold/qualification shape, planned zero/null governance만 고정한다. 점수·후보 index·결과·routing에는 영향을 주지 않는다.</td></tr>
+<tr><th>어떤 테스트가 덮는가?</th><td><code>test_config_antigravity</code>는 config exact truth와 immutability를, <code>test_contracts_antigravity</code>는 finite margin, SHA, fold gate, mutable/reordered mapping, seed별 정상 69개, official/label 0을 덮는다. builder <code>--validate-only</code>는 evidence, HTML 구조, JSON, graph, embedded graph, Exp465 baseline과 tracked fingerprint를 검증한다.</td></tr>
+</table>
+<h2>보존한 경계</h2>
+<div class="note"><p>ECG200 TEST와 라벨을 열지 않았다. ECG200 TRAIN도 읽지 않았으며 점수 계산, candidate index 생성, private/official 실행을 하지 않았다. official evaluate/inspect, private run, label query는 모두 0이고 official result와 모든 result hash는 <code>null</code>이다. Exp465는 수정하지 않았고 routing, champion, pending candidate, promotion도 바꾸지 않았다. 계획 Task/Step 체크박스는 controller 소유로 그대로 두었다.</p></div>
+<div class="ok"><p>Task 1에는 MLX 대상 score workload가 없다. 이후 full run 전 동일 입력·seed CPU/MLX parity, finite 출력, 모든 사전등록 alpha의 candidate index 일치, 수치 허용 범위, transfer/synchronization 포함 1.1배 속도 gate를 만족해야만 MLX를 쓴다.</p></div>
+<h2>우려 사항</h2>
+<div class="stop"><p>자기 참조를 피하기 위해 구현 commit hash는 후속 closeout commit에서 이 보고서와 code-map fingerprint에 바인딩한다. closeout은 보고서와 triplet 결합만 바꾸며 config/contracts/ledger/dashboard 의미는 바꾸지 않는다. 알려진 기능·과학 blocker는 없다.</p></div>
+</main></body>
+</html>

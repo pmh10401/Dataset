@@ -1,0 +1,100 @@
+{
+  "schema": "exp477_official_minimum_zf_integration_codemap_v1",
+  "current_commit": "82daefaeac56ecc2391fd9457c6ded1ecf9b1787",
+  "frozen_exp476_result_sha256": "8b6f881d25d0d2865e05c5a5b9ca204f78641e1364bb60d536e7dcc8ec21733f",
+  "nodes": [
+    {
+      "id": "exp476_policy",
+      "path": "experiments/exp476_minimum_zf_fallback_routing_antigravity/policy_antigravity.py",
+      "caller": "official conservative policy adapter",
+      "effect": "Provides the already-qualified minimum-neighbour-ZF fallback rule without duplicating its mathematics.",
+      "tests": ["experiments/exp476_minimum_zf_fallback_routing_antigravity/tests/test_policy_antigravity.py"]
+    },
+    {
+      "id": "exp476_result",
+      "path": "experiments/exp476_minimum_zf_fallback_routing_antigravity/results_antigravity.json",
+      "caller": "Exp477 artifact builder and verification",
+      "effect": "Frozen qualification evidence: 962 datasets, 120 families, passing AUC/ZF gates.",
+      "tests": []
+    },
+    {
+      "id": "feature_cache",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/train_features_antigravity.json",
+      "caller": "Exp477 artifact builder only",
+      "effect": "Supplies seven TRAIN-only numeric features for 962 historical rows.",
+      "tests": ["experiments/exp474_conservative_fallback_routing_antigravity/tests/test_ragged_features_antigravity.py"]
+    },
+    {
+      "id": "official_policy_artifact",
+      "path": "experiments/exp_routing_label_free_antigravity/official_exp476_policy_artifact_antigravity.json",
+      "caller": "official conservative policy adapter",
+      "effect": "Stores anonymous TRAIN features, proposals, and historical gains; contains no dataset names.",
+      "tests": ["experiments/exp_routing_label_free_antigravity/tests/test_conservative_policy_antigravity.py"]
+    },
+    {
+      "id": "official_policy_adapter",
+      "path": "experiments/exp_routing_label_free_antigravity/conservative_policy_antigravity.py",
+      "caller": "official router",
+      "effect": "Fits the frozen Exp476 policy once and returns a conservative final method from numeric features only.",
+      "tests": ["experiments/exp_routing_label_free_antigravity/tests/test_conservative_policy_antigravity.py"]
+    },
+    {
+      "id": "official_router",
+      "path": "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py",
+      "caller": "pipeline integration and direct API users",
+      "effect": "Loads all normal TRAIN rows, supports variable lengths, extracts seven features, and applies the Exp476 policy.",
+      "tests": ["experiments/exp_routing_label_free_antigravity/tests/test_official_router_antigravity.py"]
+    },
+    {
+      "id": "pipeline_integration",
+      "path": "experiments/exp_routing_label_free_antigravity/pipeline_integration_antigravity.py",
+      "caller": "official end-to-end method-selection pipeline",
+      "effect": "Returns the single qualified method for every family instead of using name-based legacy candidates.",
+      "tests": ["experiments/exp_routing_label_free_antigravity/tests/test_pipeline_integration_antigravity.py"]
+    },
+    {
+      "id": "exp477_runner",
+      "path": "experiments/exp477_official_minimum_zf_routing_antigravity/run_antigravity.py",
+      "caller": "approved Exp477 operator",
+      "effect": "Checks source hashes, requalifies the current proposal rules across 120 held-out families, runs six representative datasets through both APIs, and writes evidence.",
+      "tests": ["experiments/exp_routing_label_free_antigravity/tests/test_pipeline_integration_antigravity.py"]
+    },
+    {
+      "id": "exp477_result",
+      "path": "experiments/exp477_official_minimum_zf_routing_antigravity/results_antigravity.json",
+      "caller": "Exp477 dashboard and verification",
+      "effect": "Records zero direct/pipeline mismatches, singleton routing, determinism, and ragged-input coverage.",
+      "tests": []
+    },
+    {
+      "id": "exp477_dashboard",
+      "path": "docs/EXP477_DASHBOARD_antigravity.html",
+      "caller": "user",
+      "effect": "Shows official integration and end-to-end verification in easy Korean with completed checkboxes.",
+      "tests": ["experiments/exp_routing_label_free_antigravity/tests/test_exp477_dashboard_antigravity.py"]
+    }
+  ],
+  "edges": [
+    {"from": "feature_cache", "to": "official_policy_artifact", "type": "builds"},
+    {"from": "exp476_result", "to": "official_policy_artifact", "type": "qualifies"},
+    {"from": "official_policy_artifact", "to": "official_policy_adapter", "type": "fits"},
+    {"from": "exp476_policy", "to": "official_policy_adapter", "type": "implements"},
+    {"from": "official_policy_adapter", "to": "official_router", "type": "routes"},
+    {"from": "official_router", "to": "pipeline_integration", "type": "selects"},
+    {"from": "pipeline_integration", "to": "exp477_runner", "type": "verifies"},
+    {"from": "exp477_runner", "to": "exp477_result", "type": "writes"},
+    {"from": "exp477_result", "to": "exp477_dashboard", "type": "renders"}
+  ],
+  "constraints": [
+    "Inference uses seven numeric TRAIN features only; dataset names select database rows but are not policy inputs.",
+    "Historical outcome values are frozen meta-training targets and are never read from the new dataset at inference.",
+    "Exp474, Exp475, and Exp476 result bytes remain unchanged.",
+    "The official loader uses all normal TRAIN rows and supports unequal row lengths without padding or interpolation.",
+    "The official pipeline returns one Exp476-qualified method for trained and unseen families alike.",
+    "The current proposal rules differ from the frozen checkpoint proposal once; requalification preserves every final selection and all aggregate metrics.",
+    "No new score source is introduced, so MLX acceleration assessment is not applicable."
+  ],
+  "official_policy_artifact_sha256": "b45f4124354d6bd612657b801634c503fa84b3585776cfde4a8f76d19b805545",
+  "result_sha256": "e794cc506d7579fc63e2fe96ccfebc794a330975f6a4375889419263bc877949",
+  "future_declared_paths": []
+}

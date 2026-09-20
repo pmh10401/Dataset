@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp461 대시보드</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}.bad{border-left:6px solid #b42318}.ok{border-left:6px solid #16794b}</style></head>
+<body><main>
+  <h1>Exp461 ECG 주기 특징 검증 대시보드</h1>
+  <table>
+    <tr><th>progress</th><td>Task 5 complete after final review SHIP C/I/M0; Task 6 forbidden</td></tr>
+    <tr><th>status</th><td><code>stopped_before_official_evaluation_qualification_failed</code></td></tr>
+    <tr><th>current stage</th><td>terminal Task5 qualification failed / no next official Exp461 action</td></tr>
+    <tr><th>official execution</th><td>official evaluate 0 / official inspect 0</td></tr>
+    <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp461_ecg_period_signature_qualification_antigravity_20260820</code> absent</td></tr>
+    <tr><th>label query count</th><td>0</td></tr>
+    <tr><th>official artifact map SHA-256</th><td><code>null</code></td></tr>
+    <tr><th>official result hashes</th><td>prediction <code>null</code>, evaluation <code>null</code>, decision <code>null</code>, dashboard <code>null</code></td></tr>
+  </table>
+  <div class="box bad">
+    <p><strong>쉬운 요약:</strong> 두 번의 비공식 TRAIN 재현은 바이트 수준으로 같았다. 하지만 주 후보 <code>hydra_period_rank_max</code>가 10개 fold 중 9개만 통과했다. Exp461 합격 조건은 10/10이므로 공식 평가로 가지 않는다.</p>
+    <p><strong>Final review:</strong> SHIP with Critical/Important/Major 0. Task 5 is complete, but the failed qualification result forbids Task 6 and any official Exp461 action.</p>
+    <p><strong>실패 원인:</strong> 주 후보의 최소 <code>gradual_drift</code> AUC가 <code>0.8402306222021025</code>로 고정 기준 <code>0.85</code>보다 낮다. 두 과거 <code>period_change</code> 실패 fold는 모두 개선됐지만 충분하지 않다.</p>
+  </div>
+  <h2>Private TRAIN reproducibility</h2>
+  <table>
+    <tr><th>reviewed commit</th><td><code>3a306ff3e276dae13b28b9733db30e9934da7eb2</code></td></tr>
+    <tr><th>run 1 timing</th><td>evaluate <code>116.7199521670118</code>s, inspect <code>0.19575291709043086</code>s</td></tr>
+    <tr><th>run 2 timing</th><td>evaluate <code>113.66284816595726</code>s, inspect <code>0.1888656672090292</code>s</td></tr>
+    <tr><th>exact equality</th><td>30 metric rows, three summaries, decision, dashboard, failed rows, seven leaf hashes, artifact map hash, and combined leaf bytes all equal</td></tr>
+    <tr><th>temporary roots</th><td>two explicit nonofficial roots were removed after evidence capture</td></tr>
+  </table>
+  <h2>Method result table</h2>
+  <table>
+    <thead><tr><th>method</th><th>passed folds</th><th>min period_change AUC</th><th>min pooled AUC</th><th>max Wilson upper</th><th>finite</th><th>status</th></tr></thead>
+    <tbody>
+      <tr><td><code>hydra_local_gap</code></td><td>8/10</td><td><code>0.8004124541019063</code></td><td><code>0.9160442130677531</code></td><td><code>0.013439124039399194</code></td><td>true</td><td>failed</td></tr>
+      <tr><td><code>period_signature_local_gap</code></td><td>0/10</td><td><code>0.857158910711833</code></td><td><code>0.700277191624318</code></td><td><code>0.013439124039399194</code></td><td>true</td><td>failed</td></tr>
+      <tr><td><code>hydra_period_rank_max</code></td><td>9/10</td><td><code>0.907392736783864</code></td><td><code>0.9212266108344651</code></td><td><code>0.013439124039399194</code></td><td>true</td><td>failed</td></tr>
+    </tbody>
+  </table>
+  <h2>Primary gate extrema</h2>
+  <table>
+    <tr><th>level_shift min AUC</th><td><code>0.9411749911976258</code></td></tr>
+    <tr><th>gradual_drift min AUC</th><td><code>0.8402306222021025</code> fail, below <code>0.85</code></td></tr>
+    <tr><th>amplitude_scaling min AUC</th><td><code>0.9722347970424023</code></td></tr>
+    <tr><th>period_change min AUC</th><td><code>0.907392736783864</code></td></tr>
+    <tr><th>primary pooled min AUC</th><td><code>0.9212266108344651</code></td></tr>
+    <tr><th>primary max normal Wilson upper</th><td><code>0.013439124039399194</code></td></tr>
+  </table>
+  <h2>Historical period_change repairs</h2>
+  <table>
+    <thead><tr><th>seed</th><th>fold</th><th>previous AUC</th><th>candidate AUC</th><th>strictly improved</th></tr></thead>
+    <tbody>
+      <tr><td><code>20260721</code></td><td><code>3</code></td><td><code>0.8208339620743423</code></td><td><code>0.907392736783864</code></td><td>true</td></tr>
+      <tr><td><code>20261721</code></td><td><code>4</code></td><td><code>0.8004124541019063</code></td><td><code>0.9216148584075248</code></td><td>true</td></tr>
+    </tbody>
+  </table>
+  <h2>Private artifact hashes</h2>
+  <table>
+    <tr><th>context</th><td><code>8d84c32bab344b8c69c7c147fe5d3d835d65523aac25692eb13159a15a7c091e</code></td></tr>
+    <tr><th>method rows</th><td><code>b2611d95eeb90debd1adc001f560898422c85e3cfea32861725aa91526e75e60</code></td></tr>
+    <tr><th>failed rows</th><td><code>4d896b265542e72fe5a0b9b7db8089ba2b2e5946e64f55caaa794bb9929e88b7</code></td></tr>
+    <tr><th>summary</th><td><code>7500d2599060b257a171856fb68bed39a0ec0f4ddb26ca6084e606c911251e25</code></td></tr>
+    <tr><th>decision</th><td><code>27f6d8db82b71051a16b68d3ad2f69f6608f6a922d765b35029e594afc581315</code></td></tr>
+    <tr><th>dashboard snapshot</th><td><code>e0e70dd42536f71aa736a8c178d14ed84b268f703623937dfe1f8663967bbabc</code></td></tr>
+    <tr><th>artifact map</th><td><code>8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be</code></td></tr>
+  </table>
+  <div class="box ok">
+    <p><strong>MLX smoke:</strong> Python <code>3.14.6</code>, NumPy <code>2.3.5</code>, synthetic seed <code>20260820</code>, CPU timing <code>0.005286333849653602</code> seconds. MLX and mlx-metal were unavailable with <code>ModuleNotFoundError:No module named 'mlx'</code>, so the canonical path remains <code>CPU NumPy</code> / <code>cpu_numpy</code>.</p>
+  </div>
+</main></body></html>

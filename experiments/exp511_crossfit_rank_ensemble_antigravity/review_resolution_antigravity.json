@@ -1,0 +1,22 @@
+{
+  "state": "resolved",
+  "unresolved_pilot_blockers": [],
+  "code_review": "Grok grok-4.6 high returned pass with no concrete defects; reviewed sources are hash-bound and unchanged.",
+  "accepted_limits": [
+    "Existing target length is derived from all normal TRAIN, including held C; subsequent member geometry is A-only.",
+    "Four A sets overlap; rows may contain duplicate waveform values. No independent-model or novel-waveform guarantee is claimed.",
+    "The three original full-F controls use their original full fitting population. The first five score paths remain the original Exp510 implementation.",
+    "The independent verifier reconstructs role indices and component means and checks stored gradients, but does not regenerate geometry and full gradients from feature matrices.",
+    "The pilot-only implementation has no full TEST runner; all four verified gates are required before creating and qualifying the separate full-evaluation stage."
+  ],
+  "local_review": "Reviewed upstream load_normal_train TRAIN-normal query, crossfit split, fixed MiniRocket/OAS factory and original contribution/objective paths; tested member isolation, four-role coverage, arithmetic pooling and exact first-head replay.",
+  "acceleration": {
+    "initial_assessment": "The synthetic benchmark changing all four solver objective paths gave warm speedups around 1.14. It is preserved without rewriting its result.",
+    "production_assessment": "A separate fixed three-round benchmark preserves original Exp510 member0 and all five controls, changing only members1-3. All scores/rankings/candidates agree and the original five are exact. Numba median speedup is 0.9988691289624198; Torch CPU is 0.9995306844088834. Neither qualifies at 1.1x, including first-call overhead.",
+    "selected_backend": "numpy_scipy_float64",
+    "gpu": "Actual MLX GPU and MPS float64 operations are unsupported in the installed environment.",
+    "statistics": "Existing NumPy reductions/quantiles and SciPy distances are retained. No demonstrated Numba/GPU gain justifies replacing these small audit and aggregation stages."
+  },
+  "no_experiment_definition_changes": true,
+  "no_test_values_or_labels_read": true
+}

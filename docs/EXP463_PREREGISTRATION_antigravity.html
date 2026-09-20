@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp463 사전등록</title>
+<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem;border-left:6px solid #2457a6}.stop{background:#fff4f2;border-left:6px solid #b42318}</style></head>
+<body><main>
+<h1>Exp463 사전등록</h1>
+<p>Task 1/6 governance boundary: Task 1–4 evidence is recorded; Task 5 review is SHIP with 7/7 controls checked, while Task 6 remains 0/7 unchecked and permanently forbidden.</p>
+<p>이 문서는 승인된 Exp463 설계와 구현 전 과학 계약을 고정한다. 초기 상태는 <code>planned_implementation_not_started</code>였고, 이제 private TRAIN 결과가 계약에 따라 기록됐다. onset 56, alpha 0.005, gate 0.995, seed, fold, 주 후보는 결과를 본 뒤 바꾸지 않았다.</p>
+<table>
+<tr><th>experiment / kind</th><td><code>Exp463</code> / <code>ecg_prefix_ramp_gated_qualification</code></td></tr>
+<tr><th>run identity</th><td><code>exp463-ecg-prefix-ramp-gated-qualification-antigravity-20260821</code></td></tr>
+<tr><th>approved design</th><td><code>docs/superpowers/specs/2026-08-21-exp463-ecg-prefix-ramp-gated-qualification-antigravity-design.html</code><br>SHA-256 <code>d5af337a09b11a707198eb0d669a9a6a4b330db44db698daa5ca218cdfbb7efb</code></td></tr>
+<tr><th>predecessor</th><td>Exp462 terminal commit <code>040422f62406e3ca19038b9609903c4ba76e1694</code></td></tr>
+<tr><th>data</th><td><code>ECG5000_normal_2</code> TRAIN only, exactly <code>1413×140</code>; seeds <code>20260721</code>, <code>20261721</code>; five time-ordered blocked folds</td></tr>
+<tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp463_ecg_prefix_ramp_gated_qualification_antigravity_20260821</code> must remain absent before separately approved Task 6</td></tr>
+<tr><th>boundaries</th><td>TEST labels, TEST FN/FP/F1, routing, champion/pending mutation, and promotion are forbidden. Official evaluate/inspect count and label query count are both <code>0</code> (official command count 0; label query count 0); result and artifact hashes are <code>null</code>.</td></tr>
+</table>
+
+<h2>Frozen M0–M6 comparison</h2>
+<table><thead><tr><th>ID</th><th>fixed description</th><th>combination</th><th>role</th></tr></thead><tbody>
+<tr><td><code>M0</code></td><td>Exp461 reviewed <code>hydra_period_rank_max</code> score</td><td>none</td><td>predecessor reproduction baseline</td></tr>
+<tr><td><code>M1</code></td><td>prefix median/MAD normalized one-dimensional ramp from onset <code>56</code></td><td>none</td><td>ramp-only diagnostic</td></tr>
+<tr><td><code>M2</code></td><td>same M1 ramp</td><td>if <code>rramp ≥ 0.995</code>, <code>max(r461, rramp)</code>; otherwise exactly <code>r461</code></td><td><strong>sole primary: <code>hydra_period_ramp_gated_max</code></strong></td></tr>
+<tr><td><code>M3</code></td><td>same M1 ramp</td><td>always <code>max(r461, rramp)</code></td><td>threshold ablation</td></tr>
+<tr><td><code>M4</code></td><td>TRAIN-fit per-time median template residual ramp</td><td>0.995-gated max against M0</td><td>normal-shape diagnostic</td></tr>
+<tr><td><code>M5</code></td><td>whole-series median/MAD normalized ramp</td><td>0.995-gated max against M0</td><td>scale-absorption diagnostic</td></tr>
+<tr><td><code>M6</code></td><td>Exp462 24D signature + LocalGap replay control</td><td>always max against M0</td><td>previous-failure reproduction control</td></tr>
+</tbody></table>
+<p>Rank is fixed as <code>(1 + count(r_i ≤ s)) / (n + 1)</code>. The M2 confidence gate is exactly <code>1 − α = 0.995</code> with <code>α = 0.005</code>. M0 and M6 must reproduce their predecessor controls before any Exp463 result is interpreted.</p>
+
+<h2>Frozen qualification gates for M2</h2>
+<ul>
+<li>All 10 seed-fold records pass.</li>
+<li>Each of four change types has AUC ≥ <code>0.85</code>; each record's four-type mean is ≥ <code>0.90</code>.</li>
+<li>Normal Wilson upper bound ≤ <code>0.05</code>; every score is finite.</li>
+<li>Minimum gradual_drift AUC ≥ <code>0.85</code> and strictly above Exp462's <code>0.8402306222021025</code>.</li>
+<li>Minimum period_change AUC ≥ <code>0.907392736783864</code>.</li>
+<li>Historical preservation: seed <code>20260721</code> fold <code>3</code> period ≥ <code>0.907392736783864</code>; seed <code>20261721</code> fold <code>4</code> period ≥ <code>0.9216148584075248</code>.</li>
+</ul>
+<div class="stop"><strong>영구 중단:</strong> private TRAIN에서 게이트 하나라도 실패하면 공식 실행은 없다. alpha, onset, weights, seeds, folds, threshold를 바꾸거나 실패 fold를 제외하지 않는다. M4/M5가 좋아도 이번 실험의 주 후보로 승격하지 않는다.</div>
+
+<h2>Lifecycle truth after private qualification</h2>
+<table><tr><th>state</th><td><code>stopped_before_official_evaluation_qualification_failed</code></td></tr>
+<tr><th>official evaluate / inspect</th><td>0 / 0</td></tr>
+<tr><th>TEST label query count</th><td>0</td></tr>
+<tr><th>official root</th><td>absent and non-symlink</td></tr>
+<tr><th>official result / prediction / evaluation / decision / artifact / dashboard hashes</th><td>all <code>null</code></td></tr>
+<tr><th>champion / pending</th><td>unchanged; no scientific winner selected</td></tr></table>
+<p>Task 1–4 governance and implementation are recorded. Task 5 private evidence is complete and its final review is SHIP with seven controls checked (7/7). Task 6 is permanently forbidden with 0/7 controls unchecked; no official result or next official action exists.</p>
+<h2>Private result truth</h2>
+<p>M2 passed 7/10. Minimum gradual_drift AUC was <code>0.83450279161008</code> and minimum period_change AUC was <code>0.8984897640963734</code>; both fail the frozen gates. M0 and M6 reproduced. Two private roots matched exactly for 70 rows, seven summaries, decision/dashboard, and all seven leaf bytes/hashes. Private artifact-map SHA-256: <code>25fb4ab237ae8f2601c2bc03b05f4e6a2d0cb9889876a83fa0f2c4ee7c4f0ea5</code>. Official hashes remain <code>null</code>.</p>
+</main></body></html>

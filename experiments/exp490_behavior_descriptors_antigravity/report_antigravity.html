@@ -1,0 +1,504 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp490 결과</title>
+<style>body{font:16px/1.7 system-ui;max-width:1100px;margin:32px auto;padding:0 20px;color:#172033}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccd3dc;padding:8px;text-align:left}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f5f8;padding:16px}</style>
+<h1>Exp490: 정상 TRAIN 행동 기술자</h1>
+<p>네 개의 고정 Exp449 표현을 원래 5폴드로 맞추고, A는 원래 참조, B는 A 참조의 80% 결정적 표본입니다. 표현 시드는 바꾸지 않았습니다. 추출은 정상 TRAIN만 사용합니다. 비교는 같은 125개 행에서 기존 24차원과 24+18차원을 Exp491 프로토콜로 돌린 역사적 감독 메타 개발이며, 깨끗한 검증이 아닙니다.</p>
+<p>제외 family: PigAirwayPressure, PigArtPressure, PigCVP. 상수 상관을 0으로 둔 횟수는 데이터셋마다 diagnostics에 있습니다.</p>
+<h2>24차원 대 42차원</h2>
+<pre>{
+  &quot;features_24&quot;: {
+    &quot;family_mean_squared_error&quot;: {
+      &quot;delta_auc_multirocket_local_gap&quot;: {
+        &quot;ridge&quot;: 0.005207722883122571,
+        &quot;constant&quot;: 0.004351344930184722,
+        &quot;delta_ridge_minus_constant&quot;: 0.0008563779529378495
+      },
+      &quot;delta_auc_hydra_local_gap&quot;: {
+        &quot;ridge&quot;: 0.024062794828494317,
+        &quot;constant&quot;: 0.019849794258564805,
+        &quot;delta_ridge_minus_constant&quot;: 0.004213000569929511
+      },
+      &quot;delta_auc_hydra_multirocket_local_gap&quot;: {
+        &quot;ridge&quot;: 0.0015127622242123442,
+        &quot;constant&quot;: 0.0012691869828040125,
+        &quot;delta_ridge_minus_constant&quot;: 0.0002435752414083317
+      },
+      &quot;sign_delta_zf_multirocket_local_gap&quot;: {
+        &quot;ridge&quot;: 0.39616957897446636,
+        &quot;constant&quot;: 0.32752341311134275,
+        &quot;delta_ridge_minus_constant&quot;: 0.06864616586312361
+      },
+      &quot;sign_delta_zf_hydra_local_gap&quot;: {
+        &quot;ridge&quot;: 0.338326811495342,
+        &quot;constant&quot;: 0.2922736732570238,
+        &quot;delta_ridge_minus_constant&quot;: 0.04605313823831819
+      },
+      &quot;sign_delta_zf_hydra_multirocket_local_gap&quot;: {
+        &quot;ridge&quot;: 0.3182268081120419,
+        &quot;constant&quot;: 0.28199791883454706,
+        &quot;delta_ridge_minus_constant&quot;: 0.03622888927749485
+      }
+    },
+    &quot;block_mean_squared_error&quot;: {
+      &quot;delta_auc&quot;: {
+        &quot;ridge&quot;: 0.010261093311943076,
+        &quot;constant&quot;: 0.00849010872385118
+      },
+      &quot;sign_delta_zf&quot;: {
+        &quot;ridge&quot;: 0.3509077328606167,
+        &quot;constant&quot;: 0.3005983350676379
+      }
+    },
+    &quot;directional_accuracy&quot;: {
+      &quot;delta_auc_multirocket_local_gap&quot;: {
+        &quot;family_balanced&quot;: 0.48,
+        &quot;nonzero_target_family_balanced&quot;: 0.6976744186046512
+      },
+      &quot;delta_auc_hydra_local_gap&quot;: {
+        &quot;family_balanced&quot;: 0.384,
+        &quot;nonzero_target_family_balanced&quot;: 0.6153846153846154
+      },
+      &quot;delta_auc_hydra_multirocket_local_gap&quot;: {
+        &quot;family_balanced&quot;: 0.304,
+        &quot;nonzero_target_family_balanced&quot;: 0.5135135135135135
+      },
+      &quot;sign_delta_zf_multirocket_local_gap&quot;: {
+        &quot;family_balanced&quot;: 0.296,
+        &quot;nonzero_target_family_balanced&quot;: 0.7551020408163265
+      },
+      &quot;sign_delta_zf_hydra_local_gap&quot;: {
+        &quot;family_balanced&quot;: 0.192,
+        &quot;nonzero_target_family_balanced&quot;: 0.631578947368421
+      },
+      &quot;sign_delta_zf_hydra_multirocket_local_gap&quot;: {
+        &quot;family_balanced&quot;: 0.192,
+        &quot;nonzero_target_family_balanced&quot;: 0.6486486486486487
+      }
+    },
+    &quot;positive_gain_auroc&quot;: {
+      &quot;delta_auc_multirocket_local_gap&quot;: {
+        &quot;auroc&quot;: 0.37189672293942405,
+        &quot;reason&quot;: null,
+        &quot;n_positive&quot;: 19,
+        &quot;n_negative&quot;: 106
+      },
+      &quot;delta_auc_hydra_local_gap&quot;: {
+        &quot;auroc&quot;: 0.5136000000000001,
+        &quot;reason&quot;: null,
+        &quot;n_positive&quot;: 25,
+        &quot;n_negative&quot;: 100
+      },
+      &quot;delta_auc_hydra_multirocket_local_gap&quot;: {
+        &quot;auroc&quot;: 0.4326215022091311,
+        &quot;reason&quot;: null,
+        &quot;n_positive&quot;: 28,
+        &quot;n_negative&quot;: 97
+      },
+      &quot;sign_delta_zf_multirocket_local_gap&quot;: {
+        &quot;auroc&quot;: 0.36431623931623935,
+        &quot;reason&quot;: null,
+        &quot;n_positive&quot;: 8,
+        &quot;n_negative&quot;: 117
+      },
+      &quot;sign_delta_zf_hydra_local_gap&quot;: {
+        &quot;auroc&quot;: 0.5366826156299841,
+        &quot;reason&quot;: null,
+        &quot;n_positive&quot;: 11,
+        &quot;n_negative&quot;: 114
+      },
+      &quot;sign_delta_zf_hydra_multirocket_local_gap&quot;: {
+        &quot;auroc&quot;: 0.3869565217391304,
+        &quot;reason&quot;: null,
+        &quot;n_positive&quot;: 10,
+        &quot;n_negative&quot;: 115
+      }
+    }
+  },
+  &quot;features_42&quot;: {
+    &quot;family_mean_squared_error&quot;: {
+      &quot;delta_auc_multirocket_local_gap&quot;: {
+        &quot;ridge&quot;: 0.006665640435639492,
+        &quot;constant&quot;: 0.004351344930184722,
+        &quot;delta_ridge_minus_constant&quot;: 0.00231429550545477
+      },
+      &quot;delta_auc_hydra_local_gap&quot;: {
+        &quot;ridge&quot;: 0.026981389854485928,
+        &quot;constant&quot;: 0.019849794258564805,
+        &quot;delta_ridge_minus_constant&quot;: 0.0071315955959211225
+      },
+      &quot;delta_auc_hydra_multirocket_local_gap&quot;: {
+        &quot;ridge&quot;: 0.0017620788927797898,
+        &quot;constant&quot;: 0.0012691869828040125,
+        &quot;delta_ridge_minus_constant&quot;: 0.0004928919099757773
+      },
+      &quot;sign_delta_zf_multirocket_local_gap&quot;: {
+        &quot;ridge&quot;: 0.4748593856859577,
+        &quot;constant&quot;: 0.32752341311134275,
+        &quot;delta_ridge_minus_constant&quot;: 0.14733597257461495
+      },
+      &quot;sign_delta_zf_hydra_local_gap&quot;: {
+        &quot;ridge&quot;: 0.38546005283127066,
+        &quot;constant&quot;: 0.2922736732570238,
+        &quot;delta_ridge_minus_constant&quot;: 0.09318637957424686
+      },
+      &quot;sign_delta_zf_hydra_multirocket_local_gap&quot;: {
+        &quot;ridge&quot;: 0.35873189283496354,
+        &quot;constant&quot;: 0.28199791883454706,
+        &quot;delta_ridge_minus_constant&quot;: 0.07673397400041648
+      }
+    },
+    &quot;block_mean_squared_error&quot;: {
+      &quot;delta_auc&quot;: {
+        &quot;ridge&quot;: 0.011803036394301735,
+        &quot;constant&quot;: 0.00849010872385118
+      },
+      &quot;sign_delta_zf&quot;: {
+        &quot;ridge&quot;: 0.40635044378406393,
+        &quot;constant&quot;: 0.3005983350676379
+      }
+    },
+    &quot;directional_accuracy&quot;: {
+      &quot;delta_auc_multirocket_local_gap&quot;: {
+        &quot;family_balanced&quot;: 0.392,
+        &quot;nonzero_target_family_balanced&quot;: 0.5697674418604651
+      },
+      &quot;delta_auc_hydra_local_gap&quot;: {
+        &quot;family_balanced&quot;: 0.416,
+        &quot;nonzero_target_family_balanced&quot;: 0.6666666666666666
+      },
+      &quot;delta_auc_hydra_multirocket_local_gap&quot;: {
+        &quot;family_balanced&quot;: 0.28,
+        &quot;nonzero_target_family_balanced&quot;: 0.47297297297297297
+      },
+      &quot;sign_delta_zf_multirocket_local_gap&quot;: {
+        &quot;family_balanced&quot;: 0.264,
+        &quot;nonzero_target_family_balanced&quot;: 0.673469387755102
+      },
+      &quot;sign_delta_zf_hydra_local_gap&quot;: {
+        &quot;family_balanced&quot;: 0.184,
+        &quot;nonzero_target_family_balanced&quot;: 0.6052631578947368
+      },
+      &quot;sign_delta_zf_hydra_multirocket_local_gap&quot;: {
+        &quot;family_balanced&quot;: 0.168,
+        &quot;nonzero_target_family_balanced&quot;: 0.5675675675675675
+      }
+    },
+    &quot;positive_gain_auroc&quot;: {
+      &quot;delta_auc_multirocket_local_gap&quot;: {
+        &quot;auroc&quot;: 0.3560079443892751,
+        &quot;reason&quot;: null,
+        &quot;n_positive&quot;: 19,
+        &quot;n_negative&quot;: 106
+      },
+      &quot;delta_auc_hydra_local_gap&quot;: {
+        &quot;auroc&quot;: 0.6124,
+        &quot;reason&quot;: null,
+        &quot;n_positive&quot;: 25,
+        &quot;n_negative&quot;: 100
+      },
+      &quot;delta_auc_hydra_multirocket_local_gap&quot;: {
+        &quot;auroc&quot;: 0.39985272459499266,
+        &quot;reason&quot;: null,
+        &quot;n_positive&quot;: 28,
+        &quot;n_negative&quot;: 97
+      },
+      &quot;sign_delta_zf_multirocket_local_gap&quot;: {
+        &quot;auroc&quot;: 0.3536324786324786,
+        &quot;reason&quot;: null,
+        &quot;n_positive&quot;: 8,
+        &quot;n_negative&quot;: 117
+      },
+      &quot;sign_delta_zf_hydra_local_gap&quot;: {
+        &quot;auroc&quot;: 0.5430622009569378,
+        &quot;reason&quot;: null,
+        &quot;n_positive&quot;: 11,
+        &quot;n_negative&quot;: 114
+      },
+      &quot;sign_delta_zf_hydra_multirocket_local_gap&quot;: {
+        &quot;auroc&quot;: 0.4782608695652174,
+        &quot;reason&quot;: null,
+        &quot;n_positive&quot;: 10,
+        &quot;n_negative&quot;: 115
+      }
+    }
+  }
+}</pre>
+<h2>제한</h2>
+<p>합성 이상 주장을 하지 않습니다. 라우팅 승격이나 운영 게이트 변경이 아닙니다. 역사적 TEST 파생 점수는 개발용 메타 라벨입니다.</p>
+<h2>재현</h2>
+<pre>PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m experiments.exp490_behavior_descriptors_antigravity.run_antigravity smoke
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m experiments.exp490_behavior_descriptors_antigravity.run_antigravity official</pre>
+<pre>{
+  &quot;schema&quot;: &quot;exp490_run_manifest_v1&quot;,
+  &quot;started_at_utc&quot;: &quot;2026-09-16T01:21:56.879234+00:00&quot;,
+  &quot;completed_at_utc&quot;: &quot;2026-09-16T02:20:45.051971+00:00&quot;,
+  &quot;elapsed_seconds&quot;: 3528.10772045888,
+  &quot;cpu_policy&quot;: {
+    &quot;logical_cpu_count&quot;: 12,
+    &quot;workers&quot;: 11,
+    &quot;inner_threads&quot;: 1
+  },
+  &quot;extraction_workers&quot;: 11,
+  &quot;meta_evaluation_workers&quot;: 1,
+  &quot;resumed_datasets&quot;: 0,
+  &quot;completed_datasets&quot;: 125,
+  &quot;expected_datasets&quot;: 125,
+  &quot;failed_datasets&quot;: 0,
+  &quot;excluded_families&quot;: [
+    &quot;PigAirwayPressure&quot;,
+    &quot;PigArtPressure&quot;,
+    &quot;PigCVP&quot;
+  ],
+  &quot;dataset_seconds_this_invocation&quot;: {
+    &quot;Adiac_normal_1&quot;: 12.655524500180036,
+    &quot;Beef_normal_1&quot;: 13.988640292081982,
+    &quot;BME_normal_1&quot;: 14.742068125167862,
+    &quot;BeetleFly_normal_1&quot;: 15.6481801669579,
+    &quot;BirdChicken_normal_1&quot;: 16.03519329195842,
+    &quot;AllGestureWiimoteY_normal_1&quot;: 19.39190200017765,
+    &quot;AllGestureWiimoteX_normal_1&quot;: 20.53211074997671,
+    &quot;AllGestureWiimoteZ_normal_1&quot;: 20.551137375179678,
+    &quot;ArrowHead_normal_0&quot;: 22.036012457916513,
+    &quot;ACSF1_normal_0&quot;: 24.052721624961123,
+    &quot;Chinatown_normal_1&quot;: 10.37884912500158,
+    &quot;Car_normal_1&quot;: 19.786529541946948,
+    &quot;Coffee_normal_0&quot;: 15.837772415950894,
+    &quot;CBF_normal_1&quot;: 41.00216749985702,
+    &quot;DiatomSizeReduction_normal_1&quot;: 16.874510457972065,
+    &quot;DistalPhalanxOutlineAgeGroup_normal_1&quot;: 11.808541541919112,
+    &quot;CricketY_normal_1&quot;: 23.32396029192023,
+    &quot;CricketX_normal_1&quot;: 25.010527416830882,
+    &quot;CricketZ_normal_1&quot;: 23.47666725004092,
+    &quot;DistalPhalanxTW_normal_3&quot;: 12.436780124902725,
+    &quot;DodgerLoopDay_normal_1&quot;: 14.507993249921128,
+    &quot;ECG200_normal_-1&quot;: 15.151501292129979,
+    &quot;DistalPhalanxOutlineCorrect_normal_0&quot;: 34.2379044580739,
+    &quot;DodgerLoopGame_normal_1&quot;: 29.453767832834274,
+    &quot;DodgerLoopWeekend_normal_1&quot;: 39.27173149981536,
+    &quot;Crop_normal_1&quot;: 64.31324524991214,
+    &quot;FaceAll_normal_1&quot;: 25.474374582991004,
+    &quot;ECGFiveDays_normal_1&quot;: 78.19193095783703,
+    &quot;FaceFour_normal_1&quot;: 18.790980208897963,
+    &quot;EOGHorizontalSignal_normal_1&quot;: 77.03336791694164,
+    &quot;EOGVerticalSignal_normal_1&quot;: 76.21837574988604,
+    &quot;FacesUCR_normal_1&quot;: 25.22828537481837,
+    &quot;Fish_normal_1&quot;: 27.223153124796227,
+    &quot;FiftyWords_normal_1&quot;: 35.990180084016174,
+    &quot;Computers_normal_1&quot;: 182.39582425006665,
+    &quot;Fungi_normal_1&quot;: 14.249899792019278,
+    &quot;ChlorineConcentration_normal_1&quot;: 204.62748095812276,
+    &quot;ElectricDevices_normal_1&quot;: 151.6361867908854,
+    &quot;GestureMidAirD1_normal_1&quot;: 15.498047707835212,
+    &quot;GestureMidAirD2_normal_1&quot;: 14.881170166889206,
+    &quot;GestureMidAirD3_normal_1&quot;: 14.82288174983114,
+    &quot;GesturePebbleZ1_normal_1&quot;: 22.174258208135143,
+    &quot;GesturePebbleZ2_normal_1&quot;: 22.20661558280699,
+    &quot;GunPoint_normal_1&quot;: 29.059704707935452,
+    &quot;Earthquakes_normal_0&quot;: 219.42447437508963,
+    &quot;GunPointAgeSpan_normal_1&quot;: 50.49023499991745,
+    &quot;GunPointMaleVersusFemale_normal_1&quot;: 52.542718374868855,
+    &quot;GunPointOldVersusYoung_normal_1&quot;: 47.67399441706948,
+    &quot;Ham_normal_1&quot;: 58.456420165952295,
+    &quot;Herring_normal_1&quot;: 55.37305787508376,
+    &quot;ECG5000_normal_1&quot;: 353.5416572499089,
+    &quot;Haptics_normal_1&quot;: 107.85740095796064,
+    &quot;InsectEPGRegularTrain_normal_1&quot;: 94.59065937506966,
+    &quot;InsectEPGSmallTrain_normal_1&quot;: 77.93544133286923,
+    &quot;InlineSkate_normal_1&quot;: 142.6375992500689,
+    &quot;ItalyPowerDemand_normal_1&quot;: 41.04940541693941,
+    &quot;InsectWingbeatSound_normal_1&quot;: 81.96187220793217,
+    &quot;HouseTwenty_normal_1&quot;: 237.92041216697544,
+    &quot;Lightning2_normal_-1&quot;: 54.93947037495673,
+    &quot;Lightning7_normal_0&quot;: 19.416869583074003,
+    &quot;Meat_normal_1&quot;: 34.743920541834086,
+    &quot;MedicalImages_normal_1&quot;: 33.00519191706553,
+    &quot;MiddlePhalanxOutlineAgeGroup_normal_1&quot;: 21.92934524989687,
+    &quot;MelbournePedestrian_normal_1&quot;: 33.18873566691764,
+    &quot;MiddlePhalanxTW_normal_3&quot;: 24.937066459096968,
+    &quot;MiddlePhalanxOutlineCorrect_normal_0&quot;: 65.71329312492162,
+    &quot;EthanolLevel_normal_1&quot;: 693.165699416073,
+    &quot;LargeKitchenAppliances_normal_1&quot;: 266.2396539580077,
+    &quot;NonInvasiveFetalECGThorax1_normal_1&quot;: 91.49635820882395,
+    &quot;MoteStrain_normal_1&quot;: 142.42775379191153,
+    &quot;NonInvasiveFetalECGThorax2_normal_1&quot;: 89.52593308291398,
+    &quot;OSULeaf_normal_1&quot;: 44.099663458997384,
+    &quot;OliveOil_normal_1&quot;: 26.438306958181784,
+    &quot;PLAID_normal_0&quot;: 52.239554749801755,
+    &quot;Phoneme_normal_1&quot;: 66.02166891703382,
+    &quot;FreezerSmallTrain_normal_1&quot;: 922.194496500073,
+    &quot;Mallat_normal_1&quot;: 512.8064688749146,
+    &quot;PickupGestureWiimoteZ_normal_1&quot;: 19.04328512493521,
+    &quot;Plane_normal_1&quot;: 17.261198834050447,
+    &quot;CinCECGTorso_normal_1&quot;: 1093.6238122908399,
+    &quot;ProximalPhalanxOutlineAgeGroup_normal_1&quot;: 17.91347137512639,
+    &quot;ProximalPhalanxTW_normal_3&quot;: 13.187709292164072,
+    &quot;PhalangesOutlinesCorrect_normal_0&quot;: 148.83999770809896,
+    &quot;PowerCons_normal_1&quot;: 44.13539870898239,
+    &quot;ProximalPhalanxOutlineCorrect_normal_0&quot;: 40.038618500111625,
+    &quot;FreezerRegularTrain_normal_1&quot;: 990.4111405829899,
+    &quot;Rock_normal_1&quot;: 75.43974900012836,
+    &quot;ShakeGestureWiimoteZ_normal_1&quot;: 17.456542666070163,
+    &quot;ShapeletSim_normal_0&quot;: 79.1626900001429,
+    &quot;ShapesAll_normal_1&quot;: 20.532827000133693,
+    &quot;ScreenType_normal_1&quot;: 246.2078418750316,
+    &quot;RefrigerationDevices_normal_1&quot;: 276.94332537497394,
+    &quot;SmoothSubspace_normal_1&quot;: 16.76114104106091,
+    &quot;SonyAIBORobotSurface1_normal_1&quot;: 53.315246290992945,
+    &quot;SonyAIBORobotSurface2_normal_1&quot;: 56.30141158401966,
+    &quot;SemgHandMovementCh2_normal_1&quot;: 378.12371737509966,
+    &quot;SwedishLeaf_normal_1&quot;: 37.02778904186562,
+    &quot;SmallKitchenAppliances_normal_1&quot;: 285.3585724590812,
+    &quot;Strawberry_normal_1&quot;: 151.06478837504983,
+    &quot;SyntheticControl_normal_1&quot;: 27.84389370889403,
+    &quot;MixedShapesSmallTrain_normal_1&quot;: 963.5118905000854,
+    &quot;ToeSegmentation1_normal_0&quot;: 105.82784629217349,
+    &quot;SemgHandSubjectCh2_normal_1&quot;: 576.2107974581886,
+    &quot;Symbols_normal_1&quot;: 169.54691920801997,
+    &quot;Trace_normal_1&quot;: 54.44366466696374,
+    &quot;ToeSegmentation2_normal_0&quot;: 115.27705020899884,
+    &quot;UMD_normal_1&quot;: 38.124025208177045,
+    &quot;TwoLeadECG_normal_1&quot;: 162.53766929078847,
+    &quot;MixedShapesRegularTrain_normal_1&quot;: 1333.077521624975,
+    &quot;UWaveGestureLibraryX_normal_1&quot;: 481.8815234999638,
+    &quot;UWaveGestureLibraryY_normal_1&quot;: 486.5816541670356,
+    &quot;Wine_normal_1&quot;: 40.620880499947816,
+    &quot;TwoPatterns_normal_1&quot;: 542.9167187919375,
+    &quot;WordSynonyms_normal_1&quot;: 21.570228917058557,
+    &quot;UWaveGestureLibraryZ_normal_1&quot;: 442.9301477088593,
+    &quot;Wafer_normal_-1&quot;: 308.6825460419059,
+    &quot;Worms_normal_1&quot;: 151.41003983304836,
+    &quot;WormsTwoClass_normal_1&quot;: 152.3795048329048,
+    &quot;FordA_normal_-1&quot;: 2476.6020325839054,
+    &quot;FordB_normal_-1&quot;: 2503.6630262499675,
+    &quot;UWaveGestureLibraryAll_normal_1&quot;: 1187.3674131671432,
+    &quot;SemgHandGenderCh2_normal_1&quot;: 2000.2750455830246,
+    &quot;Yoga_normal_1&quot;: 892.1239015418105,
+    &quot;HandOutlines_normal_0&quot;: 3023.0119329579175,
+    &quot;StarLightCurves_normal_1&quot;: 2071.161999291042
+  },
+  &quot;result_sha256&quot;: &quot;5e67c8e185267d84c81f7499636f6155f9a1e70a661401381238401d6bab04ea&quot;,
+  &quot;code_sha256&quot;: {
+    &quot;experiments/exp490_behavior_descriptors_antigravity/run_antigravity.py&quot;: &quot;66137ba219640508384a75d2b9b5f1c6562136331d8c55ddbbef0abadb4bf952&quot;,
+    &quot;experiments/exp490_behavior_descriptors_antigravity/behavior_descriptors_antigravity.py&quot;: &quot;9bd97c814e9e3a4bb71ca26f5c26821f89aa677f7f67b859a7b93d0e31a9291e&quot;,
+    &quot;experiments/exp491_gain_prediction_antigravity/runtime_antigravity.py&quot;: &quot;4539d3af54e79d06a69967222180e20db0da904cfc382869e2f9c97a24ef3fde&quot;,
+    &quot;experiments/exp491_gain_prediction_antigravity/gain_prediction_antigravity.py&quot;: &quot;601fb87971e4dff9afe5de5a0aa63fe647cbe5d07dbb30349321647c76a73499&quot;,
+    &quot;experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py&quot;: &quot;5abaee70a7023b8aaca5755a5d5d9cfb8b09b3500244d3a2f6f78cdcb56a5ec5&quot;,
+    &quot;experiments/exp449_residual_fn_method_qualification_antigravity/representations_antigravity.py&quot;: &quot;fbc9a67b07864b007196832db056605611fd77592a9e404a0cf83dd687298225&quot;,
+    &quot;experiments/exp449_residual_fn_method_qualification_antigravity/local_gap_antigravity.py&quot;: &quot;d9ad3d3ce86003346d4ec5a957cfa26195031a402ef8e77afa7f9a96120dc141&quot;,
+    &quot;experiments/exp479_missing_score_recovery_antigravity/preprocessing_antigravity.py&quot;: &quot;389ed992920116cec9dcd47a2d9321a124952e5becd6dde556b51fa3179f8903&quot;,
+    &quot;experiments/exp479_missing_score_recovery_antigravity/evaluation_antigravity.py&quot;: &quot;2a2404cedaaf6aa753eb25accfd388179c13bccbc604b9b85aa06aee06dff658&quot;,
+    &quot;experiments/exp484_distance_qualification_antigravity/run_antigravity.py&quot;: &quot;b6955524db81ab3792346411140ac1ce71c00a039ec5254eba0d4f525be6e7d1&quot;,
+    &quot;experiments/exp488_catch22_train_descriptors_antigravity/features_antigravity.py&quot;: &quot;9d94ef0026d7819219704ef373c36b2bd187947dbab9de9db9f86f3578c6a82a&quot;,
+    &quot;experiments/exp488_catch22_train_descriptors_antigravity/run_antigravity.py&quot;: &quot;b881fb8b4df6ea92d06cdd5164ee03e4cc96f6fa4a2ec79e0cd20c5dc8073496&quot;
+  },
+  &quot;preregistration_sha256&quot;: &quot;ecd91b24c6ab90cf5628885d136d323a35c9bfda6d80bc51de2f357482be49d9&quot;,
+  &quot;acceleration&quot;: {
+    &quot;concurrent_gpu_jobs&quot;: 0,
+    &quot;cpu_policy&quot;: {
+      &quot;inner_threads&quot;: 1,
+      &quot;logical_cpu_count&quot;: 12,
+      &quot;workers&quot;: 11
+    },
+    &quot;device&quot;: &quot;arm64&quot;,
+    &quot;mlx&quot;: {
+      &quot;candidate_index_parity&quot;: null,
+      &quot;fallback_reason&quot;: &quot;dense_ridge_not_promoted_without_float64_full_stage_parity_and_1.1x&quot;,
+      &quot;full_stage_seconds&quot;: null,
+      &quot;numerical_parity&quot;: null,
+      &quot;probe&quot;: {
+        &quot;available&quot;: true,
+        &quot;cpu_float64_finite&quot;: true,
+        &quot;cpu_solve_seconds&quot;: 0.031230249907821417,
+        &quot;default_device&quot;: &quot;Device(gpu, 0)&quot;,
+        &quot;metal_available&quot;: true,
+        &quot;probe_seconds&quot;: 0.07600116706453264
+      },
+      &quot;selected&quot;: false,
+      &quot;speedup&quot;: null,
+      &quot;tensor_eligible_stages&quot;: [
+        &quot;exp491_dense_ridge&quot;
+      ]
+    },
+    &quot;mps&quot;: {
+      &quot;available&quot;: true,
+      &quot;fallback_reason&quot;: &quot;mps_not_canonical_for_frozen_aeon_sklearn_cpu_algorithms&quot;,
+      &quot;selected&quot;: false
+    },
+    &quot;pytorch&quot;: {
+      &quot;fallback_reason&quot;: &quot;official_aeon_sklearn_cpu_remain_canonical_except_where_a_stage_is_tensor_eligible; dense_ridge_is_tensor_eligible_under_torch_but_not_promoted_without_float64_full_stage_parity_and_1.1x&quot;,
+      &quot;probe&quot;: {
+        &quot;available&quot;: true,
+        &quot;cpu_float64&quot;: true,
+        &quot;fallback_reason&quot;: &quot;Cannot convert a MPS Tensor to float64 dtype as the MPS framework doesn&#x27;t support float64. Please use float32 instead.&quot;,
+        &quot;mps_available&quot;: true,
+        &quot;mps_float64_finite&quot;: false,
+        &quot;probe_seconds&quot;: 0.7948871250264347,
+        &quot;version&quot;: &quot;2.13.0&quot;
+      },
+      &quot;selected&quot;: false,
+      &quot;tensor_eligible_stages&quot;: [
+        &quot;exp491_dense_ridge&quot;
+      ]
+    },
+    &quot;schema&quot;: &quot;exp489_491_acceleration_v1&quot;,
+    &quot;stages&quot;: {
+      &quot;exp489_minirocket_lof&quot;: {
+        &quot;canonical&quot;: &quot;aeon_minirocket_sklearn_lof_localgap_cpu&quot;,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;fallback_reason&quot;: &quot;official_aeon_MiniRocket_and_sklearn_LocalOutlierFactor_remain_canonical; do_not_rewrite_third_party_cpu_transformer&quot;,
+        &quot;measured_stage_seconds&quot;: 0.0017347920220345259,
+        &quot;numba&quot;: {
+          &quot;fallback_reason&quot;: &quot;official_aeon_MiniRocket_and_sklearn_LocalOutlierFactor_have_no_supported_public_numba_rewrite; retain_existing_cpu_implementations&quot;,
+          &quot;selected&quot;: false
+        },
+        &quot;pytorch_tensor_eligible&quot;: false,
+        &quot;selected_backend&quot;: &quot;sklearn_aeon_cpu&quot;,
+        &quot;tensor_eligible&quot;: false,
+        &quot;warmup_seconds&quot;: 0.014755458105355501
+      },
+      &quot;exp490_rank_quantile&quot;: {
+        &quot;canonical&quot;: &quot;numpy_scipy_blas&quot;,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;fallback_reason&quot;: &quot;public_numba_compiler_path_for_scipy_spearmanr_and_numpy_quantile_orchestration is_unsupported_or_has_no_measured_speedup; retain_existing_numpy_scipy_blas&quot;,
+        &quot;measured_stage_seconds&quot;: 0.000797665910795331,
+        &quot;numba&quot;: {
+          &quot;fallback_reason&quot;: &quot;public_numba_compiler_path_for_scipy_spearmanr_and_numpy_quantile_orchestration is_unsupported_or_has_no_measured_speedup; retain_existing_numpy_scipy_blas&quot;,
+          &quot;selected&quot;: false
+        },
+        &quot;pytorch_tensor_eligible&quot;: true,
+        &quot;selected_backend&quot;: &quot;numpy_scipy&quot;,
+        &quot;tensor_eligible&quot;: true,
+        &quot;warmup_seconds&quot;: 0.001704749884083867
+      },
+      &quot;exp491_ridge&quot;: {
+        &quot;canonical&quot;: &quot;sklearn_ridge_cholesky_cpu&quot;,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;fallback_reason&quot;: &quot;dense_ridge_acceleration_not_canonical_without_float64_full_stage_parity_and_1.1x; not_promoted&quot;,
+        &quot;measured_stage_seconds&quot;: 0.0006559579633176327,
+        &quot;mlx_selected&quot;: false,
+        &quot;mlx_tensor_eligible&quot;: true,
+        &quot;numba&quot;: {
+          &quot;fallback_reason&quot;: &quot;sklearn_cholesky_ridge_retained; no_measured_numba_full_stage_float64_parity_and_1.1x&quot;,
+          &quot;selected&quot;: false
+        },
+        &quot;pytorch_selected&quot;: false,
+        &quot;pytorch_tensor_eligible&quot;: true,
+        &quot;selected_backend&quot;: &quot;sklearn_cpu&quot;,
+        &quot;tensor_eligible&quot;: true,
+        &quot;warmup_seconds&quot;: 0.0009011251386255026
+      }
+    },
+    &quot;versions&quot;: {
+      &quot;aeon&quot;: &quot;1.5.0&quot;,
+      &quot;architecture&quot;: &quot;arm64&quot;,
+      &quot;mlx&quot;: &quot;0.32.0&quot;,
+      &quot;mlx-metal&quot;: &quot;0.32.0&quot;,
+      &quot;numba&quot;: &quot;0.63.1&quot;,
+      &quot;numpy&quot;: &quot;2.3.5&quot;,
+      &quot;python&quot;: &quot;3.14.6&quot;,
+      &quot;scikit-learn&quot;: &quot;1.8.0&quot;,
+      &quot;scipy&quot;: &quot;1.17.1&quot;,
+      &quot;torch&quot;: &quot;2.13.0&quot;
+    }
+  }
+}</pre>
+</html>

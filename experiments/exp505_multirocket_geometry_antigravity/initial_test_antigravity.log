@@ -1,0 +1,68 @@
+..F                                                                      [100%]
+=================================== FAILURES ===================================
+______________________ test_short_length_constants_and_l9 ______________________
+
+    def test_short_length_constants_and_l9():
+        rng=np.random.default_rng(505)
+        for length in (1,2,9):
+            fit=rng.normal(size=(8,length));query=rng.normal(size=(5,length))
+>           head,scores=_parity_and_isolation(fit,query)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+experiments/exp505_multirocket_geometry_antigravity/test_exp505_antigravity.py:90: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+experiments/exp505_multirocket_geometry_antigravity/test_exp505_antigravity.py:58: in _parity_and_isolation
+    head=MultiRocketHeads(fit);scores=head.score(query)
+         ^^^^^^^^^^^^^^^^^^^^^
+experiments/exp505_multirocket_geometry_antigravity/multirocket_antigravity.py:18: in __init__
+    raw=self.raw_encoder.fit_transform(x);multi=self.multi_encoder.fit_transform(x)
+                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+experiments/exp449_residual_fn_method_qualification_antigravity/representations_antigravity.py:49: in fit_transform
+    return _features_antigravity(self._transformer.fit_transform(_rows_antigravity(rows)))
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/sklearn/utils/_set_output.py:316: in wrapped
+    data_to_wrap = f(self, X, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/aeon/transformations/collection/base.py:206: in fit_transform
+    Xt = self._fit_transform(X=X, y=y)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/aeon/transformations/collection/base.py:266: in _fit_transform
+    self._fit(X, y)
+/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/aeon/transformations/collection/convolution_based/_multirocket.py:147: in _fit
+    self.parameter1 = self._fit_univariate(_X1)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = MultiRocket(n_kernels=1024, random_state=20260721)
+X = array([[-1.2718382 ,  0.        ,  0.        ,  0.        ,  0.        ,
+         0.        ,  0.        ,  0.        ...44,  0.        ,  0.        ,  0.        ,  0.        ,
+         0.        ,  0.        ,  0.        ]], dtype=float32)
+
+    def _fit_univariate(self, X):
+        _, input_length = X.shape
+    
+        n_kernels = 84
+    
+        dilations, n_features_per_dilation = _fit_dilations(
+            input_length, self.n_kernels, self.max_dilations_per_kernel
+        )
+    
+        n_features_per_kernel = np.sum(n_features_per_dilation)
+    
+        quantiles = _quantiles(n_kernels * n_features_per_kernel)
+    
+>       biases = _fit_biases_univariate(
+            X,
+            dilations,
+            n_features_per_dilation,
+            quantiles,
+            MultiRocket._indices,
+            self.random_state_,
+        )
+E       ValueError: unable to broadcast argument 1 to output array
+E       File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/aeon/transformations/collection/convolution_based/_multirocket.py", line 1,
+
+/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/site-packages/aeon/transformations/collection/convolution_based/_multirocket.py:224: ValueError
+=========================== short test summary info ============================
+FAILED experiments/exp505_multirocket_geometry_antigravity/test_exp505_antigravity.py::test_short_length_constants_and_l9
+1 failed, 2 passed in 6.69s

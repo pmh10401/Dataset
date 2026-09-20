@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp483 TRAIN 개선 가능성 대시보드</title><style>
+body{font-family:system-ui,-apple-system,sans-serif;max-width:940px;margin:30px auto;padding:0 20px 60px;line-height:1.65;color:#182230}.status{border-left:5px solid #175cd3;background:#eff8ff;padding:12px 16px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}.card{border:1px solid #d8dee8;border-radius:9px;padding:14px}.big{font-size:1.5rem;font-weight:750}table{border-collapse:collapse;width:100%;display:block;overflow:auto}th,td{border:1px solid #d8dee8;padding:7px;white-space:nowrap;text-align:left}th{background:#eef2f7}label{display:block;margin:8px 0}
+</style></head><body><h1>Exp483 TRAIN 개선 가능성 검사</h1>
+<p class="status"><strong>진단 완료</strong> — 7개 특징과 거리 계산을 개선합니다.</p>
+<div class="cards"><div class="card"><div>데이터셋</div><div class="big">1117</div></div><div class="card"><div>family</div><div class="big">128</div></div><div class="card"><div>MiniRocket 검사 행</div><div class="big">130642</div></div></div>
+<h2>방법별 핵심 결과</h2><ul><li>Hydra: 개선 기회 <strong>51개 family</strong> → 상한선 통과 <strong>51개 family</strong></li><li>Hydra+MultiRocket: 개선 기회 <strong>53개 family</strong> → 상한선 통과 <strong>53개 family</strong></li><li>MultiRocket: 개선 기회 <strong>36개 family</strong> → 상한선 통과 <strong>36개 family</strong></li></ul><table><thead><tr><th>method</th><th>opportunity_count</th><th>opportunity_family_count</th><th>opportunity_neighbour_ge_k_count</th><th>opportunity_neighbour_ge_k_rate</th><th>oracle_accept_count</th><th>oracle_accept_dataset_count</th><th>oracle_accept_family_count</th><th>oracle_accept_rate</th></tr></thead><tbody><tr><td>hydra_local_gap</td><td>10541</td><td>51</td><td>10541</td><td>1.0</td><td>10541</td><td>85</td><td>51</td><td>1.0</td></tr><tr><td>hydra_multirocket_local_gap</td><td>11811</td><td>53</td><td>11811</td><td>1.0</td><td>11811</td><td>95</td><td>53</td><td>1.0</td></tr><tr><td>multirocket_local_gap</td><td>7620</td><td>36</td><td>7620</td><td>1.0</td><td>7620</td><td>62</td><td>36</td><td>1.0</td></tr></tbody></table>
+<p><strong>결론:</strong> 7개 특징과 거리 계산을 개선합니다.</p>
+<p>오라클은 결과를 미리 아는 낙관적인 TRAIN 전용 검사이며 실제 라우터에는 넣지 않습니다.</p>
+<h2>진행 체크</h2>
+<label><input type="checkbox" checked disabled> Task 1 — 기준 결과와 코드맵 확인</label>
+<label><input type="checkbox" checked disabled> Task 2 — 개선 기회 F(m) 전수 검사</label>
+<label><input type="checkbox" checked disabled> Task 3 — K=31 오라클 상한선 검사</label>
+<label><input type="checkbox" checked disabled> Task 4 — 결과 검증과 HTML 보고서 작성</label>
+<p><a href="EXP483_IMPLEMENTATION_REPORT_antigravity.html">상세 결과 보고서 보기</a></p>
+</body></html>

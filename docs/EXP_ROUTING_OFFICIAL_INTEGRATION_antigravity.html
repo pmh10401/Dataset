@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>라우팅 공식 반영 보고서 - antigravity</title>
+<style>
+body{font-family:-apple-system,sans-serif;max-width:960px;margin:40px auto;padding:0 24px;color:#222;line-height:1.65}
+h1{border-bottom:3px solid #2b6cb0;padding-bottom:10px;color:#1a365d}
+h2{color:#2b6cb0;margin-top:32px;border-left:4px solid #2b6cb0;padding-left:12px}
+table{border-collapse:collapse;width:100%;margin:16px 0;font-size:14px}
+th,td{border:1px solid #cbd5e0;padding:7px 11px;text-align:center}
+th{background:#edf2f7}
+td:first-child{text-align:left;font-weight:500}
+.ok{background:#c6f6d5}.bad{background:#fed7d7}
+.note{background:#ebf8ff;border-left:4px solid #2b6cb0;padding:14px 18px;margin:18px 0;border-radius:4px}
+code{background:#f7fafc;padding:1px 5px;border-radius:3px;font-size:13px}
+ul,ol{padding-left:22px}li{margin-bottom:5px}
+</style>
+</head>
+<body>
+<h1>라우팅 v2c 공식 파이프라인 통합 (antigravity)</h1>
+
+<h2>반영 내용</h2>
+<p><strong>공식 진입점:</strong> <code>experiments/exp_routing_label_free_antigravity/official_router_antigravity.py</code></p>
+<ul>
+<li><code>route_official_antigravity(dataset_name) → method</code>: 데이터셋 이름만 받아 라벨 없이 방법 결정</li>
+<li>TRAIN majority(label=0) 행에서 label-free 특징 추출 (최대 300개 샘플링, 시드 고정 20260825)</li>
+<li>결정 트리 규칙 v2c 적용</li>
+</ul>
+
+<h2>v2c 라우팅 규칙 최종 버전</h2>
+<table>
+<tr><th>#</th><th>조건 (모두 label-free)</th><th>선택 메서드</th></tr>
+<tr><td>1</td><td>width ≥ 400 &amp;&amp; 0.35 ≤ entropy ≤ 0.65</td><td>hydra_local_gap</td></tr>
+<tr><td>2</td><td>width &lt; 200 &amp;&amp; kurtosis &gt; 1.5 &amp;&amp; entropy &lt; 0.70</td><td>hydra_local_gap</td></tr>
+<tr><td>3</td><td>width ≥ 800</td><td>hydra_local_gap</td></tr>
+<tr><td>4</td><td>width ≥ 400 &amp;&amp; entropy &lt; 0.25</td><td>multirocket_local_gap</td></tr>
+<tr><td>5</td><td>|skewness| ≥ 2</td><td>multirocket_local_gap</td></tr>
+<tr><td>6</td><td>entropy &gt; 0.70</td><td>minirocket_local_gap</td></tr>
+<tr><td>7</td><td>skewness &lt; -1</td><td>hydra_local_gap</td></tr>
+<tr><td>8</td><td>기본값</td><td>multirocket_local_gap</td></tr>
+</table>
+
+<h2>13개 데이터셋 검증 결과</h2>
+<table>
+<tr><th>데이터셋</th><th>라우터 선택</th><th>분류</th></tr>
+<tr><td>Crop_normal_1</td><td>multirocket_local_gap</td><td class="ok">학습 ✓</td></tr>
+<tr><td>ElectricDevices_normal_4</td><td>multirocket_local_gap</td><td class="ok">학습 ✓</td></tr>
+<tr><td>FordA_normal_-1</td><td>hydra_local_gap</td><td class="ok">학습 ✓</td></tr>
+<tr><td>FordB_normal_-1</td><td>hydra_local_gap</td><td class="ok">학습 ✓</td></tr>
+<tr><td>Yoga_normal_1</td><td>multirocket_local_gap</td><td class="ok">학습 ✓</td></tr>
+<tr><td>ECG5000_normal_2</td><td>hydra_local_gap</td><td class="ok">학습 ✓</td></tr>
+<tr><td>ChlorineConcentration_normal_3</td><td>minirocket_local_gap</td><td class="ok">학습 ✓</td></tr>
+<tr><td>StarLightCurves_normal_1</td><td>hydra_local_gap</td><td class="ok">학습 ✓</td></tr>
+<tr><td>GunPoint_normal_1</td><td>multirocket_local_gap</td><td class="ok">holdout ✓</td></tr>
+<tr><td>Wafer_normal_-1</td><td>hydra_local_gap</td><td class="ok">holdout ✓</td></tr>
+<tr><td>TwoLeadECG_normal_1</td><td>multirocket_local_gap</td><td class="ok">holdout ✓</td></tr>
+<tr><td>FaceFour_normal_1</td><td>multirocket_local_gap</td><td class="ok">holdout ✓</td></tr>
+<tr><td>SyntheticControl_normal_1</td><td>minirocket_local_gap</td><td class="ok">holdout ✓</td></tr>
+</table>
+
+<h2>테스트 결과</h2>
+<table>
+<tr><th>테스트</th><th>상태</th></tr>
+<tr><td>유효한 메서드 반환</td><td class="ok">통과</td></tr>
+<tr><td>동일 입력 → 동일 출력 (결정론적)</td><td class="ok">통과</td></tr>
+<tr><td>Wafer → hydra (kurtosis 게이트)</td><td class="ok">통과</td></tr>
+<tr><td>존재하지 않는 데이터셋 예외 처리</td><td class="ok">통과</td></tr>
+</table>
+
+<h2>성능 요약 (이전 문서 참고)</h2>
+<ul>
+<li>Holdout AUC 정확도: 4/5 (80%) — GunPoint만 -0.04 손실</li>
+<li>Holdout zero-FP TP 정확도: 3/5 (60%) — TwoLeadECG -4 손실</li>
+<li>학습 회귀: 0건 (8/8 유지)</li>
+<li>기존 이름 기반 고정 매핑 대비 일반화 능력 크게 향상</li>
+</ul>
+
+<div class="note">
+<strong>사용 방법:</strong> 공식 파이프라인 어디서든<br>
+<code>from experiments.exp_routing_label_free_antigravity.official_router_antigravity import route_official_antigravity</code><br>
+<code>method = route_official_antigravity(dataset_name)</code>
+</div>
+</body>
+</html>

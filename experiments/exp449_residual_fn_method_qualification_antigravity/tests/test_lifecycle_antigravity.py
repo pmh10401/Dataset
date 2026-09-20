@@ -1,0 +1,967 @@
+"""Receipt lifecycle behavior; all paths are synthetic temporary namespaces."""
+from __future__ import annotations
+
+import tempfile
+import unittest
+import os
+import json
+import subprocess
+import sys
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
+
+
+class LifecycleAntigravityTests(unittest.TestCase):
+    @staticmethod
+    def _seed_state_antigravity(lifecycle, receipts: Path, state: str, commit: str) -> None:
+        transitions = (("readiness", "complete"), ("predict", "started"), ("predict", "complete"),
+                       ("evaluate", "started"), ("evaluate", "complete"), ("inspect", "started"),
+                       ("inspect", "complete"))
+        for index, (phase, event) in enumerate(transitions[:int(state[1:])]):
+            prediction, evaluation = receipts.parent / "prediction", receipts.parent / "evaluation"
+            if index >= 2:
+                prediction.mkdir(exist_ok=True); (prediction / "identity_antigravity.json").write_bytes(b"{}\n")
+            if index >= 4:
+                evaluation.mkdir(exist_ok=True); (evaluation / "identity_antigravity.json").write_bytes(b"{}\n")
+            lifecycle.append_receipt_antigravity(receipts, phase, event, commit, prediction_root=prediction, evaluation_root=evaluation)
+
+    def test_exact_predecessor_runs_only_its_phase_operation_antigravity(self) -> None:
+        """Break caught: a direct, repeated, or out-of-order command is allowed to do phase work."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        commit = "a" * 40
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_antigravity_") as temporary:
+            parent = Path(temporary)
+            receipts, audit = parent / "receipts", parent / "audit_antigravity.json"
+            prediction, evaluation = parent / "prediction", parent / "evaluation"
+            calls: list[str] = []
+            for phase, expected in (("readiness", "readiness"), ("predict", "predict"), ("evaluate", "evaluate"), ("inspect", "inspect")):
+                def operation(phase=phase):
+                    calls.append(phase)
+                    if phase == "predict": prediction.mkdir(); (prediction / "identity_antigravity.json").write_bytes(b"{}\n")
+                    if phase == "evaluate": evaluation.mkdir(); (evaluation / "identity_antigravity.json").write_bytes(b"{}\n")
+                    return phase
+                result = lifecycle.run_phase_antigravity(
+                    phase, commit, operation,
+                    receipt_dir=receipts, audit_path=audit,
+                    prediction_root=prediction, evaluation_root=evaluation,
+                )
+                self.assertEqual(result, expected)
+            self.assertEqual(calls, ["readiness", "predict", "evaluate", "inspect"])
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S7")
+            self.assertFalse(audit.exists())
+
+    def test_phase_keeps_one_receipt_namespace_transaction_until_complete_antigravity(self) -> None:
+        """Break caught: a phase closes and pathname-reopens receipts between start and complete."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_single_transaction_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"
+            self._seed_state_antigravity(lifecycle, receipts, "S1", "8" * 40)
+            original, opened = lifecycle._LifecycleTransactionAntigravity, []
+
+            class RecordingTransaction(original):
+                def __init__(self, *args, **kwargs):
+                    opened.append((args, kwargs)); super().__init__(*args, **kwargs)
+
+            prediction = parent / "prediction"
+            with patch.object(lifecycle, "_LifecycleTransactionAntigravity", RecordingTransaction):
+                lifecycle.run_phase_antigravity(
+                    "predict", "8" * 40,
+                    lambda: (prediction.mkdir(), (prediction / "identity_antigravity.json").write_bytes(b"{}\n"), "ok")[2],
+                    receipt_dir=receipts, audit_path=parent / "audit_antigravity.json",
+                    prediction_root=prediction, evaluation_root=parent / "evaluation",
+                )
+            self.assertEqual(len(opened), 1)
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S3")
+
+    def test_classification_rejects_current_root_content_drift_antigravity(self) -> None:
+        """Break caught: S3 accepts a receipt whose named prediction authority no longer has its signed bytes."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_root_drift_antigravity_") as temporary:
+            parent = Path(temporary); receipts, prediction = parent / "receipts", parent / "prediction"
+            self._seed_state_antigravity(lifecycle, receipts, "S1", "9" * 40)
+            prediction.mkdir(); (prediction / "identity_antigravity.json").write_bytes(b"original\n")
+            lifecycle.append_receipt_antigravity(receipts, "predict", "started", "9" * 40, prediction_root=prediction, evaluation_root=parent / "evaluation")
+            lifecycle.append_receipt_antigravity(receipts, "predict", "complete", "9" * 40, prediction_root=prediction, evaluation_root=parent / "evaluation")
+            (prediction / "identity_antigravity.json").write_bytes(b"forged\n")
+            classified = lifecycle.validate_receipt_inventory_antigravity(
+                receipts, prediction_root=prediction, evaluation_root=parent / "evaluation",
+            )
+            self.assertTrue(classified.invalid)
+            self.assertEqual(classified.state, "INVALID")
+
+    def test_preexisting_empty_receipt_directory_is_invalid_and_preserved_antigravity(self) -> None:
+        """Break caught: an occupied empty receipt directory is treated as the absent S0 namespace."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_empty_receipt_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"; receipts.mkdir()
+            before = receipts.stat().st_ino
+            classified = lifecycle.validate_receipt_inventory_antigravity(receipts)
+            self.assertTrue(classified.invalid)
+            self.assertEqual(classified.state, "INVALID")
+            with self.assertRaisesRegex(ValueError, "receipt inventory is invalid"):
+                lifecycle.run_phase_antigravity(
+                    "readiness", "a" * 40, lambda: self.fail("occupied receipt ran"),
+                    receipt_dir=receipts, audit_path=parent / "audit.json",
+                    prediction_root=parent / "prediction", evaluation_root=parent / "evaluation",
+                )
+            self.assertEqual(receipts.stat().st_ino, before)
+            self.assertEqual(tuple(receipts.iterdir()), ())
+            self.assertFalse((parent / "audit.json").exists())
+
+    def test_close_attempts_every_descriptor_before_reporting_first_error_antigravity(self) -> None:
+        """Break caught: one close failure leaks later retained receipt descriptors."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_close_all_antigravity_") as temporary:
+            transaction = lifecycle._ReceiptTransactionAntigravity(Path(temporary) / "receipts", create_s0=True)
+            first, second = transaction.parent_fd, transaction.directory_fd
+            calls, real_close = [], os.close
+            def closing(descriptor: int) -> None:
+                calls.append(descriptor)
+                if descriptor == first:
+                    raise OSError("first close")
+                real_close(descriptor)
+            with patch.object(lifecycle.os, "close", side_effect=closing):
+                with self.assertRaisesRegex(OSError, "first close"):
+                    transaction.close(None)
+            self.assertIn(first, calls)
+            self.assertIn(second, calls)
+
+    def test_prefinal_root_validation_fault_cannot_leave_complete_receipt_antigravity(self) -> None:
+        """Break caught: a root revalidation failure is discovered only after a complete leaf commits."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_prefinal_fault_antigravity_") as temporary:
+            parent = Path(temporary); receipts, prediction = parent / "receipts", parent / "prediction"
+            lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "a" * 40)
+            prediction.mkdir(); (prediction / "identity_antigravity.json").write_bytes(b"{}\n")
+            lifecycle.append_receipt_antigravity(receipts, "predict", "started", "a" * 40, prediction_root=prediction, evaluation_root=parent / "evaluation")
+            def fail(point: str) -> None:
+                if point == "before_end_validate":
+                    raise OSError("prefinal root check")
+            with self.assertRaisesRegex(OSError, "prefinal root check"):
+                lifecycle.append_receipt_antigravity(
+                    receipts, "predict", "complete", "a" * 40,
+                    prediction_root=prediction, evaluation_root=parent / "evaluation", fault_hook=fail,
+                )
+            self.assertFalse((receipts / "predict_complete_antigravity.json").exists())
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S2")
+
+    def test_valid_wrong_predecessor_stops_before_create_only_audit_antigravity(self) -> None:
+        """Break caught: a valid S-state command bypasses terminal stop or overwrites failure evidence."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        commit = "b" * 40
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_stop_antigravity_") as temporary:
+            parent = Path(temporary)
+            receipts, audit = parent / "receipts", parent / "audit_antigravity.json"
+            lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", commit)
+            with self.assertRaisesRegex(ValueError, "exact predecessor"):
+                lifecycle.run_phase_antigravity(
+                    "evaluate", commit, lambda: self.fail("out-of-order operation ran"),
+                    receipt_dir=receipts, audit_path=audit,
+                    prediction_root=parent / "prediction", evaluation_root=parent / "evaluation",
+                )
+            state = lifecycle.validate_receipt_inventory_antigravity(receipts)
+            self.assertTrue(state.stopped)
+            self.assertTrue(audit.is_file())
+            before = receipts.read_bytes() if receipts.is_file() else tuple(sorted(path.read_bytes() for path in receipts.iterdir()))
+            with self.assertRaises(ValueError):
+                lifecycle.run_phase_antigravity(
+                    "predict", commit, lambda: self.fail("stopped operation ran"),
+                    receipt_dir=receipts, audit_path=audit,
+                    prediction_root=parent / "prediction", evaluation_root=parent / "evaluation",
+                )
+            after = receipts.read_bytes() if receipts.is_file() else tuple(sorted(path.read_bytes() for path in receipts.iterdir()))
+            self.assertEqual(after, before)
+
+    def test_reviewed_commit_mismatch_is_rejected_before_any_receipt_mutation_antigravity(self) -> None:
+        """Break caught: a later receipt binds a different review and leaves a poisoned partial namespace."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_chain_antigravity_") as temporary:
+            receipts = Path(temporary) / "receipts"
+            lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "c" * 40)
+            before = (receipts / "readiness_complete_antigravity.json").read_bytes()
+            with self.assertRaisesRegex(ValueError, "reviewed commit"):
+                lifecycle.append_receipt_antigravity(receipts, "predict", "started", "d" * 40)
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S1")
+            self.assertEqual((receipts / "readiness_complete_antigravity.json").read_bytes(), before)
+            self.assertFalse((receipts / "predict_started_antigravity.json").exists())
+
+    def test_command_state_matrix_stops_every_valid_nonpredecessor_antigravity(self) -> None:
+        """Break caught: any one of the 28 invalid valid-state command pairs is allowed to run work."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        expected = {"readiness": "S0", "predict": "S1", "evaluate": "S3", "inspect": "S5"}
+        commit = "e" * 40
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_matrix_antigravity_") as temporary:
+            parent = Path(temporary)
+            for phase, predecessor in expected.items():
+                for state in ("S0", "S1", "S2", "S3", "S4", "S5", "S6", "S7"):
+                    with self.subTest(phase=phase, state=state):
+                        space = parent / f"{phase}_{state}"; space.mkdir()
+                        receipts, audit = space / "receipts", space / "audit.json"
+                        self._seed_state_antigravity(lifecycle, receipts, state, commit)
+                        prediction, evaluation = space / "prediction", space / "evaluation"
+                        calls: list[str] = []
+                        if state == predecessor:
+                            def operation():
+                                calls.append("ran")
+                                if phase == "predict": prediction.mkdir(); (prediction / "identity_antigravity.json").write_bytes(b"{}\n")
+                                if phase == "evaluate": evaluation.mkdir(); (evaluation / "identity_antigravity.json").write_bytes(b"{}\n")
+                                return "result"
+                            self.assertEqual(lifecycle.run_phase_antigravity(phase, commit, operation, receipt_dir=receipts, audit_path=audit, prediction_root=prediction, evaluation_root=evaluation), "result")
+                            self.assertEqual(calls, ["ran"])
+                            self.assertFalse(audit.exists())
+                        else:
+                            with self.assertRaisesRegex(ValueError, "exact predecessor"):
+                                lifecycle.run_phase_antigravity(phase, commit, lambda: calls.append("ran"), receipt_dir=receipts, audit_path=audit, prediction_root=prediction, evaluation_root=evaluation)
+                            self.assertEqual(calls, [])
+                            self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).stopped)
+                            self.assertTrue(audit.is_file())
+
+    def test_stopped_and_invalid_receipts_are_byte_preserved_without_audit_antigravity(self) -> None:
+        """Break caught: terminal or unowned receipt evidence is appended, replaced, or audited."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        commit = "f" * 40
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_preserve_antigravity_") as temporary:
+            parent = Path(temporary)
+            stopped = parent / "stopped"; self._seed_state_antigravity(lifecycle, stopped, "S1", commit)
+            lifecycle.append_receipt_antigravity(stopped, "predict", "stopped", commit)
+            stopped_before = tuple((path.name, path.read_bytes()) for path in sorted(stopped.iterdir()))
+            with self.assertRaisesRegex(ValueError, "permanently stopped"):
+                lifecycle.run_phase_antigravity("predict", commit, lambda: self.fail("stopped ran"), receipt_dir=stopped, audit_path=parent / "stopped_audit.json", prediction_root=parent / "prediction", evaluation_root=parent / "evaluation")
+            self.assertEqual(tuple((path.name, path.read_bytes()) for path in sorted(stopped.iterdir())), stopped_before)
+            self.assertFalse((parent / "stopped_audit.json").exists())
+            invalid = parent / "invalid"; invalid.mkdir(); (invalid / "foreign_antigravity.json").write_text("{}\n")
+            invalid_before = (invalid / "foreign_antigravity.json").read_bytes()
+            with self.assertRaisesRegex(ValueError, "inventory is invalid"):
+                lifecycle.run_phase_antigravity("readiness", commit, lambda: self.fail("invalid ran"), receipt_dir=invalid, audit_path=parent / "invalid_audit.json", prediction_root=parent / "prediction", evaluation_root=parent / "evaluation")
+            self.assertEqual((invalid / "foreign_antigravity.json").read_bytes(), invalid_before)
+            self.assertFalse((parent / "invalid_audit.json").exists())
+
+    def test_every_command_preserves_stopped_and_invalid_receipts_without_audit_antigravity(self) -> None:
+        """Break caught: a terminal or invalid namespace is treated differently by one command entrypoint."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        commit = "f" * 40
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_terminal_matrix_antigravity_") as temporary:
+            parent = Path(temporary)
+            for phase in ("readiness", "predict", "evaluate", "inspect"):
+                with self.subTest(kind="stopped", phase=phase):
+                    receipts = parent / f"stopped_{phase}"
+                    self._seed_state_antigravity(lifecycle, receipts, "S1", commit)
+                    lifecycle.append_receipt_antigravity(receipts, "predict", "stopped", commit)
+                    before = tuple((path.name, path.read_bytes()) for path in sorted(receipts.iterdir()))
+                    audit = parent / f"stopped_{phase}_audit.json"
+                    with self.assertRaisesRegex(ValueError, "permanently stopped"):
+                        lifecycle.run_phase_antigravity(phase, commit, lambda: self.fail("stopped ran"), receipt_dir=receipts, audit_path=audit, prediction_root=parent / f"stopped_{phase}_prediction", evaluation_root=parent / f"stopped_{phase}_evaluation")
+                    self.assertEqual(tuple((path.name, path.read_bytes()) for path in sorted(receipts.iterdir())), before)
+                    self.assertFalse(audit.exists())
+                with self.subTest(kind="invalid", phase=phase):
+                    receipts = parent / f"invalid_{phase}"; receipts.mkdir()
+                    foreign = receipts / "foreign_antigravity.json"; foreign.write_bytes(b"{}\n")
+                    audit = parent / f"invalid_{phase}_audit.json"
+                    with self.assertRaisesRegex(ValueError, "inventory is invalid"):
+                        lifecycle.run_phase_antigravity(phase, commit, lambda: self.fail("invalid ran"), receipt_dir=receipts, audit_path=audit, prediction_root=parent / f"invalid_{phase}_prediction", evaluation_root=parent / f"invalid_{phase}_evaluation")
+                    self.assertEqual(foreign.read_bytes(), b"{}\n")
+                    self.assertFalse(audit.exists())
+
+    def test_occupied_audit_is_preserved_after_stopped_receipt_antigravity(self) -> None:
+        """Break caught: occupied audit evidence is overwritten or normal phase work begins before stop."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_audit_antigravity_") as temporary:
+            parent = Path(temporary); audit, receipts = parent / "audit_antigravity.json", parent / "receipts"
+            audit.write_bytes(b'{"foreign":true}\n')
+            before = audit.read_bytes()
+            with self.assertRaisesRegex(ValueError, "audit destination is occupied"):
+                lifecycle.run_phase_antigravity("readiness", "1" * 40, lambda: self.fail("occupied audit ran"), receipt_dir=receipts, audit_path=audit, prediction_root=parent / "prediction", evaluation_root=parent / "evaluation")
+            self.assertEqual(audit.read_bytes(), before)
+            self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).stopped)
+
+    def test_occupied_audit_stops_each_exact_command_predecessor_antigravity(self) -> None:
+        """Break caught: any exact predecessor bypasses occupied-audit stop/audit ordering."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        for phase, state in {"readiness": "S0", "predict": "S1", "evaluate": "S3", "inspect": "S5"}.items():
+            with self.subTest(phase=phase), tempfile.TemporaryDirectory(prefix="exp449_lifecycle_audit_matrix_antigravity_") as temporary:
+                parent = Path(temporary); receipts, audit = parent / "receipts", parent / "audit.json"
+                self._seed_state_antigravity(lifecycle, receipts, state, "a" * 40)
+                audit.write_bytes(b"occupied\n")
+                with self.assertRaisesRegex(ValueError, "audit destination is occupied"):
+                    lifecycle.run_phase_antigravity(phase, "a" * 40, lambda: self.fail("occupied audit ran"), receipt_dir=receipts, audit_path=audit, prediction_root=parent / "prediction", evaluation_root=parent / "evaluation")
+                self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).stopped)
+                self.assertEqual(audit.read_bytes(), b"occupied\n")
+
+    def test_repeated_root_and_receipt_transactions_do_not_leak_descriptors_antigravity(self) -> None:
+        """Break caught: early receipt/root transitions retain descriptors across repeated synthetic commands."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_fd_repeat_antigravity_") as temporary:
+            parent = Path(temporary)
+            before = len(os.listdir("/dev/fd"))
+            for index in range(20):
+                receipts = parent / f"receipts_{index}"
+                lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "b" * 40, prediction_root=parent / f"prediction_{index}", evaluation_root=parent / f"evaluation_{index}")
+                self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S1")
+            self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)
+
+    def test_exact_predecessor_unsafe_root_stops_instead_of_becoming_invalid_antigravity(self) -> None:
+        """Break caught: a root occupancy precondition is misclassified as an unowned receipt namespace."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        expected = {"readiness": "S0", "predict": "S1", "evaluate": "S3", "inspect": "S5"}
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_unsafe_root_antigravity_") as temporary:
+            parent = Path(temporary)
+            for phase, state in expected.items():
+                with self.subTest(phase=phase):
+                    receipts, audit = parent / f"{phase}_receipts", parent / f"{phase}_audit.json"
+                    self._seed_state_antigravity(lifecycle, receipts, state, "0" * 40)
+                    prediction, evaluation = parent / f"{phase}_prediction", parent / f"{phase}_evaluation"
+                    if phase in ("evaluate", "inspect"):
+                        prediction.mkdir(); (prediction / "identity_antigravity.json").write_bytes(b"{}\n")
+                    if phase == "inspect":
+                        evaluation.mkdir(); (evaluation / "identity_antigravity.json").write_bytes(b"{}\n")
+                    unsafe = prediction if phase in ("readiness", "predict") else evaluation
+                    if unsafe.exists():
+                        for child in unsafe.iterdir():
+                            child.unlink()
+                        unsafe.rmdir()
+                    unsafe.write_bytes(b"occupied\n")
+                    with self.assertRaisesRegex(ValueError, "root"):
+                        lifecycle.run_phase_antigravity(phase, "0" * 40, lambda: self.fail("unsafe root ran"), receipt_dir=receipts, audit_path=audit, prediction_root=prediction, evaluation_root=evaluation)
+                    self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).stopped)
+                    self.assertTrue(audit.is_file())
+                    self.assertEqual(unsafe.read_bytes(), b"occupied\n")
+
+    def test_readiness_root_appearance_before_complete_stops_antigravity(self) -> None:
+        """Break caught: a root appears after readiness preflight yet readiness completes successfully."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_absence_pin_antigravity_") as temporary:
+            parent = Path(temporary); prediction = parent / "prediction"; receipts = parent / "receipts"
+            with self.assertRaisesRegex(ValueError, "absent root"):
+                lifecycle.run_phase_antigravity("readiness", "1" * 40, lambda: prediction.mkdir(), receipt_dir=receipts, audit_path=parent / "audit.json", prediction_root=prediction, evaluation_root=parent / "evaluation")
+            self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).stopped)
+            self.assertTrue((parent / "audit.json").is_file())
+
+    def test_operation_failure_appends_stopped_and_never_a_complete_leaf_antigravity(self) -> None:
+        """Break caught: an operation error is followed by success receipt or omits its permanent stop."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_failure_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"
+            self._seed_state_antigravity(lifecycle, receipts, "S1", "2" * 40)
+            with self.assertRaisesRegex(RuntimeError, "work failure"):
+                lifecycle.run_phase_antigravity("predict", "2" * 40, lambda: (_ for _ in ()).throw(RuntimeError("work failure")), receipt_dir=receipts, audit_path=parent / "audit_antigravity.json", prediction_root=parent / "prediction", evaluation_root=parent / "evaluation")
+            self.assertTrue((receipts / "predict_started_antigravity.json").is_file())
+            self.assertFalse((receipts / "predict_complete_antigravity.json").exists())
+            self.assertTrue((receipts / "stopped_antigravity.json").is_file())
+
+    def test_receipt_commit_and_predecessor_hash_are_descriptor_derived_antigravity(self) -> None:
+        """Break caught: post-validation Path.read_bytes races replace receipt review or hash authority."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_descriptor_antigravity_") as temporary:
+            receipts = Path(temporary) / "receipts"
+            lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "3" * 40)
+            with patch.object(Path, "read_bytes", side_effect=AssertionError("path read forbidden")):
+                self.assertEqual(lifecycle.receipt_reviewed_commit_antigravity(receipts), "3" * 40)
+                lifecycle.append_receipt_antigravity(receipts, "predict", "started", "3" * 40)
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S2")
+
+    def test_predecessor_commit_mismatch_stops_using_owned_chain_commit_antigravity(self) -> None:
+        """Break caught: S1/S3/S5 with a wrong lower40 leaves a valid receipt nonterminal."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        expected = {"S1": "predict", "S3": "evaluate", "S5": "inspect"}
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_commit_mismatch_antigravity_") as temporary:
+            parent = Path(temporary)
+            for state, phase in expected.items():
+                with self.subTest(state=state, phase=phase):
+                    receipts, audit = parent / state, parent / f"{state}.json"
+                    self._seed_state_antigravity(lifecycle, receipts, state, "4" * 40)
+                    with self.assertRaisesRegex(ValueError, "receipt chain"):
+                        lifecycle.run_phase_antigravity(phase, "5" * 40, lambda: self.fail("mismatch ran"), receipt_dir=receipts, audit_path=audit, prediction_root=parent / "prediction", evaluation_root=parent / "evaluation")
+                    self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).stopped)
+                    terminal = lifecycle.validate_receipt_inventory_antigravity(receipts)
+                    self.assertEqual(terminal.reviewed_commit, "4" * 40)
+                    self.assertTrue(audit.is_file())
+
+    def test_receipt_writer_fault_matrix_never_reports_a_durable_success_antigravity(self) -> None:
+        """Break caught: a create/write/fsync/reread/close failure returns a receipt as though it committed."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        points = ("directory_create", "leaf_create", "leaf_write", "leaf_fsync", "leaf_close", "leaf_reread", "reread_close", "before_precommit", "directory_close", "before_directory_fsync", "before_parent_fsync", "parent_fsync")
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_fault_matrix_antigravity_") as temporary:
+            parent = Path(temporary)
+            for point in points:
+                with self.subTest(point=point):
+                    receipts = parent / point
+                    def fail(active: str) -> None:
+                        if active == point:
+                            raise OSError(point)
+                    with self.assertRaisesRegex(OSError, point):
+                        lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "6" * 40, fault_hook=fail)
+                    self.assertFalse((receipts / "readiness_complete_antigravity.json").exists())
+
+    def test_primary_receipt_failure_survives_close_failure_antigravity(self) -> None:
+        """Break caught: a close fault replaces the earlier write primary error."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_primary_antigravity_") as temporary:
+            def fail(point: str) -> None:
+                if point == "leaf_write":
+                    raise RuntimeError("primary write")
+                if point == "leaf_close":
+                    raise OSError("secondary close")
+            with self.assertRaisesRegex(RuntimeError, "primary write") as raised:
+                lifecycle.append_receipt_antigravity(Path(temporary) / "receipts", "readiness", "complete", "7" * 40, fault_hook=fail)
+            self.assertIn("leaf_close_error=OSError: secondary close", "\n".join(raised.exception.__notes__))
+
+    def test_unsafe_foreign_partial_and_noncanonical_receipts_are_invalid_and_preserved_antigravity(self) -> None:
+        """Break caught: symlink, multilink, foreign, partial, or noncanonical receipt state becomes owned."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_invalid_matrix_antigravity_") as temporary:
+            parent = Path(temporary)
+            for defect in ("directory_symlink", "leaf_symlink", "leaf_hardlink", "foreign", "partial", "noncanonical"):
+                with self.subTest(defect=defect):
+                    root = parent / defect
+                    if defect == "directory_symlink":
+                        target = parent / "directory_target"; target.mkdir(); root.symlink_to(target, target_is_directory=True)
+                    elif defect in ("foreign", "partial", "noncanonical"):
+                        root.mkdir()
+                        name = "foreign_antigravity.json" if defect == "foreign" else "readiness_complete_antigravity.json"
+                        root.joinpath(name).write_bytes(b"{}\n" if defect != "noncanonical" else b'{"schema": "bad"}\n')
+                    else:
+                        lifecycle.append_receipt_antigravity(root, "readiness", "complete", "8" * 40)
+                        leaf = root / "readiness_complete_antigravity.json"
+                        if defect == "leaf_symlink":
+                            target = parent / "leaf_target_antigravity.json"; target.write_bytes(leaf.read_bytes()); leaf.unlink(); leaf.symlink_to(target)
+                        else:
+                            os.link(leaf, parent / "extra_hardlink_antigravity.json")
+                    before = None if root.is_symlink() else tuple((item.name, item.read_bytes()) for item in sorted(root.iterdir()))
+                    result = lifecycle.validate_receipt_inventory_antigravity(root)
+                    self.assertTrue(result.invalid)
+                    if before is not None:
+                        self.assertEqual(tuple((item.name, item.read_bytes()) for item in sorted(root.iterdir())), before)
+
+    def test_durable_complete_returns_without_terminal_stop_antigravity(self) -> None:
+        """Break caught: cleanup after a durable complete appends stopped or reclassifies success."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_complete_boundary_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"
+            lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "9" * 40)
+            prediction = parent / "prediction"
+            self.assertEqual(lifecycle.run_phase_antigravity("predict", "9" * 40, lambda: (prediction.mkdir(), (prediction / "identity_antigravity.json").write_bytes(b"{}\n"), "prediction")[2], receipt_dir=receipts, audit_path=parent / "audit.json", prediction_root=prediction, evaluation_root=parent / "evaluation"), "prediction")
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S3")
+            self.assertFalse((receipts / "stopped_antigravity.json").exists())
+            self.assertFalse((parent / "audit.json").exists())
+
+    def test_postcomplete_receipt_close_fault_keeps_durable_success_antigravity(self) -> None:
+        """Break caught: a close fault after complete parent fsync turns S3 back into terminal failure."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_postcomplete_close_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"; prediction = parent / "prediction"
+            lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "a" * 40)
+            original_close = lifecycle._LifecycleTransactionAntigravity.close
+
+            def close_after_durable_commit(transaction, primary):
+                original_close(transaction, primary)
+                if primary is None:
+                    raise OSError("postcomplete close")
+
+            with patch.object(lifecycle._LifecycleTransactionAntigravity, "close", close_after_durable_commit):
+                result = lifecycle.run_phase_antigravity(
+                    "predict", "a" * 40,
+                    lambda: (prediction.mkdir(), (prediction / "identity_antigravity.json").write_bytes(b"{}\n"), "prediction")[2],
+                    receipt_dir=receipts, audit_path=parent / "audit.json",
+                    prediction_root=prediction, evaluation_root=parent / "evaluation",
+                )
+            self.assertEqual(result, "prediction")
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S3")
+            self.assertFalse((receipts / "stopped_antigravity.json").exists())
+            self.assertFalse((parent / "audit.json").exists())
+
+    def test_append_rejects_same_name_receipt_directory_rebind_antigravity(self) -> None:
+        """Break caught: a retained receipt directory is renamed and the new same-name directory receives authority."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_rebind_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"; moved = parent / "moved"
+            lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "a" * 40)
+            def replace(point: str) -> None:
+                if point == "leaf_reread":
+                    os.rename(receipts, moved); receipts.mkdir()
+            with self.assertRaisesRegex(ValueError, "rebound"):
+                lifecycle.append_receipt_antigravity(receipts, "predict", "started", "a" * 40, fault_hook=replace)
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "INVALID")
+            # The rebinding error occurred before the new leaf's durable point,
+            # so exact-inode cleanup restores the prior S1 prefix.
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(moved).state, "S1")
+
+    def test_audit_symlink_and_writer_failure_preserve_primary_antigravity(self) -> None:
+        """Break caught: audit symlink is overwritten or audit persistence replaces the phase primary error."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_audit_fault_antigravity_") as temporary:
+            parent = Path(temporary); target = parent / "target_antigravity.json"; target.write_bytes(b"foreign\n")
+            audit = parent / "audit_antigravity.json"; audit.symlink_to(target)
+            with self.assertRaisesRegex(ValueError, "occupied"):
+                lifecycle.run_phase_antigravity("readiness", "b" * 40, lambda: self.fail("audit symlink ran"), receipt_dir=parent / "receipts", audit_path=audit, prediction_root=parent / "prediction", evaluation_root=parent / "evaluation")
+            self.assertEqual(target.read_bytes(), b"foreign\n")
+            self.assertTrue(audit.is_symlink())
+            receipts = parent / "write_failure_receipts"
+            original = lifecycle.write_failure_audit_antigravity
+            with patch.object(lifecycle, "write_failure_audit_antigravity", side_effect=OSError("audit write")):
+                with self.assertRaisesRegex(RuntimeError, "phase primary") as raised:
+                    lifecycle.run_phase_antigravity("readiness", "c" * 40, lambda: (_ for _ in ()).throw(RuntimeError("phase primary")), receipt_dir=receipts, audit_path=parent / "write_failure.json", prediction_root=parent / "prediction", evaluation_root=parent / "evaluation")
+            self.assertIn("failure_audit_error=OSError: audit write", "\n".join(raised.exception.__notes__))
+            self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).stopped)
+            self.assertIsNotNone(original)
+
+    def test_private_inspect_wrapper_is_ordered_and_source_free_seam_antigravity(self) -> None:
+        """Break caught: inspect opens a source dependency or replays before receipt-derived prediction capture."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity import replay_antigravity as replay  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_inspect_seam_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"; evaluation = parent / "evaluation"; evaluation.mkdir()
+            self._seed_state_antigravity(lifecycle, receipts, "S5", "d" * 40)
+            events: list[str] = []
+            capture = SimpleNamespace(authority=SimpleNamespace(reviewed_commit="d" * 40))
+            result = replay._inspect_with_dependencies_antigravity(
+                lambda: events.append("capture") or capture,
+                lambda root, value: events.append("replay") or "replayed",
+                evaluation_root=evaluation, receipt_dir=receipts, audit_path=parent / "audit.json",
+            )
+            self.assertEqual(result, "replayed")
+            self.assertEqual(events, ["capture", "replay"])
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S7")
+
+    def test_private_predict_wrapper_commits_zero_label_immutable_root_antigravity(self) -> None:
+        """Break caught: prediction opens a label dependency or completes before its root exists and is immutable."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_predict_seam_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"; root = parent / "prediction"; events: list[str] = []
+            self._seed_state_antigravity(lifecycle, receipts, "S1", "e" * 40)
+            def operation():
+                events.append("zero-label-operation"); root.mkdir(); (root / "immutable_antigravity.json").write_bytes(b"{}\n")
+                return "authority"
+            self.assertEqual(prediction._predict_with_lifecycle_dependencies_antigravity("e" * 40, operation, prediction_root=root, receipt_dir=receipts, audit_path=parent / "audit.json"), "authority")
+            self.assertEqual(events, ["zero-label-operation"])
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S3")
+            self.assertFalse((parent / "audit.json").exists())
+
+    def test_private_evaluate_wrapper_captures_prediction_before_evaluator_antigravity(self) -> None:
+        """Break caught: evaluator/label opener is reachable before descriptor prediction capture or repeats capture."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity import evaluation_antigravity as evaluation  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_evaluate_seam_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"; prediction_root = parent / "prediction"; prediction_root.mkdir(); (prediction_root / "leaf.json").write_bytes(b"{}\n")
+            evaluation_root = parent / "evaluation"; events: list[str] = []
+            self._seed_state_antigravity(lifecycle, receipts, "S3", "f" * 40)
+            capture = SimpleNamespace(authority=SimpleNamespace(reviewed_commit="f" * 40))
+            def evaluator(value):
+                self.assertIs(value, capture); events.append("evaluator"); evaluation_root.mkdir(); (evaluation_root / "leaf.json").write_bytes(b"{}\n"); return "evaluation"
+            self.assertEqual(evaluation._evaluate_with_lifecycle_dependencies_antigravity("f" * 40, lambda: events.append("capture") or capture, evaluator, evaluation_root=evaluation_root, receipt_dir=receipts, audit_path=parent / "audit.json"), "evaluation")
+            self.assertEqual(events, ["capture", "evaluator"])
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S5")
+
+    def test_private_inspect_subprocess_firewall_keeps_forbidden_modules_unloaded_antigravity(self) -> None:
+        """Break caught: actual synthetic inspect dispatch imports sources, sqlite, evaluator, aeon, network, or dashboard."""
+        script = r'''
+import json, tempfile
+from pathlib import Path
+from types import SimpleNamespace
+from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as life
+from experiments.exp449_residual_fn_method_qualification_antigravity import replay_antigravity as replay
+with tempfile.TemporaryDirectory() as raw:
+    parent=Path(raw); receipts=parent/'receipts'; evaluation=parent/'evaluation'; evaluation.mkdir()
+    for index,(phase,event) in enumerate((("readiness","complete"),("predict","started"),("predict","complete"),("evaluate","started"),("evaluate","complete"))):
+        if index == 2: (parent/'prediction').mkdir(); (parent/'prediction'/'identity.json').write_bytes(b'{}\\n')
+        if index == 4: (parent/'evaluation'/'identity.json').write_bytes(b'{}\\n')
+        life.append_receipt_antigravity(receipts, phase, event, 'a'*40, prediction_root=parent/'prediction', evaluation_root=parent/'evaluation')
+    capture=SimpleNamespace(authority=SimpleNamespace(reviewed_commit='a'*40))
+    result=replay._inspect_with_dependencies_antigravity(lambda:capture, lambda root,value:'ok', evaluation_root=evaluation, receipt_dir=receipts, audit_path=parent/'audit.json')
+    import sys
+    forbidden=('sqlite3','experiments.exp449_residual_fn_method_qualification_antigravity.sources_antigravity','experiments.exp449_residual_fn_method_qualification_antigravity.evaluation_antigravity','aeon')
+    print(json.dumps({'result':result,'loaded':[name for name in forbidden if name in sys.modules]}))
+'''
+        completed = subprocess.run([sys.executable, "-c", script], cwd=Path.cwd(), check=True, text=True, capture_output=True)
+        observed = json.loads(completed.stdout)
+        self.assertEqual(observed, {"result": "ok", "loaded": []})
+
+    def test_predict_wrapper_failure_uses_one_unified_audit_not_legacy_inner_audit_antigravity(self) -> None:
+        """Break caught: receipt-gated predict invokes legacy audit or duplicates the unified failure audit."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity import prediction_antigravity as prediction  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_predict_audit_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"; root = parent / "prediction"; audit = parent / "audit.json"
+            self._seed_state_antigravity(lifecycle, receipts, "S1", "1" * 40)
+            calls: list[str] = []
+            original = lifecycle.write_failure_audit_antigravity
+            def unified(*args, **kwargs):
+                calls.append("unified"); return original(*args, **kwargs)
+            with patch.object(prediction, "_handle_lifecycle_failure_antigravity", side_effect=AssertionError("legacy audit called")), patch.object(lifecycle, "write_failure_audit_antigravity", side_effect=unified):
+                with self.assertRaisesRegex(RuntimeError, "operation failure"):
+                    prediction._predict_with_lifecycle_dependencies_antigravity("1" * 40, lambda: (_ for _ in ()).throw(RuntimeError("operation failure")), prediction_root=root, receipt_dir=receipts, audit_path=audit)
+            self.assertEqual(calls, ["unified"])
+            self.assertTrue(audit.is_file())
+            self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).stopped)
+
+    def test_complete_append_failure_stops_and_audits_without_returning_result_antigravity(self) -> None:
+        """Break caught: a complete receipt error escapes the phase failure boundary and returns successful work."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_complete_fault_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"; audit = parent / "audit.json"
+            self._seed_state_antigravity(lifecycle, receipts, "S1", "2" * 40)
+            original = lifecycle.append_receipt_antigravity
+            def fail_complete(directory, phase, event, commit, **kwargs):
+                if (phase, event) == ("predict", "complete"):
+                    raise OSError("complete fsync")
+                return original(directory, phase, event, commit, **kwargs)
+            with patch.object(lifecycle, "append_receipt_antigravity", side_effect=fail_complete):
+                with self.assertRaisesRegex(OSError, "complete fsync"):
+                    lifecycle.run_phase_antigravity("predict", "2" * 40, lambda: ((parent / "prediction").mkdir(), ((parent / "prediction") / "identity_antigravity.json").write_bytes(b"{}\n"), "must-not-return")[2], receipt_dir=receipts, audit_path=audit, prediction_root=parent / "prediction", evaluation_root=parent / "evaluation")
+            self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).stopped)
+            self.assertTrue(audit.is_file())
+
+    def test_canonical_and_forged_stage_root_receipts_are_invalid_antigravity(self) -> None:
+        """Break caught: whitespace/duplicate JSON or forged stage root identities are accepted as owned receipts."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_lifecycle_stage_forgery_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"; prediction = parent / "prediction"
+            lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "3" * 40, prediction_root=prediction, evaluation_root=parent / "evaluation")
+            leaf = receipts / "readiness_complete_antigravity.json"; leaf.write_bytes(leaf.read_bytes().replace(b'"schema":"', b'"schema": "', 1))
+            self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).invalid)
+            leaf.write_bytes(b'{"schema":"x","schema":"y"}\n')
+            self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).invalid)
+            receipts = parent / "forged"; lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "3" * 40, prediction_root=prediction, evaluation_root=parent / "evaluation")
+            payload = (receipts / "readiness_complete_antigravity.json").read_bytes().replace(b'"prediction_root_identity":null', b'"prediction_root_identity":"' + b'a' * 64 + b'"')
+            (receipts / "readiness_complete_antigravity.json").write_bytes(payload)
+            self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).invalid)
+
+    def test_nested_root_replacement_after_descriptor_capture_rejects_append_antigravity(self) -> None:
+        """Break caught: a same-name nested directory/leaf replacement survives root transaction end validation."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_root_replace_antigravity_") as temporary:
+            parent = Path(temporary); root = parent / "prediction"; nested = root / "empty"; nested.mkdir(parents=True)
+            replacement = parent / "replacement"; replacement.mkdir()
+            def replace(point: str) -> None:
+                if point == "before_end_validate":
+                    os.rename(nested, parent / "moved_empty"); replacement.rename(nested)
+            with self.assertRaisesRegex(ValueError, "root directory was replaced"):
+                lifecycle.append_receipt_antigravity(parent / "receipts", "readiness", "complete", "4" * 40, prediction_root=root, evaluation_root=parent / "evaluation", fault_hook=replace)
+
+    def test_root_leaf_path_replacement_and_hardlink_reject_retained_authority_antigravity(self) -> None:
+        """Break caught: a retained root leaf fd hides same-byte pathname replacement or a late hardlink."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_root_leaf_authority_antigravity_") as temporary:
+            parent = Path(temporary)
+            for defect in ("replace", "hardlink"):
+                with self.subTest(defect=defect):
+                    root = parent / defect; root.mkdir(); leaf = root / "leaf_antigravity.json"; leaf.write_bytes(b"same bytes\n")
+                    transaction = lifecycle._RootIdentityTransactionAntigravity(root)
+                    try:
+                        if defect == "replace":
+                            leaf.rename(parent / f"moved_{defect}_antigravity.json")
+                            leaf.write_bytes(b"same bytes\n")
+                        else:
+                            os.link(leaf, parent / f"linked_{defect}_antigravity.json")
+                        with self.assertRaisesRegex(ValueError, "root leaf"):
+                            transaction.end_validate()
+                    finally:
+                        transaction.close(None)
+
+    def test_direct_append_pins_absent_roots_until_final_receipt_commit_antigravity(self) -> None:
+        """Break caught: direct readiness append accepts an absent root that appears at its final validation seam."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_direct_absence_pin_antigravity_") as temporary:
+            parent = Path(temporary)
+            for kind in ("directory", "file", "symlink"):
+                with self.subTest(kind=kind):
+                    prediction = parent / f"prediction_{kind}"; receipts = parent / f"receipts_{kind}"
+                    def appear(point: str) -> None:
+                        if point == "before_end_validate":
+                            if kind == "directory": prediction.mkdir()
+                            elif kind == "file": prediction.write_bytes(b"occupied\n")
+                            else:
+                                target = parent / f"target_{kind}_antigravity.json"; target.write_bytes(b"occupied\n"); prediction.symlink_to(target)
+                    with self.assertRaisesRegex(ValueError, "absent"):
+                        lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "5" * 40, prediction_root=prediction, evaluation_root=parent / "evaluation", fault_hook=appear)
+                    self.assertFalse((receipts / "readiness_complete_antigravity.json").exists())
+                    if prediction.is_dir(): prediction.rmdir()
+                    else: prediction.unlink()
+
+    def test_audit_appearance_stops_all_exact_predecessors_without_overwrite_antigravity(self) -> None:
+        """Break caught: audit appearance during an otherwise exact phase permits complete or overwrites forensic evidence."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        expected = {"readiness": "S0", "predict": "S1", "evaluate": "S3", "inspect": "S5"}
+        with tempfile.TemporaryDirectory(prefix="exp449_audit_pin_matrix_antigravity_") as temporary:
+            parent = Path(temporary)
+            for phase, state in expected.items():
+                for kind in ("file", "symlink"):
+                    with self.subTest(phase=phase, kind=kind):
+                        space = parent / f"{phase}_{kind}"; space.mkdir()
+                        receipts, audit = space / "receipts", space / "audit_antigravity.json"
+                        prediction, evaluation = space / "prediction", space / "evaluation"
+                        self._seed_state_antigravity(lifecycle, receipts, state, "6" * 40)
+                        if kind == "symlink":
+                            (space / "audit_target_antigravity.json").write_bytes(b"occupied\n")
+                        if phase in ("evaluate", "inspect"):
+                            prediction.mkdir(exist_ok=True); (prediction / "identity_antigravity.json").write_bytes(b"{}\n")
+                        if phase == "inspect":
+                            evaluation.mkdir(exist_ok=True); (evaluation / "identity_antigravity.json").write_bytes(b"{}\n")
+                        def operation() -> None:
+                            if phase == "predict": prediction.mkdir(); (prediction / "identity_antigravity.json").write_bytes(b"{}\n")
+                            if phase == "evaluate": evaluation.mkdir(); (evaluation / "identity_antigravity.json").write_bytes(b"{}\n")
+                            if kind == "file": audit.write_bytes(b"occupied\n")
+                            else:
+                                audit.symlink_to(space / "audit_target_antigravity.json")
+                        with self.assertRaisesRegex(ValueError, "absent"):
+                            lifecycle.run_phase_antigravity(phase, "6" * 40, operation, receipt_dir=receipts, audit_path=audit, prediction_root=prediction, evaluation_root=evaluation)
+                        self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).stopped)
+                        self.assertEqual(audit.resolve().read_bytes(), b"occupied\n")
+
+    def test_inspect_seam_enters_lifecycle_before_receipt_commit_is_derived_antigravity(self) -> None:
+        """Break caught: bare inspect opens and closes a receipt path before the retained lifecycle transaction starts."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity import replay_antigravity as replay  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_inspect_receipt_authority_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"; evaluation = parent / "evaluation"; evaluation.mkdir()
+            self._seed_state_antigravity(lifecycle, receipts, "S5", "7" * 40)
+            capture = SimpleNamespace(authority=SimpleNamespace(reviewed_commit="7" * 40))
+            with patch.object(lifecycle, "receipt_reviewed_commit_antigravity", side_effect=AssertionError("bare receipt reopen")):
+                result = replay._inspect_with_dependencies_antigravity(
+                    lambda: capture, lambda root, value: "replayed",
+                    evaluation_root=evaluation, receipt_dir=receipts, audit_path=parent / "audit.json",
+                )
+            self.assertEqual(result, "replayed")
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S7")
+
+    def test_inspect_receipt_rebind_during_operation_is_not_reopened_by_path_antigravity(self) -> None:
+        """Break caught: bare inspect reads a receipt commit, then accepts a same-name receipt directory rebind."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+        from experiments.exp449_residual_fn_method_qualification_antigravity import replay_antigravity as replay  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_inspect_rebind_authority_antigravity_") as temporary:
+            parent = Path(temporary); receipts = parent / "receipts"; evaluation = parent / "evaluation"; evaluation.mkdir()
+            self._seed_state_antigravity(lifecycle, receipts, "S5", "8" * 40)
+            capture = SimpleNamespace(authority=SimpleNamespace(reviewed_commit="8" * 40))
+            for defect in ("directory", "leaf"):
+                with self.subTest(defect=defect):
+                    active = parent / f"receipts_{defect}"; self._seed_state_antigravity(lifecycle, active, "S5", "8" * 40)
+                    moved = parent / f"moved_{defect}"
+                    def rebind(root, value):
+                        if defect == "directory":
+                            active.rename(moved); active.mkdir()
+                        else:
+                            leaf = active / "inspect_started_antigravity.json"; payload = leaf.read_bytes()
+                            leaf.rename(moved); leaf.write_bytes(payload)
+                        return "must-not-return"
+                    with self.assertRaisesRegex(ValueError, "receipt (directory was rebound|leaf was replaced)"):
+                        replay._inspect_with_dependencies_antigravity(lambda: capture, rebind, evaluation_root=evaluation, receipt_dir=active, audit_path=parent / f"audit_{defect}.json")
+                    self.assertTrue((parent / f"audit_{defect}.json").is_file())
+
+    def test_complete_append_revalidates_live_root_and_audit_authority_antigravity(self) -> None:
+        """Break caught: a root/audit race after operation but before complete receives an S-complete receipt."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_complete_authority_antigravity_") as temporary:
+            parent = Path(temporary)
+            for defect in ("root_hardlink", "audit_file"):
+                with self.subTest(defect=defect):
+                    space = parent / defect; space.mkdir(); receipts, prediction = space / "receipts", space / "prediction"
+                    audit = space / "audit_antigravity.json"; self._seed_state_antigravity(lifecycle, receipts, "S1", "9" * 40)
+                    original = lifecycle.append_receipt_antigravity
+                    def race(directory, phase, event, commit, **kwargs):
+                        if (phase, event) == ("predict", "complete"):
+                            if defect == "root_hardlink": os.link(prediction / "identity_antigravity.json", space / "late_link_antigravity.json")
+                            else: audit.write_bytes(b"late audit\n")
+                        return original(directory, phase, event, commit, **kwargs)
+                    with patch.object(lifecycle, "append_receipt_antigravity", side_effect=race):
+                        with self.assertRaises(ValueError):
+                            lifecycle.run_phase_antigravity("predict", "9" * 40, lambda: (prediction.mkdir(), (prediction / "identity_antigravity.json").write_bytes(b"{}\n"), "prediction")[2], receipt_dir=receipts, audit_path=audit, prediction_root=prediction, evaluation_root=space / "evaluation")
+                    self.assertFalse((receipts / "predict_complete_antigravity.json").exists())
+                    self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).stopped)
+                    if defect == "audit_file": self.assertEqual(audit.read_bytes(), b"late audit\n")
+
+    def test_complete_leaf_prefinal_fault_is_removed_before_stop_antigravity(self) -> None:
+        """Break caught: a fault after complete leaf creation leaves a valid-looking complete beside stopped."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_complete_leaf_cleanup_antigravity_") as temporary:
+            parent = Path(temporary); receipts, prediction = parent / "receipts", parent / "prediction"
+            self._seed_state_antigravity(lifecycle, receipts, "S1", "a" * 40)
+            prediction.mkdir(); (prediction / "identity_antigravity.json").write_bytes(b"{}\n")
+            lifecycle.append_receipt_antigravity(receipts, "predict", "started", "a" * 40, prediction_root=prediction, evaluation_root=parent / "evaluation")
+            def fail(point: str) -> None:
+                if point == "before_parent_fsync": raise OSError("pre-final parent fsync")
+            with self.assertRaisesRegex(OSError, "pre-final parent fsync"):
+                lifecycle.append_receipt_antigravity(receipts, "predict", "complete", "a" * 40, prediction_root=prediction, evaluation_root=parent / "evaluation", fault_hook=fail)
+            self.assertFalse((receipts / "predict_complete_antigravity.json").exists())
+            self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S2")
+
+    def test_bare_inspect_stops_all_nonpredecessor_valid_states_with_chain_or_sentinel_antigravity(self) -> None:
+        """Break caught: bare inspect S0 lacks a commit and evades terminal out-of-order lifecycle ownership."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_bare_inspect_states_antigravity_") as temporary:
+            parent = Path(temporary)
+            for state in ("S0", "S1", "S2", "S3", "S4", "S5", "S6", "S7"):
+                with self.subTest(state=state):
+                    receipts, audit = parent / state, parent / f"{state}.json"
+                    self._seed_state_antigravity(lifecycle, receipts, state, "b" * 40)
+                    if state == "S5":
+                        self.assertEqual(
+                            lifecycle.run_inspect_phase_antigravity(lambda commit: commit, receipt_dir=receipts, audit_path=audit, prediction_root=parent / "prediction", evaluation_root=parent / "evaluation"),
+                            "b" * 40,
+                        )
+                        self.assertEqual(lifecycle.validate_receipt_inventory_antigravity(receipts).state, "S7")
+                        self.assertFalse(audit.exists())
+                        continue
+                    with self.assertRaisesRegex(ValueError, "exact predecessor"):
+                        lifecycle.run_inspect_phase_antigravity(lambda commit: self.fail("inspect ran"), receipt_dir=receipts, audit_path=audit, prediction_root=parent / f"{state}_prediction", evaluation_root=parent / f"{state}_evaluation")
+                    classified = lifecycle.validate_receipt_inventory_antigravity(receipts)
+                    self.assertTrue(classified.stopped); self.assertTrue(audit.is_file())
+                    self.assertEqual(classified.reviewed_commit, "0" * 40 if state == "S0" else "b" * 40)
+
+    def test_direct_append_early_failures_close_every_transaction_descriptor_antigravity(self) -> None:
+        """Break caught: a direct append transition failure leaks receipt/root absence descriptors before final commit."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_direct_append_close_antigravity_") as temporary:
+            parent = Path(temporary); before = len(os.listdir("/dev/fd"))
+            for index in range(20):
+                with self.assertRaisesRegex(ValueError, "transition"):
+                    lifecycle.append_receipt_antigravity(parent / f"receipts_{index}", "predict", "complete", "c" * 40, prediction_root=parent / f"prediction_{index}", evaluation_root=parent / f"evaluation_{index}")
+            self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)
+
+    def test_invalid_hardlinked_receipt_classification_closes_opened_leaf_descriptors_antigravity(self) -> None:
+        """Break caught: validation opens an unsafe hardlinked receipt leaf before registering it for close-all."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_receipt_classification_fd_antigravity_") as temporary:
+            parent = Path(temporary); before = len(os.listdir("/dev/fd"))
+            for index in range(20):
+                receipts = parent / f"receipts_{index}"
+                lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "d" * 40)
+                leaf = receipts / "readiness_complete_antigravity.json"
+                os.link(leaf, parent / f"hardlink_{index}_antigravity.json")
+                self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).invalid)
+            self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)
+
+    def test_root_constructor_open_failure_closes_partial_parent_authority_antigravity(self) -> None:
+        """Break caught: a root open failure after parent capture leaks the partially constructed transaction."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_root_constructor_fd_antigravity_") as temporary:
+            parent = Path(temporary); root = parent / "root"; root.mkdir(); before = len(os.listdir("/dev/fd")); original_open = lifecycle.os.open
+            def fail_root_open(path, *args, **kwargs):
+                if path == root.name and kwargs.get("dir_fd") is not None:
+                    raise OSError("root open failure")
+                return original_open(path, *args, **kwargs)
+            with patch.object(lifecycle.os, "open", side_effect=fail_root_open):
+                for _ in range(20):
+                    with self.assertRaisesRegex(OSError, "root open failure"):
+                        lifecycle._RootIdentityTransactionAntigravity(root)
+            self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)
+
+    def test_complete_precommit_root_close_failure_still_closes_audit_pin_antigravity(self) -> None:
+        """Break caught: root close raises before audit-pin close, leaking authority into terminal recovery."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_precommit_close_all_antigravity_") as temporary:
+            parent = Path(temporary); before = len(os.listdir("/dev/fd")); audit_closes: list[Path] = []
+            original_root_close = lifecycle._CommandRootAuthorityAntigravity.close
+            original_pin_close = lifecycle._AbsentPathPinAntigravity.close
+            def root_close(authority, primary):
+                original_root_close(authority, primary)
+                if primary is None: raise OSError("root close failure")
+            def pin_close(pin, primary):
+                if pin.path.name.startswith("audit_") and pin.parent_fd >= 0: audit_closes.append(pin.path)
+                return original_pin_close(pin, primary)
+            with patch.object(lifecycle._CommandRootAuthorityAntigravity, "close", root_close), patch.object(lifecycle._AbsentPathPinAntigravity, "close", pin_close):
+                for index in range(10):
+                    space = parent / f"space_{index}"; space.mkdir(); audit = space / f"audit_{index}.json"
+                    with self.assertRaisesRegex(OSError, "root close failure"):
+                        lifecycle.run_phase_antigravity("readiness", "e" * 40, lambda: "ready", receipt_dir=space / "receipts", audit_path=audit, prediction_root=space / "prediction", evaluation_root=space / "evaluation")
+            self.assertEqual(len(audit_closes), 10)
+            self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)
+
+    def test_inventory_validation_end_failure_closes_receipt_transaction_antigravity(self) -> None:
+        """Break caught: inventory validation returns INVALID before closing its retained descriptor transaction."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_inventory_end_fd_antigravity_") as temporary:
+            parent = Path(temporary); receipts_list = [parent / f"receipts_{index}" for index in range(12)]
+            for receipts in receipts_list:
+                lifecycle.append_receipt_antigravity(receipts, "readiness", "complete", "f" * 40)
+            before = len(os.listdir("/dev/fd")); original_end = lifecycle._LifecycleTransactionAntigravity.end_validate
+            def fail_end(transaction):
+                original_end(transaction); raise OSError("forced end validation")
+            with patch.object(lifecycle._LifecycleTransactionAntigravity, "end_validate", fail_end):
+                for receipts in receipts_list:
+                    self.assertTrue(lifecycle.validate_receipt_inventory_antigravity(receipts).invalid)
+            self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)
+
+    def test_root_walk_postopen_identity_failures_close_raw_child_descriptors_antigravity(self) -> None:
+        """Break caught: child directory or leaf fd fails fstat before becoming a validated ownership record."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_root_raw_fd_antigravity_") as temporary:
+            parent = Path(temporary); before = len(os.listdir("/dev/fd"))
+            for kind in ("directory", "leaf"):
+                with self.subTest(kind=kind):
+                    root = parent / kind; root.mkdir()
+                    if kind == "directory": (root / "child").mkdir()
+                    else: (root / "leaf_antigravity.json").write_bytes(b"payload\n")
+                    original_open, original_fstat = lifecycle.os.open, lifecycle.os.fstat
+                    opened: list[int] = []
+                    def capture_open(path, *args, **kwargs):
+                        fd = original_open(path, *args, **kwargs)
+                        if path == ("child" if kind == "directory" else "leaf_antigravity.json"): opened.append(fd)
+                        return fd
+                    def fail_child_fstat(fd):
+                        if fd in opened: raise OSError("post-open identity")
+                        return original_fstat(fd)
+                    with patch.object(lifecycle.os, "open", side_effect=capture_open), patch.object(lifecycle.os, "fstat", side_effect=fail_child_fstat):
+                        for _ in range(12):
+                            with self.assertRaisesRegex(OSError, "post-open identity"):
+                                lifecycle._RootIdentityTransactionAntigravity(root)
+                    self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)
+
+    def test_absent_pin_inventory_failure_closes_parent_descriptor_antigravity(self) -> None:
+        """Break caught: absent-pin inventory capture fails after parent open and leaks its parent descriptor."""
+        from experiments.exp449_residual_fn_method_qualification_antigravity import lifecycle_antigravity as lifecycle  # noqa: PLC0415
+
+        with tempfile.TemporaryDirectory(prefix="exp449_absent_pin_fd_antigravity_") as temporary:
+            parent = Path(temporary); before = len(os.listdir("/dev/fd"))
+            with patch.object(lifecycle.os, "listdir", side_effect=OSError("inventory failure")):
+                for index in range(12):
+                    with self.assertRaisesRegex(OSError, "inventory failure"):
+                        lifecycle._AbsentPathPinAntigravity(parent / f"absent_{index}")
+            self.assertLessEqual(len(os.listdir("/dev/fd")), before + 2)

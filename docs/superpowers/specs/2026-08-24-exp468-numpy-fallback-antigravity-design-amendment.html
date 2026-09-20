@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp468 NumPy fallback 승인 설계 보완</title>
+<style>body{max-width:1040px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.ok{background:#eefbf4;border-left-color:#16794b}</style>
+</head>
+<body><main>
+<h1>Exp468 NumPy fallback 승인 설계 보완</h1>
+<div class="box ok"><p><strong>승인 결론:</strong> 사용자는 2026-08-24에 Exp468이 NumPy CPU를 사용해 Task 4로 진행하는 예외를 승인했다. 이 승인은 가속 gate 실패를 합격으로 바꾸지 않는다. 세 사실은 각각 <code>gate_passed=false</code>, <code>fallback_authorized=true</code>, <code>selected_backend=numpy</code>로 따로 기록한다.</p></div>
+
+<h2>승인 근거</h2>
+<p>기존 근거는 <code>scratch/exp468_acceleration_benchmark_antigravity.json</code>이다. 승인 직전 이 파일의 전체 바이트 SHA-256은 <code>938d83b0319346270a6cc32b7b6ba3efb88122dc1bf431863d8030f4539fb63b</code>다. 이번 보완은 이 benchmark를 다시 실행하거나 수치를 고치지 않고, 이미 검증된 결과에 운영 승인을 연결한다.</p>
+<table>
+<thead><tr><th>확인 항목</th><th>기존 기록</th><th>승인 뒤 해석</th></tr></thead>
+<tbody>
+<tr><td>NumPy 전체 workload median</td><td><code>0.03191525023430586s</code></td><td>선택한 CPU 경로</td></tr>
+<tr><td>Numba cold-inclusive gate 시간</td><td><code>0.5741005414165556s</code></td><td>고정 1.1x gate 실패</td></tr>
+<tr><td>NumPy 대비 Numba speedup</td><td><code>0.05559174383559552x</code></td><td>가속 후보로 부적격</td></tr>
+<tr><td>Numba raw 최대 절대 오차</td><td><code>5.551115123125783e-16</code></td><td>허용오차 안의 parity는 유지</td></tr>
+<tr><td>MLX/MPS</td><td>GPU float64 RFFT 미지원</td><td>고정 float64 수식을 보존하는 경로 없음</td></tr>
+</tbody>
+</table>
+
+<h2>바뀌는 것과 바뀌지 않는 것</h2>
+<p>바뀌는 것은 운영 선택 하나다. 실패한 가속 평가를 그대로 둔 채, 승인 SHA-256을 가진 불변 decision만 NumPy fallback을 Task 4 입력으로 확정할 수 있다. 승인이 없으면 실패 assessment를 Task 4용으로 확정할 수 없다.</p>
+<ul>
+<li>ECG200 TRAIN-only 입력, 정상 69행, 96→140 보간과 TEST 비접근 경계를 바꾸지 않는다.</li>
+<li>seed <code>(20260721, 20261721)</code>, 5 fold, 10-fold workload와 fit/query/frame 개수를 바꾸지 않는다.</li>
+<li>5×28 창, 대칭 Hann, RFFT, DC 제외·Nyquist 포함, epsilon <code>1e-12</code>, 자연로그 JS, LOO와 query full-fit reference를 바꾸지 않는다.</li>
+<li>raw 허용오차 <code>1e-12</code>, exact rank·confirmation·determinism과 가속 기준 <code>1.1x</code>를 바꾸지 않는다.</li>
+<li>C0/S10/C10 조립, AUC, qualification 기준, 공식·private 실행 결과를 만들지 않는다. 이 작업 뒤 다음 단계는 Task 4 구현과 성능 평가다.</li>
+</ul>
+
+<h2>감사 가능한 선택 계약</h2>
+<p>가속 gate가 실제로 통과한 경우에만 non-NumPy backend의 <code>eligible</code>, <code>parity_passed</code>, <code>deterministic</code>, <code>speedup&gt;=1.1</code>을 모두 요구한다. gate가 실패한 경우에는 모든 non-NumPy 후보의 비어 있지 않은 실패 이유와 이 승인 문서의 64자리 lowercase SHA-256이 있어야만 <code>fallback_authorized=true</code>가 된다.</p>
+<p>따라서 Task 3 완료는 “가속 성공”이 아니라 “가속 실패 사실을 보존한 승인 예외의 감사 연결 완료”를 뜻한다. private/official qualification은 여전히 <code>0/0</code>회이며 result와 result hash는 <code>null</code>이다.</p>
+</main></body>
+</html>

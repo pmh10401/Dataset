@@ -1,0 +1,260 @@
+{
+  "state": "complete",
+  "success": true,
+  "backends": [
+    {
+      "backend": "numpy",
+      "cold_seconds": 3.1932756670285016,
+      "warm_seconds": 2.9942429170478135,
+      "first_parity": {
+        "parity": true,
+        "allclose": true,
+        "ranks_equal": true,
+        "candidates_equal": true,
+        "max_abs_error": 0.0
+      },
+      "warm_parity": {
+        "parity": true,
+        "allclose": true,
+        "ranks_equal": true,
+        "candidates_equal": true,
+        "max_abs_error": 0.0
+      },
+      "speedup": 1.0
+    },
+    {
+      "backend": "numba",
+      "cold_seconds": 4.137751208152622,
+      "warm_seconds": 2.994453208055347,
+      "first_parity": {
+        "parity": true,
+        "allclose": true,
+        "ranks_equal": true,
+        "candidates_equal": true,
+        "max_abs_error": 3.552713678800501e-13
+      },
+      "warm_parity": {
+        "parity": true,
+        "allclose": true,
+        "ranks_equal": true,
+        "candidates_equal": true,
+        "max_abs_error": 3.552713678800501e-13
+      },
+      "speedup": 0.9999297731529189
+    },
+    {
+      "backend": "torch_cpu",
+      "cold_seconds": 2.984930249862373,
+      "warm_seconds": 2.981026958907023,
+      "first_parity": {
+        "parity": true,
+        "allclose": true,
+        "ranks_equal": true,
+        "candidates_equal": true,
+        "max_abs_error": 4.689582056016661e-13
+      },
+      "warm_parity": {
+        "parity": true,
+        "allclose": true,
+        "ranks_equal": true,
+        "candidates_equal": true,
+        "max_abs_error": 4.689582056016661e-13
+      },
+      "speedup": 1.0044333574714253
+    }
+  ],
+  "batch_parity": {
+    "parity": true,
+    "allclose": true,
+    "ranks_equal": true,
+    "candidates_equal": true,
+    "max_abs_error": 0.0
+  },
+  "gpu": {
+    "mlx": {
+      "available": true,
+      "metal_available": true,
+      "device": "Device(gpu, 0)",
+      "operation": "float64 GPU matrix product",
+      "float64_supported": false,
+      "fallback_reason": "float64 is not supported on the GPU"
+    },
+    "mps": {
+      "available": true,
+      "float64_supported": false,
+      "fallback_reason": "Cannot convert a MPS Tensor to float64 dtype as the MPS framework doesn't support float64. Please use float32 instead."
+    }
+  },
+  "seed": 510,
+  "fit_shape": [
+    64,
+    128
+  ],
+  "query_shape": [
+    1024,
+    128
+  ],
+  "versions": {
+    "numpy": "2.3.5",
+    "scipy": "1.17.1",
+    "scikit-learn": "1.8.0",
+    "aeon": "1.5.0",
+    "numba": "0.63.1",
+    "torch": "2.13.0",
+    "mlx": "0.32.0",
+    "mlx-metal": "0.32.0"
+  },
+  "cpu_policy": {
+    "logical_cpu_count": 12,
+    "workers": 11,
+    "inner_threads": 1
+  },
+  "selected_backend": "numpy_scipy_float64",
+  "timing_scope": "Full F control and A-only fit, B proxies, fixed L-BFGS-B and all query scores; cold includes JIT/transfers.",
+  "candidate_indices": {
+    "MiniRocket": {
+      "0": [],
+      "1": [
+        0
+      ],
+      "5": [
+        0,
+        106,
+        215,
+        356,
+        610,
+        1019
+      ],
+      "10": [
+        0,
+        30,
+        81,
+        106,
+        215,
+        284,
+        356,
+        441,
+        534,
+        610,
+        1004,
+        1019
+      ]
+    },
+    "oas_distance": {
+      "0": [],
+      "1": [
+        284
+      ],
+      "5": [
+        30,
+        106,
+        284,
+        441,
+        610,
+        1019
+      ],
+      "10": [
+        30,
+        106,
+        215,
+        284,
+        356,
+        441,
+        534,
+        610,
+        718,
+        812,
+        1004,
+        1019
+      ]
+    },
+    "square_joint": {
+      "0": [],
+      "1": [
+        284
+      ],
+      "5": [
+        280,
+        284,
+        344,
+        610,
+        700,
+        1019
+      ],
+      "10": [
+        45,
+        68,
+        81,
+        127,
+        280,
+        284,
+        344,
+        534,
+        610,
+        700,
+        1019
+      ]
+    },
+    "a_unweighted": {
+      "0": [],
+      "1": [
+        284,
+        1019
+      ],
+      "5": [
+        280,
+        284,
+        344,
+        423,
+        610,
+        1019
+      ],
+      "10": [
+        68,
+        280,
+        284,
+        344,
+        423,
+        508,
+        528,
+        594,
+        610,
+        700,
+        1019
+      ]
+    },
+    "separated_rank": {
+      "0": [],
+      "1": [
+        284
+      ],
+      "5": [
+        215,
+        280,
+        284,
+        508,
+        610,
+        1001,
+        1019
+      ],
+      "10": [
+        68,
+        127,
+        215,
+        280,
+        284,
+        461,
+        508,
+        534,
+        610,
+        856,
+        1001,
+        1019
+      ]
+    }
+  },
+  "source_sha256": "dd561b978d0fb98c7b331810b4316e8c8a05a241f059017e103c5a76c629bbff",
+  "test_values_read": false,
+  "test_labels_read": false,
+  "official_transformer_rewritten": false
+}

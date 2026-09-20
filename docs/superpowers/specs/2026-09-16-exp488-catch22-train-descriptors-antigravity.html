@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp488 정상 TRAIN 특징 교체 사전등록</title>
+<style>body{font:16px/1.7 system-ui,sans-serif;max-width:960px;margin:36px auto;padding:0 20px;color:#172033}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccd3dc;padding:8px;text-align:left}code,pre{background:#f2f5f8}pre{padding:14px;overflow:auto}.note{border-left:4px solid #4467aa;padding:12px}</style>
+<h1>Exp488: 정상 TRAIN의 Catch22 특징으로 잔여 보정</h1>
+<p>2026-09-16 · 기준 커밋 <code>b5c2c78a</code> · 단일 사전등록 실험 · 공식 평가 결과를 보기 전에 작성.</p>
+<h2>1. 질문과 비교</h2>
+<p>Exp484의 두 거리 대안은 기존 일곱 특징에서 결정을 바꾸지 못했다. 이번에는 잔여 보정의 특징만 교체한다. 기존 row-KNN의 입력 일곱 개와 출력 보존 규칙, 네 점수원, K=31, 표준화 유클리드 거리, local/inner gate, 후보 순위와 동률 처리를 유지한다.</p>
+<p>chatgpt-web/pro 독립 자문에서 24차원 중앙값, 46차원 중앙값+IQR, 26차원 진폭 추가를 비교했다. 가장 작은 24차원만 등록한다. 다른 후보를 이번 결과로 선택하지 않는다. 자문은 제안이며 구현과 근거 검증은 Codex가 담당한다.</p>
+<h2>2. 불변 입력</h2>
+<ul><li>Exp480 evidence의 1,117개 데이터셋, 128개 family만 사용한다. DB의 나머지 두 데이터셋을 추가하지 않는다.</li>
+<li>원본 DB SHA-256: <code>8458e6787031afba104a2c93b6b578dacf183f9b85c5252938ec8e092673ef3c</code>.</li>
+<li>Exp480 evidence SHA-256: <code>77c53e1afd0af071edf71ef692bd978458dda6a5f8a0fec110736b787fe1b998</code>.</li>
+<li>Exp481 결과 SHA-256: <code>7038b994e422dc93a18927c810ce5e3bdb7601039ba01d2b388895444e09956f</code>.</li>
+<li>Exp484 결과 SHA-256: <code>a5a097f8289477ca67e4e2cd9bdc7edffaa852b435a1f92fef338a0823dec415</code>.</li></ul>
+<p>기존 official_router의 정확한 TRAIN 선택 SQL(<code>split='TRAIN' AND label='0'</code>)을 재사용한다. 여기의 0은 이미 동결된 파생 DB의 정상 표기다. 새 최빈 라벨을 선택하거나 원본 클래스 0을 정상으로 재정의하지 않는다. 각 데이터셋에서 유한 TRAIN 수와 중앙 길이가 evidence의 n_train/width와 일치해야 한다. 원본 SQLite는 읽기 전용으로 연다.</p>
+<h2>3. 24개 특징의 정확한 정의</h2>
+<p>기존 <code>width</code>와 <code>n_train</code>을 그대로 보존한다. 각 정상 TRAIN 시계열을 float64로 변환하고 자체 평균과 모집단 표준편차로 표준화한다. 설치된 aeon 1.5.0의 <code>Catch22(features='all', catch24=False, outlier_norm=False, replace_nans=False, use_pycatch22=False, n_jobs=1)</code>를 실제 길이에 적용한다. 패딩·리샘플링·부분 표본 추출을 하지 않는다. 고정된 22개 long feature name 순서와 구현 파일 해시를 manifest에 기록한다.</p>
+<p>각 좌표의 유한 결과를 시계열별 동일 가중치로 중앙값 집계한다. 비유한 원본 시계열, 상수 시계열, 길이 3 미만은 22개 결측값을 낸다. 개별 특징의 비유한 출력도 결측으로 남기며 예상하지 못한 추출 예외는 실행 실패로 처리한다. 어떤 좌표에 유한 관측이 전혀 없으면 폴드 처리 전까지 결측이다. 유효 개수와 결측률은 진단용이며 예측 특징에 추가하지 않는다.</p>
+<h2>4. 폴드 경계</h2>
+<p>기존 row-KNN은 기존 일곱 특징만 사용한다. 새 24개 특징은 residual policy에만 전달한다. 길이와 학습 수의 log1p 변환은 한 번만 수행한다. 각 fit의 donor 행만으로 중앙값 결측 대체, 평균, 모집단 표준편차를 계산한다. donor에서 모두 결측인 열은 0으로 대체하고 표준편차 ≤1e-12는 1을 쓴다.</p>
+<p>바깥 family는 outer fit에서 제외하고, inner fit은 outer와 inner held family를 모두 제외한다. 데이터셋별 독립 특징은 캐시할 수 있지만, imputer·scaler·이웃은 폴드 간 재사용하지 않는다. 이름은 캐시 결합과 검증 분리에만 사용하며 policy에 전달되는 query는 숫자 24개뿐이다. 대상 행의 성능은 라우팅이 끝난 뒤 읽는다. TEST 값·라벨·oracle 선택은 특징 추출에 전달하지 않는다.</p>
+<h2>5. 동결된 성공·실패 기준</h2>
+<table><tr><th>기준</th><th>조건</th></tr><tr><td>ZF 합계 / family 평균 ZF</td><td>&gt;2111 / &gt;2.9440228392325434</td></tr><tr><td>데이터셋 평균 AUC / family 평균 AUC</td><td>≥0.9832866538430738 / ≥0.9718432393318419</td></tr><tr><td>AUC -0.05 / -0.10 이상 추가 손실</td><td>각 0건</td></tr><tr><td>실제 변경</td><td>1건 이상, ZF 승&gt;패, 동률 비율≤50%</td></tr><tr><td>방법 집중</td><td>변경의 80% 이상이면 기존 전역 단일 방법 대조군 계산</td></tr></table>
+<p>local gate는 ZF 승&gt;패, 최소 ΔAUC≥0, ΔAUC 하위20%&gt;0이다. inner gate는 변경 family≥20을 요구한다. ZF는 family 안에서 합산하지만 AUC의 최소값과 분위수는 변경 행 단위로 계산한다. local 후보 순위를 먼저 결정하고 그 승자가 inner gate를 통과하지 못하면 원래 방법으로 복귀한다. 차순위 후보로 바꾸지 않는다.</p>
+<p>변경 0건이나 하나의 주 기준 실패도 이 실험의 실패다. 결과를 보고 특징·집계·거리·K·gate를 바꾸지 않는다. 기존 benchmark는 개발 근거이며 새로운 family에서의 일반화나 서비스 자동 승격을 뜻하지 않는다. Exp483 oracle은 pooled 가능성 진단이며 특징이 유일한 실패 원인이라는 증명은 아니다.</p>
+<h2>6. 구현·검증 범위</h2>
+<ul><li>Exp481 evaluator/policy에 기본 동작을 그대로 유지하는 선택적 residual descriptor 입력을 추가한다. Exp480 evidence 계약과 공식 row-KNN은 수정하지 않는다.</li>
+<li>합성 seed=488, 34 family로 K=31과 inner≥20을 실제 사용한다. 복수 파생 데이터셋 family, 개선·악화·동률, 비-MiniRocket 보존, held-out 점수 불변성, 결측 대체 경계를 확인한다.</li>
+<li>기존 7차원 입력을 선택적 경로로 전달했을 때 기존 평가 결과와 정확히 같아야 한다. 관련 Exp481/484 회귀 테스트를 통과해야 한다.</li>
+<li>실제 TRAIN 소규모 스모크는 코드·유한성·출처와 시간을 확인한다. 결과로 특징이나 기준을 선택하지 않는다.</li>
+<li>전체 공식 평가는 모든 특징을 동결한 뒤 1,117개/128 family에서 한 번 실행하고 결과와 manifest를 별도로 보존한다.</li></ul>
+<h2>7. 가속 평가</h2>
+<p>기준 특징 추출은 공식 aeon NumPy/Numba 구현이다. 공식 Catch22를 PyTorch/MLX/MPS로 재작성하지 않는다. 신규 NumPy 전처리·집계와 거리 연산의 Numba 대체 가능성, PyTorch CPU/MPS 및 MLX의 지원 정밀도와 장치 가용성을 평가한다. 동일 입력·seed에서 결측 mask, 유한 최종 출력, rtol=atol=1e-12, 후보 인덱스·gate·결정 일치를 요구한다. 전체 단계에 변환·컴파일·전송·동기화 시간을 포함한다. MLX는 추가로 1.1배 이상 빨라야 한다. 조건 미충족·지원 불가·미측정은 기준 CPU로 남기고 이유를 기록한다.</p>
+<p>이 작업 트리 AGENTS의 새 CPU 실행 정책에 따라 논리 CPU 수-1을 사용한다(현재 12→11). 내부 n_jobs/BLAS/Numba 스레드는 1로 제한한다. MLX/MPS 대형 작업은 동시에 하나만 실행한다.</p>
+<h2>8. 실행 상태</h2>
+<p>기준 Exp481/484 테스트 68개 및 Exp484 코드맵 검증 통과. 원본 DB와 선행 근거의 SHA-256 일치 확인. 이 문서 작성 시 새 특징의 공식 성능 결과는 아직 없다.</p>
+<p>참고: <a href="https://www.aeon-toolkit.org/en/stable/api_reference/auto_generated/aeon.transformations.collection.feature_based.Catch22.html">aeon Catch22 공식 API</a> · <a href="https://link.springer.com/article/10.1007/s10618-019-00647-x">catch22 원 논문</a>.</p>
+</html>

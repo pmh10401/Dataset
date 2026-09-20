@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exp471 구현 보고</title>
+  <style>
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.65;color:#17202a;max-width:1080px;margin:0 auto;padding:24px}
+    h1,h2{line-height:1.25}pre{background:#f4f6f8;border-left:4px solid #5d6d7e;padding:12px;overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+    code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.94em}
+    table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #b8c0cc;padding:.55rem;text-align:left;vertical-align:top}
+    .pass{color:#196f3d;font-weight:700}.fail{color:#922b21;font-weight:700}.note{background:#fef9e7;border-left:4px solid #d4ac0d;padding:12px}
+    label{display:block;margin:.4rem 0}input{margin-right:.5rem}
+  </style>
+</head>
+<body><main>
+  <h1>Exp471 구현 보고 — Task 1–6</h1>
+  <p>이 보고서는 2026-08-24~25에 전용 worktree에서 확인한 Task 1–6 증거를 기록합니다.</p>
+
+  <h2>1. 범위</h2>
+  <p>Task 1은 고정 config와 Exp470 authority 경계를 만들었습니다. Task 2는 같은 고정 수식의 Python 검증 기준과 float64 Numba ACF peak-lag scorer를 추가했습니다. Task 3는 공개 fixture에서 Python/Numba 일치와 MLX 적격성만 측정했습니다. Task 4는 합성 fold scoring과 pair-repair qualification을 구현했습니다. Task 5는 정확히 7개 canonical leaf, semantic replay와 HTML 결과 화면을 구현했습니다. Task 6는 closed CLI, fixed private root, 승인 checkpoint와 사전검증을 추가했습니다. 실제 데이터 실험 실행과 두 private root 생성은 아직 포함하지 않습니다.</p>
+
+  <h2>2. RED 증거</h2>
+  <p>명령:</p>
+  <pre><code>python3 -m unittest experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_config_antigravity tests.test_contracts_antigravity tests.test_predecessor_antigravity</code></pre>
+  <p>production 파일을 만들기 전에 예상한 import failure가 나왔습니다.</p>
+  <pre><code>Ran 8 tests in 0.093s
+
+FAILED (errors=11)</code></pre>
+  <pre><code>ModuleNotFoundError: No module named 'experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.config_antigravity'
+ModuleNotFoundError: No module named 'experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.contracts_antigravity'
+ModuleNotFoundError: No module named 'experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.interpolation_antigravity'</code></pre>
+
+  <h2>3. GREEN 증거</h2>
+  <p>같은 focused suite를 두 번 실행했고 모두 통과했습니다.</p>
+  <pre class="pass"><code>Ran 8 tests in 0.286s
+
+OK</code></pre>
+  <pre class="pass"><code>Ran 8 tests in 0.130s
+
+OK</code></pre>
+  <p>Exp470 authority 회귀도 한 번 통과했습니다.</p>
+  <pre class="pass"><code>Ran 9 tests in 0.111s
+
+OK</code></pre>
+
+  <h2>4. 변경 전 코드 맵 확인</h2>
+  <p>JSON과 lock 문법 검사는 통과했습니다. Exp470 builder의 full validation은 이 dedicated worktree에 추적되지 않은 Exp470 task brief 파일이 없어서 아래 경로에서 멈췄습니다.</p>
+  <pre class="pass"><code>python3 -m json.tool docs/codemap/codemap_exp470_antigravity.json &gt;/dev/null
+python3 -m json.tool docs/codemap/codemap_exp470_antigravity.lock &gt;/dev/null</code></pre>
+  <pre class="fail"><code>ValueError: represented path missing: .superpowers/sdd/2026-08-24-exp470-ecg200-spectral-entropy-numba-antigravity.html/task-1-brief-antigravity.html</code></pre>
+  <div class="note"><p>그래서 caller/effect/tests는 존재하는 <code>codemap_exp470_antigravity.json</code> 노드 여섯 개에서 직접 읽었습니다. 이 부족분은 공식 Exp471 맵으로 보완합니다.</p></div>
+
+  <h2>5. Task 1 모듈 관계</h2>
+  <table>
+    <thead><tr><th>모듈</th><th>caller</th><th>effect</th><th>tests</th></tr></thead>
+    <tbody>
+      <tr><td><code>config_antigravity.py</code></td><td>contracts와 이후 Exp471 단계</td><td>seed, fold, ECG200 크기, 창, ACF lag 경계, 방법 순서, 변화 순서, 필요 speedup을 고정</td><td><code>test_config_antigravity.py</code></td></tr>
+      <tr><td><code>sources_antigravity.py</code></td><td>이후 input stage</td><td>Exp470 normal TRAIN loader 객체만 re-export</td><td><code>test_predecessor_antigravity.py</code></td></tr>
+      <tr><td><code>interpolation_antigravity.py</code></td><td>이후 input stage</td><td>Exp470 96→140 interpolator 객체만 re-export</td><td><code>test_predecessor_antigravity.py</code></td></tr>
+      <tr><td><code>synthetic_antigravity.py</code></td><td>이후 qualification stage</td><td>Exp470 primary synthetic-row 객체만 re-export</td><td><code>test_predecessor_antigravity.py</code></td></tr>
+      <tr><td><code>predecessor_antigravity.py</code></td><td>이후 C0 비교</td><td>Exp470 C0 capture와 fold-score 객체만 re-export</td><td><code>test_predecessor_antigravity.py</code></td></tr>
+      <tr><td><code>contracts_antigravity.py</code></td><td>Task 2 scorer와 이후 qualification</td><td>immutable pair count, seed-major fold result, finite AUC, strict bool, label query 0, optional digest, failure tuple 형식 정의</td><td><code>test_contracts_antigravity.py</code></td></tr>
+    </tbody>
+  </table>
+
+  <h2>6. 변경 파일</h2>
+  <ul>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/config_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/sources_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/interpolation_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/synthetic_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/predecessor_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/contracts_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests/test_config_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests/test_contracts_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests/test_predecessor_antigravity.py</code></li>
+    <li><code>scratch/build_codemap_exp471_antigravity.py</code></li>
+    <li><code>docs/codemap/codemap_exp471_antigravity.html</code>, <code>.json</code>, <code>.lock</code></li>
+    <li><code>docs/EXP471_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/acf_peak_lag_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/python_reference_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests/test_acf_peak_lag_antigravity.py</code></li>
+    <li><code>experiments/exp471_ecg200_acf_peak_lag_shift_numba_antigravity/tests/test_python_reference_antigravity.py</code></li>
+  </ul>
+
+  <h2>6.1 Task 2 결과</h2>
+  <p>앞 구간과 뒤 구간에서 반복 간격을 찾고, <code>뒤 peak − 앞 peak</code>를 변화량으로 계산합니다. 정상 fit 행은 자기 자신을 뺀 나머지와 비교하고, query 행은 전체 fit 중앙값과 비교합니다. 변화량이 정상 fit의 최대값보다 엄격히 클 때만 confirmation을 켭니다.</p>
+  <table>
+    <thead><tr><th>확인 항목</th><th>결과</th></tr></thead>
+    <tbody>
+      <tr><td>고정 예시</td><td>period 8→10에서 peak (8,10), shift 2</td></tr>
+      <tr><td>동점 규칙</td><td>같은 높이의 peak는 더 작은 lag 선택</td></tr>
+      <tr><td>후보 없음</td><td>lag 0과 presence=false로 구분</td></tr>
+      <tr><td>Python/Numba 일치</td><td>peak, presence, shift, rank, confirmation 일치; raw/max 오차 1e-12 이하</td></tr>
+      <tr><td>빈 query</td><td>모든 결과 배열이 정해진 0행 모양 유지</td></tr>
+      <tr><td>결과 보호</td><td>C-contiguous이고 외부에서 수정할 수 없는 배열</td></tr>
+    </tbody>
+  </table>
+  <p class="pass">Task 2 집중 테스트 14개를 연속 두 번 통과했습니다.</p>
+
+  <h2>6.2 Task 3 결과</h2>
+  <table>
+    <thead><tr><th>항목</th><th>결과</th></tr></thead>
+    <tbody>
+      <tr><td>선택 backend</td><td>Numba 유지</td></tr>
+      <tr><td>Python 기준 오차</td><td>raw/max 최대 절대 오차 0.0, discrete 결과 정확히 일치</td></tr>
+      <tr><td>Numba 결정성</td><td>모든 배열·scalar·backend를 포함한 bytes 반복 일치</td></tr>
+      <tr><td>MLX GPU</td><td>float64 계산 미지원으로 부적격; 자동 대체 없음</td></tr>
+      <tr><td>MLX 수식 검증</td><td>CPU MLX에서 전체 peak·LOO·rank·confirmation이 Numba와 일치</td></tr>
+      <tr><td>실행 경계</td><td>공개 고정 fixture만 사용, 실제 데이터·private·official·TEST/FN·routing 0회</td></tr>
+    </tbody>
+  </table>
+  <p class="pass">Task 3 집중 테스트 12개를 연속 두 번, Task 1–3 전체 테스트 34개를 통과했습니다.</p>
+
+  <h2>6.3 Task 4 결과</h2>
+  <table>
+    <thead><tr><th>항목</th><th>결과</th></tr></thead>
+    <tbody>
+      <tr><td>C12 결합</td><td>확인된 E12가 C0보다 클 때만 교체, 그 외 C0 bytes 보존</td></tr>
+      <tr><td>fold 분리</td><td>fit으로만 정상 기준을 만들고 query normal+네 합성 변화는 평가에만 사용</td></tr>
+      <tr><td>보존 증거</td><td>early/late peak, presence, shift, raw, rank, confirmation을 다시 계산해 검증</td></tr>
+      <tr><td>pair repair</td><td>Numba에서 승=1, 동점=0.5, 패=0 credit 변화로 fixed/broken 계산</td></tr>
+      <tr><td>합격 기준</td><td>seed별 period repair와 손상 0건, 정상 confirmation 0건, exact fallback, finite</td></tr>
+      <tr><td>AUC</td><td>기록만 하며 0.85 기준을 사용하지 않음</td></tr>
+    </tbody>
+  </table>
+  <p class="pass">Task 4 집중 테스트 9개를 연속 두 번, Task 1–4 전체 테스트 43개를 통과했습니다.</p>
+  <pre><code>python3 -m unittest \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_config_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_contracts_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_predecessor_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_scoring_antigravity \
+  experiments.exp470_ecg200_spectral_entropy_numba_antigravity.tests.test_qualification_antigravity</code></pre>
+  <p class="pass">Task 4가 의존하는 Exp470 다섯 모듈 회귀 테스트 19개를 통과했습니다.</p>
+
+  <h2>6.4 Task 5 결과</h2>
+  <p>합성 기록을 정확히 7개 canonical leaf로 저장하고, 저장된 train·indices·peak·shift·raw·다섯 scope rank·confirmation에서 C12와 pair gate를 다시 계산합니다. 모든 leaf를 다시 해시한 뒤 내용을 바꾸는 위조도 semantic replay가 거부합니다.</p>
+  <p>HTML 결과 화면은 seed별 fixed/broken, 보호 변화 broken, 정상 confirmation, fit/query peak 없음 행, 전체 shift 분포, C0/C12 AUC, Numba backend와 실행 경계를 표시합니다.</p>
+  <p class="pass">Task 5 집중 테스트 12개를 연속 두 번, Task 1–5 전체 테스트 55개를 연속 두 번 통과했습니다. Exp470 다섯 모듈 회귀 19개도 통과했습니다.</p>
+
+  <h2>6.5 Task 6 결과</h2>
+  <p>CLI는 <code>evaluate</code>와 <code>inspect</code>만 노출합니다. root 인수와 pipeline 모두 두 고정 private 경로만 허용하고, evaluate는 publication 뒤 semantic replay를 즉시 수행해 decision과 hashes가 일치하지 않으면 중단합니다. launcher는 실제 두 root 상수, 승인 token 검사, clean HEAD 재검사, run1→run2 순서, 정확히 7개 leaf의 raw byte 비교를 담당합니다.</p>
+  <table>
+    <thead><tr><th>항목</th><th>결과</th></tr></thead>
+    <tbody>
+      <tr><td>Closed surface</td><td><code>official</code>, alias, unknown flag와 비고정 root를 SystemExit로 거부</td></tr>
+      <tr><td>Pipeline 순서</td><td>fixed-root 검사 → loader → seed-major 10 records → qualification → publish → semantic inspect</td></tr>
+      <tr><td>Private checkpoint</td><td>잘못된 token은 git·root 관찰 전에 거부; 승인 후에만 run1→run2 허용</td></tr>
+      <tr><td>Reproducibility gate</td><td>정확히 7개 leaf 목록과 raw bytes 일치 요구</td></tr>
+      <tr><td>Root 생성</td><td>Task 6 사전검증에서 run1/run2 모두 존재하지 않음을 확인</td></tr>
+    </tbody>
+  </table>
+  <pre><code>python3 -m unittest +  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_cli_antigravity +  experiments.exp471_ecg200_acf_peak_lag_shift_numba_antigravity.tests.test_pipeline_antigravity</code></pre>
+  <p class="pass">RED는 첫 패스 13개 중 import/파일 오류 12건과 launcher 부재 failure 1건, 확장 boundary 패스 16개 중 error 5건과 exact-leaf failure 1건이었다. GREEN은 Task 6 집중 테스트 16개를 통과했다.</p>
+
+  <h2>7. 금지 실행 경계</h2>
+  <p>experiment 실행, private 실행, official 실행, TEST 접근, FN 접근, routing 실행은 0회였습니다. 수행한 작업은 소스 작성·검토, unit test, 코드 맵 생성·검증, 대시보드 갱신뿐입니다.</p>
+
+  <h2>7.1 최종 검증</h2>
+  <ul>
+    <li>Exp471 집중 테스트: <span class="pass">8개 통과</span>를 연속 두 번 확인했습니다.</li>
+    <li>Task 2 집중 테스트: <span class="pass">14개 통과</span>를 연속 두 번 확인했습니다.</li>
+    <li>Task 3 집중 테스트: <span class="pass">12개 통과</span>를 연속 두 번 확인했습니다.</li>
+    <li>Task 4 집중 테스트: <span class="pass">9개 통과</span>를 연속 두 번 확인했습니다.</li>
+    <li>Task 1–5 전체 테스트 직전 기록: <span class="pass">55개 통과</span>를 연속 두 번 확인했습니다.</li>
+    <li>Task 6 집중 테스트: <span class="pass">16개 통과</span>를 확인했습니다.</li>
+    <li>Task 6 포함 Exp471 전체 테스트: <span class="pass">71개 통과</span>를 확인했습니다.</li>
+    <li>Exp470 authority 회귀 테스트: <span class="pass">19개 통과</span>를 확인했습니다.</li>
+    <li>설계 위반 스캔에서 금지 계산·라벨·routing 표면은 없었고, 고정 좌표와 lag 값은 변경되지 않았습니다.</li>
+    <li>Exp470 Task 4 의존 모듈 회귀 테스트: <span class="pass">19개 통과</span>를 확인했습니다.</li>
+    <li>Exp471 코드 맵 생성·재검증과 JSON·lock 문법 검사가 모두 통과했습니다.</li>
+    <li>휴대형 HTML 대시보드는 1440px와 390px 화면 검증, 출처 대화상자, 키보드 접근 검사를 포함해 <span class="pass">verification passed</span>였습니다.</li>
+    <li><code>git diff --check</code>를 통과했습니다.</li>
+  </ul>
+
+  <h2>8. 진행 체크</h2>
+  <section aria-label="Exp471 진행 체크박스">
+    <label><input type="checkbox" checked disabled> Task 1 고정 계약·authority·code map</label>
+    <label><input type="checkbox" checked disabled> Task 2 Numba ACF peak-lag scorer</label>
+    <label><input type="checkbox" checked disabled> Task 3 Python 기준·결정성·MLX 적격성 smoke</label>
+    <label><input type="checkbox" checked disabled> Task 4 C0/E12/C12·pair repair 판정</label>
+    <label><input type="checkbox" checked disabled> Task 5 canonical 저장·semantic replay·HTML export</label>
+    <label><input type="checkbox" checked disabled> Task 6 closed CLI·최종 사전검증</label>
+    <label><input type="checkbox" checked disabled> private 실행 1·2와 결과 분석</label>
+    <label><input type="checkbox" checked disabled> 공식 evaluate·inspect 실행(승인 1회)</label>
+    <label><input type="checkbox" disabled> TEST/FN·routing 별도 판단</label>
+  </section>
+
+  <h2>9. 승인된 실행 결과(2026-08-25)</h2>
+  <table>
+    <thead><tr><th>항목</th><th>결과</th></tr></thead>
+    <tbody>
+      <tr><td>결정 함수 수정</td><td>CLI 기본 decider를 키워드 전용 gate 대신 qualification 래퍼로 교체(commit <code>7ebffae7af0b07fad8a18c38f19abb33ee90f394</code>); 집중 테스트 16개 재통과</td></tr>
+      <tr><td>private run1·run2</td><td>승인 token으로 순차 실행, decision passed=true, 7개 leaf raw bytes 완전 동일</td></tr>
+      <tr><td>공식 lifecycle</td><td>reviewed commit <code>cdf5347d1bf0f456b472b347dbbb45e8a43b34a2</code>, clean worktree, evaluate 1회 exit 0 → inspect 1회 exit 0</td></tr>
+      <tr><td>공식 root</td><td><code>/Users/mac/Documents/Dataset/exp471_ecg200_acf_peak_lag_shift_numba_antigravity_20260825</code>(leaf 7개)</td></tr>
+      <tr><td>공식=개인 비교</td><td>공식 root와 private run1의 7개 leaf가 모두 동일</td></tr>
+      <tr><td>핵심 지표</td><td>period fixed seed별 4/4, period broken 0, protected broken 3유형 0, 정상 confirmation 0, fallback exact, finite, 라벨 query 0</td></tr>
+      <tr><td>미수행</td><td>TEST 파일 접근 0회, FN 산출 0회, routing 변경 없음</td></tr>
+    </tbody>
+  </table>
+  <h2>9.1 승인된 TEST/FN 진단(2026-08-25)</h2>
+  <p>
+    목적: 공식 실행에서 남은 TEST 위주 FN이 어떤 점수 체인에서 발생하는지 관측한다.
+    라우팅·champion·promotion은 변경하지 않는다.
+  </p>
+  <table>
+    <thead><tr><th>파일</th><th>FN 수</th><th>C0 AUC</th><th>E12 rank AUC</th><th>C12 AUC</th><th>zero-FP TP</th><th>confirmation</th></tr></thead>
+    <tbody>
+      <tr><td>ECG200_normal_1</td><td>2</td><td>0.9923</td><td>0.3367</td><td>0.9923</td><td>0 / 2</td><td>0회</td></tr>
+      <tr><td>ECG200_normal_-1</td><td>1</td><td>0.0204</td><td>0.2551</td><td>0.0204</td><td>0 / 1</td><td>0회</td></tr>
+    </tbody>
+  </table>
+  <p>
+    해석: normal_1의 2개 FN은 C0 점수가 거의 완벽히 분리(AUC 0.99)하지만 정상 최댓값보다
+    큰 이상치가 없어 zero-FP 기준에서 TP 0이다. normal_-1의 1개 FN은 C0 자체가 역방향
+    (AUC 0.02)으로, Hydra LocalGap이 이 인스턴스를 오히려 정상처럼 본다.
+    E12(ACF peak-lag)와 confirmation은 TEST에서 아무것도 확정하지 않았고 C12는 C0과
+    완전히 동일하므로 이 데이터셋에서 E12/C12의 FN 해소 기여는 0이다.
+    두 seed 결과가 소수 16자리까지 동일하여 seed 민감성은 없다.
+  </p>
+  <p>
+    산출물: <code>/Users/mac/Documents/Dataset/exp471_ecg200_test_fn_diagnostic_antigravity_20260825</code>,
+    진단 커밋 <code>651dd0cc</code>(combined-matrix 방식).
+  </p>
+  <h2>9.2 데이터셋 매핑 수정 후 재진단(2026-08-25)</h2>
+  <p>
+    원인: 두 데이터셋의 TRAIN 정상 구성이 서로 다르다. normal_1의 106개 TRAIN은 +1
+    클래스 위주, normal_-1의 53개 TRAIN은 −1 클래스 위주다. 공유 train140(+1 클래스,
+    69행)을 모든 데이터셋에 적용하면 normal_-1의 이상치(+1 신호)는 오히려 학습 분포
+    안쪽으로 들어가 역방향 AUC 0.0204가 발생한다.
+  </p>
+  <p>
+    수정: 커밋 <code>aa942cfb</code>에서 각 데이터셋의 TRAIN label-0 행 전부를 자체
+    정상 참조로 로드하도록 변경했다. 이전 결과는
+    <code>_superseded_shared_train</code> suffix로 보존했다.
+  </p>
+  <table>
+    <thead><tr><th>파일</th><th>C0 AUC(공유)</th><th>C0 AUC(자체)</th><th>zero-FP TP</th><th>E12/C12</th></tr></thead>
+    <tbody>
+      <tr><td>ECG200_normal_1</td><td>0.9923</td><td>0.9898</td><td>0/2</td><td>confirm 0회</td></tr>
+      <tr><td>ECG200_normal_-1</td><td><strong>0.0204</strong></td><td><strong>0.8367</strong></td><td>0/1</td><td>confirm 0회</td></tr>
+    </tbody>
+  </table>
+  <p>
+    결론: normal_-1이 역방향(0.02)에서 정상 방향(0.84)으로 개선했다. zero-FP TP는
+    여전히 0이다. E12/C12는 이 데이터셋에서 계속 FN 해소에 기여하지 않는다.
+  </p>
+  <h2>9.3 C0 raw 거리 전환 후 공식 재실행(2026-08-25)</h2>
+  <p>
+    Exp472 진단에서 A안(raw 거리)이 TEST zero-FP TP를 개선함을 확인했고,
+    커밋 <code>f744428d</code>에서 exp461·exp462의 rank 변환을 raw
+    <code>np.maximum</code>으로 교체해 공식 파이프라인에 반영했다.
+  </p>
+  <table>
+    <thead><tr><th>항목</th><th>rank 기반 (이전)</th><th>raw 기반 (현재)</th></tr></thead>
+    <tbody>
+      <tr><td>C0 pooled AUC (synthetic)</td><td>0.8949</td><td>0.8713 (−0.024)</td></tr>
+      <tr><td>C0 level_shift AUC</td><td>0.9357</td><td><strong>0.9536</strong></td></tr>
+      <tr><td>decision passed</td><td>true</td><td>true</td></tr>
+      <tr><td>private run1=run2 leaf byte</td><td>일치</td><td>일치</td></tr>
+      <tr><td>공식 root = run1 leaf byte</td><td>—</td><td>일치</td></tr>
+      <tr><td>ECG200_normal_1 zero-FP TP (TEST)</td><td>0/2</td><td><strong>2/2</strong></td></tr>
+      <tr><td>ECG200_normal_-1 C0 AUC (TEST)</td><td>0.8367</td><td><strong>0.8980</strong></td></tr>
+    </tbody>
+  </table>
+  <p>
+    이전 공식 root는 <code>_rank_based</code> suffix로 보존했다. 현재 공식 root는
+    <code>/Users/mac/Documents/Dataset/exp471_ecg200_acf_peak_lag_shift_numba_antigravity_20260825</code>다.
+    Synthetic fold에서 pooled −0.024 열화가 있으나 자체 qualification gate를 통과했고,
+    실제 TEST 성능은 크게 개선됐다. routing·champion·promotion은 변경하지 않았다.
+  </p>
+</main></body></html>

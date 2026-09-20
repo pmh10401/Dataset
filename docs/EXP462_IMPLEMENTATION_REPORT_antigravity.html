@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp462 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}.bad{border-left:6px solid #b42318}.ok{border-left:6px solid #16794b}</style></head>
+<body><main>
+  <h1>Exp462 ECG gradual signature 구현 보고서</h1>
+  <p><strong>현재 상태:</strong> <code>stopped_before_official_evaluation_qualification_failed</code>. Task 5 closed CLI와 두 번의 private TRAIN 재현은 구현·검증됐지만 주 후보가 frozen qualification gate를 통과하지 못했다. 최종 검토 SHIP C/I/M 0으로 Task 5를 완료(7/7 체크)하며, Task 6은 영구 금지(0/7 미체크)이고 공식 evaluate/inspect는 실행하지 않았다.</p>
+  <table>
+    <tr><th>implementation status</th><td><code>task_5_complete_qualification_failed_task_6_forbidden</code></td></tr>
+    <tr><th>reviewed clean implementation commit</th><td><code>ff57925ae2d5542fe6ec34131686ffa0bc37fe0c</code></td></tr>
+    <tr><th>official execution</th><td>evaluate 0 / inspect 0; official command count 0</td></tr>
+    <tr><th>label boundary</th><td>label query count 0</td></tr>
+    <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp462_ecg_gradual_signature_qualification_antigravity_20260820</code> absent and non-symlink</td></tr>
+    <tr><th>label query count</th><td>0</td></tr>
+    <tr><th>official result hashes</th><td>all <code>null</code>; no official result exists</td></tr>
+  </table>
+  <h2>Task 5 boundary</h2>
+  <ul>
+    <li><code>cli_antigravity.py</code> accepts exactly <code>evaluate --reviewed-commit LOWER40HEX</code> and bare <code>inspect</code>, uses lazy phase imports, validates a clean reviewed commit, rejects official-root aliases for private injection, and emits only the aggregate dashboard payload.</li>
+    <li><code>scratch/run_exp462_ecg_gradual_signature_qualification_antigravity.py</code> binds the fixed Python 3.14.6 interpreter and works outside the repository CWD.</li>
+    <li><code>tests/test_cli_antigravity.py</code> covers RED/GREEN parser closure, lazy/source-free inspect, private root and create-only publication, outside-CWD loading, and fixed-runtime re-exec.</li>
+  </ul>
+  <h2>TDD and regression evidence</h2>
+  <table>
+    <tr><th>RED</th><td>Focused CLI suite initially failed with the expected missing <code>cli_antigravity.py</code> and launcher module/file errors.</td></tr>
+    <tr><th>GREEN</th><td>Focused CLI suite passed <code>7/7</code>; repeated run also passed <code>7/7</code>.</td></tr>
+    <tr><th>private campaign</th><td>Exactly two sequential private TRAIN evaluate→inspect cycles ran in explicit non-official roots. Both evaluate and inspect exited <code>0</code>; roots were removed only after comparison.</td></tr>
+    <tr><th>discovery/regression</th><td>Exp462 discovery and the Exp461 scientific regression passed cleanly in terminal closeout.</td></tr>
+  </table>
+  <h2>Private TRAIN result</h2>
+  <div class="box bad">
+    <p>Both runs produced exact-equal 30 metric rows, 18 failed rows, three summaries, decision, dashboard, seven leaf byte streams, and seven leaf SHA-256 values. Artifact-map SHA-256: <code>5bfdeaeb04013f26987131980f8681afb4eaec2d1aab086cc5ee1220aee69c50</code>.</p>
+    <p>The primary <code>hydra_period_gradual_rank_max</code> passed <code>3/10</code>. Its minimum <code>gradual_drift</code> AUC was <code>0.7953196519289775</code> (&lt; <code>0.85</code>), minimum <code>period_change</code> AUC was <code>0.8960376741612595</code> (&lt; <code>0.907392736783864</code>), and primary pooled minimum was <code>0.9010220185101353</code>. Normal Wilson maximum was finite at <code>0.013439124039399194</code>.</p>
+    <p>Historical period folds: seed <code>20260721</code> fold <code>3</code> = <code>0.8960376741612595</code> (failed preservation); seed <code>20261721</code> fold <code>4</code> = <code>0.9285624465570143</code> (preserved). The frozen Exp461 comparison threshold is <code>0.9216148584075248</code>.</p>
+  </div>
+  <h2>Method summaries</h2>
+  <table><thead><tr><th>method</th><th>passed</th><th>min gradual</th><th>min period</th><th>min pooled</th><th>max Wilson</th><th>finite</th></tr></thead><tbody>
+    <tr><td><code>hydra_period_rank_max</code></td><td>9/10</td><td>0.8402306222021025</td><td>0.907392736783864</td><td>0.9212266108344651</td><td>0.013439124039399194</td><td>true</td></tr>
+    <tr><td><code>gradual_signature_local_gap</code></td><td>0/10</td><td>0.6966125185730875</td><td>0.8093657260701171</td><td>0.7431184296564559</td><td>0.013439124039399194</td><td>true</td></tr>
+    <tr><td><code>hydra_period_gradual_rank_max</code></td><td>3/10</td><td>0.7953196519289775</td><td>0.8960376741612595</td><td>0.9010220185101353</td><td>0.013439124039399194</td><td>true</td></tr>
+  </tbody></table>
+  <h2>Private leaf hashes</h2>
+  <table><tbody>
+    <tr><th>context</th><td><code>fd5a5271ae68183d9a121ba46f8dfb18aab8a8399140ee9d224e87af7bfd1291</code></td></tr>
+    <tr><th>method rows</th><td><code>f3d0eab11fa3902c9e4ea30a4d83b19cb5cff52cc3f51a20034c9b3b553ccf0b</code></td></tr>
+    <tr><th>failed rows</th><td><code>e7848e96f5380448eb38a21ecfe6e9a19fcca830fead0058b85a285f13da90ea</code></td></tr>
+    <tr><th>summary</th><td><code>0f63f0ee9d1788810fddb27fcb576225c73301098e3ddbf24704710a627eb0a9</code></td></tr>
+    <tr><th>decision</th><td><code>6eec416030c0b01f945feee824468dc0766dfd036945b1e9e7307e9498d0d58b</code></td></tr>
+    <tr><th>dashboard snapshot</th><td><code>d2f1ed5c289aa4eb061c04065cc7b49420f3ca4ebe894b269853703bb36a558b</code></td></tr>
+    <tr><th>artifact map</th><td><code>5bfdeaeb04013f26987131980f8681afb4eaec2d1aab086cc5ee1220aee69c50</code></td></tr>
+  </tbody></table>
+  <div class="box ok"><p><strong>MLX decision:</strong> Task 3's existing same-input smoke did not satisfy the 1.1× end-to-end speed gate; the canonical path remains CPU NumPy. No package installation or GPU rewrite was performed.</p></div>
+  <p><strong>Review boundary:</strong> final independent review is SHIP with Critical/Important/Major 0. Task 5 plan controls are checked (7/7). Task 6 controls remain unchecked (0/7) and forbidden.</p>
+</main></body></html>

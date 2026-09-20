@@ -1,0 +1,153 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp489 결과</title>
+<style>body{font:16px/1.7 system-ui;max-width:1100px;margin:32px auto;padding:0 20px;color:#172033}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccd3dc;padding:8px;text-align:left}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f5f8;padding:16px}</style>
+<h1>Exp489: MiniRocket LocalGap 대 LOF</h1>
+<p>고정 MiniRocket 인코더를 폴드마다 한 번만 맞추고, 같은 특징과 RobustScaler(10,90)로 LocalGap 대조와 LOF 머리를 쌍으로 계산했습니다. 점수를 저장한 뒤에만 TEST 라벨을 열었습니다. 대상은 n_train≥5인 family의 사전식 첫 데이터셋 125개입니다. 제외 family: PigAirwayPressure, PigArtPressure, PigCVP.</p>
+<p>평균 AUC 대조 0.969813, LOF 0.905375. ZF 합 대조 275, LOF 222. AUC 승/패/무 13/69/43, ZF 승/패/무 6/24/95.</p>
+<p>ZF는 평가 정상 최댓값을 엄격히 넘는 이상만 셉니다. 운영 영-오탐 보장이 아닙니다. 한 팔만 비교했고 튜닝은 없습니다. 과거 점수 캐시를 대조로 바꿔 넣지 않았습니다.</p>
+<table><thead><tr><th>데이터셋</th><th>family</th><th>대조 AUC</th><th>LOF AUC</th><th>ΔAUC</th><th>대조 ZF</th><th>LOF ZF</th><th>ΔZF</th></tr></thead><tbody><tr><td><code>ACSF1_normal_0</code></td><td><code>ACSF1</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>Adiac_normal_1</code></td><td><code>Adiac</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>AllGestureWiimoteX_normal_1</code></td><td><code>AllGestureWiimoteX</code></td><td>0.954082</td><td>0.903061</td><td>-0.051020</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>AllGestureWiimoteY_normal_1</code></td><td><code>AllGestureWiimoteY</code></td><td>0.994898</td><td>0.989796</td><td>-0.005102</td><td>1</td><td>0</td><td>-1</td></tr><tr><td><code>AllGestureWiimoteZ_normal_1</code></td><td><code>AllGestureWiimoteZ</code></td><td>0.943878</td><td>0.780612</td><td>-0.163265</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>ArrowHead_normal_0</code></td><td><code>ArrowHead</code></td><td>0.959184</td><td>0.979592</td><td>0.020408</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>BME_normal_1</code></td><td><code>BME</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>Beef_normal_1</code></td><td><code>Beef</code></td><td>0.979592</td><td>0.979592</td><td>0.000000</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>BeetleFly_normal_1</code></td><td><code>BeetleFly</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>BirdChicken_normal_1</code></td><td><code>BirdChicken</code></td><td>0.979592</td><td>0.877551</td><td>-0.102041</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>CBF_normal_1</code></td><td><code>CBF</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>6</td><td>6</td><td>0</td></tr><tr><td><code>Car_normal_1</code></td><td><code>Car</code></td><td>0.979592</td><td>0.979592</td><td>0.000000</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>Chinatown_normal_1</code></td><td><code>Chinatown</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>2</td><td>2</td><td>0</td></tr><tr><td><code>ChlorineConcentration_normal_1</code></td><td><code>ChlorineConcentration</code></td><td>0.997704</td><td>0.943214</td><td>-0.054490</td><td>13</td><td>11</td><td>-2</td></tr><tr><td><code>CinCECGTorso_normal_1</code></td><td><code>CinCECGTorso</code></td><td>1.000000</td><td>1.000000</td><td>-0.000000</td><td>7</td><td>7</td><td>0</td></tr><tr><td><code>Coffee_normal_0</code></td><td><code>Coffee</code></td><td>0.979592</td><td>0.979592</td><td>0.000000</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>Computers_normal_1</code></td><td><code>Computers</code></td><td>0.920816</td><td>0.702857</td><td>-0.217959</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>CricketX_normal_1</code></td><td><code>CricketX</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>CricketY_normal_1</code></td><td><code>CricketY</code></td><td>1.000000</td><td>0.979592</td><td>-0.020408</td><td>1</td><td>0</td><td>-1</td></tr><tr><td><code>CricketZ_normal_1</code></td><td><code>CricketZ</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>Crop_normal_1</code></td><td><code>Crop</code></td><td>0.969643</td><td>0.892143</td><td>-0.077500</td><td>7</td><td>3</td><td>-4</td></tr><tr><td><code>DiatomSizeReduction_normal_1</code></td><td><code>DiatomSizeReduction</code></td><td>0.979592</td><td>0.979592</td><td>0.000000</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>DistalPhalanxOutlineAgeGroup_normal_1</code></td><td><code>DistalPhalanxOutlineAgeGroup</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>DistalPhalanxOutlineCorrect_normal_0</code></td><td><code>DistalPhalanxOutlineCorrect</code></td><td>0.811791</td><td>0.276077</td><td>-0.535714</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>DistalPhalanxTW_normal_3</code></td><td><code>DistalPhalanxTW</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>DodgerLoopDay_normal_1</code></td><td><code>DodgerLoopDay</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>DodgerLoopGame_normal_1</code></td><td><code>DodgerLoopGame</code></td><td>0.978261</td><td>0.956522</td><td>-0.021739</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>DodgerLoopWeekend_normal_1</code></td><td><code>DodgerLoopWeekend</code></td><td>1.000000</td><td>1.000000</td><td>-0.000000</td><td>2</td><td>2</td><td>0</td></tr><tr><td><code>ECG200_normal_-1</code></td><td><code>ECG200</code></td><td>0.918367</td><td>0.530612</td><td>-0.387755</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>ECG5000_normal_1</code></td><td><code>ECG5000</code></td><td>0.992906</td><td>0.991446</td><td>-0.001460</td><td>0</td><td>11</td><td>11</td></tr><tr><td><code>ECGFiveDays_normal_1</code></td><td><code>ECGFiveDays</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>9</td><td>9</td><td>0</td></tr><tr><td><code>EOGHorizontalSignal_normal_1</code></td><td><code>EOGHorizontalSignal</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>EOGVerticalSignal_normal_1</code></td><td><code>EOGVerticalSignal</code></td><td>0.918367</td><td>0.897959</td><td>-0.020408</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>Earthquakes_normal_0</code></td><td><code>Earthquakes</code></td><td>0.935027</td><td>0.726781</td><td>-0.208247</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>ElectricDevices_normal_1</code></td><td><code>ElectricDevices</code></td><td>0.993570</td><td>0.967409</td><td>-0.026161</td><td>16</td><td>0</td><td>-16</td></tr><tr><td><code>EthanolLevel_normal_1</code></td><td><code>EthanolLevel</code></td><td>0.920000</td><td>0.615510</td><td>-0.304490</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>FaceAll_normal_1</code></td><td><code>FaceAll</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>2</td><td>2</td><td>0</td></tr><tr><td><code>FaceFour_normal_1</code></td><td><code>FaceFour</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>FacesUCR_normal_1</code></td><td><code>FacesUCR</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>2</td><td>2</td><td>0</td></tr><tr><td><code>FiftyWords_normal_1</code></td><td><code>FiftyWords</code></td><td>0.994898</td><td>1.000000</td><td>0.005102</td><td>1</td><td>2</td><td>1</td></tr><tr><td><code>Fish_normal_1</code></td><td><code>Fish</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>FordA_normal_-1</code></td><td><code>FordA</code></td><td>0.906975</td><td>0.890191</td><td>-0.016783</td><td>0</td><td>1</td><td>1</td></tr><tr><td><code>FordB_normal_-1</code></td><td><code>FordB</code></td><td>0.859805</td><td>0.833745</td><td>-0.026060</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>FreezerRegularTrain_normal_1</code></td><td><code>FreezerRegularTrain</code></td><td>0.998458</td><td>0.997914</td><td>-0.000544</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>FreezerSmallTrain_normal_1</code></td><td><code>FreezerSmallTrain</code></td><td>0.999733</td><td>0.999321</td><td>-0.000413</td><td>18</td><td>2</td><td>-16</td></tr><tr><td><code>Fungi_normal_1</code></td><td><code>Fungi</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>GestureMidAirD1_normal_1</code></td><td><code>GestureMidAirD1</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>GestureMidAirD2_normal_1</code></td><td><code>GestureMidAirD2</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>GestureMidAirD3_normal_1</code></td><td><code>GestureMidAirD3</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>GesturePebbleZ1_normal_1</code></td><td><code>GesturePebbleZ1</code></td><td>0.979592</td><td>0.979592</td><td>0.000000</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>GesturePebbleZ2_normal_1</code></td><td><code>GesturePebbleZ2</code></td><td>0.979592</td><td>0.979592</td><td>0.000000</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>GunPointAgeSpan_normal_1</code></td><td><code>GunPointAgeSpan</code></td><td>0.998724</td><td>0.985969</td><td>-0.012755</td><td>3</td><td>0</td><td>-3</td></tr><tr><td><code>GunPointMaleVersusFemale_normal_1</code></td><td><code>GunPointMaleVersusFemale</code></td><td>0.997449</td><td>0.997449</td><td>0.000000</td><td>2</td><td>2</td><td>0</td></tr><tr><td><code>GunPointOldVersusYoung_normal_1</code></td><td><code>GunPointOldVersusYoung</code></td><td>0.996173</td><td>0.997449</td><td>0.001276</td><td>2</td><td>2</td><td>0</td></tr><tr><td><code>GunPoint_normal_1</code></td><td><code>GunPoint</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>2</td><td>2</td><td>0</td></tr><tr><td><code>Ham_normal_1</code></td><td><code>Ham</code></td><td>0.913265</td><td>0.591837</td><td>-0.321429</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>HandOutlines_normal_0</code></td><td><code>HandOutlines</code></td><td>0.868367</td><td>0.612449</td><td>-0.255918</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>Haptics_normal_1</code></td><td><code>Haptics</code></td><td>0.755102</td><td>0.326531</td><td>-0.428571</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>Herring_normal_1</code></td><td><code>Herring</code></td><td>0.714286</td><td>0.000000</td><td>-0.714286</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>HouseTwenty_normal_1</code></td><td><code>HouseTwenty</code></td><td>1.000000</td><td>1.000000</td><td>-0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>InlineSkate_normal_1</code></td><td><code>InlineSkate</code></td><td>0.979592</td><td>0.673469</td><td>-0.306122</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>InsectEPGRegularTrain_normal_1</code></td><td><code>InsectEPGRegularTrain</code></td><td>1.000000</td><td>0.974490</td><td>-0.025510</td><td>2</td><td>1</td><td>-1</td></tr><tr><td><code>InsectEPGSmallTrain_normal_1</code></td><td><code>InsectEPGSmallTrain</code></td><td>0.979592</td><td>0.816327</td><td>-0.163265</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>InsectWingbeatSound_normal_1</code></td><td><code>InsectWingbeatSound</code></td><td>1.000000</td><td>0.992347</td><td>-0.007653</td><td>4</td><td>2</td><td>-2</td></tr><tr><td><code>ItalyPowerDemand_normal_1</code></td><td><code>ItalyPowerDemand</code></td><td>0.983808</td><td>0.941643</td><td>-0.042166</td><td>10</td><td>8</td><td>-2</td></tr><tr><td><code>LargeKitchenAppliances_normal_1</code></td><td><code>LargeKitchenAppliances</code></td><td>0.949388</td><td>0.654694</td><td>-0.294694</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>Lightning2_normal_-1</code></td><td><code>Lightning2</code></td><td>0.918367</td><td>0.612245</td><td>-0.306122</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>Lightning7_normal_0</code></td><td><code>Lightning7</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>Mallat_normal_1</code></td><td><code>Mallat</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>6</td><td>6</td><td>0</td></tr><tr><td><code>Meat_normal_1</code></td><td><code>Meat</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>MedicalImages_normal_1</code></td><td><code>MedicalImages</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>2</td><td>2</td><td>0</td></tr><tr><td><code>MelbournePedestrian_normal_1</code></td><td><code>MelbournePedestrian</code></td><td>0.997899</td><td>0.990756</td><td>-0.007143</td><td>4</td><td>3</td><td>-1</td></tr><tr><td><code>MiddlePhalanxOutlineAgeGroup_normal_1</code></td><td><code>MiddlePhalanxOutlineAgeGroup</code></td><td>0.959184</td><td>0.959184</td><td>0.000000</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>MiddlePhalanxOutlineCorrect_normal_0</code></td><td><code>MiddlePhalanxOutlineCorrect</code></td><td>0.865079</td><td>0.562358</td><td>-0.302721</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>MiddlePhalanxTW_normal_3</code></td><td><code>MiddlePhalanxTW</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>MixedShapesRegularTrain_normal_1</code></td><td><code>MixedShapesRegularTrain</code></td><td>0.999663</td><td>0.994434</td><td>-0.005229</td><td>9</td><td>2</td><td>-7</td></tr><tr><td><code>MixedShapesSmallTrain_normal_1</code></td><td><code>MixedShapesSmallTrain</code></td><td>0.994961</td><td>0.902872</td><td>-0.092089</td><td>8</td><td>4</td><td>-4</td></tr><tr><td><code>MoteStrain_normal_1</code></td><td><code>MoteStrain</code></td><td>0.996256</td><td>0.963531</td><td>-0.032726</td><td>7</td><td>3</td><td>-4</td></tr><tr><td><code>NonInvasiveFetalECGThorax1_normal_1</code></td><td><code>NonInvasiveFetalECGThorax1</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>NonInvasiveFetalECGThorax2_normal_1</code></td><td><code>NonInvasiveFetalECGThorax2</code></td><td>0.959184</td><td>0.897959</td><td>-0.061224</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>OSULeaf_normal_1</code></td><td><code>OSULeaf</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>OliveOil_normal_1</code></td><td><code>OliveOil</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>PLAID_normal_0</code></td><td><code>PLAID</code></td><td>0.979592</td><td>0.938776</td><td>-0.040816</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>PhalangesOutlinesCorrect_normal_0</code></td><td><code>PhalangesOutlinesCorrect</code></td><td>0.877212</td><td>0.519617</td><td>-0.357595</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>Phoneme_normal_1</code></td><td><code>Phoneme</code></td><td>1.000000</td><td>0.959184</td><td>-0.040816</td><td>1</td><td>0</td><td>-1</td></tr><tr><td><code>PickupGestureWiimoteZ_normal_1</code></td><td><code>PickupGestureWiimoteZ</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>Plane_normal_1</code></td><td><code>Plane</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>PowerCons_normal_1</code></td><td><code>PowerCons</code></td><td>0.990930</td><td>0.968254</td><td>-0.022676</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>ProximalPhalanxOutlineAgeGroup_normal_1</code></td><td><code>ProximalPhalanxOutlineAgeGroup</code></td><td>0.653061</td><td>0.428571</td><td>-0.224490</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>ProximalPhalanxOutlineCorrect_normal_0</code></td><td><code>ProximalPhalanxOutlineCorrect</code></td><td>0.851429</td><td>0.480000</td><td>-0.371429</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>ProximalPhalanxTW_normal_3</code></td><td><code>ProximalPhalanxTW</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>RefrigerationDevices_normal_1</code></td><td><code>RefrigerationDevices</code></td><td>0.995918</td><td>0.970612</td><td>-0.025306</td><td>3</td><td>2</td><td>-1</td></tr><tr><td><code>Rock_normal_1</code></td><td><code>Rock</code></td><td>0.857143</td><td>0.673469</td><td>-0.183673</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>ScreenType_normal_1</code></td><td><code>ScreenType</code></td><td>0.947755</td><td>0.657143</td><td>-0.290612</td><td>0</td><td>1</td><td>1</td></tr><tr><td><code>SemgHandGenderCh2_normal_1</code></td><td><code>SemgHandGenderCh2</code></td><td>0.976387</td><td>0.967111</td><td>-0.009276</td><td>1</td><td>4</td><td>3</td></tr><tr><td><code>SemgHandMovementCh2_normal_1</code></td><td><code>SemgHandMovementCh2</code></td><td>0.988662</td><td>0.995465</td><td>0.006803</td><td>2</td><td>2</td><td>0</td></tr><tr><td><code>SemgHandSubjectCh2_normal_1</code></td><td><code>SemgHandSubjectCh2</code></td><td>0.961451</td><td>0.823129</td><td>-0.138322</td><td>2</td><td>1</td><td>-1</td></tr><tr><td><code>ShakeGestureWiimoteZ_normal_1</code></td><td><code>ShakeGestureWiimoteZ</code></td><td>1.000000</td><td>0.979592</td><td>-0.020408</td><td>1</td><td>0</td><td>-1</td></tr><tr><td><code>ShapeletSim_normal_0</code></td><td><code>ShapeletSim</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>2</td><td>2</td><td>0</td></tr><tr><td><code>ShapesAll_normal_1</code></td><td><code>ShapesAll</code></td><td>1.000000</td><td>0.959184</td><td>-0.040816</td><td>1</td><td>0</td><td>-1</td></tr><tr><td><code>SmallKitchenAppliances_normal_1</code></td><td><code>SmallKitchenAppliances</code></td><td>0.985306</td><td>0.864490</td><td>-0.120816</td><td>2</td><td>0</td><td>-2</td></tr><tr><td><code>SmoothSubspace_normal_1</code></td><td><code>SmoothSubspace</code></td><td>0.954082</td><td>0.928571</td><td>-0.025510</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>SonyAIBORobotSurface1_normal_1</code></td><td><code>SonyAIBORobotSurface1</code></td><td>0.993753</td><td>0.990004</td><td>-0.003748</td><td>4</td><td>2</td><td>-2</td></tr><tr><td><code>SonyAIBORobotSurface2_normal_1</code></td><td><code>SonyAIBORobotSurface2</code></td><td>0.990004</td><td>0.949188</td><td>-0.040816</td><td>3</td><td>3</td><td>0</td></tr><tr><td><code>StarLightCurves_normal_1</code></td><td><code>StarLightCurves</code></td><td>0.813863</td><td>0.907813</td><td>0.093950</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>Strawberry_normal_1</code></td><td><code>Strawberry</code></td><td>0.998751</td><td>0.994586</td><td>-0.004165</td><td>6</td><td>6</td><td>0</td></tr><tr><td><code>SwedishLeaf_normal_1</code></td><td><code>SwedishLeaf</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>Symbols_normal_1</code></td><td><code>Symbols</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>3</td><td>3</td><td>0</td></tr><tr><td><code>SyntheticControl_normal_1</code></td><td><code>SyntheticControl</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>2</td><td>2</td><td>0</td></tr><tr><td><code>ToeSegmentation1_normal_0</code></td><td><code>ToeSegmentation1</code></td><td>0.994898</td><td>0.974490</td><td>-0.020408</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>ToeSegmentation2_normal_0</code></td><td><code>ToeSegmentation2</code></td><td>0.989796</td><td>0.989796</td><td>0.000000</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>Trace_normal_1</code></td><td><code>Trace</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>TwoLeadECG_normal_1</code></td><td><code>TwoLeadECG</code></td><td>0.999325</td><td>0.998313</td><td>-0.001012</td><td>10</td><td>10</td><td>0</td></tr><tr><td><code>TwoPatterns_normal_1</code></td><td><code>TwoPatterns</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>26</td><td>26</td><td>0</td></tr><tr><td><code>UMD_normal_1</code></td><td><code>UMD</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>UWaveGestureLibraryAll_normal_1</code></td><td><code>UWaveGestureLibraryAll</code></td><td>0.998988</td><td>0.998482</td><td>-0.000506</td><td>7</td><td>6</td><td>-1</td></tr><tr><td><code>UWaveGestureLibraryX_normal_1</code></td><td><code>UWaveGestureLibraryX</code></td><td>0.994771</td><td>0.987688</td><td>-0.007084</td><td>1</td><td>0</td><td>-1</td></tr><tr><td><code>UWaveGestureLibraryY_normal_1</code></td><td><code>UWaveGestureLibraryY</code></td><td>0.994771</td><td>0.984820</td><td>-0.009951</td><td>7</td><td>7</td><td>0</td></tr><tr><td><code>UWaveGestureLibraryZ_normal_1</code></td><td><code>UWaveGestureLibraryZ</code></td><td>0.991398</td><td>0.984652</td><td>-0.006747</td><td>8</td><td>4</td><td>-4</td></tr><tr><td><code>Wafer_normal_-1</code></td><td><code>Wafer</code></td><td>0.996100</td><td>0.999002</td><td>0.002902</td><td>1</td><td>10</td><td>9</td></tr><tr><td><code>Wine_normal_1</code></td><td><code>Wine</code></td><td>0.979592</td><td>0.734694</td><td>-0.244898</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>WordSynonyms_normal_1</code></td><td><code>WordSynonyms</code></td><td>1.000000</td><td>1.000000</td><td>0.000000</td><td>1</td><td>1</td><td>0</td></tr><tr><td><code>WormsTwoClass_normal_1</code></td><td><code>WormsTwoClass</code></td><td>0.933673</td><td>0.928571</td><td>-0.005102</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>Worms_normal_1</code></td><td><code>Worms</code></td><td>0.913265</td><td>0.693878</td><td>-0.219388</td><td>0</td><td>0</td><td>0</td></tr><tr><td><code>Yoga_normal_1</code></td><td><code>Yoga</code></td><td>0.972881</td><td>0.885281</td><td>-0.087600</td><td>3</td><td>3</td><td>0</td></tr></tbody></table>
+<h2>제한</h2>
+<p>이 값은 선택된 125개 대표 데이터셋의 회고 평가입니다. 새 family 일반화나 라우팅 승격을 의미하지 않습니다.</p>
+<h2>재현</h2>
+<pre>PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m experiments.exp489_lof_score_head_antigravity.run_antigravity smoke
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m experiments.exp489_lof_score_head_antigravity.run_antigravity official</pre>
+<pre>{
+  &quot;schema&quot;: &quot;exp489_run_manifest_v1&quot;,
+  &quot;started_at_utc&quot;: &quot;2026-09-16T01:20:53.810265+00:00&quot;,
+  &quot;completed_at_utc&quot;: &quot;2026-09-16T01:21:33.697476+00:00&quot;,
+  &quot;elapsed_seconds&quot;: 39.88777687516995,
+  &quot;cpu_policy&quot;: {
+    &quot;logical_cpu_count&quot;: 12,
+    &quot;workers&quot;: 11,
+    &quot;inner_threads&quot;: 1
+  },
+  &quot;completed_datasets&quot;: 125,
+  &quot;expected_datasets&quot;: 125,
+  &quot;failed_datasets&quot;: 0,
+  &quot;excluded_families&quot;: [
+    &quot;PigAirwayPressure&quot;,
+    &quot;PigArtPressure&quot;,
+    &quot;PigCVP&quot;
+  ],
+  &quot;result_sha256&quot;: &quot;3232f292ca6124b8591aa42006af740d4832f2ba3c0c104e51a2eac4e84c0b3f&quot;,
+  &quot;code_sha256&quot;: {
+    &quot;experiments/exp489_lof_score_head_antigravity/run_antigravity.py&quot;: &quot;a5452debba3b0f6c326871556a0f6328fc3d5b8b314d405b422fa4c2bedcf743&quot;,
+    &quot;experiments/exp489_lof_score_head_antigravity/lof_score_head_antigravity.py&quot;: &quot;7e5699987cd3a1d64f3f66afeaa6d786865916ddf09643b30c74771f1f131c21&quot;,
+    &quot;experiments/exp491_gain_prediction_antigravity/runtime_antigravity.py&quot;: &quot;4539d3af54e79d06a69967222180e20db0da904cfc382869e2f9c97a24ef3fde&quot;,
+    &quot;experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py&quot;: &quot;5abaee70a7023b8aaca5755a5d5d9cfb8b09b3500244d3a2f6f78cdcb56a5ec5&quot;,
+    &quot;experiments/exp449_residual_fn_method_qualification_antigravity/representations_antigravity.py&quot;: &quot;fbc9a67b07864b007196832db056605611fd77592a9e404a0cf83dd687298225&quot;,
+    &quot;experiments/exp449_residual_fn_method_qualification_antigravity/local_gap_antigravity.py&quot;: &quot;d9ad3d3ce86003346d4ec5a957cfa26195031a402ef8e77afa7f9a96120dc141&quot;,
+    &quot;experiments/exp479_missing_score_recovery_antigravity/preprocessing_antigravity.py&quot;: &quot;389ed992920116cec9dcd47a2d9321a124952e5becd6dde556b51fa3179f8903&quot;,
+    &quot;experiments/exp479_missing_score_recovery_antigravity/evaluation_antigravity.py&quot;: &quot;2a2404cedaaf6aa753eb25accfd388179c13bccbc604b9b85aa06aee06dff658&quot;
+  },
+  &quot;preregistration_sha256&quot;: &quot;ecd91b24c6ab90cf5628885d136d323a35c9bfda6d80bc51de2f357482be49d9&quot;,
+  &quot;acceleration&quot;: {
+    &quot;concurrent_gpu_jobs&quot;: 0,
+    &quot;cpu_policy&quot;: {
+      &quot;inner_threads&quot;: 1,
+      &quot;logical_cpu_count&quot;: 12,
+      &quot;workers&quot;: 11
+    },
+    &quot;device&quot;: &quot;arm64&quot;,
+    &quot;mlx&quot;: {
+      &quot;candidate_index_parity&quot;: null,
+      &quot;fallback_reason&quot;: &quot;dense_ridge_not_promoted_without_float64_full_stage_parity_and_1.1x&quot;,
+      &quot;full_stage_seconds&quot;: null,
+      &quot;numerical_parity&quot;: null,
+      &quot;probe&quot;: {
+        &quot;available&quot;: true,
+        &quot;cpu_float64_finite&quot;: true,
+        &quot;cpu_solve_seconds&quot;: 0.03232895885594189,
+        &quot;default_device&quot;: &quot;Device(gpu, 0)&quot;,
+        &quot;metal_available&quot;: true,
+        &quot;probe_seconds&quot;: 0.07531066588126123
+      },
+      &quot;selected&quot;: false,
+      &quot;speedup&quot;: null,
+      &quot;tensor_eligible_stages&quot;: [
+        &quot;exp491_dense_ridge&quot;
+      ]
+    },
+    &quot;mps&quot;: {
+      &quot;available&quot;: true,
+      &quot;fallback_reason&quot;: &quot;mps_not_canonical_for_frozen_aeon_sklearn_cpu_algorithms&quot;,
+      &quot;selected&quot;: false
+    },
+    &quot;pytorch&quot;: {
+      &quot;fallback_reason&quot;: &quot;official_aeon_sklearn_cpu_remain_canonical_except_where_a_stage_is_tensor_eligible; dense_ridge_is_tensor_eligible_under_torch_but_not_promoted_without_float64_full_stage_parity_and_1.1x&quot;,
+      &quot;probe&quot;: {
+        &quot;available&quot;: true,
+        &quot;cpu_float64&quot;: true,
+        &quot;fallback_reason&quot;: &quot;Cannot convert a MPS Tensor to float64 dtype as the MPS framework doesn&#x27;t support float64. Please use float32 instead.&quot;,
+        &quot;mps_available&quot;: true,
+        &quot;mps_float64_finite&quot;: false,
+        &quot;probe_seconds&quot;: 0.7848886661231518,
+        &quot;version&quot;: &quot;2.13.0&quot;
+      },
+      &quot;selected&quot;: false,
+      &quot;tensor_eligible_stages&quot;: [
+        &quot;exp491_dense_ridge&quot;
+      ]
+    },
+    &quot;schema&quot;: &quot;exp489_491_acceleration_v1&quot;,
+    &quot;stages&quot;: {
+      &quot;exp489_minirocket_lof&quot;: {
+        &quot;canonical&quot;: &quot;aeon_minirocket_sklearn_lof_localgap_cpu&quot;,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;fallback_reason&quot;: &quot;official_aeon_MiniRocket_and_sklearn_LocalOutlierFactor_remain_canonical; do_not_rewrite_third_party_cpu_transformer&quot;,
+        &quot;measured_stage_seconds&quot;: 0.001847082981839776,
+        &quot;numba&quot;: {
+          &quot;fallback_reason&quot;: &quot;official_aeon_MiniRocket_and_sklearn_LocalOutlierFactor_have_no_supported_public_numba_rewrite; retain_existing_cpu_implementations&quot;,
+          &quot;selected&quot;: false
+        },
+        &quot;pytorch_tensor_eligible&quot;: false,
+        &quot;selected_backend&quot;: &quot;sklearn_aeon_cpu&quot;,
+        &quot;tensor_eligible&quot;: false,
+        &quot;warmup_seconds&quot;: 0.014355457853525877
+      },
+      &quot;exp490_rank_quantile&quot;: {
+        &quot;canonical&quot;: &quot;numpy_scipy_blas&quot;,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;fallback_reason&quot;: &quot;public_numba_compiler_path_for_scipy_spearmanr_and_numpy_quantile_orchestration is_unsupported_or_has_no_measured_speedup; retain_existing_numpy_scipy_blas&quot;,
+        &quot;measured_stage_seconds&quot;: 0.0008192919194698334,
+        &quot;numba&quot;: {
+          &quot;fallback_reason&quot;: &quot;public_numba_compiler_path_for_scipy_spearmanr_and_numpy_quantile_orchestration is_unsupported_or_has_no_measured_speedup; retain_existing_numpy_scipy_blas&quot;,
+          &quot;selected&quot;: false
+        },
+        &quot;pytorch_tensor_eligible&quot;: true,
+        &quot;selected_backend&quot;: &quot;numpy_scipy&quot;,
+        &quot;tensor_eligible&quot;: true,
+        &quot;warmup_seconds&quot;: 0.001795874908566475
+      },
+      &quot;exp491_ridge&quot;: {
+        &quot;canonical&quot;: &quot;sklearn_ridge_cholesky_cpu&quot;,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;fallback_reason&quot;: &quot;dense_ridge_acceleration_not_canonical_without_float64_full_stage_parity_and_1.1x; not_promoted&quot;,
+        &quot;measured_stage_seconds&quot;: 0.00044220895506441593,
+        &quot;mlx_selected&quot;: false,
+        &quot;mlx_tensor_eligible&quot;: true,
+        &quot;numba&quot;: {
+          &quot;fallback_reason&quot;: &quot;sklearn_cholesky_ridge_retained; no_measured_numba_full_stage_float64_parity_and_1.1x&quot;,
+          &quot;selected&quot;: false
+        },
+        &quot;pytorch_selected&quot;: false,
+        &quot;pytorch_tensor_eligible&quot;: true,
+        &quot;selected_backend&quot;: &quot;sklearn_cpu&quot;,
+        &quot;tensor_eligible&quot;: true,
+        &quot;warmup_seconds&quot;: 0.0007821670733392239
+      }
+    },
+    &quot;versions&quot;: {
+      &quot;aeon&quot;: &quot;1.5.0&quot;,
+      &quot;architecture&quot;: &quot;arm64&quot;,
+      &quot;mlx&quot;: &quot;0.32.0&quot;,
+      &quot;mlx-metal&quot;: &quot;0.32.0&quot;,
+      &quot;numba&quot;: &quot;0.63.1&quot;,
+      &quot;numpy&quot;: &quot;2.3.5&quot;,
+      &quot;python&quot;: &quot;3.14.6&quot;,
+      &quot;scikit-learn&quot;: &quot;1.8.0&quot;,
+      &quot;scipy&quot;: &quot;1.17.1&quot;,
+      &quot;torch&quot;: &quot;2.13.0&quot;
+    }
+  }
+}</pre>
+</html>

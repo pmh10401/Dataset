@@ -1,0 +1,6 @@
+{
+  "evidence": "Observed Codex Native process completion in the 2026-09-18 continuation",
+  "pilot": {"session_id": 93132, "exit_code": 0},
+  "verification": {"session_id": 87196, "exit_code": 0},
+  "full_test_evaluation_executed": false
+}

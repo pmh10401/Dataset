@@ -1,0 +1,8 @@
+{
+  "state": "authorized_diagnostic_only",
+  "user_instruction": "진행",
+  "utc": "2026-09-17T15:24:34.873938+00:00",
+  "scope": "Exp509 normal TRAIN signal and optimizer diagnosis only; no Exp510 or TEST execution",
+  "prior_closure_sha256": "ed82e5f970a0ef8ff71af4d9aae9739157012805c9207469cb750e4a85d45689",
+  "design_brief_sha256": "c14b6562e426c3529143308ad16ade232a55a8af36c82fd9d6df557f52a17861"
+}

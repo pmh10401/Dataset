@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp462 실행 가이드</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}.bad{border-left:6px solid #b42318}</style></head>
+<body><main>
+<h1>Exp462 운영 런북</h1>
+<p><strong>Task 5 terminal boundary:</strong> private TRAIN qualification failed. Exactly two private evaluate→inspect cycles matched byte-for-byte, but the frozen primary gate failed; therefore Task 6 and every official action are forbidden.</p>
+<table>
+  <tr><th>run identity</th><td><code>exp462-ecg-gradual-signature-qualification-antigravity-20260820</code></td></tr>
+  <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp462_ecg_gradual_signature_qualification_antigravity_20260820</code> must stay absent and non-symlink</td></tr>
+  <tr><th>fixed interpreter</th><td><code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code></td></tr>
+  <tr><th>reviewed implementation commit</th><td><code>ff57925ae2d5542fe6ec34131686ffa0bc37fe0c</code></td></tr>
+  <tr><th>status</th><td><code>stopped_before_official_evaluation_qualification_failed</code></td></tr>
+  <tr><th>official commands</th><td>evaluate 0 / inspect 0</td></tr>
+  <tr><th>label query count</th><td>0</td></tr>
+</table>
+<div class="box bad">
+  <p><strong>Do not run:</strong> the official launcher, official root creation, TEST label query, routing, champion/pending mutation, promotion, threshold/weight/fold tuning, or any extra private reproduction.</p>
+  <p><strong>Reason:</strong> <code>hydra_period_gradual_rank_max</code> passed <code>3/10</code>; gradual_drift minimum <code>0.7953196519289775</code> and period_change minimum <code>0.8960376741612595</code> fail the registered gates.</p>
+  <p><strong>Task 6 is forbidden</strong> regardless of later user approval because the frozen Task 5 qualification gate failed.</p>
+</div>
+<h2>Allowed verification</h2>
+<ul>
+  <li>Closed parser/launcher tests, Exp462 discovery, Exp461 scientific regression, fixed-runtime check, map/HTML/diff validation, and root/label checks.</li>
+  <li>Source-free replay of an existing private artifact is allowed only for verification; no new private root may be created.</li>
+</ul>
+<h2>Closed command surface (identification only)</h2>
+<pre><code>PY=/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python
+"$PY" scratch/run_exp462_ecg_gradual_signature_qualification_antigravity.py evaluate --reviewed-commit LOWER40HEX
+"$PY" scratch/run_exp462_ecg_gradual_signature_qualification_antigravity.py inspect</code></pre>
+<p>These commands are retained to document the interface; they are not authorized against the official root.</p>
+</main></body></html>

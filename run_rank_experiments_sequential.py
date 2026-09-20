@@ -8,6 +8,7 @@ import signal
 import subprocess
 import sys
 import time
+import uuid
 from pathlib import Path
 
 
@@ -1205,6 +1206,178 @@ EXPERIMENTS = [
             ("218", "experiment_218_true_bootstrap_consensus_normal_prototypes", "Exp218 · True Bootstrap-Consensus Normal Prototypes", 251),
         )
     ],
+    {
+        "id": "experiment_391_fn_zero_reachability_audit",
+        "script": (
+            ROOT
+            / "experiments/exp391_fn_reachability"
+            / "run_experiment_391_fn_reachability_audit.py"
+        ),
+        "detail_csv": (
+            DATA_DIR
+            / "exp391_fn_zero_reachability_audit"
+            / "exp391_dataset_audit.csv"
+        ),
+        "summary_csv": (
+            DATA_DIR
+            / "exp391_fn_zero_reachability_audit"
+            / "exp391_rule_summary.csv"
+        ),
+        "stdout_log": (
+            DATA_DIR
+            / "exp391_fn_zero_reachability_audit"
+            / "exp391_stdout.log"
+        ),
+    },
+    {
+        "id": "experiment_392_label_guided_score_discovery_audit",
+        "script": (
+            ROOT
+            / "experiments/exp392_label_guided_discovery"
+            / "run_experiment_392_label_guided_score_discovery_audit.py"
+        ),
+        "detail_csv": (
+            DATA_DIR
+            / "exp392_label_guided_score_discovery_audit"
+            / "exp392_individual_source_summary.csv"
+        ),
+        "summary_csv": (
+            DATA_DIR
+            / "exp392_label_guided_score_discovery_audit"
+            / "exp392_pair_triple_summary.csv"
+        ),
+        "stdout_log": (
+            DATA_DIR
+            / "exp392_label_guided_score_discovery_audit"
+            / "exp392_stdout.log"
+        ),
+    },
+    {
+        "id": "experiment_393_396_normal_process_grammar",
+        "label": "Exp393-396 · Normal Process Grammar review evidence",
+        "script": (
+            ROOT
+            / "experiments/exp393_396"
+            / "run_experiment_393_396_pipeline.py"
+        ),
+        "args": [
+            "--stage",
+            "all",
+            "--workers",
+            "7",
+            "--output-dir",
+            str(DATA_DIR / "exp393_396_normal_process_grammar"),
+        ],
+        "detail_csv": (
+            DATA_DIR
+            / "exp393_396_normal_process_grammar"
+            / "exp396_review_integration.csv"
+        ),
+        "summary_csv": (
+            DATA_DIR
+            / "exp393_396_normal_process_grammar"
+            / "exp396_summary.csv"
+        ),
+        "stdout_log": (
+            DATA_DIR
+            / "exp393_396_normal_process_grammar"
+            / "exp393_396_stdout.log"
+        ),
+        "expected_datasets": 1117,
+        "archive_outputs": False,
+    },
+    {
+        "id": "experiment_397_399_review_ranking",
+        "label": "Exp397-399 · Frozen standard-review ranking",
+        "script": (
+            ROOT
+            / "experiments/exp397_399"
+            / "run_experiment_397_399_pipeline.py"
+        ),
+        "args": [
+            "--stage",
+            "all",
+            "--output-dir",
+            str(DATA_DIR / "exp397_399_review_ranking"),
+        ],
+        "detail_csv": (
+            DATA_DIR
+            / "exp397_399_review_ranking"
+            / "exp398_dataset_diagnostics.csv"
+        ),
+        "summary_csv": (
+            DATA_DIR
+            / "exp397_399_review_ranking"
+            / "exp399_workload_summary.csv"
+        ),
+        "stdout_log": (
+            DATA_DIR
+            / "exp397_399_review_ranking"
+            / "exp397_399_stdout.log"
+        ),
+        "expected_datasets": 1117,
+        "archive_outputs": False,
+    },
+    {
+        "id": "experiment_400_402_exp397_shadow_validation",
+        "label": "Exp400-402 · Exp397 retrospective Shadow validation",
+        "script": ROOT / "scratch" / "run_exp400_402_shadow_validation.py",
+        "args": [
+            "--stage",
+            "all",
+            "--output-dir",
+            str(DATA_DIR / "exp400_402_exp397_shadow_validation"),
+        ],
+        "detail_csv": (
+            DATA_DIR
+            / "exp400_402_exp397_shadow_validation"
+            / "exp401_dataset_top1.csv"
+        ),
+        "summary_csv": (
+            DATA_DIR
+            / "exp400_402_exp397_shadow_validation"
+            / "exp401_precision_at_k.csv"
+        ),
+        "status_json": (
+            DATA_DIR
+            / "exp400_402_exp397_shadow_validation"
+            / "status.json"
+        ),
+        "stdout_log": (
+            DATA_DIR
+            / "exp400_402_exp397_shadow_validation"
+            / "exp400_402_stdout.log"
+        ),
+        "expected_datasets": 1117,
+        "archive_outputs": False,
+        "automatic_policy_changed": False,
+        "review_only": True,
+        "retrospective": True,
+        "prospective": False,
+    },
+    {
+        "id": "experiment_403_408_feature_ml_validation",
+        "label": "Exp403-408 · TRAIN-only feature/ML validation",
+        "script": ROOT / "scratch" / "run_exp403_408_feature_ml_validation.py",
+        "args": [
+            "--stage",
+            "all",
+            "--output-dir",
+            str(DATA_DIR / "exp403_408_feature_ml_validation"),
+            "--workers",
+            "7",
+        ],
+        "detail_csv": DATA_DIR / "exp403_408_feature_ml_validation" / "exp403_408_results.csv",
+        "summary_csv": DATA_DIR / "exp403_408_feature_ml_validation" / "exp403_408_summary.csv",
+        "status_json": DATA_DIR / "exp403_408_feature_ml_validation" / "status.json",
+        "stdout_log": DATA_DIR / "exp403_408_feature_ml_validation" / "exp403_408_stdout.log",
+        "expected_datasets": 1117,
+        "archive_outputs": False,
+        "automatic_policy_changed": False,
+        "review_only": True,
+        "retrospective": True,
+        "prospective": False,
+    },
 ]
 
 EXP267_273_ROOT = DATA_DIR / "exp267_273_zero_support_fn_recovery"
@@ -1628,19 +1801,24 @@ def save_state(state):
     STATE_PATH.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
 
 
-def python_processes():
-    out = subprocess.run(
-        ["ps", "-axo", "pid,ppid,stat,etime,command"],
-        check=True,
-        text=True,
-        capture_output=True,
-    ).stdout.splitlines()
+def python_processes(ps_output=None):
+    out = (
+        subprocess.run(
+            ["ps", "-axo", "pid,ppid,stat,etime,command"],
+            check=True,
+            text=True,
+            capture_output=True,
+        ).stdout
+        if ps_output is None
+        else str(ps_output)
+    ).splitlines()
     matches = []
     for line in out[1:]:
         if (
             "run_rank_ensemble_calibration" in line
             or "run_rank_ensemble_threshold_calibration" in line
             or "run_experiment_" in line
+            or "run_exp403_408_feature_ml_validation.py" in line
             or "run_rank_experiments_sequential.py" in line
         ):
             if str(os.getpid()) not in line:
@@ -1648,10 +1826,10 @@ def python_processes():
     return matches
 
 
-def active_rank_processes():
+def active_rank_processes(ps_output=None):
     experiment_scripts = {exp["script"].name for exp in EXPERIMENTS}
     matches = []
-    for line in python_processes():
+    for line in python_processes(ps_output=ps_output):
         if "python" not in line:
             continue
         command = line.split(None, 4)[-1] if len(line.split(None, 4)) >= 5 else line
@@ -1789,12 +1967,39 @@ def remove_from_queue(exp_id):
 def summarize_csv(path):
     if not path.exists():
         return None
-    rows = list(csv.DictReader(path.open()))
+    with path.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
     if not rows:
         return {"rows": 0, "datasets": 0, "configs": {}}
+    dataset_names = {
+        row.get("dataset_name") or row.get("dataset")
+        for row in rows
+        if row.get("dataset_name") or row.get("dataset")
+    }
+    dataset_count = len(dataset_names)
+    if not dataset_count:
+        declared_counts = []
+        for row in rows:
+            value = row.get("datasets_total") or row.get("datasets")
+            try:
+                declared_counts.append(int(float(value)))
+            except (TypeError, ValueError):
+                continue
+        if declared_counts:
+            dataset_count = max(declared_counts)
+    supported_f1_keys = ("f1_evt", "hard_f1", "f1", "validated_f1")
+    f1_key = next(
+        (key for key in supported_f1_keys if key in rows[0]),
+        None,
+    )
+    if f1_key is None:
+        return {
+            "rows": len(rows),
+            "datasets": dataset_count,
+            "configs": {},
+        }
     configs = {}
     for row in rows:
-        f1_key = "f1_evt" if "f1_evt" in row else ("hard_f1" if "hard_f1" in row else ("f1" if "f1" in row else "validated_f1"))
         group_name = row.get("config_name") or row.get("source_experiment") or "default"
         if "strategy" in row:
             group_name = f"{row['config_name']}::{row['strategy']}"
@@ -1806,13 +2011,7 @@ def summarize_csv(path):
             configs.setdefault(group_name, []).append(0.0)
     return {
         "rows": len(rows),
-        "datasets": len(
-            {
-                row.get("dataset_name") or row.get("dataset")
-                for row in rows
-                if row.get("dataset_name") or row.get("dataset")
-            }
-        ),
+        "datasets": dataset_count,
         "configs": {
             name: {
                 "mean_f1_evt": sum(values) / len(values),
@@ -1872,7 +2071,15 @@ def run_experiment(exp, overlap_checked=False):
     archive_existing_outputs(exp)
 
     state = load_state()
-    state["running"] = {"id": exp["id"], "started_at": now(), "pid": os.getpid()}
+    run_id = uuid.uuid4().hex
+    run_started_unix = time.time()
+    state["running"] = {
+        "id": exp["id"],
+        "run_id": run_id,
+        "run_started_unix": run_started_unix,
+        "started_at": now(),
+        "pid": os.getpid(),
+    }
     save_state(state)
     write_heartbeat(
         {
@@ -1893,6 +2100,9 @@ def run_experiment(exp, overlap_checked=False):
     with exp["stdout_log"].open("w") as stdout_log:
         batch_meta = state.get("exp186_200_batch") or state.get("exp177_185_batch") or {}
         child_env = build_child_environment(worker_count=worker_count)
+        if exp["id"] == "experiment_403_408_feature_ml_validation":
+            child_env["EXP403_408_RUN_ID"] = run_id
+            child_env["EXP403_408_RUN_STARTED_UNIX"] = str(run_started_unix)
         if (exp["id"] in EXP177_185_BATCH or exp["id"] in EXP186_200_BATCH) and batch_meta.get("hard_deadline_unix"):
             child_env["EXP177_185_BATCH_DEADLINE_UNIX"] = str(batch_meta["hard_deadline_unix"])
         process = subprocess.Popen(
@@ -1958,6 +2168,11 @@ def run_experiment(exp, overlap_checked=False):
     log(f"END {exp['id']} return_code={return_code} elapsed_min={elapsed / 60:.2f}")
     if return_code != 0:
         raise SystemExit(return_code)
+
+
+def ensure_output_directories(exp):
+    for key in ("detail_csv", "summary_csv", "stdout_log"):
+        exp[key].parent.mkdir(parents=True, exist_ok=True)
 
 
 def archive_existing_outputs(exp):
@@ -2355,6 +2570,29 @@ def queue_exp329_330_batch():
     save_state(state); log("QUEUE registered Exp329-330 batch (2 experiments)")
 
 
+def queue_exp403_408_batch():
+    experiment_id = "experiment_403_408_feature_ml_validation"
+    state = reconcile_running_state(load_state())
+    completed = set(state.get("completed", []))
+    state["queue"] = [item for item in state.get("queue", []) if item != experiment_id]
+    if experiment_id not in completed:
+        state["queue"].append(experiment_id)
+    state["exp403_408_batch"] = {
+        "registered_at": now(),
+        "registered_unix": time.time(),
+        "worker_count": 7,
+        "agent_monitoring": False,
+        "execution_mode": "sequential_one_experiment_at_a_time",
+        "experiments": [experiment_id],
+        "automatic_policy_changed": False,
+        "research_shadow_only": True,
+        "classical_outer_workers": 7,
+        "learned_model_processes": 1,
+    }
+    save_state(state)
+    log("QUEUE registered Exp403-408 batch (1 experiment)")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Run rank experiments one at a time.")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -2400,6 +2638,7 @@ def main():
     sub.add_parser("queue-exp325-327")
     sub.add_parser("queue-exp328")
     sub.add_parser("queue-exp329-330")
+    sub.add_parser("queue-exp403-408")
     queue_one = sub.add_parser("queue")
     queue_one.add_argument("experiment_id")
     run_one = sub.add_parser("run")
@@ -2497,6 +2736,8 @@ def main():
         queue_experiment(EXP328_ID)
     elif args.command == "queue-exp329-330":
         queue_exp329_330_batch()
+    elif args.command == "queue-exp403-408":
+        queue_exp403_408_batch()
     elif args.command == "run":
         run_experiment(get_experiment(args.experiment_id))
 

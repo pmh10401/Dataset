@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp462 사전등록</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}.bad{border-left:6px solid #b42318}</style></head>
+<body><main>
+<h1>Exp462 사전등록</h1>
+<p>이 문서는 Exp462의 승인된 TRAIN-only 과학 계약을 보존한다. Task 5 private 결과는 이 계약을 사후 조정하지 않고 기록하며, 공식 결과로 취급하지 않는다.</p>
+<table>
+  <tr><th>experiment</th><td><code>Exp462</code> / <code>ecg_gradual_signature_qualification</code></td></tr>
+  <tr><th>run identity</th><td><code>exp462-ecg-gradual-signature-qualification-antigravity-20260820</code></td></tr>
+  <tr><th>dataset</th><td><code>ECG5000_normal_2</code> TRAIN only, exactly <code>1413×140</code></td></tr>
+  <tr><th>seed/fold</th><td><code>20260721</code>, <code>20261721</code>; five blocked folds</td></tr>
+  <tr><th>method order</th><td><code>hydra_period_rank_max</code>, <code>gradual_signature_local_gap</code>, <code>hydra_period_gradual_rank_max</code></td></tr>
+  <tr><th>primary gate</th><td>all 10 primary rows; each type AUC ≥ <code>0.85</code>; pooled ≥ <code>0.90</code>; Wilson upper ≤ <code>0.05</code>; period preservation thresholds unchanged</td></tr>
+  <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp462_ecg_gradual_signature_qualification_antigravity_20260820</code> must stay absent through the terminal Task 5 stop</td></tr>
+  <tr><th>label boundary</th><td>TEST label query count must remain <code>0</code>; routing and promotion are out of scope</td></tr>
+</table>
+<div class="box bad"><p><strong>Terminal result:</strong> <code>stopped_before_official_evaluation_qualification_failed</code>. The two authorized private TRAIN reproductions matched exactly, but the primary <code>hydra_period_gradual_rank_max</code> passed only <code>3/10</code>. Minimum gradual_drift AUC was <code>0.7953196519289775</code>; minimum period_change AUC was <code>0.8960376741612595</code>. The qualification therefore failed and Task 6 is forbidden.</p></div>
+<p>The frozen targets are gradual_drift AUC ≥ 0.85 and period_change AUC ≥ 0.907392736783864. official command count 0, label query count 0, official result and artifact hashes null, and champion/pending candidate state is unchanged.</p>
+</main></body></html>

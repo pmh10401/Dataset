@@ -1,0 +1,18 @@
+{
+  "state": "ship_for_one_guarded_run",
+  "reviewer": "01a0ac9b-630e-7030-8db4-cb0c23e371b9",
+  "initial_finding": "Standalone full runner did not require exact-parent TRAIN parity artifact.",
+  "resolution": "Operational launch guard verified passed parity, matching pilot/code hashes, successful acceleration/smoke, and absent full state; froze full_preflight before subprocess. Final audit checks same binding.",
+  "standalone_reuse_authorized": false,
+  "new_hypotheses_authorized": false,
+  "tests": {
+    "passed": 6,
+    "warnings": "Two expected overflow warnings from deliberate invalid-input rejection cases"
+  },
+  "train": {
+    "datasets": 50,
+    "folds": 250,
+    "all_four_heads_recalls_and_tails_exact_to_exp506": true
+  },
+  "full_state": "complete_and_independently_verified"
+}

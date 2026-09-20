@@ -1,0 +1,30 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp475 ZF 하위 꼬리 보호 대시보드</title><style>
+body{font-family:system-ui,-apple-system,sans-serif;max-width:1100px;margin:32px auto;padding:0 20px;line-height:1.58;color:#182230}h1,h2{line-height:1.25}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:12px}.card{border:1px solid #d8dee8;border-radius:12px;padding:16px;background:#f8fafc}.big{font-size:1.6rem;font-weight:750}
+.pass{color:#08783e;font-weight:700}.hold{color:#b54708;font-weight:700}.muted{color:#596579}.status{border-left:5px solid;padding:12px 16px;background:#f8fafc}
+table{border-collapse:collapse;width:100%;margin:12px 0 26px}th,td{border:1px solid #d8dee8;padding:8px 10px;text-align:left}th{background:#eef2f7}code{background:#eef2f7;padding:2px 5px;border-radius:4px}label{display:block;margin:8px 0}input{margin-right:8px}
+</style></head><body><h1>Exp475 ZF 하위 꼬리 보호</h1>
+<p class="status hold"><strong>검증 보류</strong> — AUC뿐 아니라 ZF-TP의 나쁜 주변 사례까지 확인한 보수 규칙입니다.</p>
+<div class="cards"><div class="card"><div class="muted">데이터셋</div><div class="big">962</div></div>
+<div class="card"><div class="muted">분리한 가족</div><div class="big">120</div></div>
+<div class="card"><div class="muted">Exp475 평균 AUC</div><div class="big">0.9822</div></div>
+<div class="card"><div class="muted">Exp475 평균 ZF-TP</div><div class="big">2.040</div></div>
+<div class="card"><div class="muted">비기준선 승인</div><div class="big">200</div></div></div>
+<h2>1. 무엇을 바꿨나?</h2><p>Exp474에서는 가까운 과거 사례의 ZF-TP 중앙값만 확인했습니다. Exp475는 그 사례를 낮은 쪽부터 보았을 때 하위 20%의 ZF 이득도 0 이상이어야 Hydra 또는 MultiRocket을 허용합니다. 이 조건을 통과하지 못하면 MiniRocket으로 돌아갑니다.</p>
+<p class='status hold'><strong>중요:</strong> 새 하위 20% 조건은 Exp474의 선택을 바꾸지 못했습니다. 기존 90% 성공률 조건이 이미 더 강하게 같은 위험을 막고 있었기 때문입니다.</p>
+<h2>2. 결과 비교</h2><table><tr><th>방법</th><th>평균 AUC</th><th>평균 ZF-TP</th><th>큰 AUC 손실</th><th>비기준선 승인</th></tr>
+<tr><td>항상 MiniRocket</td><td>0.982066</td><td>2.040541</td><td>47</td><td>0</td></tr>
+<tr><td>Exp474</td><td>0.982164</td><td>2.039501</td><td>46</td><td>200</td></tr>
+<tr><td><strong>Exp475</strong></td><td><strong>0.982164</strong></td><td><strong>2.039501</strong></td><td><strong>46</strong></td><td><strong>200</strong></td></tr></table>
+<h2>3. 통과 기준</h2><table><tr><th>기준</th><th>실제</th><th>요구</th><th>판정</th></tr><tr><td>평균 AUC</td><td>0.982164205</td><td>&gt;= measured MiniRocket 0.982066054</td><td class=pass>통과</td></tr><tr><td>평균 ZF-TP</td><td>2.03950104</td><td>&gt;= measured MiniRocket 2.040540541</td><td class=hold>미달</td></tr><tr><td>AUC 큰 손실</td><td>46</td><td>&lt; 68</td><td class=pass>통과</td></tr><tr><td>가족 누출</td><td>0</td><td>= 0</td><td class=pass>통과</td></tr></table>
+<h2>4. 선택 내역</h2><p>비기준선 승인 <strong>200개</strong>, MiniRocket 사용 <strong>762개</strong>입니다.</p>
+<table><tr><th>승인 방법</th><th>개수</th></tr><tr><td><code>hydra_local_gap</code></td><td>194</td></tr><tr><td><code>multirocket_local_gap</code></td><td>6</td></tr></table><table><tr><th>MiniRocket 사용 이유</th><th>개수</th></tr><tr><td>positive_rate_too_low</td><td>578</td></tr><tr><td>baseline_proposal</td><td>184</td></tr></table>
+<h2>5. 가장 큰 잔여 손실</h2><table><tr><th>데이터셋</th><th>선택</th><th>AUC</th><th>최적 후보와 차이</th><th>이유</th></tr><tr><td>EOGVerticalSignal_normal_3</td><td><code>minirocket_local_gap</code></td><td>0.0000</td><td>1.0000</td><td>baseline_proposal</td></tr><tr><td>EOGHorizontalSignal_normal_9</td><td><code>minirocket_local_gap</code></td><td>0.0204</td><td>0.9796</td><td>baseline_proposal</td></tr><tr><td>ACSF1_normal_1</td><td><code>minirocket_local_gap</code></td><td>0.7143</td><td>0.2857</td><td>positive_rate_too_low</td></tr><tr><td>ACSF1_normal_5</td><td><code>minirocket_local_gap</code></td><td>0.7143</td><td>0.2857</td><td>positive_rate_too_low</td></tr><tr><td>ProximalPhalanxOutlineAgeGroup_normal_1</td><td><code>minirocket_local_gap</code></td><td>0.6531</td><td>0.2653</td><td>positive_rate_too_low</td></tr><tr><td>CricketX_normal_12</td><td><code>minirocket_local_gap</code></td><td>0.7755</td><td>0.1837</td><td>positive_rate_too_low</td></tr><tr><td>FacesUCR_normal_14</td><td><code>minirocket_local_gap</code></td><td>0.8163</td><td>0.1837</td><td>positive_rate_too_low</td></tr><tr><td>Earthquakes_normal_1</td><td><code>minirocket_local_gap</code></td><td>0.6735</td><td>0.1633</td><td>baseline_proposal</td></tr><tr><td>Fish_normal_5</td><td><code>minirocket_local_gap</code></td><td>0.8163</td><td>0.1633</td><td>positive_rate_too_low</td></tr><tr><td>ECG5000_normal_3</td><td><code>minirocket_local_gap</code></td><td>0.8163</td><td>0.1429</td><td>positive_rate_too_low</td></tr><tr><td>Fish_normal_6</td><td><code>minirocket_local_gap</code></td><td>0.8776</td><td>0.1224</td><td>positive_rate_too_low</td></tr><tr><td>WordSynonyms_normal_23</td><td><code>multirocket_local_gap</code></td><td>0.8776</td><td>0.1224</td><td>high_confidence_joint_tail_accept</td></tr></table>
+<h2>6. 진행 체크</h2>
+<label><input type="checkbox" checked disabled> Exp475 단일 변경 설계 승인</label><label><input type="checkbox" checked disabled> 코드맵과 Exp474 보존 경계 확인</label>
+<label><input type="checkbox" checked disabled> ZF 하위 꼬리 정책 테스트</label><label><input type="checkbox" checked disabled> 기존 962개 TRAIN 특징 재사용</label>
+<label><input type="checkbox" checked disabled> 120개 가족 분리 검증</label><label><input type="checkbox"  disabled> 사전 통과 기준 충족</label>
+<label><input type="checkbox" disabled> 공식 파이프라인 반영 (별도 승인 전 미수행)</label>
+<h2>7. 재현 정보</h2><ul><li>Exp474 결과 SHA-256: <code>c4f1d722cb3d975fcb7623307a264c98a35a2cec3edb750bc339e31f0bf8abf4</code></li><li>새 특징·새 점수 계산 없음: 기존 캐시와 체크포인트 재사용</li><li>MLX: 새 연산 단계가 없어 평가 대상 아님</li><li>생성 시각: 2026-08-27T23:03:37.846974+00:00</li></ul>
+</body></html>

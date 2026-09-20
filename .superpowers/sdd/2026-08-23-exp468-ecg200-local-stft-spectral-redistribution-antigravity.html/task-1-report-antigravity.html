@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp468 Task 1 구현 보고</title>
+<style>body{max-width:1160px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}.ok{background:#f5fff9;border-left:6px solid #16794b;padding:1rem}.note{background:#f5f7fa;border-left:6px solid #2457a6;padding:1rem}.stop{background:#fff4f2;border-left:6px solid #b42318;padding:1rem}</style>
+</head>
+<body><main>
+<h1>Exp468 Task 1 구현 보고</h1>
+<p>상태: <code>DONE</code>. 실험 truth 상태는 <code>implementation_task_1_complete</code>이며, 이 보고서는 고정 설정·결과 계약·문서 골격만 다룬다.</p>
+
+<h2>요구사항과 구현</h2>
+<ul>
+<li><code>Exp468ConfigAntigravity</code>와 singleton <code>FROZEN_CONFIG_ANTIGRAVITY</code>에 승인된 TRAIN-only identity, 5×28 STFT 창, 대칭 Hann 수학 기준, RFFT·epsilon·자연로그 JS, method order와 period 하한을 exact type으로 고정했다.</li>
+<li>사전 검토 ruling에 따라 <code>change_types=(level_shift, gradual_drift, amplitude_scaling, period_change)</code>를 config에 추가하고 RED/GREEN 검사로 고정했다. 두 AUC tuple은 이 순서에 위치상 묶인다.</li>
+<li><code>period_change</code>는 Task 2가 exact import할 Exp466 네 번째 synthetic scope이며, AUC와 최종 scientific gate 계산은 Task 4에 남겼다. Task 1은 타입·범위·순서·불변성과 passed/reason 일치만 검사한다.</li>
+<li><code>hann_definition="numpy_hanning_symmetric"</code>은 <code>w[n]=0.5-0.5*cos(2*pi*n/27)</code>을 뜻한다. runtime backend 필드는 만들지 않았고 Numba/MLX 평가는 Task 3에 남겼다.</li>
+</ul>
+
+<h2>RED와 GREEN 증거</h2>
+<table>
+<tr><th>RED 명령</th><td><code>python3 -m unittest experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_config_antigravity experiments.exp468_ecg200_local_stft_spectral_redistribution_antigravity.tests.test_contracts_antigravity</code></td></tr>
+<tr><th>기대 실패</th><td><code>10</code> tests, <code>10</code> errors, exit <code>1</code>. 모든 실패는 새 <code>config_antigravity</code> 또는 <code>contracts_antigravity</code>가 아직 없어서 발생한 <code>ModuleNotFoundError</code>였다. 오타나 fixture 오류가 아니라 기능 부재로 인한 의도된 RED였다.</td></tr>
+<tr><th>최소 GREEN</th><td>config/contracts 최소 구현 직후 같은 명령이 <code>10/10</code>, <code>OK</code>, exit <code>0</code>으로 통과했다.</td></tr>
+<tr><th>최종 GREEN 1</th><td>같은 명령을 전체 Task 1 산출물 완료 뒤 실행해 <code>10/10</code>, <code>OK</code>, exit <code>0</code>으로 통과했다.</td></tr>
+<tr><th>최종 GREEN 2</th><td>같은 명령을 즉시 다시 실행해 <code>10/10</code>, <code>OK</code>, exit <code>0</code>으로 통과했다.</td></tr>
+</table>
+
+<h2>생성 파일</h2>
+<ul>
+<li><code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/config_antigravity.py</code></li>
+<li><code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/contracts_antigravity.py</code></li>
+<li><code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_config_antigravity.py</code></li>
+<li><code>experiments/exp468_ecg200_local_stft_spectral_redistribution_antigravity/tests/test_contracts_antigravity.py</code></li>
+<li><code>docs/EXP468_PREREGISTRATION_antigravity.html</code>, <code>docs/EXP468_RUNBOOK_antigravity.html</code>, <code>docs/EXP468_IMPLEMENTATION_REPORT_antigravity.html</code></li>
+<li><code>scratch/build_codemap_exp468_antigravity.py</code></li>
+<li><code>docs/codemap/codemap_exp468_antigravity.html</code>, <code>docs/codemap/codemap_exp468_antigravity.json</code>, <code>docs/codemap/codemap_exp468_antigravity.lock</code></li>
+<li><code>.superpowers/sdd/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html/task-1-report-antigravity.html</code></li>
+</ul>
+<h2>수정 파일</h2>
+<ul>
+<li><code>docs/superpowers/plans/2026-08-23-exp468-ecg200-local-stft-spectral-redistribution-antigravity.html</code>: Task 1과 Step 1~6을 <code>checked disabled</code>로 바꾸고 <code>change_types</code>와 Hann/backend 구분을 동기화했다.</li>
+<li><code>scratch/exp468_dashboard_artifact_antigravity.json</code>: source-backed <code>implementation_task_1_complete</code>, 점수 계산 0회, official 실행 0회, result/hash null, Task 1 체크를 기록했다.</li>
+<li><code>docs/EXP468_DASHBOARD_antigravity.html</code>: portable generator로 다시 만들었다.</li>
+</ul>
+
+<h2>코드맵·대시보드·구조 검증</h2>
+<table>
+<tr><th>코드맵</th><td><code>python3 scratch/build_codemap_exp468_antigravity.py --validate-only</code> → exit <code>0</code>. Task 1 caller/effect/test의 <code>13</code> nodes, <code>19</code> edges, <code>7</code> flows, unknown relationship <code>0</code>, tracked fingerprint <code>16</code>개를 검증했다.</td></tr>
+<tr><th>JSON</th><td><code>python3 -m json.tool</code>로 code-map JSON, lock, dashboard artifact를 각각 parse해 모두 exit <code>0</code>을 확인했다.</td></tr>
+<tr><th>HTML</th><td>사전등록, runbook, 구현 보고서, dashboard, code-map, 구현 계획의 6개 HTML을 strict parser로 확인해 닫히지 않거나 잘못 중첩된 tag가 없음을 확인했다.</td></tr>
+<tr><th>portable dashboard</th><td>공식 portable generator receipt는 validation/package/verification 모두 <code>passed</code>였다. blocks 11, chart 1, HTML block 1, metrics 5, tables 2였고 source dialog와 1440/390 viewport 검증도 통과했다.</td></tr>
+<tr><th>정적 검사</th><td><code>compileall</code>과 <code>git diff --check</code>가 exit <code>0</code>이었다. 생성된 <code>__pycache__</code>/<code>.pyc</code>는 commit 전에 제거했다.</td></tr>
+</table>
+
+<h2>코드맵 세 질문</h2>
+<table>
+<tr><th>무엇이 호출하는가?</th><td>Task 1 brief와 승인 설계·구현 계획이 config/contracts를 지배한다. config는 contracts와 이후 Task 2~4가 사용하고, contracts는 이후 qualification/publication/replay가 사용한다. tests는 각 모듈을 직접 호출하고, portable generator는 dashboard artifact를 읽으며, map builder는 Task 1 closeout과 이후 preflight가 호출한다.</td></tr>
+<tr><th>무엇에 영향을 주는가?</th><td>backend-neutral 과학 상수, 두 AUC tuple의 변화 순서, fold/qualification 불변 형식, pre-run zero/null truth와 문서·대시보드 진행 상태에만 영향을 준다. ECG 접근, 점수, 후보 index, scientific gate 계산, TEST/FN, routing, champion, pending, promotion에는 영향을 주지 않는다.</td></tr>
+<tr><th>어떤 검사가 덮는가?</th><td><code>test_config_antigravity</code> 3개와 <code>test_contracts_antigravity</code> 7개가 실행 계약을 덮는다. map <code>--validate-only</code>가 evidence, 필수 edge, embedded JSON, HTML 구조, source-backed dashboard truth와 fingerprint를 덮는다.</td></tr>
+</table>
+
+<h2>Self-review</h2>
+<div class="ok"><p>파일 소유권을 brief와 대조했고 요청된 create 11개, modify 3개와 이 보고서만 변경했다. Exp466 이하 source/test는 수정하지 않았다. 새 파일명에는 모두 <code>antigravity</code>가 들어간다. config에는 <code>mean_auc_min</code>과 backend가 없고, contracts에는 scorer·loader·array·최종 gate 구현이 없다. mutation 관점에서 잘못된 상수, tuple 길이/순서, nonfinite/range, bool-int alias, seed/fold 순서, mapping 변이, 중복 reason, pre-run label/hash 변경을 각 test가 잡는지 다시 확인했다.</p></div>
+
+<h2>Commit</h2>
+<p>구현 commit: <code>bb98d1c88c47e1449da6573c59ff0d792d602ad0</code> — <code>feat: freeze Exp468 STFT authority and contracts</code>.</p>
+
+<h2>Concerns</h2>
+<div class="note"><p>알려진 Task 1 기능 blocker는 없다. 다만 이번 범위는 설정과 결과 형식만 검증했으므로 STFT 수치, Exp466 exact import, C0 parity, qualification gate, result replay는 각각 Task 2~5의 TDD를 통과하기 전까지 검증됐다고 해석하면 안 된다. Task 1 report가 자기 자신을 fingerprint하거나 자기 commit SHA를 미리 포함하는 순환을 피하기 위해 구현 commit 뒤 exact SHA를 이 보고서에 바인딩하는 문서 closeout commit을 별도로 만든다.</p></div>
+<div class="stop"><p>ECG TRAIN/TEST를 열지 않았고 점수 계산, private/official 실행, label query를 하지 않았다. 모든 결과와 결과 hash는 <code>null</code>이다.</p></div>
+</main></body>
+</html>

@@ -1,0 +1,35 @@
+<!doctype html><meta charset="utf-8"><title>Exp492 pre-fix regression</title><pre>FF                                                                       [100%]
+=================================== FAILURES ===================================
+______ test_sparse_constant_retains_novelty_without_epsilon_amplification ______
+
+    def test_sparse_constant_retains_novelty_without_epsilon_amplification():
+        reference = torch.tensor([[4., 0., 1.], [4., 0., 4.], [4., 0., 9.], [4., 0., 16.]])
+        query = torch.tensor([[8., 1., 25.]])
+        legacy = _SparseScaler()
+        legacy.fit(reference)
+        model = StableSparseScalerAntigravity()
+        model.fit(reference)
+        result = model.transform(query).numpy()
+&gt;       assert 0.5 &lt; result[0, 0] &lt; 1.0  # actual novelty sqrt(8)-2; previously 82 million
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert np.float32(8.284271e+07) &lt; 1.0
+
+experiments/exp492_stable_normalization_antigravity/test_exp492_antigravity.py:17: AssertionError
+_______ test_robust_tiny_float32_spread_without_losing_ordinary_columns ________
+
+    def test_robust_tiny_float32_spread_without_losing_ordinary_columns():
+        reference = np.column_stack((np.linspace(0, 1.8e-7, 20, dtype=np.float32), np.arange(20))).astype(float)
+        query = np.array([[0.15, 24.]])
+        legacy = RobustScaler(quantile_range=(10, 90)).fit(reference)
+        model = StableRobustScalerAntigravity(quantile_range=(10, 90)).fit(reference)
+        result = model.transform(query)
+&gt;       assert 0.14 &lt; result[0, 0] &lt; 0.16  # previously greater than one million
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert np.float64(1041666.0762669112) &lt; 0.16
+
+experiments/exp492_stable_normalization_antigravity/test_exp492_antigravity.py:30: AssertionError
+=========================== short test summary info ============================
+FAILED experiments/exp492_stable_normalization_antigravity/test_exp492_antigravity.py::test_sparse_constant_retains_novelty_without_epsilon_amplification
+FAILED experiments/exp492_stable_normalization_antigravity/test_exp492_antigravity.py::test_robust_tiny_float32_spread_without_losing_ordinary_columns
+2 failed in 2.73s
+</pre>

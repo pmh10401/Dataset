@@ -1,0 +1,149 @@
+{
+  "result_sha256": "2b6e7b9c11bc46649f569b29534961d49e063d3f3e3fac04b5390163808a1470",
+  "numerical": {
+    "hydra_local_gap": {
+      "touched_families": [
+        "FreezerSmallTrain",
+        "MiddlePhalanxOutlineCorrect",
+        "PhalangesOutlinesCorrect",
+        "ProximalPhalanxOutlineCorrect",
+        "SmallKitchenAppliances",
+        "StarLightCurves",
+        "Symbols",
+        "UWaveGestureLibraryX",
+        "UWaveGestureLibraryY",
+        "UWaveGestureLibraryZ"
+      ],
+      "sparse_changed_column_fits": 0,
+      "robust_changed_column_fits": 237,
+      "old_feature_max_abs": 1813.0,
+      "stable_feature_max_abs": 1813.0,
+      "old_scaled_max_abs": 867726047.1794543,
+      "stable_scaled_max_abs": 1752745.8682105038,
+      "old": {
+        "max_oof_abs": 7372724.887139969,
+        "median_family_oof_max": 1.2140374783922072,
+        "median_tail_q95": 2.103440834705842,
+        "max_tail_q95": 15993.109948393765,
+        "undefined_tail_count": 0,
+        "finite_count": 30329,
+        "score_count": 30329
+      },
+      "stable": {
+        "max_oof_abs": 4624.234645381937,
+        "median_family_oof_max": 1.2140374783922072,
+        "median_tail_q95": 2.1031525411178342,
+        "max_tail_q95": 121.87628087265159,
+        "undefined_tail_count": 0,
+        "finite_count": 30329,
+        "score_count": 30329
+      },
+      "touched_family_count": 10
+    },
+    "hydra_multirocket_local_gap": {
+      "touched_families": [
+        "ACSF1",
+        "Adiac",
+        "Car",
+        "DiatomSizeReduction",
+        "EthanolLevel",
+        "Fungi",
+        "GestureMidAirD1",
+        "GestureMidAirD3",
+        "Meat",
+        "OliveOil",
+        "Plane",
+        "ProximalPhalanxTW",
+        "ShapesAll",
+        "Symbols",
+        "Trace",
+        "Wine"
+      ],
+      "sparse_changed_column_fits": 3256,
+      "robust_changed_column_fits": 0,
+      "old_feature_max_abs": 991637632.0,
+      "stable_feature_max_abs": 2466.1337890625,
+      "old_scaled_max_abs": 991637536.6325684,
+      "stable_scaled_max_abs": 83089.86162578987,
+      "old": {
+        "max_oof_abs": 4020862.739303167,
+        "median_family_oof_max": 1.968103503362873,
+        "median_tail_q95": 2.550883705086149,
+        "max_tail_q95": 1712858.6012372158,
+        "undefined_tail_count": 0,
+        "finite_count": 30329,
+        "score_count": 30329
+      },
+      "stable": {
+        "max_oof_abs": 900.8203683581596,
+        "median_family_oof_max": 1.7417152337260118,
+        "median_tail_q95": 2.550883705086149,
+        "max_tail_q95": 60.44735494183809,
+        "undefined_tail_count": 0,
+        "finite_count": 30329,
+        "score_count": 30329
+      },
+      "touched_family_count": 16
+    }
+  },
+  "performance": {
+    "hydra_local_gap": {
+      "auc_paired": {
+        "losses": 0,
+        "mean_delta": 0.007380357993307592,
+        "ties": 118,
+        "wins": 7
+      },
+      "old": {
+        "mean_auc": 0.9433256372043721,
+        "mean_zf": 1.664,
+        "total_zf": 208
+      },
+      "stable": {
+        "mean_auc": 0.9507059951976797,
+        "mean_zf": 1.68,
+        "total_zf": 210
+      },
+      "zf_paired": {
+        "losses": 0,
+        "mean_delta": 0.016,
+        "ties": 124,
+        "wins": 1
+      }
+    },
+    "hydra_multirocket_local_gap": {
+      "auc_paired": {
+        "losses": 2,
+        "mean_delta": 0.0006530612244897967,
+        "ties": 119,
+        "wins": 4
+      },
+      "old": {
+        "mean_auc": 0.9673989293482536,
+        "mean_zf": 1.864,
+        "total_zf": 233
+      },
+      "stable": {
+        "mean_auc": 0.9680519905727434,
+        "mean_zf": 1.864,
+        "total_zf": 233
+      },
+      "zf_paired": {
+        "losses": 2,
+        "mean_delta": 0.0,
+        "ties": 121,
+        "wins": 2
+      }
+    }
+  },
+  "independent_verification": {
+    "state": "passed",
+    "datasets": 125,
+    "independent_score_evaluations": 500,
+    "max_auc_absolute_error": 2.220446049250313e-16,
+    "zf_exact": true,
+    "preserved_files": 47,
+    "result_sha256": "2b6e7b9c11bc46649f569b29534961d49e063d3f3e3fac04b5390163808a1470",
+    "method": "Mann-Whitney rank-sum AUC with average ties; independent strict normal-max ZF"
+  }
+}

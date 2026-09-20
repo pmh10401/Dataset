@@ -1,0 +1,169 @@
+{
+  "schema": "exp479_execution_codemap_v3",
+  "current_commit": "82daefaeac56ecc2391fd9457c6ded1ecf9b1787",
+  "status": "task_6_complete_verified",
+  "nodes": [
+    {
+      "id": "derived_database",
+      "path": "/Users/mac/Documents/Dataset/univariate_ts.db",
+      "caller": "population_antigravity.py and preprocessing_antigravity.py through read-only SQLite connections",
+      "effect": "Provides the 1117 eligible dataset names, internal TRAIN label 0 rows, TEST values, and Task 3-only TEST labels.",
+      "tests": ["test_population_antigravity.py", "test_preprocessing_antigravity.py", "test_evaluation_antigravity.py"],
+      "planned": false
+    },
+    {
+      "id": "exp478_population",
+      "path": "experiments/exp478_full_1117_official_routing_antigravity/run_antigravity.py",
+      "caller": "population_antigravity.py",
+      "effect": "Defines the exact 1117 eligible population and the two explicit exclusions reused by Exp479.",
+      "tests": ["test_population_antigravity.py"],
+      "planned": false
+    },
+    {
+      "id": "frozen_score_loader",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/evaluation_antigravity.py",
+      "caller": "population_antigravity.py and run_antigravity.py",
+      "effect": "Loads only the 962 valid existing score records; those records are never rewritten.",
+      "tests": ["test_population_antigravity.py", "test_runner_antigravity.py"],
+      "planned": false
+    },
+    {
+      "id": "exp449_scorer",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py",
+      "caller": "evaluation_antigravity.py",
+      "effect": "Produces the existing five-fold label-free LocalGap TRAIN OOF and TEST scores for the four frozen methods.",
+      "tests": ["test_evaluation_antigravity.py"],
+      "planned": false
+    },
+    {
+      "id": "official_router",
+      "path": "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py",
+      "caller": "evaluation_antigravity.py",
+      "effect": "Selects one of the four methods from TRAIN-derived features without using the dataset suffix or TEST labels.",
+      "tests": ["test_evaluation_antigravity.py", "test_runner_antigravity.py"],
+      "planned": false
+    },
+    {
+      "id": "config",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/config_antigravity.py",
+      "caller": "all Exp479 execution modules",
+      "effect": "Freezes target counts, methods, seed, alpha, paths, and result-affecting source files.",
+      "tests": ["test_population_antigravity.py"],
+      "planned": false
+    },
+    {
+      "id": "contracts",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/contracts_antigravity.py",
+      "caller": "preprocessing_antigravity.py, evaluation_antigravity.py, and run_antigravity.py",
+      "effect": "Rejects malformed, mutable, non-finite, incomplete, or wrongly ordered preparation and metric records.",
+      "tests": ["test_population_antigravity.py", "test_preprocessing_antigravity.py", "test_evaluation_antigravity.py"],
+      "planned": false
+    },
+    {
+      "id": "population",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/population_antigravity.py",
+      "caller": "run_antigravity.py and the Task 1 audit",
+      "effect": "Computes the sorted exact set difference 1117 minus 962, yielding 155 recovery datasets with no name-based method choice.",
+      "tests": ["experiments/exp479_missing_score_recovery_antigravity/tests/test_population_antigravity.py"],
+      "planned": false
+    },
+    {
+      "id": "preprocessing",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/preprocessing_antigravity.py",
+      "caller": "evaluation_antigravity.py and run_antigravity.py",
+      "effect": "Reads internal TRAIN label 0 rows, excludes non-finite rows, selects the lower median length, applies Numba linear resampling, and row-standardizes values.",
+      "tests": ["experiments/exp479_missing_score_recovery_antigravity/tests/test_preprocessing_antigravity.py"],
+      "planned": false
+    },
+    {
+      "id": "evaluation",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/evaluation_antigravity.py",
+      "caller": "run_antigravity.py",
+      "effect": "Scores four frozen methods without labels, then opens TEST labels only to compute finite AUC and strict zero-false-positive true positives.",
+      "tests": ["experiments/exp479_missing_score_recovery_antigravity/tests/test_evaluation_antigravity.py"],
+      "planned": false
+    },
+    {
+      "id": "acceleration",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/acceleration_antigravity.py",
+      "caller": "run_antigravity.py before a full run",
+      "effect": "Records MLX eligibility, parity, exact candidate-index parity, timing, and the Numba fallback decision.",
+      "tests": ["experiments/exp479_missing_score_recovery_antigravity/tests/test_acceleration_antigravity.py"],
+      "planned": false
+    },
+    {
+      "id": "runner",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/run_antigravity.py",
+      "caller": "scratch/run_exp479_missing_score_recovery_antigravity.py",
+      "effect": "Writes only Exp479 checkpoints/results and the live HTML dashboard, then combines 155 exact sums with the frozen 962 records for the 1117 summary.",
+      "tests": ["experiments/exp479_missing_score_recovery_antigravity/tests/test_runner_antigravity.py"],
+      "planned": false
+    },
+    {
+      "id": "cli",
+      "path": "scratch/run_exp479_missing_score_recovery_antigravity.py",
+      "caller": "Codex after the applicable task gate and the user for the official Task 6 run",
+      "effect": "Separates validate-only, limited smoke, resume, and explicitly approved official execution modes.",
+      "tests": ["test_runner_antigravity.py"],
+      "planned": false
+    },
+    {
+      "id": "dashboard",
+      "path": "docs/EXP479_DASHBOARD_antigravity.html",
+      "caller": "run_antigravity.py and user",
+      "effect": "Shows current completion, failures, measured metrics, backend decision, and checked boxes only for completed tasks.",
+      "tests": ["test_runner_antigravity.py", "HTML parser validation"],
+      "planned": false
+    },
+    {
+      "id": "official_results",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/results_antigravity.json",
+      "caller": "run_antigravity.py and independent verification",
+      "effect": "Preserves all 155 four-method rows, the frozen 962 replay summary, and the exact 1117 combined summary.",
+      "tests": ["test_runner_antigravity.py", "independent aggregate and source-hash validation"],
+      "planned": false
+    },
+    {
+      "id": "implementation_report",
+      "path": "docs/EXP479_IMPLEMENTATION_REPORT_antigravity.html",
+      "caller": "run_antigravity.py and user",
+      "effect": "Explains the completed 155 and 1117 results in simple Korean.",
+      "tests": ["HTML parser validation"],
+      "planned": false
+    },
+    {
+      "id": "class_report",
+      "path": "docs/EXP479_CLASS_COUNT_REPORT_antigravity.html",
+      "caller": "user",
+      "effect": "Separately explains internal normal-class encoding and source-label variants; it does not select the 155 recovery population.",
+      "tests": ["scratch/test_build_exp479_class_count_report_antigravity.py"],
+      "planned": false
+    }
+  ],
+  "edges": [
+    {"from": "derived_database", "to": "population", "type": "read_only_query"},
+    {"from": "exp478_population", "to": "population", "type": "reuses_population_contract"},
+    {"from": "frozen_score_loader", "to": "population", "type": "subtracts_962_valid_records"},
+    {"from": "derived_database", "to": "preprocessing", "type": "read_only_values"},
+    {"from": "preprocessing", "to": "evaluation", "type": "prepared_arrays"},
+    {"from": "exp449_scorer", "to": "evaluation", "type": "reused_score_source"},
+    {"from": "official_router", "to": "evaluation", "type": "official_method"},
+    {"from": "population", "to": "runner", "type": "exact_155_order"},
+    {"from": "evaluation", "to": "runner", "type": "four_method_metrics"},
+    {"from": "acceleration", "to": "runner", "type": "backend_gate"},
+    {"from": "cli", "to": "runner", "type": "execution_modes"},
+    {"from": "runner", "to": "dashboard", "type": "atomic_live_render"},
+    {"from": "runner", "to": "official_results", "type": "atomic_exact_result"},
+    {"from": "official_results", "to": "implementation_report", "type": "easy_korean_summary"}
+  ],
+  "constraints": [
+    "The internal derived TRAIN normal label is 0; the dataset suffix is source-label metadata only.",
+    "The exact recovery population is the sorted 1117 eligible population minus 962 valid frozen score records.",
+    "Dataset names and source-label suffixes never choose a method.",
+    "TEST labels are unavailable to preprocessing, feature generation, scoring, and routing.",
+    "Numba linear resampling has no NumPy interpolation fallback.",
+    "The existing database, 962 score records, and Exp474 through Exp478 results remain read-only.",
+    "Task 6 official execution used the explicit user approval after Tasks 1 through 5 passed.",
+    "Independent recomputation must match all 155, 962, and 1117 aggregate values before completion."
+  ]
+}

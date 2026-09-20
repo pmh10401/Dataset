@@ -1,0 +1,140 @@
+{
+  "review": {
+    "verdict": "fix-first",
+    "scope": {
+      "design_reviewed": true,
+      "code_reviewed": false,
+      "code_supplied_in_query": false,
+      "tools_used": false,
+      "runs_invented": false
+    },
+    "issues": [
+      {
+        "id": "I0",
+        "severity": "blocker",
+        "location": "review packet / implementation",
+        "problem": "The query supplies the Exp510 protocol text only. No code, artifacts, hashes, or prior Exp502/508/509 formulas were included. Implementation leakage (shared MiniRocket/OAS objects with full F, B inside RobustScaler/OAS fit, C/TEST in mutation parents, refit of frozen Exp502) cannot be certified.",
+        "remedy": "Resubmit the exact candidate modules, A-only control path, frozen Exp502 loaders, split/mutation/probe seed code, loss/solver wrappers, and tests. Review that text; do not ship on design prose alone."
+      },
+      {
+        "id": "I1",
+        "severity": "blocker",
+        "location": "A-OAS scoring identity: G_j=mean((q_j-r_kj)^2 / d_k) together with Sum(G)=mean kNN distance",
+        "problem": "These two statements do not hold at once unless d_k is specified. If d_k is neighbor distance ||q-r_k||^2, then Sum_j G_j = 1, not mean kNN distance. If d_k is neighbor Euclidean length, Sum(G)=mean ||q-r_k||. If d_k is a per-dimension OAS/scale term it should be indexed by j, and neighbor-mean of (q_j-r_kj)^2 (after whitening) is what makes Sum(G) equal mean whitened squared distance. As written, unweighted control, LOO scale, loss margin/temp, and w@G are not identified.",
+        "remedy": "Freeze one definition. Recommended, and consistent with Sum(G)=mean kNN distance and with unweighted kNN in A-OAS space: whiten with residual-preserving OAS first; take k=min(3,|A|) neighbors in that Euclidean space; G_j = mean_k (z_q,j - z_r_k,j)^2 with 0 for degenerate axes; Sum(G)=mean_k ||z_q-z_r_k||^2. Delete /d_k or rename it to the OAS/null-space rule. State whether 'distance' is squared. Use that same distance in LOO scale."
+      },
+      {
+        "id": "I2",
+        "severity": "blocker",
+        "location": "TRAIN-pilot eight probes (Exp508 seeds) vs B ranking mutations (SEED+1508)",
+        "problem": "Training parents are B. Evaluation original/heldout probes reuse Exp508 seeds, but this text never names the parent population. If parents are B, original-kind recall is in-sample on ranking parents (optimistic vs the stated gate). If parents are TEST series, the pilot uses TEST and violates no TEST in pilot. If parents are A, kNN can hit the unmutated parent (different geometry from B-vs-A training). Dual-use of C as both max-held-normal threshold and mutation parent is allowed only if declared, because it is not the same as TEST-vs-TRAIN.",
+        "remedy": "Pre-register parents = C only (or a named non-B, non-TEST set), disjoint from A and B. Generate original4 with SEED+1709*(fold+1) and heldout4 with SEED+2508+1709*(fold+1) from those parents. Assert training mutations (B, SEED+1508) are not scored as the gate probes. Add tests for parent-index disjointness and seed disjointness."
+      },
+      {
+        "id": "I3",
+        "severity": "blocker",
+        "location": "1117 / cap1000 path: FPR budgets 0,.001,.005,.01 after dropping the F/C split",
+        "problem": "Pilot threshold is max held C, and C is not in the ranking loss. Full scoring has no C: cap1000 is split into A refs and B ranker only. If FP0/quantiles use B-vs-A scores, B is used twice (learn w to rank B below mutations; then threshold from those lowered B scores) — optimistic FPR/recall. If A is scored as queries without LOO, self-hits ~0 and FPR is not a real TRAIN normal tail. 'No self-parent removal because B disjoint' does not specify TRAIN FPR scoring.",
+        "remedy": "Pre-register the normal pool for 1117 thresholds: A with LOO (k=min(3,|A|-1)) plus B-vs-A, or A-LOO only (B excluded from threshold). Forbid using only B. If A+B are used, LOO/self-removal is mandatory for any query that is also a reference. Persist the threshold-index set and hashes. Do not silently reuse the 5-fold C rule."
+      },
+      {
+        "id": "I4",
+        "severity": "high",
+        "location": "n<32 fallback vs A-only control sharing 'exactly one fitted A model'",
+        "problem": "Both new scores copy full Exp502 square_joint, with no optimizer. That is not the A-only unweighted geometry, and it is not one A model. On those datasets candidate cannot beat square_joint by +0.02; mixed-family macros still need a defined rule so fallback rows are not treated as a fitted separated_rank.",
+        "remedy": "Document fallback as an exception: no A fit, no weights, candidate and A-only scores bitwise-equal to frozen square_joint, flag true. Exclude fallback datasets from 'B cannot change A' encoder assertions; include them in bitwise equality-to-Exp502 tests."
+      },
+      {
+        "id": "I5",
+        "severity": "high",
+        "location": "index permutation A/B (SEED+2510) with no content-uniqueness rule",
+        "problem": "Split is by index, then sort. Duplicate or near-duplicate series can land in both A and B. Then 'B disjoint so no self-parent removal' is false: a B query can 0-distance match its copy in A. Combined with zeros at d_k=0, that neighbor contributes 0 and the normal B score is driven down, which the ranker and any B-based threshold can exploit.",
+        "remedy": "Define duplicates (exact raw or post-length vector equality). Either keep them in one role only, or apply self-removal when distance=0 / identical payload, and persist collision counts. Test planted duplicates."
+      },
+      {
+        "id": "I6",
+        "severity": "high",
+        "location": "promotion: candidate worst original-kind family-macro >= max(anchor worst)+.02 on recall in [0,1]",
+        "problem": "If the strongest anchor worst-family recall is >0.98, the +0.02 test is impossible. That is a ceiling, not a leakage, but it is an unstated fail mode of a pre-fixed gate.",
+        "remedy": "Use min(1, max(anchor worst)+0.02) or a pre-fixed alternative at ceiling. State that impossibility is a registered fail (ends 510), not a reason to retune."
+      },
+      {
+        "id": "I7",
+        "severity": "high",
+        "location": "independent verifier + persisted audit arrays",
+        "problem": "Loss, w@G, and convex/projected-gradient checks need G for normals and mutations, the scale scalar, neighbor ids, and the exact loss formula. Persisting only scalar scores plus weights/gradients lets a verifier replay numbers it is given, not recompute them from geometry.",
+        "remedy": "Persist float64 G (or a hash-stable equivalent), scale, neighbor indices, A/B/parent/probe index arrays, solver status, projected gradient, and the registered gap functional. Verifier recomputes scores, loss, recalls, tail, and box-projected gradient from those vectors. Gradients-from-scratch remain N/A as specified."
+      },
+      {
+        "id": "I8",
+        "severity": "medium",
+        "location": "inherited all-normal-TRAIN length / rowwise z",
+        "problem": "Acknowledged that length is not A-only, so B (and likely C, if length is computed on the full TRAIN split rather than F) affect the encoder input. Rowwise z is per series and does not leak. Comparing candidate to frozen Exp502 requires keeping that length. The leak is inherited, but C-in-length is not named.",
+        "remedy": "State explicitly: length comes from the existing TRAIN-normal rule (list whether F or F∪C). Forbid any new length/z fit on A, B, C, or TEST. Do not describe MiniRocket/OAS inputs as A-only except after that frozen preprocess."
+      },
+      {
+        "id": "I9",
+        "severity": "medium",
+        "location": "full Exp502/F and Mini as separate controls",
+        "problem": "If 510 refits square_joint/Mini instead of loading frozen scores, controls can drift and the gate is not the registered baseline. Shared fitted state with the candidate would also invalidate 'SEPARATE control'.",
+        "remedy": "Load frozen Exp502/Mini scores and ranks by dataset id. Candidate and A-only may share one A-fit object; that object must not be the full-F fit. Test object identity / parameter hashes: mutating B changes weights only; encoder, RobustScaler, OAS, refs, and LOO scale unchanged."
+      },
+      {
+        "id": "I10",
+        "severity": "medium",
+        "location": "OAS with |A|<<n_features (MiniRocket-scale D)",
+        "problem": "n>=32 implies |A|>=24. Full OAS covariance is useful only with shrinkage. Sample covariance / pseudoinverse is rank-deficient and can make kNN and G_j implementation-defined. 'zeros at d_k=0' is not a complete singular-space spec.",
+        "remedy": "Use the original Exp502 OAS shrinkage, not sample covariance. Define residual-preserving whitening on the shrunk factor, including null/degenerate directions as exact zeros in G. Test constant and duplicate-A matrices."
+      },
+      {
+        "id": "I11",
+        "severity": "medium",
+        "location": "L-BFGS-B: finite final iterate used without convergence; promotion still consumes w",
+        "problem": "Allowed, but then TRAIN pass/fail depends on a non-optimal, platform-sensitive point. 'No optimality claims' does not prevent a gate from using that point.",
+        "remedy": "Persist status, nit/nfev, projected-gradient norm, and the pre-fixed convex-gap functional for every dataset. Fail closed on nonfinite values. Do not add retries. Treat unconverged finite w as the registered estimator, not as a certified minimizer."
+      },
+      {
+        "id": "I12",
+        "severity": "medium",
+        "location": "tail (max-median)/(IQR+1e-9) on held normals, fold mean then family median",
+        "problem": "IQR method is unspecified. Small |C| or tied scores give IQR=0 and explode tail, which is conservative, but must be identical for candidate and full Mini. Whose scores enter max/median/IQR (C only vs A-LOO vs A+B) is not stated.",
+        "remedy": "Fix Tukey hinges or a named NumPy percentile on the same held-normal vector used for the max threshold. Same aggregation for full Mini. Test IQR=0."
+      },
+      {
+        "id": "I13",
+        "severity": "medium",
+        "location": "50-family gate then 1117/128-family score",
+        "problem": "If the 50 families are inside the 128, promotion can overfit those families and the pooled 128-family primary still includes them. Not TEST-label leakage, but it is selection on a subset of the reported universe.",
+        "remedy": "Keep the registered simultaneous gate. Pre-declare a confirmatory split: 50-family gate families vs remaining families, and do not retune after seeing either."
+      },
+      {
+        "id": "I14",
+        "severity": "low",
+        "location": "k_query=min(3,|A|) vs k_LOO=min(3,|A|-1); RobustScaler 10-90 on |A|~24",
+        "problem": "For n>=32 both k=3, so the split is consistent. Fallback must remain the only n<32 path. Percentile 10-90 on small A is high variance; zero-range features need the same Exp502 scale-equals-1 (or equivalent) rule.",
+        "remedy": "Lock k and scaler degenerate behavior to Exp502. Tests: n=31 fallback; n=32 A=24 B=8; constant feature; short/constant series."
+      }
+    ],
+    "math_review": {
+      "split": "For n>=32, B=floor(n/4), A=n-B after permutation SEED+2510, then sort. Then |A|>=24, k=min(3,|A|)=3, LOO k=min(3,|A|-1)=3. Union should be F or the cap1000 reference set; intersection empty; C and TEST absent. n<32 copies frozen square_joint and must not call the solver.",
+      "G_and_distance": "Let z be residual-preserving OAS-whitened features. Unweighted neighbors in z-space. If G_j=(1/k) sum_{t=1}^k (z_q,j - z_{r_t},j)^2, then 1^T G = (1/k) sum_t ||z_q-z_{r_t}||^2, i.e. mean squared kNN distance. Inverse-distance G_j=(1/k) sum_t (z_q,j-z_{r_t},j)^2 / d_t with d_t=||.||^2 yields 1^T G=1, which contradicts the registered identity and makes unweighted scores nearly constant before weighting. Neighbor selection must not use w.",
+      "scale": "s = median_{a in A} ( mean of k_LOO unweighted distances of a to A\\{a} ) + 1e-9. Common scalar for A-only and weighted scores: unweighted = (1^T G)/s, learned = (w^T G)/s. Scale from A only, independent of B, w, C, probes. Recalled FP0 is invariant to s>0; loss temp=0.1 and margin=0.25 are not, so G vs LOO must be the same distance.",
+      "A_only_control": "A-only square_unweighted = (1^T G)/s from the same G, neighbors, scaler, OAS, encoder as the candidate. Not a second A fit. Full square_joint is a different fit on all of F and must not share those objects.",
+      "loss": "Scores linear in w given fixed G, so logistic/soft ranking of B vs four SEED+1508 original mutations plus 0.1*mean((w-1)^2) on box[0.25,4] is convex in w. Initial w=1. No query-adaptive kNN, no post-box clip, no wave clip, no retry. Nonfinite stop. Record solver status; recompute box-projected gradient from the registered objective; convex gap only if the Exp509 functional is reused verbatim (true f-f* is not observed).",
+      "decision": "Detect iff score > max(held normals), not >=. Tail = (max-median)/(IQR+1e-9) on that same held-normal vector; fold-mean then family-median. Gate is simultaneous: worst original-kind family-macro >= max_anchor worst + 0.02; original-kind mean >= max_anchor original-kind mean; unseen mean >= max_anchor unseen mean; tail <= 3*max(full Mini tail, 1e-9). No family routing, no grid.",
+      "cap1000": "Extract cap1000 with SEED+7919+4096 first, then A/B inside that set. Do not split then cap. Full 1117 FPR must name the normal query set and LOO rule (see I3)."
+    },
+    "limits": [
+      "No code was supplied; this is a protocol/math review only. A ship verdict on implementation is not possible.",
+      "Exp502 square_joint, residual-preserving OAS, Exp509 loss, and Exp508 probe construction are referenced, not restated. Hidden mismatches there cannot be checked from this text.",
+      "Upstream TRAIN length may include B and C; the design already forbids claiming that length is A-only. That leak is inherited if frozen Exp502 is to be reproduced.",
+      "Pilot uses C for FP0; 1117 does not unless re-declared. Passing the 50-family gate does not prove the 1117 FPR protocol.",
+      "50-family promotion can overlap the 128-family report; that is selection on part of the evaluation universe, not TEST-label peeking.",
+      "Unconverged finite L-BFGS-B iterates are in-scope estimators; do not claim KKT optimality from a recorded gap unless that gap is the Exp509 quantity.",
+      "n<<D even with OAS shrinkage: A-space kNN may be close to isotropic RobustScaled Euclidean. The experiment may still be valid; it is not an extra OAS identifiability proof.",
+      "No TEST labels, private data, filesystem, or runs were used. No performance, parity, or solver-success claims."
+    ]
+  },
+  "prompt_sha256": "2da2aae8e71267d458260ecbb22f9ca914ba711cbe12c80b29a8be430dc33f3a",
+  "scope": "design review; code and design only; no private records"
+}

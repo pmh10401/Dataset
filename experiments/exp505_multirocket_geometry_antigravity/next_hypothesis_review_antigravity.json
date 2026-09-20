@@ -1,0 +1,20 @@
+{
+  "state": "proposal_only_not_selected_or_implemented",
+  "reviewer": "Sol independent read-only review",
+  "reviewer_id": "01a0ac9b-630e-7030-8db4-cb0c23e371b9",
+  "allowed_evidence": "TRAIN aggregate summaries Exp501-504 only; no full results or raw data",
+  "hypothesis": "Centered absolute first differences may reveal ordered local roughness changes not captured by centered amplitude.",
+  "transform": "d=abs(diff(x)); repeat first observed difference at t=0; subtract per-row mean, no standard-deviation division; L<2 fallback rawOAS",
+  "proposed_grid": [
+    "MiniRocket",
+    "oas_distance",
+    "roughness_distance",
+    "roughness_joint"
+  ],
+  "falsification": "same50/5 TRAIN screen; fixed tail<=3xMini; worst>=best raw anchor+.02 and mean non-drop; no TEST-based tuning",
+  "risks": [
+    "Natural normal roughness variation can inflate the score tail.",
+    "TRAIN corruption performance does not establish causal explanation, unseen performance or 10 percent target."
+  ],
+  "next_action": "Assess only after current Exp505 implementation and pilot; consult Grok before implementation."
+}

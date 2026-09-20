@@ -1,0 +1,9 @@
+{
+  "state": "authorized_diagnosis_and_tail_rank",
+  "user_instruction": "그렇게 진행하자.",
+  "utc": "2026-09-17T08:04:42.199223+00:00",
+  "prior_stop_record": "experiments/exp507_roughness_compat_antigravity/stop_record_antigravity.json",
+  "prior_records_immutable": true,
+  "diagnostic_not_candidate_selection": true,
+  "implementation_design_sha256": "849968181a4d492814342800ef1da355aa9371cf62c6a111cb88324c48a1b90a"
+}

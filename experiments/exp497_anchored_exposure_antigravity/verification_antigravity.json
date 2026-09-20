@@ -1,0 +1,14 @@
+{
+  "state": "passed_train_screen_rejected_oe",
+  "datasets": 50,
+  "folds": 250,
+  "selected": "oas_distance",
+  "unrestricted_winner": "oe_a1_g050",
+  "observed_proxy_margin": 0.006336100136078215,
+  "required_proxy_margin": 0.02,
+  "full_run_skipped": true,
+  "reason": "Frozen margin guard selects existing OAS score; no new TEST scores or labels opened",
+  "pilot_sha256": "3d8fbc38e4f6587b9008ad3e17fed48d60ed5615a8567ce98cd75e441be6b7ba",
+  "reused_full_result_sha256": "9e57176e538deaf3520f6a68685531f66c95aaff333a61bc3d49618b6e4fb409",
+  "reused_full_verification_sha256": "7a9d80191d3b01be15edf24da5bb41f82734342c20a7baf22769d080ace39c85"
+}

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp461 구현 보고서</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}.bad{border-left:6px solid #b42318}</style></head>
+<body><main>
+  <h1>Exp461 구현 보고서</h1>
+  <p><strong>Task 5 CLI and private TRAIN reproducibility report:</strong> Task 5 added the closed CLI and outside-CWD fixed-runtime launcher, ran exactly two sequential private TRAIN evaluate→inspect cycles in temporary nonofficial roots, recorded a qualification failure before any official evaluation, and passed final review as SHIP with Critical/Important/Major 0. Task 5 is complete; Task 6 remains forbidden and there is no next official Exp461 action.</p>
+  <table>
+    <tr><th>status</th><td><code>stopped_before_official_evaluation_qualification_failed</code></td></tr>
+    <tr><th>implementation status</th><td><code>task_5_private_train_reproducibility_complete_qualification_failed</code></td></tr>
+    <tr><th>official command count</th><td>evaluate 0 / inspect 0</td></tr>
+    <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp461_ecg_period_signature_qualification_antigravity_20260820</code> absent</td></tr>
+    <tr><th>label query count</th><td>0</td></tr>
+    <tr><th>official result hashes</th><td>prediction/evaluation/decision/artifact map/dashboard all <code>null</code></td></tr>
+  </table>
+  <div class="box bad">
+    <p><strong>Scientific closeout:</strong> the primary candidate <code>hydra_period_rank_max</code> passed <code>9/10</code>, not <code>10/10</code>. Minimum primary <code>gradual_drift</code> AUC was <code>0.8402306222021025</code>, below the frozen <code>0.85</code> per-type gate. Both historical period-change failures strictly improved, but the full frozen gate failed.</p>
+    <p><strong>Reproducibility:</strong> the two private roots produced exact-equal metric rows, summaries, failed rows, decision, dashboard, seven leaf hashes, artifact-map hash, and combined leaf bytes. The temporary roots were removed after evidence capture.</p>
+  </div>
+  <h2>Task 5 files</h2>
+  <ul>
+    <li><code>cli_antigravity.py</code>: exact two-command parser, clean reviewed commit check, private nonofficial root seam, lazy selected-phase dispatch, and JSON dashboard emission.</li>
+    <li><code>tests/test_cli_antigravity.py</code>: RED/GREEN coverage for parser closure, lazy imports, private root alias rejection, dependency path publication/replay, source/SQLite/Aeon inspect firewall, outside-CWD launcher, and fixed runtime re-exec.</li>
+    <li><code>scratch/run_exp461_ecg_period_signature_qualification_antigravity.py</code>: fixed interpreter launcher for future official use, not invoked against the official root in Task 5.</li>
+  </ul>
+  <h2>Private result</h2>
+  <table>
+    <tr><th>reviewed clean code commit</th><td><code>3a306ff3e276dae13b28b9733db30e9934da7eb2</code></td></tr>
+    <tr><th>run 1</th><td>evaluate <code>116.7199521670118</code>s, inspect <code>0.19575291709043086</code>s</td></tr>
+    <tr><th>run 2</th><td>evaluate <code>113.66284816595726</code>s, inspect <code>0.1888656672090292</code>s</td></tr>
+    <tr><th>primary decision</th><td><code>qualification_failed_blocked_before_routing_research</code>, <code>primary_candidate_not_10_of_10</code></td></tr>
+    <tr><th>private artifact map</th><td><code>8d0992d362cefab305ef8801afd9d1f5d51522e623fa372ba18f6d5d0f3478be</code></td></tr>
+  </table>
+  <h2>Method summary</h2>
+  <table>
+    <thead><tr><th>method</th><th>pass count</th><th>min period_change</th><th>min pooled</th><th>max Wilson</th></tr></thead>
+    <tbody>
+      <tr><td><code>hydra_local_gap</code></td><td>8/10</td><td><code>0.8004124541019063</code></td><td><code>0.9160442130677531</code></td><td><code>0.013439124039399194</code></td></tr>
+      <tr><td><code>period_signature_local_gap</code></td><td>0/10</td><td><code>0.857158910711833</code></td><td><code>0.700277191624318</code></td><td><code>0.013439124039399194</code></td></tr>
+      <tr><td><code>hydra_period_rank_max</code></td><td>9/10</td><td><code>0.907392736783864</code></td><td><code>0.9212266108344651</code></td><td><code>0.013439124039399194</code></td></tr>
+    </tbody>
+  </table>
+  <h2>Concern</h2>
+  <p>The period signature did repair the two inherited <code>period_change</code> folds, but it introduced or exposed one failing primary <code>gradual_drift</code> gate. This candidate is not eligible for official evaluation, routing research, pending-candidate change, or promotion under the frozen Exp461 rules.</p>
+</main></body></html>

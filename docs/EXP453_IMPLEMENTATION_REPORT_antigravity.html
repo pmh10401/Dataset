@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp453 공식 결과</title><style>body{max-width:920px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}code{background:#eef2f7;padding:.1rem .3rem}.status{border-left:4px solid #b54708;background:#fff7ed;padding:1rem}table{width:100%;border-collapse:collapse}th,td{border:1px solid #9aa5b1;padding:.5rem;text-align:left}</style></head><body><main>
+<h1>Exp453 공식 결과</h1>
+<div class="status"><strong>결론:</strong> readiness는 성공했지만 evaluate가 결과 계산 전에 실패했다. Exp453는 <code>official_readiness_passed_evaluation_failed_immutable_no_retry</code>로 종료됐으며 재실행하지 않는다.</div>
+<h2>공식 실행 결과</h2><table><thead><tr><th>명령</th><th>횟수</th><th>결과</th></tr></thead><tbody>
+<tr><td>readiness</td><td>1</td><td>exit 0. 고정 환경 Python 3.14.6, NumPy 2.3.5, aeon 1.4.0, scikit-learn 1.7.2 확인.</td></tr>
+<tr><td>evaluate</td><td>1</td><td>exit 1. <code>ValueError: Exp448 target identity differs</code>.</td></tr>
+<tr><td>inspect</td><td>0</td><td>평가 결과가 없어 실행하지 않음.</td></tr>
+</tbody></table>
+<p>TEST label session은 열리지 않았고 query와 row는 모두 0이다. 평가 root도 만들어지지 않았다. 따라서 routing, champion, pending candidate, promotion은 모두 그대로다.</p>
+<h2>실패 원인</h2><p>Exp453 평가기는 실제 Exp449 predecessor 객체를 받았지만, 그 객체를 Exp453가 복사해 만든 별도 Python 클래스와 <code>type(...) is</code>로 비교했다. 필드 값은 같아도 Python 클래스가 다르므로 첫 baseline 검사에서 중단됐다. baseline만 고치면 confusion 객체에서도 같은 문제가 이어진다.</p>
+<p>합성 테스트는 실제 Exp449 객체를 Exp453 로컬 타입으로 바꾼 fixture를 사용해 이 경계를 놓쳤다. 다음 실험은 실제 Exp449 authority를 그대로 평가기에 전달하는 end-to-end 회귀 테스트를 먼저 추가해야 한다.</p>
+<h2>과학 결과</h2><p><strong>없음.</strong> 48개 데이터셋의 label을 읽지 않았으므로 confusion, 잔여 FN, FP, F1, bootstrap, qualification, routing 개선 여부를 계산하거나 추론할 수 없다. 고정 Exp449 prediction 96개가 보존됐다는 사실만 확인됐다.</p>
+<h2>보존된 실패 증거</h2><ul>
+<li>공식 reviewed commit: <code>53c4cf16ba981b4177735fdf77081cf025fc0508</code></li>
+<li>failure audit SHA-256: <code>97e7bea79bd1a830b925e7ffa2234e4e34725ac6734e080216f409688cb58276</code></li>
+<li>readiness/evaluate/stopped receipt SHA-256: <code>38607b6c8cad785ca8cd0830dacd42775d43f9175a67ed01d487657a3c44764e</code>, <code>caa705be90ddd56a00c53d5eb94a90604768dac0a80274846adce2061349b3b6</code>, <code>1b6b2ea01c0c4dde9128051e57c764d32cbdf8bc1af7fa0115f19c7a10181d97</code></li>
+<li>공식 실행 직전 report SHA-256: <code>978b5fdef1a8e9061d65ee929c55787c597d7d54bd1a5db2011b8f75be1b14f7</code></li>
+</ul>
+<h2>다음 단계</h2><p>Exp453를 다시 실행하지 않는다. 새 Exp454를 만들고, 과학 계산은 그대로 둔 채 predecessor 타입 경계만 정규화한다. 성공 기준은 실제 Exp449 authority를 사용한 평가가 label open 직전까지 통과하고, 이후 공식 결과에서 48 queries·72,300 rows와 잔여 FN 개선을 계산하는 것이다.</p>
+</main></body></html>

@@ -1,0 +1,1186 @@
+from __future__ import annotations
+
+import json
+import os
+from dataclasses import dataclass
+from pathlib import Path
+import subprocess
+import tempfile
+import threading
+import time
+from types import MappingProxyType
+import unittest
+from contextlib import ExitStack
+from unittest.mock import MagicMock, patch
+
+import numpy as np
+
+
+def process_safe_smoke_processor(dataset: str) -> dict[str, object]:
+    return {"dataset": dataset, "kind": "multiprocess-smoke"}
+
+
+def process_safe_hash_stream_processor(dataset: str) -> dict[str, object]:
+    marker = os.environ.get("EXP403_408_HASH_STREAM_MARKER")
+    if marker and dataset == "one":
+        Path(marker).write_text("started\n", encoding="utf-8")
+    return {"dataset": dataset, "kind": "hash-stream-smoke"}
+
+
+class PipelineTests(unittest.TestCase):
+    @staticmethod
+    def _abstained_checkpoints(
+        pipeline: object,
+        *,
+        dataset: str = "Phoneme_normal_26",
+        n_train: int = 4,
+        reason: str = "n_train_below_50",
+    ) -> tuple[dict[str, object], dict[str, object]]:
+        alphas = getattr(pipeline, "ALPHAS")
+        eligibility = getattr(pipeline, "train_eligibility")(n_train).level
+        empty_shadows = {str(alpha): [] for alpha in alphas}
+        ssl = {
+            "stage": "ssl-predict", "dataset": dataset, "train_size": n_train,
+            "eligibility": eligibility, "outcome": "abstained", "abstention_reason": reason,
+            "scores": {"available": False, "model_name": "", "abstention_reason": reason, "raw_test_scores": [], "scores_by_alpha": {}},
+            "train_oof_scores": [], "shadow_predictions": empty_shadows,
+        }
+        models = getattr(pipeline, "MODEL_NAMES")
+        synthetic = {
+            "stage": "synthetic-predict", "dataset": dataset, "train_size": n_train,
+            "eligibility": eligibility, "outcome": "abstained", "abstention_reason": reason,
+            "scores": [{"available": False, "model_name": name, "abstention_reason": reason, "raw_test_scores": [], "scores_by_alpha": {}} for name in models],
+            "train_oof_by_model": {},
+            "shadow_predictions": {name: {str(alpha): [] for alpha in alphas} for name in models},
+        }
+        return ssl, synthetic
+
+    @staticmethod
+    def _unavailable_blocks(reason: str = "source_train_count_mismatch") -> tuple[object, ...]:
+        from experiments.exp403_408.feature_registry import FEATURE_SOURCES
+
+        blocks = []
+        for source in FEATURE_SOURCES:
+            block = MagicMock()
+            block.name = source.name
+            block.available = False
+            block.reason = reason
+            blocks.append(block)
+        return tuple(blocks)
+
+    def test_audit_n_train_one_completes_without_crossfit_or_feature_loading(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        bundle = MagicMock(train_normal=np.zeros((1, 8)), test_values=np.zeros((1, 8)))
+        with (
+            patch.object(pipeline, "load_dataset_input", return_value=bundle),
+            patch.object(pipeline, "load_feature_blocks") as load_features,
+        ):
+            result = pipeline._audit_features("Phoneme_normal_39")
+
+        self.assertEqual(result["dataset"], "Phoneme_normal_39")
+        self.assertEqual(result["train_size"], 1)
+        self.assertEqual(result["eligibility"], "abstain")
+        self.assertEqual(result["outcome"], "completed")
+        self.assertEqual(result["result_kind"], "n_train_below_2_no_crossfit_audit")
+        load_features.assert_not_called()
+
+    def test_consensus_all_source_abstentions_preserve_lanes_and_emit_empty_variants(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        lane = {"hard": frozenset({1}), "standard": frozenset({2}), "priority": frozenset({3})}
+        bundle = MagicMock(dataset="Phoneme_normal_26", train_normal=np.zeros((4, 8)), test_values=np.zeros((2, 8)), hard_indices=frozenset())
+        source_checkpoints = self._abstained_checkpoints(pipeline)
+        with (
+            patch.object(pipeline, "load_dataset_input", return_value=bundle),
+            patch.object(pipeline, "_read_stage_checkpoint", side_effect=source_checkpoints),
+            patch.object(pipeline, "load_feature_blocks", return_value=self._unavailable_blocks()),
+            patch.object(pipeline, "load_frozen_lanes", return_value=MagicMock(lane_for=lambda _dataset: lane)),
+        ):
+            result = pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))
+
+        consensus = result["consensus"]
+        self.assertEqual(consensus["hard_indices"], [1])
+        self.assertEqual(consensus["standard_indices"], [2])
+        self.assertEqual(consensus["priority_indices"], [3])
+        self.assertEqual(consensus["abstention_reason"], "all_eligible_sources_abstained")
+        self.assertEqual(len(consensus["source_statuses"]), 13)
+        self.assertTrue(all(status["status"] == "abstained" for status in consensus["source_statuses"]))
+        self.assertEqual(
+            {status["reason"] for status in consensus["source_statuses"]},
+            {"n_train_below_50", "source_train_count_mismatch"},
+        )
+        self.assertTrue(all(not candidates for values in consensus["candidates_by_variant"].values() for candidates in values.values()))
+
+    def test_consensus_missing_or_corrupt_source_remains_error(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        ssl, synthetic = self._abstained_checkpoints(pipeline, reason="n_train_below_50")
+        ssl["abstention_reason"] = "stage_error"
+        bundle = MagicMock(dataset="Phoneme_normal_26", train_normal=np.zeros((4, 8)), test_values=np.zeros((2, 8)), hard_indices=frozenset())
+        with (
+            patch.object(pipeline, "load_dataset_input", return_value=bundle),
+            patch.object(pipeline, "_read_stage_checkpoint", side_effect=(ssl, synthetic)),
+            patch.object(pipeline, "load_feature_blocks", return_value=self._unavailable_blocks()),
+        ):
+            with self.assertRaisesRegex(ValueError, "source contract invalid"):
+                pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))
+
+    def test_consensus_rejects_unrecognized_feature_unavailability_reason(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        blocks = list(self._unavailable_blocks())
+        next(block for block in blocks if block.name == "rocket256").reason = "source_hash_mismatch"
+        checkpoints = self._abstained_checkpoints(pipeline)
+        bundle = MagicMock(dataset="Phoneme_normal_26", train_normal=np.zeros((4, 8)), test_values=np.zeros((2, 8)), hard_indices=frozenset())
+        with (
+            patch.object(pipeline, "load_dataset_input", return_value=bundle),
+            patch.object(pipeline, "_read_stage_checkpoint", side_effect=checkpoints),
+            patch.object(pipeline, "load_feature_blocks", return_value=tuple(blocks)),
+        ):
+            with self.assertRaisesRegex(ValueError, "source contract invalid"):
+                pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))
+
+    def test_consensus_rejects_malformed_completed_learned_payload(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        bundle = MagicMock(dataset="Phoneme_normal_26", train_normal=np.zeros((50, 8)), test_values=np.zeros((2, 8)), hard_indices=frozenset())
+        malformed_ssl = {
+            "stage": "ssl-predict", "dataset": "Phoneme_normal_26", "train_size": 50,
+            "eligibility": "learned_methods", "outcome": "completed", "scores": {},
+            "train_oof_scores": (), "shadow_predictions": {},
+        }
+        with (
+            patch.object(pipeline, "load_dataset_input", return_value=bundle),
+            patch.object(pipeline, "_read_stage_checkpoint", side_effect=(malformed_ssl, {"outcome": "abstained", "abstention_reason": "n_train_below_50"})),
+            patch.object(pipeline, "load_feature_blocks", return_value=()),
+        ):
+            with self.assertRaisesRegex(ValueError, "learned source contract"):
+                pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))
+
+    def test_consensus_statuses_cover_every_registered_feature_and_learned_model(self) -> None:
+        from experiments.exp403_408 import pipeline
+        from experiments.exp403_408.feature_registry import FEATURE_SOURCES
+        from experiments.exp403_408.synthetic_anomaly import MODEL_NAMES
+
+        bundle = MagicMock(dataset="Phoneme_normal_26", train_normal=np.zeros((4, 8)), test_values=np.zeros((2, 8)), hard_indices=frozenset())
+        blocks = self._unavailable_blocks()
+        checkpoint, synthetic = self._abstained_checkpoints(pipeline)
+        with (
+            patch.object(pipeline, "load_dataset_input", return_value=bundle),
+            patch.object(pipeline, "_read_stage_checkpoint", side_effect=(checkpoint, synthetic)),
+            patch.object(pipeline, "load_feature_blocks", return_value=blocks),
+            patch.object(pipeline, "load_frozen_lanes", return_value=MagicMock(lane_for=lambda _dataset: {"hard": frozenset(), "standard": frozenset(), "priority": frozenset()})),
+        ):
+            result = pipeline._consensus_evaluate("Phoneme_normal_26", Path("/tmp"))
+
+        statuses = result["consensus"]["source_statuses"]
+        self.assertEqual(
+            {status["source"] for status in statuses},
+            {source.name for source in FEATURE_SOURCES} | {"tri_view"} | {f"synthetic_{name}" for name in MODEL_NAMES},
+        )
+        self.assertTrue(all(status["status"] == "abstained" for status in statuses))
+
+    def test_representative_smoke_checkpoints_share_identity_train_size_and_eligibility(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        counts = (3, 4, 5, 19, 20, 49, 50, 70) * 3
+        datasets = tuple(f"representative-{index:02d}" for index in range(20))
+        train_counts = {dataset: counts[index] for index, dataset in enumerate(datasets)}
+        selected, coverage = pipeline.select_representative_smoke_datasets(
+            datasets, 20, train_count_for_dataset=train_counts.__getitem__
+        )
+        self.assertEqual(set(selected), set(datasets))
+        self.assertTrue(all(coverage[tier] for tier in coverage))
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            for dataset in selected:
+                train_size = train_counts[dataset]
+                eligibility = pipeline.train_eligibility(train_size).level
+                for stage in (
+                    "audit-features", "classical-predict", "ssl-predict",
+                    "synthetic-predict", "consensus-evaluate",
+                ):
+                    pipeline._write_checkpoint(
+                        output / "checkpoints" / stage / f"{pipeline._safe_name(dataset)}.json",
+                        {
+                            "stage": stage,
+                            "dataset": dataset,
+                            "device": "cpu",
+                            "input_sha256": "test",
+                            "outcome": "completed",
+                            "train_size": train_size,
+                            "eligibility": eligibility,
+                        },
+                    )
+            pipeline._validate_cross_stage_identity(output, selected)
+
+    def test_representative_smoke_selection_is_deterministic_and_train_only(self) -> None:
+        from experiments.exp403_408.pipeline import select_representative_smoke_datasets
+
+        names = (
+            "small-a", "small-b", "robust-a", "robust-b", "committee-a",
+            "committee-b", "learned-a", "learned-b",
+        )
+        train_counts = {
+            "small-a": 3, "small-b": 4,
+            "robust-a": 5, "robust-b": 19,
+            "committee-a": 20, "committee-b": 49,
+            "learned-a": 50, "learned-b": 70,
+        }
+
+        selected, coverage = select_representative_smoke_datasets(
+            names, 8, train_count_for_dataset=train_counts.__getitem__
+        )
+
+        self.assertEqual(selected, names)
+        self.assertEqual(
+            coverage,
+            {"abstain": 2, "robust_distance": 2, "classical_committee": 2, "learned_methods": 2},
+        )
+
+    def test_representative_selection_ignores_input_test_order(self) -> None:
+        from experiments.exp403_408.pipeline import select_representative_smoke_datasets
+
+        counts = {"z": 3, "a": 4, "m": 5, "q": 19, "b": 20, "x": 49, "c": 50, "y": 70}
+        first, first_coverage = select_representative_smoke_datasets(tuple(counts), 8, train_count_for_dataset=counts.__getitem__)
+        second, second_coverage = select_representative_smoke_datasets(tuple(reversed(tuple(counts))), 8, train_count_for_dataset=counts.__getitem__)
+        self.assertEqual(first, second)
+        self.assertEqual(first_coverage, second_coverage)
+
+    def test_representative_selection_uses_only_canonical_train_counts(self) -> None:
+        from experiments.exp403_408.pipeline import select_representative_smoke_datasets
+
+        names = ("a", "b", "c", "d", "e", "f", "g", "h")
+        train_counts = {"a": 3, "b": 4, "c": 5, "d": 19, "e": 20, "f": 49, "g": 50, "h": 70}
+        baseline = select_representative_smoke_datasets(
+            names, 8, train_count_for_dataset=train_counts.__getitem__
+        )
+        mutated_test_values = {name: 1000 - index for index, name in enumerate(reversed(names))}
+
+        def train_only(dataset: str) -> int:
+            return train_counts[dataset]
+
+        self.assertEqual(
+            select_representative_smoke_datasets(tuple(reversed(names)), 8, train_count_for_dataset=train_only),
+            baseline,
+        )
+        self.assertNotEqual(tuple(mutated_test_values), names)
+
+    def test_representative_run_never_calls_test_population_selector(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        result = pipeline.StageResult("audit-features", 2, 2, 2, 0, Path("/tmp"))
+        with (
+            patch.object(pipeline, "list_datasets_small_to_large", side_effect=AssertionError("TEST population access")),
+            patch.object(pipeline, "list_datasets_by_train_normal_count", return_value=["small", "large"]),
+            patch.object(pipeline, "_train_normal_count", side_effect=[3, 50]),
+            patch.object(pipeline, "run_stage", return_value=result),
+            patch.object(pipeline, "_finalize_stage"),
+        ):
+            pipeline.run_pipeline(stage="audit-features", output_dir=Path("/tmp"), limit=2, representative_smoke=True)
+
+    def test_representative_smoke_marks_only_absent_train_tier_unavailable(self) -> None:
+        from experiments.exp403_408.pipeline import select_representative_smoke_datasets
+
+        selected, coverage = select_representative_smoke_datasets(
+            ("robust", "learned"),
+            20,
+            train_count_for_dataset={"robust": 8, "learned": 55}.__getitem__,
+        )
+
+        self.assertEqual(selected, ("robust", "learned"))
+        self.assertEqual(
+            coverage,
+            {"abstain": 0, "robust_distance": 1, "classical_committee": 0, "learned_methods": 1},
+        )
+
+    def test_json_value_serializes_dataclass_mappingproxy_without_pickle(self) -> None:
+        from experiments.exp403_408.pipeline import _json_value
+
+        @dataclass(frozen=True)
+        class Payload:
+            values: object
+
+        self.assertEqual(
+            _json_value(Payload(MappingProxyType({"shadow": (1, 2)}))),
+            {"values": {"shadow": [1, 2]}},
+        )
+
+    def test_task13_cli_accepts_required_smoke_flags(self) -> None:
+        from experiments.exp403_408 import pipeline
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "smoke"
+            with patch.object(pipeline, "run_pipeline") as run_pipeline:
+                result = pipeline.main(
+                    [
+                        "--stage", "all",
+                        "--dataset-limit", "20",
+                        "--workers", "2",
+                        "--device", "cpu",
+                        "--reset-checkpoint",
+                        "--output-dir", str(output),
+                    ]
+                )
+
+        self.assertEqual(result, 0)
+        run_pipeline.assert_called_once_with(
+            stage="all",
+            output_dir=output,
+            limit=20,
+            resume=False,
+            stop_after=None,
+            workers=2,
+            device="cpu",
+            representative_smoke=False,
+        )
+
+    def test_reset_checkpoint_state_removes_only_checkpoint_state(self) -> None:
+        from scratch.task13_checkpoint_reset import reset_checkpoint_state
+
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            stale = output / "checkpoints" / "audit-features" / "stale.json"
+            stale.parent.mkdir(parents=True)
+            stale.write_text("stale\n", encoding="utf-8")
+            (output / "status.json").write_text("{}\n", encoding="utf-8")
+            publication = output / "immutable-publication.json"
+            publication.write_text("keep\n", encoding="utf-8")
+
+            reset_checkpoint_state(output)
+
+            self.assertFalse((output / "checkpoints").exists())
+            self.assertFalse((output / "status.json").exists())
+            self.assertEqual(publication.read_text(encoding="utf-8"), "keep\n")
+
+    def _evaluation_hash_fixture(self, pipeline, output: Path) -> dict[str, Path]:
+        prediction = output / "exp404_hard_confidence.jsonl"
+        feature_manifest = output / "exp403_feature_manifest.csv"
+        contract = output / "exp403_404_provenance_contract.json"
+        provenance_file = output / "referenced-provenance.bin"
+        database = output / "labels.sqlite"
+        exp291 = output / "exp291.jsonl"
+        exp291_manifest = output / "exp291_manifest.json"
+        exp292 = output / "exp292.jsonl"
+        exp292_manifest = output / "exp292_manifest.json"
+        for path, contents in (
+            (prediction, "prediction-v1\n"),
+            (feature_manifest, "feature-v1\n"),
+            (provenance_file, "provenance-v1\n"),
+            (database, "database-v1\n"),
+            (exp291, "exp291-v1\n"),
+            (exp291_manifest, "exp291-manifest-v1\n"),
+            (exp292, "exp292-v1\n"),
+            (exp292_manifest, "exp292-manifest-v1\n"),
+        ):
+            path.write_text(contents, encoding="utf-8")
+        contract.write_text(
+            json.dumps({
+                "schema": "fixture",
+                "provenance": {
+                    "feature_artifacts": {},
+                    "input_artifacts": {"fixture": {"path": str(provenance_file)}},
+                    "baseline_artifacts": {},
+                    "config_artifacts": {},
+                    "code_artifacts": {},
+                },
+            }),
+            encoding="utf-8",
+        )
+        (output / "exp404_prediction_manifest.json").write_text(
+            json.dumps({
+                "hard_confidence_file": prediction.name,
+                "feature_manifest_file": feature_manifest.name,
+                "provenance_contract_sha256": "a" * 64,
+            }),
+            encoding="utf-8",
+        )
+        return {
+            "prediction": prediction,
+            "provenance": provenance_file,
+            "database": database,
+            "exp291": exp291,
+            "exp291_manifest": exp291_manifest,
+            "exp292": exp292,
+            "exp292_manifest": exp292_manifest,
+        }
+
+    def _evaluation_hash_patches(self, pipeline, fixture: dict[str, Path]) -> ExitStack:
+        stack = ExitStack()
+        stack.enter_context(patch.object(pipeline, "DB_PATH", fixture["database"]))
+        stack.enter_context(patch.object(pipeline, "EXP291_PREDICTION_PATH", fixture["exp291"]))
+        stack.enter_context(patch.object(pipeline, "EXP291_MANIFEST_PATH", fixture["exp291_manifest"]))
+        stack.enter_context(patch.object(pipeline, "EXP292_PREDICTION_PATH", fixture["exp292"]))
+        stack.enter_context(patch.object(pipeline, "EXP292_MANIFEST_PATH", fixture["exp292_manifest"]))
+        return stack
+
+    def test_resume_skips_completed_dataset_hashes(self) -> None:
+        from experiments.exp403_408.pipeline import run_smoke
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            first = run_smoke(output, limit=3, stop_after=2)
+            second = run_smoke(output, limit=3, resume=True)
+
+        self.assertEqual(first.completed, 2)
+        self.assertEqual(second.recomputed_datasets, 1)
+        self.assertEqual(second.completed, 3)
+
+    def test_status_has_dashboard_fields(self) -> None:
+        from experiments.exp403_408.pipeline import read_status, run_smoke
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            run_smoke(output, limit=1)
+            status = read_status(output)
+
+        self.assertTrue(
+            {
+                "stage",
+                "current_dataset",
+                "completed",
+                "total",
+                "progress_percent",
+                "eta_seconds",
+                "throughput_per_minute",
+                "errors",
+                "device",
+                "checkpoint_sha256",
+            }
+            <= set(status)
+        )
+        self.assertEqual(status["status"], "completed")
+
+    def test_failed_dataset_is_checkpointed_as_explicit_abstention(self) -> None:
+        from experiments.exp403_408.pipeline import run_stage
+
+        def failing_processor(_dataset: str) -> dict[str, object]:
+            raise RuntimeError("fixture failure")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            result = run_stage(
+                "audit-features",
+                ["small", "large"],
+                output,
+                processor=failing_processor,
+            )
+            checkpoint_path = next(
+                (output / "checkpoints" / "audit-features").glob("small-*.json")
+            )
+            checkpoint = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result.errors, 2)
+        self.assertEqual(checkpoint["outcome"], "abstained")
+        self.assertEqual(checkpoint["abstention_reason"], "stage_error")
+        self.assertIn("fixture failure", checkpoint["error"])
+
+    def test_stage_preserves_small_to_large_input_order(self) -> None:
+        from experiments.exp403_408.pipeline import run_stage
+
+        seen: list[str] = []
+        with tempfile.TemporaryDirectory() as tmp:
+            run_stage(
+                "report",
+                ["small", "medium", "large"],
+                Path(tmp),
+                processor=lambda dataset: seen.append(dataset) or {"dataset": dataset},
+                workers=1,
+            )
+
+        self.assertEqual(seen, ["small", "medium", "large"])
+
+    def test_cpu_stages_cap_outer_workers_and_learned_stages_are_serial(self) -> None:
+        from experiments.exp403_408.pipeline import stage_worker_count
+
+        self.assertEqual(stage_worker_count("classical-predict", 99), 7)
+        self.assertEqual(stage_worker_count("classical-predict", 1), 1)
+        self.assertEqual(stage_worker_count("classical-predict", 2), 2)
+        self.assertEqual(stage_worker_count("ssl-predict", 7), 1)
+
+    def test_changed_input_identity_invalidates_a_checkpoint(self) -> None:
+        from experiments.exp403_408.pipeline import run_stage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            run_stage(
+                "report", ["dataset"], output,
+                processor=process_safe_smoke_processor,
+                input_hash_for_dataset=lambda _dataset: "old-input",
+            )
+            rerun = run_stage(
+                "report", ["dataset"], output,
+                processor=process_safe_smoke_processor,
+                input_hash_for_dataset=lambda _dataset: "new-input",
+            )
+
+        self.assertEqual(rerun.recomputed_datasets, 1)
+
+    def test_stage_hash_changes_for_actual_values_and_upstream_checkpoint(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        first = MagicMock(
+            train_normal=np.array([[1.0, 2.0]]), test_values=np.array([[3.0, 4.0]]),
+            hard_indices=frozenset({0}), standard_indices=frozenset(),
+            priority_indices=frozenset(), target_length=512,
+        )
+        changed_values = MagicMock(
+            train_normal=np.array([[1.0, 2.0]]), test_values=np.array([[3.0, 5.0]]),
+            hard_indices=frozenset({0}), standard_indices=frozenset(),
+            priority_indices=frozenset(), target_length=512,
+        )
+        inputs = iter((first, changed_values))
+
+        def next_input(_dataset: str) -> MagicMock:
+            return next(inputs)
+
+        def first_input(_dataset: str) -> MagicMock:
+            return first
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.object(pipeline, "load_dataset_input", next_input),
+                patch.object(pipeline, "_read_stage_checkpoint", return_value={"checkpoint_sha256": "a" * 64}),
+            ):
+                original = pipeline._stage_input_hash("classical-predict", "toy", Path(tmp), "cpu")
+                values_changed = pipeline._stage_input_hash("classical-predict", "toy", Path(tmp), "cpu")
+            with (
+                patch.object(pipeline, "load_dataset_input", first_input),
+                patch.object(pipeline, "_read_stage_checkpoint", return_value={"checkpoint_sha256": "b" * 64}),
+            ):
+                upstream_changed = pipeline._stage_input_hash("classical-predict", "toy", Path(tmp), "cpu")
+
+        self.assertNotEqual(original, values_changed)
+        self.assertNotEqual(original, upstream_changed)
+
+    def test_evaluation_hash_invalidates_prediction_and_referenced_provenance(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            fixture = self._evaluation_hash_fixture(pipeline, output)
+            with self._evaluation_hash_patches(pipeline, fixture):
+                initial = pipeline._stage_input_hash("classical-evaluate", "__aggregate__", output, "cpu")
+                fixture["prediction"].write_text("prediction-v2\n", encoding="utf-8")
+                prediction_changed = pipeline._stage_input_hash("classical-evaluate", "__aggregate__", output, "cpu")
+                fixture["provenance"].write_text("provenance-v2\n", encoding="utf-8")
+                provenance_changed = pipeline._stage_input_hash("classical-evaluate", "__aggregate__", output, "cpu")
+                fixture["database"].write_text("database-v2\n", encoding="utf-8")
+                database_changed = pipeline._stage_input_hash("classical-evaluate", "__aggregate__", output, "cpu")
+
+        self.assertNotEqual(initial, prediction_changed)
+        self.assertNotEqual(prediction_changed, provenance_changed)
+        self.assertNotEqual(provenance_changed, database_changed)
+
+    def test_database_snapshot_composite_binds_db_wal_and_shm(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            database = Path(tmp) / "labels.sqlite"
+            wal = database.with_name("labels.sqlite-wal")
+            shm = database.with_name("labels.sqlite-shm")
+            database.write_text("db-v1\n", encoding="utf-8")
+            wal.write_text("wal-v1\n", encoding="utf-8")
+            shm.write_text("shm-v1\n", encoding="utf-8")
+            first = pipeline._database_snapshot_manifest(
+                pipeline._database_snapshot_paths(database)
+            )
+            wal.write_text("wal-v2\n", encoding="utf-8")
+            changed = pipeline._database_snapshot_manifest(
+                pipeline._database_snapshot_paths(database)
+            )
+
+        self.assertEqual(len(first["artifacts"]), 3)
+        self.assertNotEqual(first["composite_sha256"], changed["composite_sha256"])
+
+    def test_report_resume_excludes_own_checkpoint_and_invalidates_upstream(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            for name in (
+                pipeline.AUDIT_ARTIFACT,
+                "exp404_prediction_manifest.json",
+                "exp404_hard_confidence.jsonl",
+                pipeline.EVALUATION_ARTIFACT,
+                pipeline.CONSENSUS_ARTIFACT,
+                pipeline.CONSENSUS_SUMMARY,
+            ):
+                (output / name).write_text("{}\n", encoding="utf-8")
+            upstream = output / "checkpoints" / "audit-features" / "toy.json"
+            upstream.parent.mkdir(parents=True)
+            upstream.write_text('{"checkpoint":"v1"}\n', encoding="utf-8")
+            report_hash = lambda _dataset: pipeline._stage_input_hash(
+                "report", "__aggregate__", output, "cpu"
+            )
+            first = pipeline.run_stage(
+                "report", ["__aggregate__"], output,
+                processor=process_safe_smoke_processor,
+                input_hash_for_dataset=report_hash,
+            )
+            resumed = pipeline.run_stage(
+                "report", ["__aggregate__"], output,
+                processor=process_safe_smoke_processor,
+                input_hash_for_dataset=report_hash,
+                resume=True,
+            )
+            upstream.write_text('{"checkpoint":"v2"}\n', encoding="utf-8")
+            invalidated = pipeline.run_stage(
+                "report", ["__aggregate__"], output,
+                processor=process_safe_smoke_processor,
+                input_hash_for_dataset=report_hash,
+                resume=True,
+            )
+
+        self.assertEqual(first.recomputed_datasets, 1)
+        self.assertEqual(resumed.recomputed_datasets, 0)
+        self.assertEqual(invalidated.recomputed_datasets, 1)
+
+    def test_input_hash_failure_is_checkpointed_and_stage_continues(self) -> None:
+        from experiments.exp403_408.pipeline import read_status, run_stage
+
+        def hash_for(dataset: str) -> str:
+            if dataset == "bad":
+                raise ValueError("fixture hash failure")
+            return f"hash-{dataset}"
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            result = run_stage(
+                "audit-features", ["bad", "good"], output,
+                processor=process_safe_smoke_processor,
+                input_hash_for_dataset=hash_for,
+            )
+            bad = next((output / "checkpoints" / "audit-features").glob("bad-*.json"))
+            checkpoint = json.loads(bad.read_text(encoding="utf-8"))
+            status = read_status(output)
+
+        self.assertEqual(result.completed, 2)
+        self.assertEqual(result.errors, 1)
+        self.assertEqual(checkpoint["outcome"], "abstained")
+        self.assertEqual(checkpoint["abstention_reason"], "stage_error")
+        self.assertIn("fixture hash failure", checkpoint["error"])
+        self.assertEqual(status["current_dataset"], "good")
+
+    def test_learned_stage_heartbeats_are_run_bound_while_processor_runs(self) -> None:
+        from experiments.exp403_408.pipeline import read_status, run_stage
+
+        entered = threading.Event()
+        release = threading.Event()
+
+        def slow_processor(dataset: str) -> dict[str, object]:
+            entered.set()
+            release.wait(timeout=2.0)
+            return {"dataset": dataset}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            worker = threading.Thread(
+                target=run_stage,
+                kwargs={
+                    "stage": "ssl-predict", "datasets": ["slow"], "output_dir": output,
+                    "processor": slow_processor, "run_id": "run-fixture",
+                    "run_started_unix": 123.0,
+                    "heartbeat_interval_seconds": 0.01,
+                },
+            )
+            worker.start()
+            self.assertTrue(entered.wait(timeout=1.0))
+            first = read_status(output)
+            time.sleep(0.04)
+            second = read_status(output)
+            release.set()
+            worker.join(timeout=2.0)
+
+        self.assertEqual(first["run_id"], "run-fixture")
+        self.assertEqual(first["run_started_unix"], 123.0)
+        self.assertEqual(first["current_dataset"], "slow")
+        self.assertGreater(second["updated_unix"], first["updated_unix"])
+
+    def test_resume_rate_uses_only_this_invocations_new_work(self) -> None:
+        from experiments.exp403_408.pipeline import read_status, run_stage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            run_stage(
+                "report", ["one", "two"], output,
+                processor=process_safe_smoke_processor,
+                stop_after=1,
+            )
+            with patch("experiments.exp403_408.pipeline.time.monotonic", side_effect=(10.0, 14.0, 14.0, 14.0, 14.0)):
+                run_stage(
+                    "report", ["one", "two"], output,
+                    processor=process_safe_smoke_processor,
+                    resume=True,
+                )
+            status = read_status(output)
+
+        self.assertEqual(status["completed"], 2)
+        self.assertEqual(status["newly_processed"], 1)
+        self.assertEqual(status["throughput_per_minute"], 15.0)
+        self.assertEqual(status["eta_seconds"], 0.0)
+
+    def test_multiprocess_stop_after_does_not_submit_extra_datasets(self) -> None:
+        from experiments.exp403_408.pipeline import run_stage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            result = run_stage(
+                "audit-features",
+                ["one", "two", "three"],
+                Path(tmp),
+                processor=process_safe_smoke_processor,
+                workers=2,
+                stop_after=1,
+            )
+
+        self.assertEqual(result.recomputed_datasets, 1)
+        self.assertEqual(result.completed, 1)
+
+    def test_parallel_stage_starts_worker_before_all_hashes_finish(self) -> None:
+        from experiments.exp403_408.pipeline import run_stage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            marker = output / "worker-started"
+            hashed: list[str] = []
+
+            def slow_hash(dataset: str) -> str:
+                hashed.append(dataset)
+                if dataset == "two":
+                    deadline = time.monotonic() + 2.0
+                    while not marker.exists() and time.monotonic() < deadline:
+                        time.sleep(0.01)
+                    self.assertTrue(marker.exists(), "worker did not start during hash streaming")
+                return f"hash-{dataset}"
+
+            with patch.dict(os.environ, {"EXP403_408_HASH_STREAM_MARKER": str(marker)}):
+                result = run_stage(
+                    "audit-features",
+                    ("one", "two", "three"),
+                    output,
+                    processor=process_safe_hash_stream_processor,
+                    workers=2,
+                    input_hash_for_dataset=slow_hash,
+                )
+
+        self.assertEqual(hashed, ["one", "two", "three"])
+        self.assertEqual(result.completed, 3)
+        self.assertEqual(result.recomputed_datasets, 3)
+
+    def test_streamed_hash_resume_and_invalidation_remain_exact(self) -> None:
+        from experiments.exp403_408.pipeline import run_stage
+
+        hashes = {"one": "v1", "two": "v1"}
+        calls: list[str] = []
+
+        def processor(dataset: str) -> dict[str, object]:
+            calls.append(dataset)
+            return {"dataset": dataset, "kind": "streamed-resume"}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            run_stage(
+                "report", ("one", "two"), output,
+                processor=processor, input_hash_for_dataset=hashes.__getitem__,
+            )
+            calls.clear()
+            resumed = run_stage(
+                "report", ("one", "two"), output,
+                processor=processor, input_hash_for_dataset=hashes.__getitem__, resume=True,
+            )
+            hashes["one"] = "v2"
+            invalidated = run_stage(
+                "report", ("one", "two"), output,
+                processor=processor, input_hash_for_dataset=hashes.__getitem__, resume=True,
+            )
+
+        self.assertEqual(resumed.recomputed_datasets, 0)
+        self.assertEqual(invalidated.recomputed_datasets, 1)
+        self.assertEqual(calls, ["one"])
+
+    def test_non_prefix_resume_reports_actual_last_processed_dataset(self) -> None:
+        from experiments.exp403_408.pipeline import read_status, run_stage
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            run_stage(
+                "report", ["large"], output,
+                processor=process_safe_smoke_processor,
+            )
+            run_stage(
+                "report", ["small", "medium", "large"], output,
+                processor=process_safe_smoke_processor,
+                resume=True,
+            )
+            status = read_status(output)
+
+        self.assertEqual(status["current_dataset"], "medium")
+
+    def test_classical_finalizer_invokes_task6_publication(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        def toy_input(_dataset: str) -> MagicMock:
+            return MagicMock(target_length=512)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            (output / pipeline.AUDIT_ARTIFACT).parent.mkdir(parents=True, exist_ok=True)
+            (output / pipeline.AUDIT_ARTIFACT).write_text("{}\n", encoding="utf-8")
+            checkpoint = output / "checkpoints" / "classical-predict" / "toy-000000000000.json"
+            checkpoint.parent.mkdir(parents=True)
+            pipeline._write_checkpoint(
+                checkpoint,
+                {"dataset": "toy", "outcome": "completed", "prediction_rows": []},
+            )
+            with (
+                patch.object(pipeline, "_safe_name", return_value="toy-000000000000"),
+                patch.object(pipeline, "freeze_provenance_contract", return_value="a" * 64),
+                patch.object(pipeline, "load_expected_provenance", return_value=MagicMock()),
+                patch.object(pipeline, "load_frozen_lanes", return_value=MagicMock()),
+                patch.object(pipeline, "load_dataset_input", toy_input),
+                patch.object(pipeline, "write_prediction") as publish,
+            ):
+                pipeline._publish_classical_prediction(output, ["toy"])
+
+        publish.assert_called_once()
+
+    def test_classical_predict_records_explicit_no_hard_candidate_result(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        bundle = MagicMock(hard_indices=frozenset())
+        with patch.object(pipeline, "load_dataset_input", return_value=bundle), patch.object(
+            pipeline, "predict_dataset"
+        ) as predict:
+            result = pipeline._classical_predict("toy")
+
+        self.assertEqual(result["result_kind"], "no_frozen_hard_candidates")
+        self.assertEqual(result["prediction_rows"], [])
+        predict.assert_not_called()
+
+    def test_aggregate_evaluation_invokes_task7_hash_gate(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            (output / "exp404_prediction_manifest.json").write_text(
+                json.dumps({"provenance_contract_sha256": "a" * 64}), encoding="utf-8"
+            )
+            with (
+                patch.object(pipeline, "evaluate_exp405", return_value={"hash_gated": True}),
+                patch.object(pipeline, "load_frozen_lanes", return_value=MagicMock()),
+                patch.object(pipeline, "_evaluation_labels", return_value=MagicMock()),
+                patch.object(pipeline, "_publish_classical_prediction") as publish,
+            ):
+                result = pipeline._classical_evaluate(output, ["toy"])
+
+        self.assertEqual(result["outcome"], "completed")
+        publish.assert_called_once_with(output, ["toy"])
+
+    def test_consensus_stage_invokes_task10(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.object(pipeline, "load_dataset_input", return_value=MagicMock()),
+                patch.object(pipeline, "_consensus_sources", return_value=((MagicMock(),), ())),
+                patch.object(pipeline, "load_frozen_lanes", return_value=MagicMock()),
+                patch.object(pipeline, "build_consensus", return_value={"real": "task10"}) as build,
+            ):
+                result = pipeline._consensus_evaluate("toy", Path(tmp))
+
+        self.assertEqual(result["consensus"], {"real": "task10", "source_statuses": ()})
+        build.assert_called_once()
+
+    def test_report_emits_registered_result_and_summary_artifacts(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            for name in (
+                pipeline.AUDIT_ARTIFACT,
+                "exp404_prediction_manifest.json",
+                "exp404_hard_confidence.jsonl",
+                pipeline.EVALUATION_ARTIFACT,
+                pipeline.CONSENSUS_ARTIFACT,
+                pipeline.CONSENSUS_SUMMARY,
+            ):
+                (output / name).write_text("{}\n", encoding="utf-8")
+            def write_tables(_output: Path) -> None:
+                (output / pipeline.EXP405_DATASET_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EXP405_CANDIDATE_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EXP408_VARIANT_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EXP408_CANDIDATE_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.FROZEN_LABELS_ARTIFACT).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EVALUATION_INPUT_MANIFEST).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EVALUATION_PUBLICATION_MANIFEST).write_text("fixture\n", encoding="utf-8")
+
+            with (
+                patch.object(pipeline, "_write_published_evaluation_tables", side_effect=write_tables),
+                patch.object(pipeline, "write_reports") as write_reports,
+            ):
+                result = pipeline._write_report(output)
+
+            self.assertEqual(result["outcome"], "completed")
+            self.assertGreater((output / pipeline.RESULT_ARTIFACT).stat().st_size, 0)
+            self.assertGreater((output / pipeline.SUMMARY_ARTIFACT).stat().st_size, 0)
+            write_reports.assert_called_once()
+
+    def test_report_separates_autonomous_and_human_assisted_metrics(self) -> None:
+        from experiments.exp403_408.reporting import build_report, write_reports
+        from experiments.exp403_408.tests.test_evaluation import reporting_fixture
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = reporting_fixture(Path(tmp))
+            text = build_report(output)
+            artifacts = write_reports(output, command="python3 scratch/run_exp403_408_feature_ml_validation.py --stage report")
+
+            self.assertIn("자동 경보는 변경하지 않음", text)
+            self.assertIn("human-assisted", text)
+            self.assertIn("## Exp408 동결 Variant\n\n| Variant | Alpha | 후보 | TP | FP | 정밀도 | FN 회수 | Zero-F1 전 | Zero-F1 후 | Standard overlap", text)
+            self.assertIn("Exp408 paired bootstrap", text)
+            self.assertNotIn("배포 검증 완료", text)
+            self.assertTrue(artifacts.manifest_json.is_file())
+            self.assertTrue(artifacts.manifest_markdown.is_file())
+
+    def test_report_freezes_official_evaluation_rows_before_independent_report(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            for name in (
+                pipeline.AUDIT_ARTIFACT,
+                "exp404_prediction_manifest.json",
+                "exp404_hard_confidence.jsonl",
+                pipeline.EVALUATION_ARTIFACT,
+                pipeline.CONSENSUS_ARTIFACT,
+                pipeline.CONSENSUS_SUMMARY,
+            ):
+                (output / name).write_text("{}\n", encoding="utf-8")
+            def write_tables_side_effect(_output: Path) -> None:
+                (output / pipeline.EXP405_DATASET_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EXP405_CANDIDATE_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EXP408_VARIANT_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EXP408_CANDIDATE_METRICS).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.FROZEN_LABELS_ARTIFACT).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EVALUATION_INPUT_MANIFEST).write_text("fixture\n", encoding="utf-8")
+                (output / pipeline.EVALUATION_PUBLICATION_MANIFEST).write_text("fixture\n", encoding="utf-8")
+
+            with (
+                patch.object(pipeline, "_write_published_evaluation_tables", side_effect=write_tables_side_effect) as write_tables,
+                patch.object(pipeline, "write_reports"),
+            ):
+                pipeline._write_report(output)
+
+        write_tables.assert_called_once_with(output)
+
+    def test_report_hash_failure_stops_before_label_db_access(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.object(pipeline, "_verify_evaluation_input_manifest", side_effect=ValueError("SHA256 mismatch")),
+                patch.object(pipeline, "load_test_labels") as labels,
+            ):
+                with self.assertRaisesRegex(ValueError, "SHA256"):
+                    pipeline._write_published_evaluation_tables(Path(tmp))
+        labels.assert_not_called()
+
+    def test_report_resume_regenerates_when_final_output_is_missing_or_corrupt(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        for failure in ("report missing", "report SHA256 mismatch"):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as tmp:
+                output = Path(tmp)
+                completed = pipeline.StageResult(
+                    stage="report", completed=1, total=1, recomputed_datasets=1,
+                    errors=0, output_dir=output,
+                )
+                with (
+                    patch.object(pipeline, "list_datasets_small_to_large", return_value=["toy"]),
+                    patch.object(pipeline, "validate_final_reports", side_effect=[ValueError(failure), None]),
+                    patch.object(pipeline, "run_stage", return_value=completed) as run_stage,
+                    patch.object(pipeline, "_finalize_stage"),
+                    patch.object(pipeline, "_require_final_outputs"),
+                ):
+                    pipeline.run_pipeline(stage="report", output_dir=output, resume=True)
+
+                self.assertFalse(run_stage.call_args.kwargs["resume"])
+
+    def test_final_manifest_ignores_status_but_rejects_deleted_or_corrupt_report(self) -> None:
+        from experiments.exp403_408.reporting import (
+            MANIFEST_JSON,
+            REPORT_NAME,
+            validate_final_reports,
+            write_reports,
+        )
+        from experiments.exp403_408.tests.test_evaluation import reporting_fixture
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = reporting_fixture(Path(tmp))
+            write_reports(output, command="python3 scratch/run_exp403_408_feature_ml_validation.py --stage report")
+            manifest_before = (output / MANIFEST_JSON).read_bytes()
+            (output / "status.json").write_text('{"status":"completed"}\n', encoding="utf-8")
+            validate_final_reports(output)
+            manifest = json.loads((output / MANIFEST_JSON).read_text(encoding="utf-8"))
+            self.assertNotIn("status.json", manifest["artifact_sha256"])
+            self.assertEqual(manifest_before, (output / MANIFEST_JSON).read_bytes())
+            (output / REPORT_NAME).unlink()
+            with self.assertRaisesRegex(ValueError, "report artifact|incomplete"):
+                validate_final_reports(output)
+            write_reports(output, command="python3 scratch/run_exp403_408_feature_ml_validation.py --stage report")
+            (output / "MANIFEST.md").write_text("corrupt\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "incomplete"):
+                validate_final_reports(output)
+
+    def test_manifest_allowlist_ignores_changing_stdout_and_renders_execution_context(self) -> None:
+        from experiments.exp403_408.reporting import MANIFEST_JSON, write_reports
+        from experiments.exp403_408.tests.test_evaluation import reporting_fixture
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = reporting_fixture(Path(tmp))
+            first = write_reports(output, command="python3 scratch/run_exp403_408_feature_ml_validation.py --stage report")
+            initial = json.loads((output / MANIFEST_JSON).read_text(encoding="utf-8"))
+            stdout = output / "live.stdout.log"
+            stdout.write_text("first line\n", encoding="utf-8")
+            stdout.write_text("second line\n", encoding="utf-8")
+            second = write_reports(output, command="python3 scratch/run_exp403_408_feature_ml_validation.py --stage report")
+            updated = json.loads((output / MANIFEST_JSON).read_text(encoding="utf-8"))
+            markdown = second.manifest_markdown.read_text(encoding="utf-8")
+
+        self.assertNotIn(stdout.name, updated["artifact_sha256"])
+        self.assertEqual(initial["artifact_sha256"], updated["artifact_sha256"])
+        self.assertIn("feature_registry.py", "\n".join(updated["code_sha256"]))
+        self.assertIn("run_exp403_408_feature_ml_validation.py", "\n".join(updated["code_sha256"]))
+        self.assertIn("run_rank_experiments_sequential.py", "\n".join(updated["code_sha256"]))
+        self.assertEqual(updated["code_provenance"]["method"], "ast_recursive_repository_local_import_closure/v1")
+        self.assertIn("preprocessing.py", "\n".join(updated["code_provenance"]["files"]))
+        self.assertIn("## Commands", markdown)
+        self.assertIn("## Code provenance closure", markdown)
+        self.assertIn("Platform", markdown)
+        self.assertIn("Forbidden claims", markdown)
+
+    def test_manifest_uses_frozen_task13_execution_metadata_when_present(self) -> None:
+        from experiments.exp403_408.reporting import MPS_BENCHMARK_NAME, MANIFEST_JSON, write_reports
+        from experiments.exp403_408.tests.test_evaluation import reporting_fixture
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = reporting_fixture(Path(tmp))
+            benchmark = {
+                "schema": "exp403_408_task13_mps_benchmark/v1",
+                "full_command": "python3 scratch/run_exp403_408_feature_ml_validation.py --stage all --workers 7 --device auto --reset-checkpoint --output-dir /tmp/full",
+                "report_command": "python3 scratch/run_exp403_408_feature_ml_validation.py --stage report --workers 7 --device auto --output-dir /tmp/full",
+                "decision": {"selected_device": "cpu", "reason": "parity passed but MPS slower", "cpu_mean_runtime_seconds": 1.0, "mps_mean_runtime_seconds": 2.0},
+                "benchmark_command": "python3 scratch/benchmark_exp403_408_mps_parity.py --dataset toy",
+                "runs": [
+                    {"run": "cpu-1", "device": "cpu", "runtime_seconds": 1.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 0.0},
+                    {"run": "cpu-2", "device": "cpu", "runtime_seconds": 1.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 0.0},
+                    {"run": "mps-1", "device": "mps", "runtime_seconds": 2.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 0.0},
+                    {"run": "mps-2", "device": "mps", "runtime_seconds": 2.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 0.0},
+                ],
+            }
+            (output / MPS_BENCHMARK_NAME).write_text(json.dumps(benchmark, sort_keys=True), encoding="utf-8")
+            write_reports(output, command="generic report command")
+            manifest = json.loads((output / MANIFEST_JSON).read_text(encoding="utf-8"))
+
+        self.assertEqual(manifest["command"], benchmark["report_command"])
+        self.assertEqual(manifest["commands"], [benchmark["full_command"], benchmark["report_command"]])
+        self.assertEqual(manifest["acceleration"]["decision"], "CPU retained because parity passed but MPS slower")
+        self.assertIn(MPS_BENCHMARK_NAME, manifest["artifact_sha256"])
+
+    def test_manifest_rejects_malformed_or_inconsistent_mps_benchmark(self) -> None:
+        from experiments.exp403_408.reporting import _task13_execution_metadata
+
+        valid = {
+            "schema": "exp403_408_task13_mps_benchmark/v1", "benchmark_command": "benchmark",
+            "full_command": "full", "report_command": "report",
+            "decision": {"selected_device": "cpu", "reason": "parity passed but MPS slower", "cpu_mean_runtime_seconds": 1.5, "mps_mean_runtime_seconds": 3.5},
+            "runs": [
+                {"run": "cpu-1", "device": "cpu", "runtime_seconds": 1.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 0.0},
+                {"run": "cpu-2", "device": "cpu", "runtime_seconds": 2.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 0.0},
+                {"run": "mps-1", "device": "mps", "runtime_seconds": 3.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 1e-6},
+                {"run": "mps-2", "device": "mps", "runtime_seconds": 4.0, "prediction_sha256": "a" * 64, "rank_match": True, "max_raw_score_delta": 1e-6},
+            ],
+        }
+        cases = {
+            "run-count": lambda value: value["runs"].pop(),
+            "nonfinite-runtime": lambda value: value["runs"].__setitem__(0, {**value["runs"][0], "runtime_seconds": float("nan")}),
+            "hash-mismatch": lambda value: value["runs"].__setitem__(2, {**value["runs"][2], "prediction_sha256": "b" * 64}),
+            "rank-mismatch": lambda value: value["runs"].__setitem__(2, {**value["runs"][2], "rank_match": False}),
+            "delta-too-large": lambda value: value["runs"].__setitem__(2, {**value["runs"][2], "max_raw_score_delta": 1e-4}),
+            "mean-mismatch": lambda value: value["decision"].__setitem__("cpu_mean_runtime_seconds", 9.0),
+            "decision-mismatch": lambda value: value["decision"].__setitem__("selected_device", "mps"),
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "task13_exp406_mps_benchmark.json"
+            for name, mutate in cases.items():
+                with self.subTest(name=name):
+                    payload = json.loads(json.dumps(valid))
+                    mutate(payload)
+                    path.write_text(json.dumps(payload), encoding="utf-8")
+                    with self.assertRaises(ValueError):
+                        _task13_execution_metadata(Path(tmp))
+
+    def test_transitive_code_provenance_covers_exp226_and_changes_with_preprocessing(self) -> None:
+        from experiments.exp403_408.reporting import execution_code_provenance
+
+        repository = Path(__file__).resolve().parents[3]
+        preprocessing = repository / "experiments" / "exp226_235_hard_alert_quality" / "preprocessing.py"
+        original = preprocessing.read_text(encoding="utf-8")
+        before = execution_code_provenance()
+        try:
+            preprocessing.write_text(original + "\n# provenance regression mutation\n", encoding="utf-8")
+            changed = execution_code_provenance()
+        finally:
+            preprocessing.write_text(original, encoding="utf-8")
+
+        self.assertIn(str(preprocessing.resolve()), before["files"])
+        self.assertIn(
+            str((repository / "experiments" / "exp226_235_hard_alert_quality" / "config.py").resolve()),
+            before["files"],
+        )
+        self.assertNotEqual(before["closure_sha256"], changed["closure_sha256"])
+
+    def test_runbook_commands_reference_the_real_entrypoint(self) -> None:
+        repository = Path(__file__).resolve().parents[3]
+        runbook = (repository / "docs" / "EXP403_408_RUNBOOK_KO.md").read_text(encoding="utf-8")
+        script = repository / "scratch" / "run_exp403_408_feature_ml_validation.py"
+
+        self.assertIn("--stage all", runbook)
+        self.assertIn("--stage report", runbook)
+        self.assertIn("검증한 뒤에만", runbook)
+        self.assertIn("평가 CSV를 생성", runbook)
+        help_result = subprocess.run(
+            ["python3", str(script), "--help"],
+            cwd=repository,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(help_result.returncode, 0, help_result.stderr)
+
+    def test_all_marks_status_failed_when_registered_outputs_are_absent(self) -> None:
+        import experiments.exp403_408.pipeline as pipeline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp)
+            completed = pipeline.StageResult(
+                stage="audit-features", completed=1, total=1,
+                recomputed_datasets=0, errors=0, output_dir=output,
+            )
+            with (
+                patch.object(pipeline, "list_datasets_small_to_large", return_value=["toy"]),
+                patch.object(pipeline, "run_stage", return_value=completed),
+                patch.object(pipeline, "_finalize_stage"),
+            ):
+                with self.assertRaisesRegex(ValueError, "required Exp403-408 outputs"):
+                    pipeline.run_pipeline(stage="all", output_dir=output)
+            status = pipeline.read_status(output)
+
+        self.assertEqual(status["status"], "failed")
+        self.assertEqual(status["stage"], "report")
+
+
+if __name__ == "__main__":
+    unittest.main()

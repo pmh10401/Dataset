@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp460 사전등록</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
+<body><main>
+  <h1>Exp460 사전등록</h1>
+  <p>Exp460은 Exp459의 고정된 10개 fold-seed 검증 결과를 읽기 전용 과학 입력으로 재사용해 <code>ECG5000_normal_2</code>에 대한 엄격 복귀 규칙을 비교하는 planned-only governance 실험이다. 현재 상태는 <code>governance_complete_implementation_not_started</code>이며 Task 1만 완료됐다.</p>
+  <table>
+    <tr><th>target</th><td><code>ECG5000_normal_2</code> only</td></tr>
+    <tr><th>rule order</th><td><code>always_baseline</code>, <code>always_candidate</code>, <code>majority_8_of_10</code>, <code>strict_10_of_10</code></td></tr>
+    <tr><th>official decision rule</th><td><code>strict_10_of_10</code> only; one failed record forces strict route <code>baseline</code></td></tr>
+    <tr><th>frozen predecessor truth</th><td>Exp459 official outcome remains unstable. Failed folds are seed 20260721 fold 3 period_change AUC 0.8208339620743423 and seed 20261721 fold 4 period_change AUC 0.8004124541019063.</td></tr>
+    <tr><th>progress</th><td>Task 1/6, official evaluate/inspect counts 0/0, label query count 0, result and artifact hashes <code>null</code></td></tr>
+    <tr><th>forbidden</th><td>No new TRAIN calculation, seed, threshold, TEST-label access, official Exp460 command, or official result root</td></tr>
+  </table>
+  <div class="box">
+    <p><strong>Design expectation only:</strong> expected metrics are design expectation only and not observed Exp460 results. The strict rule is expected to fall back to baseline because Exp459 is unstable; that expectation is not an executed Exp460 result.</p>
+    <p><strong>Boundary:</strong> champion, pending candidate, routing, promotion, and official artifacts remain unchanged in Task 1.</p>
+  </div>
+</main></body></html>

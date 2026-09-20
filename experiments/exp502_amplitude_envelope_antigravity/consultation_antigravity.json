@@ -1,0 +1,8 @@
+{
+  "source": "../exp501_energy_lift_antigravity/consultation_antigravity.json",
+  "model": "grok-4.6",
+  "pro_status": "Two prior timeouts",
+  "accepted": "Moving RMS width max(8,L//10), row zscore, suggested by Grok after energy-only scale underperformance",
+  "codex_addition": "Centered square without variance division to test loss of fourth-moment scale; boundary and short-length handling frozen before results",
+  "warning": "Grok has not specifically reviewed final Exp502 code; previous proposal is not proof of performance"
+}

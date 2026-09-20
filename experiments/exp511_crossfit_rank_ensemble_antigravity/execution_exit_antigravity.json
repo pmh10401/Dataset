@@ -1,0 +1,15 @@
+{
+  "pilot": {
+    "exit_code": 0,
+    "started_utc": "2026-09-17T23:14:52.715175+00:00",
+    "ended_utc": "2026-09-17T23:20:26.594733+00:00",
+    "log_sha256": "f1e22bf437e202001d748cf15347031c0b321ccb8f67640e0e10cb27ba3eb0ba"
+  },
+  "full_test_evaluation_executed": false,
+  "verification": {
+    "exit_code": 0,
+    "started_utc": "2026-09-17T23:20:26.596293+00:00",
+    "ended_utc": "2026-09-17T23:20:44.076033+00:00",
+    "log_sha256": "9e3f55f1012e263bb1367a96ee4814a6498bd12bf249c43017d8bb906362fb59"
+  }
+}

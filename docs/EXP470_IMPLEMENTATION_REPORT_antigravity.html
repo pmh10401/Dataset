@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>Exp470 구현 보고</title></head><body><main>
+<h1>Exp470 구현 보고</h1>
+<p>Task 1부터 6까지의 코드와 사전검증, private run 1·2와 결과 분석을 마쳤다. 두 private 결과는 완전히 같았지만, period 순서 오류를 고치지 못해 성능 기준은 통과하지 못했다. official 실행과 TEST/FN 접근은 하지 않았다.</p>
+<h2>완료 상태</h2>
+<label><input type="checkbox" checked disabled> Task 1: 고정 설정과 원본 권한 연결</label>
+<label><input type="checkbox" checked disabled> Task 2: Numba spectral entropy</label>
+<label><input type="checkbox" checked disabled> Task 3: 속도 확인</label>
+<label><input type="checkbox" checked disabled> Task 4: C0/E11/C11과 pair 판단</label>
+<label><input type="checkbox" checked disabled> Task 5: 7개 파일 저장과 재검사</label>
+<label><input type="checkbox" checked disabled> Task 6: 닫힌 명령과 private 실행 전 검사</label>
+<label><input type="checkbox" checked disabled> private run 1·2와 결과 분석</label>
+<label><input type="checkbox" disabled> official</label>
+<label><input type="checkbox" disabled> TEST/FN</label>
+<label><input type="checkbox" disabled> routing</label>
+<h2>핵심 결과</h2>
+<ul><li>두 private root의 7개 결과 파일은 모두 byte 단위로 같았다. 실행과 결과 저장은 재현됐다.</li><li>성능 판정은 <strong>FAIL</strong>이다. 두 seed 모두 <code>period fixed=0</code>, <code>period broken=0</code>이었다.</li><li>period 평균 AUC는 C0와 C11이 모두 <code>0.7817941673710904</code>로 같았다. C11이 period 점수를 실제로 바꾼 행도 0개였다.</li><li>period confirmation은 seed마다 1개였지만, 그 행은 이미 <code>C0=1.0</code>이고 <code>E11=1.0</code>이라 고칠 것이 없었다.</li><li>period 138건 중 E11이 C0보다 높지만 confirmation을 통과하지 못한 경우는 16건이었다. 반대로 정상에서도 E11이 C0보다 높은 경우가 49건이어서 confirmation만 느슨하게 바꾸는 방법은 안전하지 않다.</li><li>정상 confirmation은 0개, 보호 변화 broken은 모두 0개, fallback은 정확했고 모든 값은 유한했다. 즉 안전했지만 개선은 없었다.</li><li>gradual drift는 한 seed의 한 행만 바뀌어 평균 AUC가 <code>+0.0005102041</code> 올랐지만, Exp470의 목표인 period 개선에는 영향을 주지 않았다.</li></ul>
+<h2>사전검증</h2>
+<p>최신 전체 Exp470 test는 <code>66/66</code>, Exp468 핵심 회귀 test는 <code>12/12</code>를 통과했다. 외부 working directory launcher 도움말과 repository-root git 경로도 검사했다. code-map, JSON, HTML, diff 검사도 실행 전 단계에서 확인한다.</p>
+<h2>현재 상태</h2>
+<p>private runs = <code>2</code>, official runs = <code>0</code>, TEST/FN access = <code>0</code>이다. Exp470은 재현 가능한 음성 결과로 보존한다. official 실행이나 routing으로 넘어가지 않고, 다음 실험은 residual period 오류를 직접 구분하는 새 단일 점수를 설계한다.</p>
+</main></body></html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp460 대시보드</title><style>body{max-width:1180px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}code{background:#eef2f7;padding:.1rem .3rem;overflow-wrap:anywhere}.box{background:#f5f7fa;padding:1rem}</style></head>
+<body><main>
+  <h1>Exp460 ECG 엄격 복귀 대시보드</h1>
+  <table>
+    <tr><th>progress</th><td>Task 6/6</td></tr>
+    <tr><th>status</th><td><code>official_evaluation_inspected_complete_fallback_no_performance_improvement</code></td></tr>
+    <tr><th>reviewed commit</th><td><code>ca51813450f26b8a3fada6f39cf810452467297e</code></td></tr>
+    <tr><th>official evaluate/inspect counts</th><td>1/1; exits 0/0</td></tr>
+    <tr><th>official root</th><td><code>/Users/mac/Documents/Dataset/exp460_ecg_strict_fallback_antigravity_20260820</code> is present as a non-symlink directory with exactly six regular readable leaves</td></tr>
+    <tr><th>label query count</th><td>0</td></tr>
+    <tr><th>frozen predecessor authority</th><td><code>f661c4ce6c7fd6625ac5cf767db688ce7ede7a0d0557721c9e9fa7e7ea6508ee</code></td></tr>
+    <tr><th>predecessor artifact map / decision</th><td><code>a30fbe7ed34f88c1ab9b7fd40963edebbf1a4127d8d64c99141224cb2dbb106d</code> / <code>527318cacdbc63905ab58237d793803eb286192456eb007362e6bed11c8f8716</code></td></tr>
+    <tr><th>result and artifact hashes</th><td>evaluation <code>3ed3f05f5359cbe4d1a0dbcad371bb3ed951679c1b153d59ff591933fc13dc75</code>; decision <code>0859be73fb8b7c77cc803d67745ecd1bd42766ea5e3c005ce1bb9d2d3e6342c1</code>; artifact map <code>8286c4da86d3f180e8b5e20cf54fc6f0011a26cf54d92b1a4867f68e5f44d916</code>; dashboard/stdout <code>fea8b4e43d256feddef48545e201f674bfe39fe85559050ed405f4e996709ee5</code>; prediction <code>null</code></td></tr>
+    <tr><th>official decision rule</th><td><code>strict_10_of_10</code> only</td></tr>
+    <tr><th>strict final status</th><td><code>fallback_triggered_performance_not_improved</code></td></tr>
+    <tr><th>joint success</th><td><code>false</code></td></tr>
+    <tr><th>local artifact inventory</th><td><code>context_antigravity.json</code>, <code>rule_comparisons_antigravity.jsonl</code>, <code>failed_folds_antigravity.jsonl</code>, <code>decision_antigravity.json</code>, <code>dashboard_snapshot_antigravity.json</code>, <code>artifact_sha256_antigravity.json</code></td></tr>
+  </table>
+  <div class="box">
+    <p><strong>Task 6 official lifecycle:</strong> the corrected fixed-interpreter <code>evaluate --reviewed-commit LOWER40HEX</code> launcher ran exactly once with <strong>evaluate exit 0</strong>; <code>bare inspect</code> then ran exactly once with <strong>inspect exit 0</strong>. Their stdout bytes, the stored dashboard snapshot, and the independently replayed dashboard payload are exact-equal.</p>
+    <p><strong>Wrapper disclosure:</strong> one earlier literal <code>PY</code> wrapper attempt produced <strong>wrapper exit 127</strong> before Python, launcher, or CLI invocation. The controller ruled that pre-launch wrapper error did not consume an official invocation; its separate stderr is retained, and official launcher counts are 1/1.</p>
+    <p><strong>Outside-CWD launcher:</strong> the launcher re-execs the <strong>exact fixed interpreter</strong> <code>/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python</code> and imports the package without depending on caller CWD.</p>
+    <p><strong>Private equality:</strong> two sequential non-official temporary roots each completed evaluate then inspect. The two dashboard payloads were <strong>payload exact-equal</strong>, all six leaf hashes were <strong>leaf hashes exact-equal</strong>, and both <strong>private roots cleaned</strong> after verification.</p>
+    <p><strong>Frozen rule order:</strong> <code>always_baseline</code>, <code>always_candidate</code>, <code>majority_8_of_10</code>, <code>strict_10_of_10</code>.</p>
+    <p><strong>Current authority summary:</strong> 8 of 10 records pass; seed <code>20260721</code> fold <code>3</code> stays at <code>0.8208339620743423</code>, seed <code>20261721</code> fold <code>4</code> stays at <code>0.8004124541019063</code>, and worst <code>period_change</code> AUC remains <code>0.8004124541019063</code>.</p>
+    <p><strong>Strict route outcome:</strong> majority stays <code>candidate</code>, but <code>strict_10_of_10</code> falls back to <code>baseline</code>. Candidate FN 829 is not retained; strict FN remains 837 and status is <code>fallback_triggered_performance_not_improved</code>.</p>
+    <p><strong>Task 4 dashboard payload boundary:</strong> the immutable artifact remains the frozen scientific payload with dataset/predecessor identifiers, four comparison rows, two failed folds, strict route/status, worst AUC, internal scientific-payload counters <code>0/0</code>, and label query count <code>0</code>. Lifecycle counts are maintained separately above as 1/1.</p>
+    <p><strong>Scientific-only boundary:</strong> the official lifecycle reused the reviewed frozen computation. No TRAIN value was recomputed, no new seed or threshold was introduced, no TEST label was opened, and champion, pending candidate, promotion, and actual routing remain unchanged.</p>
+  </div>
+  <h2>Failed folds</h2>
+  <table>
+    <thead><tr><th>seed</th><th>fold</th><th>period_change AUC</th></tr></thead>
+    <tbody>
+      <tr><td><code>20260721</code></td><td><code>3</code></td><td><code>0.8208339620743423</code></td></tr>
+      <tr><td><code>20261721</code></td><td><code>4</code></td><td><code>0.8004124541019063</code></td></tr>
+    </tbody>
+  </table>
+  <h2>Rule comparison</h2>
+  <table>
+    <thead><tr><th>rule</th><th>route</th><th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>F1</th><th>officially eligible</th></tr></thead>
+    <tbody>
+      <tr><td><code>always_baseline</code></td><td><code>baseline</code></td><td>609</td><td>66</td><td>837</td><td>70788</td><td>0.5742574257425742</td><td>no</td></tr>
+      <tr><td><code>always_candidate</code></td><td><code>candidate</code></td><td>617</td><td>66</td><td>829</td><td>70788</td><td>0.5796148426491311</td><td>no</td></tr>
+      <tr><td><code>majority_8_of_10</code></td><td><code>candidate</code></td><td>617</td><td>66</td><td>829</td><td>70788</td><td>0.5796148426491311</td><td>no</td></tr>
+      <tr><td><code>strict_10_of_10</code></td><td><code>baseline</code></td><td>609</td><td>66</td><td>837</td><td>70788</td><td>0.5742574257425742</td><td>yes</td></tr>
+    </tbody>
+  </table>
+</main></body></html>

@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Exp464 ECG residual centered ramp confirmation 설계</title>
+<style>
+body{max-width:1120px;margin:2rem auto;padding:0 1rem;font:16px/1.7 system-ui;color:#172033}
+table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #aab3bf;padding:.55rem;text-align:left;vertical-align:top}
+code,pre{background:#eef2f7;padding:.12rem .3rem;overflow:auto}.box{padding:1rem;margin:1rem 0;background:#f5f7fa}
+.good{border-left:6px solid #16794b}.stop{border-left:6px solid #b42318}.note{border-left:6px solid #2457a6}h1,h2{line-height:1.3}
+</style>
+</head>
+<body><main>
+<h1>Exp464 — 공통 ECG 파형을 제거한 뒤 실제 상승 모양만 확인</h1>
+<p><strong>한 줄 목표:</strong> Exp463에서 정상 ECG 모양과 단순 높이 이동까지 ramp로 읽었던 문제를 고치고, 실제로 꾸준히 상승하는 모양이 확인될 때만 기존 M0 점수를 보완한다.</p>
+
+<h2>1. 실험 정체성과 범위</h2>
+<table>
+<tr><th>experiment</th><td><code>Exp464</code></td></tr>
+<tr><th>kind</th><td><code>ecg_residual_centered_ramp_confirmation_qualification</code></td></tr>
+<tr><th>run identity</th><td><code>exp464-ecg-residual-centered-ramp-confirmation-antigravity-20260821</code></td></tr>
+<tr><th>전임 실험</th><td>Exp463 final commit <code>147225831e9c13e9df5043fa88757bb03e01b79a</code></td></tr>
+<tr><th>데이터</th><td><code>ECG5000_normal_2</code> TRAIN <code>1413×140</code></td></tr>
+<tr><th>검증 단위</th><td>seeds <code>20260721</code>, <code>20261721</code> × 기존 시간 순서 blocked fold 5개 = 10개 기록</td></tr>
+<tr><th>현재 상태</th><td><code>design_written_awaiting_user_review</code>; 구현·private TRAIN·공식 실행 0회</td></tr>
+</table>
+<p>Exp464는 TRAIN-only 후보 자격 검증이다. TEST label, TEST FN/FP/F1, 실제 라우팅, champion·pending·promotion 변경은 범위 밖이다.</p>
+
+<h2>2. Exp463에서 확인한 문제</h2>
+<table><thead><tr><th>방법</th><th>통과</th><th>최소 gradual AUC</th><th>최소 period AUC</th><th>최소 pooled AUC</th></tr></thead><tbody>
+<tr><td>M0 기존 방식</td><td>9/10</td><td>0.8402306222021025</td><td>0.907392736783864</td><td>0.9212266108344651</td></tr>
+<tr><td>M1 prefix ramp 단독</td><td>0/10</td><td>0.7898338098865013</td><td>0.8467579817453084</td><td>0.7499188402901772</td></tr>
+<tr><td>M2 0.995 gated max</td><td>7/10</td><td>0.83450279161008</td><td>0.8984897640963734</td><td>0.9128093405764297</td></tr>
+<tr><td>M3 항상 max</td><td>4/10</td><td>0.8106231817103472</td><td>0.88972268351459</td><td>0.9012656556511242</td></tr>
+<tr><td>M4 median-template residual gated</td><td>9/10</td><td>0.8399225391076908</td><td>0.9044753785020874</td><td>0.9193733967104271</td></tr>
+<tr><td>M5 whole-series MAD gated</td><td>8/10</td><td>0.8357602736280871</td><td>0.9010864644635582</td><td>0.9146656984055128</td></tr>
+</tbody></table>
+<div class="box stop"><p><strong>해석:</strong> M1 자체가 약했고, M3의 항상 <code>max</code>는 손상을 키웠다. 0.995 gate는 피해를 줄였지만 M0를 보존하지 못했다. M4가 9/10까지 회복한 것은 공통 ECG 모양 제거가 중요하다는 증거지만, M4도 M0보다 gradual·period가 조금 낮아 그대로 채택할 수 없다.</p></div>
+
+<h2>3. 고칠 대상</h2>
+<ol>
+<li>Exp463의 ramp 기저는 뒤쪽 값이 모두 0 이상이라 실제 기울기뿐 아니라 단순한 높이 상승에도 반응했다.</li>
+<li>TRAIN에서 0.995보다 드문 점수라는 사실은 그 모양이 gradual이라는 뜻이 아니었다.</li>
+<li>잘못 높아진 점수에 <code>max</code>를 적용하면 정상·period 순위가 올라가도 되돌릴 수 없었다.</li>
+</ol>
+<p>Exp464는 임계값을 미세 조정하지 않는다. 특징이 읽는 모양 자체를 바꾼다.</p>
+
+<h2>4. 주 후보의 정확한 특징</h2>
+<p>각 fold에서 fit 행만 사용해 시간 위치별 median template를 만든다.</p>
+<ol>
+<li><code>template = np.median(X_fit, axis=0)</code>, <code>j=0..139</code>. NumPy의 짝수 길이 median 규칙을 그대로 사용한다.</li>
+<li>각 행의 residual은 <code>e = x - template</code>다.</li>
+<li>변화 시작점은 기존과 같은 <code>onset=56</code>이다. 뒤쪽 residual은 <code>u=e[56:140]</code>다.</li>
+<li>단순 높이 이동을 제거한다: <code>v = u - mean(u)</code>.</li>
+<li><code>t=np.linspace(0.0,1.0,84,dtype=np.float64)</code>, <code>q=(t-mean(t))/||t-mean(t)||₂</code>. <code>q</code>의 합은 0이므로 일정한 높이 이동은 점수에 영향을 주지 않는다.</li>
+<li>상승 크기 점수는 <code>a=dot(v,q)</code>다.</li>
+<li>상승 모양 일치도는 <code>c=dot(v,q)/||v||₂</code>다. <code>||v||₂=0</code>이면 <code>c=0</code>으로 고정한다.</li>
+<li>상승 크기 순위는 fit 행 점수만 사용해 <code>r=(1+count(a_fit≤a))/(n_fit+1)</code>로 계산한다.</li>
+</ol>
+<p>template과 <code>a_fit</code>은 해당 fold의 비주입 fit 원본 행만 사용한다. 각 query 원본 행과 그 행에서 만든 네 합성 변형에 아래 식을 서로 독립적으로 적용한다. 정상 행의 cosine으로 합성 행의 gate를 대신 결정하지 않는다. template, fit score, rank reference는 fold 밖으로 공유하지 않는다. prefix MAD는 사용하지 않는다.</p>
+
+<h2>5. 보수적 확인 규칙</h2>
+<p>주 후보 <code>template_residual_centered_ramp_confirmed_max</code>는 다음과 같이 고정한다.</p>
+<pre><code>e = x - template
+u = e[56:140]
+v = u - mean(u)
+a = dot(v, q)
+c = 0 if ||v||₂ == 0 else a / ||v||₂
+r = (1 + count(a_fit &lt;= a)) / (n_fit + 1)
+
+if c &gt;= 0.95:
+    result = max(M0_rank, r)
+else:
+    result = M0_rank</code></pre>
+<ul>
+<li><code>c≥0.95</code>는 뒤쪽 residual과 시간 인덱스 사이 Pearson 상관의 사전등록 하한이다. 완전한 선형 상승은 <code>c=1</code>이고 중심화 후 일정한 높이 이동은 <code>c=0</code>이다. <code>0.95</code> 자체가 유일한 기하학적 값이라는 주장은 하지 않는다.</li>
+<li><code>0.95</code>는 실패 fold, C3–C5 결과 또는 다른 문턱 비교를 보고 바꾸지 않는다.</li>
+<li>Exp463의 <code>0.995</code> TRAIN 꼬리 gate는 주 후보에서 사용하지 않는다.</li>
+<li>상승 모양이 확인되지 않으면 점수는 정확히 M0로 돌아간다.</li>
+</ul>
+<div class="box good"><p>이 규칙은 “드문 값인가?” 대신 “실제로 선형 상승과 같은 모양인가?”를 먼저 묻는다.</p></div>
+
+<h2>6. 고정 비교표</h2>
+<table><thead><tr><th>ID</th><th>방법</th><th>역할</th></tr></thead><tbody>
+<tr><td>C0</td><td>Exp463 M0 exact replay</td><td>기존 기준선 재현</td></tr>
+<tr><td>C1</td><td>Exp463 M2 exact replay</td><td>0.995 gate 실패 재현</td></tr>
+<tr><td>C2</td><td>Exp463 M4 exact replay</td><td>template 제거만 했을 때의 한계</td></tr>
+<tr><td>C3</td><td>template residual에서 C6과 같은 centered ramp 순위만 사용; M0 결합과 cosine 없음</td><td>새 특징 자체의 구분력</td></tr>
+<tr><td>C4</td><td>C3 순위를 모든 행에서 <code>max(M0, C3)</code>; cosine 없음</td><td>모양 확인이 필요한지 검증</td></tr>
+<tr><td>C5</td><td>C6과 동일하되 template를 사용하지 않음. <code>u=x[56:140]</code>, 이후 중심화·점수·fit rank·cosine 0.95·confirmed max는 C6과 같음</td><td>template 제거의 기여 분리</td></tr>
+<tr><td>C6</td><td>template residual + centered ramp + cosine 0.95</td><td><strong>유일한 주 후보</strong></td></tr>
+<tr><td>C7</td><td>Exp463 M6 exact replay</td><td>이전 실패 대조 재현</td></tr>
+<tr><td>C8</td><td>C6과 동일하되 중심화만 제거. <code>q0=t/||t||₂</code>, <code>a0=dot(u,q0)</code>, <code>c0=0</code> if <code>||u||₂=0</code> else <code>a0/||u||₂</code>; <code>c0≥0.95</code> confirmed max</td><td>중심화의 기여 분리</td></tr>
+</tbody></table>
+<p>C0, C1, C2, C7이 전임 결과를 재현하지 못하면 새 후보를 해석하지 않고 중단한다. C3–C5 또는 C8이 좋아 보여도 C6 대신 사후 선택하지 않는다.</p>
+
+<h2>7. 반드시 기록할 진단</h2>
+<ul>
+<li>각 seed-fold와 변화 유형별 <code>cosine≥0.95</code> 발화 행 수</li>
+<li>normal, gradual, period, level, amplitude별 발화 비율</li>
+<li>C0와 비교해 새 점수가 바로잡은 normal-vs-gradual 순위 쌍 수와 새로 망친 쌍 수. 각 seed-fold에서 모든 query 정상 <code>N_i</code>와 gradual <code>G_j</code>의 순서쌍을 사용한다. <code>score(G_j)&gt;score(N_i)</code>만 올바른 쌍이며 동점은 바로잡음·망침 어느 쪽에도 넣지 않는다.</li>
+<li>같은 정의로 normal-vs-period 순위 쌍의 바로잡음·망침 수를 기록한다.</li>
+<li>각 방법의 fold별 네 유형 AUC, pooled AUC, 정상 Wilson 상한, finite 여부</li>
+</ul>
+<p>이 진단은 원인을 설명하기 위한 것이며 문턱을 다시 고르는 데 사용하지 않는다.</p>
+
+<h2>8. C6 합격 조건</h2>
+<p>주 후보 C6만 다음 조건을 모두 만족해야 한다.</p>
+<ul>
+<li>10개 seed-fold 기록 모두 통과</li>
+<li>네 변화 유형 AUC 각각 ≥0.85</li>
+<li>각 기록의 네 유형 평균 AUC ≥0.90</li>
+<li>정상 Wilson 상한 ≤0.05, 모든 점수 유한</li>
+<li>전체 gradual 최소 ≥0.85이며 C0의 <code>0.8402306222021025</code>보다 엄격히 큼</li>
+<li>각 seed-fold의 gradual AUC가 같은 기록의 C0 gradual AUC보다 낮지 않음</li>
+<li>전체 period 최소 ≥<code>0.907392736783864</code></li>
+<li>각 seed-fold의 period AUC가 같은 기록의 C0 period AUC보다 낮지 않음</li>
+<li>seed <code>20260721</code> fold 3 period ≥<code>0.907392736783864</code></li>
+<li>seed <code>20261721</code> fold 4 period ≥<code>0.9216148584075248</code></li>
+</ul>
+<div class="box stop"><p><strong>중단:</strong> 하나라도 실패하면 공식 실행을 하지 않는다. cosine, onset, seed, fold, 합격 기준을 바꾸거나 실패 기록을 제외하지 않는다.</p></div>
+
+<h2>9. 결과 해석표</h2>
+<table><thead><tr><th>관측</th><th>해석</th></tr></thead><tbody>
+<tr><td>C6이 C8보다 좋음</td><td>중심화만의 기여</td></tr>
+<tr><td>C6이 C5보다 좋음</td><td>template 제거만의 기여</td></tr>
+<tr><td>C4는 period를 해치고 C6은 보존</td><td>cosine 확인 규칙의 필요성이 확인됨</td></tr>
+<tr><td>C6이 C2보다 좋음</td><td>Exp463 M4 묶음보다 새 묶음이 낫다는 뜻이며 중심화 하나의 효과로 해석하지 않음</td></tr>
+<tr><td>C3이 약하고 C6도 C0를 개선하지 못함</td><td>선형 상승 특징 자체가 ECG5000 gradual 잔여 구조에 부족함</td></tr>
+<tr><td>C6이 10/10이지만 한 fold의 period가 C0보다 낮음</td><td>보수적 라우팅 목적 실패로 판정</td></tr>
+</tbody></table>
+
+<h2>10. 실행 경계</h2>
+<ul>
+<li>구현 후 서로 다른 private TRAIN root에서 evaluate→inspect를 정확히 두 번 순차 실행한다.</li>
+<li>두 결과의 rows, summaries, decision, dashboard와 모든 leaf bytes/hashes가 같아야 한다.</li>
+<li>private 자격 검증과 fresh review가 통과한 뒤에만 별도 사용자 승인으로 공식 실행한다.</li>
+<li>MLX는 같은 입력·seed에서 finite, 후보 순서, 최대 절대 수치 차이 <code>0.0</code>의 exact parity와 1.1배 속도를 모두 만족할 때만 사용한다. 하나라도 실패하면 NumPy CPU를 유지한다.</li>
+<li>진행 상황과 결과는 쉬운 한국어 HTML 대시보드에 기록한다.</li>
+</ul>
+
+<h2>11. 이번 설계에서 하지 않는 것</h2>
+<ul>
+<li><code>0.99</code>, <code>0.995</code>, <code>0.999</code> 문턱 비교</li>
+<li>onset 56 변경</li>
+<li>실패한 세 fold에 맞춘 cosine 문턱 조정</li>
+<li>C2–C5 또는 C8 중 가장 좋은 방법의 사후 승격</li>
+<li>TEST label·FN·FP·F1 조회 또는 실제 라우팅</li>
+</ul>
+<p class="box note"><strong>일반화 한계:</strong> 이번 TRAIN 자격 검증의 gradual 합성은 선형 ramp이므로 C6은 선형 변화에 유리하다. 통과하더라도 실제 비선형 점진 변화에 일반화됐다고 주장하지 않는다.</p>
+
+<h2>12. 승인 상태</h2>
+<table>
+<tr><th>설계 선택</th><td><code>template_residual_centered_ramp_confirmed_max</code></td></tr>
+<tr><th>고정 onset</th><td><code>56</code></td></tr>
+<tr><th>고정 shape confirmation</th><td><code>cosine ≥ 0.95</code></td></tr>
+<tr><th>현재 상태</th><td><code>design_written_awaiting_user_review</code></td></tr>
+</table>
+</main></body>
+</html>

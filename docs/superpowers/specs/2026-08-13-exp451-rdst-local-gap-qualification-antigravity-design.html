@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exp451 RDST + LocalGap 자격검증 설계</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#f6f8fb;--panel:#fff;--text:#162033;--muted:#5d687c;--line:#d8deea;--accent:#3159d6;--code:#eef2f8}
+    @media(prefers-color-scheme:dark){:root{--bg:#101522;--panel:#19202e;--text:#edf2fb;--muted:#adb8ca;--line:#354055;--accent:#91aaff;--code:#222b3b}}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font:16px/1.68 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    main{max-width:980px;margin:28px auto;padding:34px 42px;background:var(--panel);border:1px solid var(--line);border-radius:16px}
+    h1,h2,h3{line-height:1.28} h1{margin-top:0} h2{margin-top:38px;padding-top:26px;border-top:1px solid var(--line)}
+    table{width:100%;border-collapse:collapse;display:block;overflow:auto} th,td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top} th{background:var(--code)}
+    code{font-family:"SFMono-Regular",Consolas,monospace;background:var(--code);padding:.12em .35em;border-radius:5px} pre{background:var(--code);padding:16px;border-radius:10px;overflow:auto}
+    .meta,.note{color:var(--muted)} .callout{border-left:4px solid var(--accent);padding:8px 16px;background:var(--code);border-radius:0 10px 10px 0}
+    a{color:var(--accent)} li{margin:.3em 0}
+    @media(max-width:700px){main{margin:0;padding:24px 18px;border:0;border-radius:0}}
+  </style>
+</head>
+<body><main>
+  <h1>Exp451: RDST + LocalGap 자격검증 설계</h1>
+  <p class="meta">작성일: 2026-08-13 · 상태: 사용자 승인 설계 · 아직 구현·사전등록·공식 실행 전</p>
+
+  <div class="callout">
+    <strong>한 문장 요약:</strong> 정상 TRAIN에서 짧은 모양 조각을 무작위로 뽑아 시계열을 표현하고,
+    기존 LocalGap 판정기로 ROCKET 계열이 놓친 이상을 더 찾을 수 있는지 48개 대상 데이터셋에서 확인한다.
+  </div>
+
+  <h2>1. 배경과 목적</h2>
+  <p>Exp448의 <code>stable-26</code>은 전체 1,117개 데이터셋에서 TP 1,930, FP 314,
+  FN 1,988, TN 191,668, F1 0.6264199935를 기록한 동결 기준선이다. Exp449는 잔여 FN이
+  집중된 8개 데이터셋 군에서 MiniROCKET, MultiROCKET, Hydra 계열을 같은 LocalGap 판정기로
+  비교하도록 준비되어 있다.</p>
+  <p>Exp451은 Exp449를 수정하지 않는다. 표현 방법만 공식 RDST로 바꾸어, 정상 데이터 안에
+  반복되는 <strong>짧은 모양</strong>이 기존 무작위 합성곱 특징과 다른 이상 근거를 주는지 독립적으로
+  자격검증한다.</p>
+
+  <h2>2. 검토한 세 가지 방향</h2>
+  <table>
+    <thead><tr><th>방향</th><th>장점</th><th>문제</th><th>결정</th></tr></thead>
+    <tbody>
+      <tr><td>공식 RDST + 기존 LocalGap</td><td>표현만 바뀌므로 Exp449와 공정하게 비교 가능</td><td>RDST 계산 비용</td><td><strong>선택</strong></td></tr>
+      <tr><td>공식 RDST + 단순 정상거리</td><td>구현이 단순함</td><td>정상 밀도 차이를 이상으로 오해할 수 있음</td><td>제외</td></tr>
+      <tr><td>공식 RDST + 새 One-Class 모델</td><td>복잡한 경계 학습 가능</td><td>표현과 판정기를 동시에 바꿔 원인 해석이 어려움</td><td>제외</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. 데이터 범위와 변경 경계</h2>
+  <ul>
+    <li>대상 군: Crop, ElectricDevices, FordA, FordB, Yoga, ECG5000,
+      ChlorineConcentration, StarLightCurves.</li>
+    <li>위 8개 군에 속한 실제 대상 데이터셋은 48개다. “8개 데이터셋”이 아니라
+      “8개 데이터셋 군, 48개 실제 데이터셋”으로 기록한다.</li>
+    <li>이 8개 군은 Exp448 TEST 결과의 잔여 FN을 보고 사후 선정된 범위다. 따라서 Exp451은
+      전체 과정이 처음부터 독립적인 전향 실험이라고 주장하지 않고, <strong>post-hoc method
+      qualification</strong>으로만 해석한다.</li>
+    <li>48개에서만 RDST prediction을 새로 계산한다.</li>
+    <li>나머지 1,069개는 Exp448 <code>stable-26</code> prediction과 confusion을 그대로 재사용한다.</li>
+    <li>Exp448·Exp449 코드, 공식 root, artifact, 결과는 수정하지 않는다.</li>
+    <li>Exp451은 별도 package, 별도 run identity, 별도 공식 root와 별도 사전등록을 사용한다.</li>
+  </ul>
+
+  <h2>4. 공식 RDST 사용 방법</h2>
+  <p><a href="https://www.aeon-toolkit.org/en/v1.4.0/api_reference/auto_generated/aeon.transformations.collection.shapelet_based.RandomDilatedShapeletTransform.html">aeon 1.4.0 공식 RDST</a>는
+  <code>fit(X, y=None)</code>을 지원한다. <code>y=None</code>이면 라벨 없이 임의의 정상 TRAIN 표본을
+  이용해 발생 횟수 임계값을 만든다. 따라서 TEST 라벨이나 가짜 class label이 필요 없다.</p>
+  <p>각 shapelet은 정상 TRAIN에서 뽑은 짧은 부분 모양이며, RDST는 각 시계열에 대해 다음 세 값을 만든다.</p>
+  <ol>
+    <li>그 모양과 가장 가까운 거리</li>
+    <li>가장 비슷한 위치</li>
+    <li>충분히 비슷한 위치가 나타난 횟수</li>
+  </ol>
+  <p>공식 변환기의 알고리즘을 복사하거나 수정하지 않고 feature transformer로만 사용한다.</p>
+
+  <h2>5. 동결할 과학 설정</h2>
+  <table>
+    <tbody>
+      <tr><th>변환기</th><td><code>aeon.transformations.collection.shapelet_based.RandomDilatedShapeletTransform</code></td></tr>
+      <tr><th>라벨 입력</th><td><code>y=None</code>; 정상 TRAIN만 사용</td></tr>
+      <tr><th>shapelet 예산</th><td>1,024개</td></tr>
+      <tr><th>seed</th><td><code>20260721</code>, <code>20261721</code></td></tr>
+      <tr><th>seed 결합</th><td>TRAIN OOF와 TEST 각각에서 위치별 중앙값</td></tr>
+      <tr><th>점수기</th><td>Exp449와 같은 5-fold LocalGap</td></tr>
+      <tr><th>이웃 수</th><td>3</td></tr>
+      <tr><th>TRAIN reference 상한</th><td>1,000</td></tr>
+      <tr><th>alpha</th><td>0.005</td></tr>
+      <tr><th>후보 규칙</th><td>각 TEST 중앙점수의 TRAIN-OOF 기준 경험적 upper p-value가 alpha 이하</td></tr>
+      <tr><th>결측치</th><td>공식 RDST는 결측치를 지원하지 않으므로 기존 정상 TRAIN 결측 정책을 사전등록에 명시하고, 임의 대체는 금지</td></tr>
+    </tbody>
+  </table>
+  <p>TRAIN reference가 1,000개를 넘으면 Exp449의 추출 규칙을 byte-level로 재사용한다.
+  각 fold의 reference 추출 seed는
+  <code>seed + 1009 × (fold_index + 1) + 1024</code>, 전체 TRAIN fit의 reference 추출 seed는
+  <code>seed + 7919 + 1024</code>다. 선택된 index는 오름차순으로 정렬한다. RDST 자체의
+  <code>random_state</code>는 해당 candidate seed다. 이 규칙은 구현 편의나 실행시간에 따라
+  바꾸지 않는다.</p>
+  <p>RDST 기본값 중 shapelet 길이, 정규화 확률, 발생 임계 percentile, similarity pruning,
+  prime dilation 설정은 aeon 1.4.0 기본값으로 고정한다. 구현 전에 공식 생성자 signature와
+  source SHA를 audit하고 manifest에 기록한다.</p>
+
+  <h2>6. 점수 계산 흐름</h2>
+  <pre>정상 TRAIN
+  → 5개 fold로 나눔
+  → 각 fold에서 나머지 정상 TRAIN으로 RDST를 새로 fit(y=None)
+  → LocalGap으로 남겨 둔 정상 TRAIN의 OOF 점수 계산
+  → 전체 TRAIN에서 고정 규칙으로 뽑은 최대 1,000개 정상 reference로 RDST와 LocalGap을 다시 fit
+  → TEST 점수 계산
+  → TRAIN OOF와 TEST 각각에서 두 seed 점수의 위치별 중앙값
+  → 각 TEST 중앙점수를 TRAIN-OOF 중앙점수 분포와 비교해 경험적 upper p-value 계산
+  → p-value ≤ 0.005인 TEST index를 후보로 생성
+  → prediction bytes와 SHA 동결
+  → 그 뒤에만 TEST label로 사후 평가</pre>
+  <p>fold마다 RDST를 다시 fit해야 TRAIN OOF 점수가 자기 자신을 학습에 사용하지 않는다.
+  이 경계를 생략한 빠른 계산은 공식 결과로 인정하지 않는다. 경험적 p-value의 최솟값은
+  <code>1 / (TRAIN OOF 수 + 1)</code>이다. 이 값이 0.005보다 크면 해상도가 부족하므로 해당
+  데이터셋의 후보는 빈 집합으로 막고 계산된 <code>attainable_p</code>와
+  <code>resolution_blocked=true</code>를 함께 기록한다.</p>
+
+  <h2>7. 성공 판단</h2>
+  <p>48개 대상에서 Exp448 예측을 Exp451 예측으로 한꺼번에 교체하고, 나머지 1,069개는
+  Exp448 결과를 그대로 둔 counterfactual 전체 성능을 계산한다. Exp451은 다음 조건을 모두
+  만족해야 자격을 얻는다.</p>
+  <ul>
+    <li>전체 FN &lt; 1,988</li>
+    <li>전체 FP ≤ 314</li>
+    <li>전체 F1 ≥ 0.6264199935</li>
+    <li>대상 8개 군의 FN 합계가 감소</li>
+  </ul>
+  <p>평균 하나만 보지 않고 48개 데이터셋 각각의 신규 탐지, 새 false alarm, 기존 탐지 손실,
+  paired 데이터셋 bootstrap 신뢰구간을 함께 보고한다. 일부 데이터셋의 악화는 위 동결된 전체
+  조건을 모두 만족할 때만 연구 근거로 인정한다.</p>
+
+  <h2>8. 라벨 방화벽</h2>
+  <ul>
+    <li>prediction 단계에서 TEST label, 실제 이상 위치, 과거 family별 TEST 성능을 사용하지 않는다.</li>
+    <li>48개 대상의 선정 근거가 Exp448 TEST 결과였다는 post-hoc 성격을 숨기지 않는다. 다만 그
+      과거 결과는 Exp451 prediction의 feature, score, threshold, seed 또는 조각 선택에 들어갈 수 없다.</li>
+    <li>prediction inventory와 SHA가 완전히 동결된 뒤 정확히 한 번의 ordered label session만 허용한다.
+      이 session은 Exp449와 같은 Exp448 순서의 48개 dataset, 정확히 72,300개 TEST row만 읽는다.</li>
+    <li>TEST 결과를 본 뒤 같은 Exp451의 shapelet 수, seed, alpha, threshold, 점수기 또는 대상을 바꾸지 않는다.</li>
+    <li>수정 아이디어는 반드시 Exp452 이상의 새 실험 번호와 새 사전등록으로 분리한다.</li>
+  </ul>
+
+  <h2>9. CPU·PyTorch·MLX·MPS 판단</h2>
+  <ul>
+    <li>공식 readiness에서 logical CPU 수를 다시 감지하고 outer worker는 항상
+      <code>max(1, detected_logical_cpus - 1)</code>로 결정한다. 현재 관찰값은 12개 CPU에서
+      11 workers이지만, 공식 실행 시 감지값이 다르면 그 값에 따라 계산하고 둘 다 provenance에 기록한다.</li>
+    <li>각 RDST 변환기의 <code>n_jobs=1</code>로 두어 outer process와 내부 thread의 중복 사용을 막는다.</li>
+    <li>공식 RDST는 NumPy·Numba CPU 구현이다. PyTorch/MPS나 MLX로 다시 작성하면 공식 알고리즘
+      구현 자체가 바뀌므로 RDST 변환 단계는 CPU canonical이다.</li>
+    <li>반면 RDST 뒤의 LocalGap 거리행렬 계산은 tensor로 그대로 표현할 수 있으므로 tensor-eligible로
+      분류하고 full run 전에 CPU 대 PyTorch/MPS 및 CPU 대 MLX smoke와 속도 측정을 수행한다.</li>
+    <li>smoke는 같은 input과 seed를 사용하고, 모든 출력이 finite이며, 공식 alpha에서 후보 index가
+      완전히 같아야 한다. 각 finite score 쌍의 정규화 오차
+      <code>abs(cpu-backend) / max(abs(cpu), abs(backend), 1e-12)</code>의 최댓값은
+      <code>1e-5</code> 이하여야 한다.</li>
+    <li>속도 측정은 transfer, device synchronization, warm-up, compile을 포함하며 exact LocalGap stage가
+      CPU보다 최소 1.1배 빨라야 한다. 하나라도 실패하면 LocalGap도 CPU canonical로 고정한다.</li>
+    <li>readiness와 manifest는 PyTorch version, MPS built/available/device, MLX와 mlx-metal version,
+      tensor eligibility, 양쪽 timing, finite/parity 결과, 최대 정규화 오차, 후보 일치, speedup,
+      backend 결정과 fallback 이유를 기록한다.</li>
+    <li>한 번에 하나의 MLX/MPS-heavy process만 허용한다. accelerated LocalGap이 통과하더라도 공식
+      readiness에서 동적으로 선택된 outer worker pool과 동시에 GPU job을 겹치지 않으며, 별도 benchmark가 병행 실행의 이득과 결정성을
+      입증하기 전에는 CPU outer schedule을 유지한다.</li>
+  </ul>
+
+  <h2>10. 실행 상태와 로그</h2>
+  <p>장시간 프로세스가 직접 원자적 JSON progress와 text log를 갱신한다. Codex가 반복 감시하지 않는다.</p>
+  <ul>
+    <li>PID, reviewed commit, 단계, backend, outer/inner worker 수</li>
+    <li>현재 데이터셋 이름, 군, TRAIN/TEST 행 수, 시계열 길이</li>
+    <li>현재 fold와 seed, 완료/전체 수, success/error/reused 수</li>
+    <li>처리속도, 경과시간, ETA, checkpoint, 최신 오류</li>
+  </ul>
+  <p>각 데이터셋·seed 결과는 create-only leaf로 저장하며 checkpoint에서 재개한다. 실패를 빈 후보로
+  바꾸지 않고 terminal failure로 남긴다.</p>
+
+  <h2>11. Exp449와의 관계 및 다음 단계</h2>
+  <ul>
+    <li>Exp449 실행과 결과는 계속 독립적으로 유지한다.</li>
+    <li>Exp451은 RDST 하나만 검증하며 Exp449 후보와 합치지 않는다.</li>
+    <li>Exp451이 자격을 얻어도 자동 경보나 champion으로 바로 승격하지 않는다.</li>
+    <li>Exp449·Exp451 중 자격 후보가 생긴 뒤의 TRAIN-only routing 또는 결합은 새 실험으로 설계한다.</li>
+    <li>전체 1,117개에 RDST를 직접 재계산하는 확장도 Exp451 결과를 본 뒤 새 실험 번호로만 진행한다.</li>
+  </ul>
+
+  <h2>12. 구현 전 필수 검증</h2>
+  <ul>
+    <li>aeon 1.4.0 공식 class path, constructor signature, source SHA, <code>y=None</code> 동작 audit</li>
+    <li>같은 input/seed에서 반복 feature와 prediction SHA 동일성</li>
+    <li>RDST feature가 정확히 <code>3 × 실제 shapelet 수</code> 열인지 확인</li>
+    <li>결측치·짧은 시계열·소표본 TRAIN의 명시적 abstention 또는 failure 계약</li>
+    <li>Exp449 LocalGap의 수치·OOF·p-value semantics 재사용 확인</li>
+    <li>48개 대상 membership과 나머지 1,069개 Exp448 exact reuse 검증</li>
+    <li>prediction artifact에 label 필드와 평가 결과가 들어갈 수 없는 schema 검증</li>
+  </ul>
+
+  <h2>13. 참고 근거</h2>
+  <ul>
+    <li><a href="https://www.aeon-toolkit.org/en/v1.4.0/api_reference/auto_generated/aeon.transformations.collection.shapelet_based.RandomDilatedShapeletTransform.html">aeon 1.4.0 RandomDilatedShapeletTransform 공식 문서</a></li>
+    <li><a href="https://github.com/aeon-toolkit/aeon/blob/v1.4.0/aeon/transformations/collection/shapelet_based/_dilated_shapelet_transform.py">aeon 1.4.0 RDST 공식 소스</a></li>
+    <li>Exp448 동결 기준선과 Exp449의 대상 membership·LocalGap·평가 계약은 저장소의 기존 사전등록과 설계를 재사용한다.</li>
+  </ul>
+</main></body>
+</html>
