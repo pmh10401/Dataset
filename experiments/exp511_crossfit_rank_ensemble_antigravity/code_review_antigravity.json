@@ -1,0 +1,21 @@
+{
+  "review": {
+    "verdict": "pass",
+    "blocking_for_pilot": false,
+    "defects": [],
+    "limitations": [
+      "Inherited all-normal TRAIN length/z-norm may include held C; C is not used for A fits, B weights, or score rescaling.",
+      "The four members share overlapping A rows and are not statistically independent; duplicate waveforms are not deduplicated.",
+      "Controls MiniRocket/oas_distance/square_joint still fit full F (A+B), matching frozen Exp510; only the ensemble members are A-geometry / B-weights.",
+      "Per-member A leave-self-out median scale plus equal arithmetic mean; no C/TEST/quantile/rank renormalization and no size weighting when |B| differs.",
+      "Verifier reconstructs seeds, A/B cuts floor(j*n/4), stored-vector means, Exp510 five-score replay, aggregates, and four gates; it does not rebuild OAS/MiniRocket geometry or gradients from feature matrices.",
+      "n<32 copies Exp502 square_joint; ranking_parents(SEED+1510, cap 128) is unused on the stated pilot F sizes.",
+      "No full TEST runner is in this slice; promotion is TRAIN-gate only. TEST isolation is flagged, not proved from load_normal_train.",
+      "Outer split helper, json_digest, MiniRocket factory, Exp510 NPZ audit layout, and acceleration parity/candidates are not in the supplied files; this review did not execute code or see results."
+    ]
+  },
+  "prompt_sha256": "611b98e06079d0d8566b77cde70fb06477996eaedb3f332a0ada482b845529b0",
+  "model": "grok-4.6",
+  "reasoning_effort": "high",
+  "scope": "Read-only exact code/design review; no private data or execution evidence supplied"
+}

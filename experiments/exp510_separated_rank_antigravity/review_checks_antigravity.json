@@ -1,0 +1,11 @@
+{
+  "state": "passed",
+  "atomic_writer_roundtrip": true,
+  "constant_fixture_weights_exact_ones": true,
+  "constant_fixture_initial_gradient_max": 0.0,
+  "constant_fixture_solver_iterations": 0,
+  "constant_fixture_all_synthetic_contributions_zero": false,
+  "diagnostic_correction": "An extra probe initially assumed all synthetic scores were zero and failed. Actual synthetic scores include large positive values, while the initial gradient is exactly zero. The registered exact-unit-weight fixture passes unchanged.",
+  "test_values_read": false,
+  "test_labels_read": false
+}

@@ -1,0 +1,6 @@
+{
+  "stage": "explicit_float64_mask_probe",
+  "default_device": "Device(gpu, 0)",
+  "error_type": "ValueError",
+  "reason": "float64 is not supported on the GPU"
+}

@@ -1,0 +1,21 @@
+{
+  "state": "authorized_exploratory_test_after_train_rejection",
+  "user_instruction": "진행",
+  "scope": "One unchanged Exp511 full1117 exploratory TEST evaluation, no retuning or model promotion",
+  "candidate": "crossfit_rank",
+  "train_selected": "square_joint",
+  "train_gate_passed": false,
+  "protocol_sha256": "4b79d2bf475b2bc4b4a95d93b8f6ed0f4d16d8145b2e5b2775a64462997af84c",
+  "historical_artifacts": {
+    "experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py": "4f1526715af6b0651310fc4570df104128f2d05d61819edd964fa3eb72bf2c11",
+    "experiments/exp511_crossfit_rank_ensemble_antigravity/protocol_antigravity.html": "3f764ee23a6b3e3d4c2d7cf078a9b7be630c74fe41fa6d04de1ed872bf2d5a81",
+    "experiments/exp511_crossfit_rank_ensemble_antigravity/pilot_results_antigravity.json": "3d26cdf7038231987e9e690ef04633ecfc3080f64846d969b96a5364a282c383",
+    "experiments/exp511_crossfit_rank_ensemble_antigravity/verification_antigravity.json": "7fda3dd7d5943bbae97a716036ce0131a1aa92f476a1aa6370b6e90a6f1977e1",
+    "experiments/exp511_crossfit_rank_ensemble_antigravity/closure_antigravity.json": "16a82e4f1f38f14699ffa90a9d44ed3cf188ecf940c738f83dbd765a7d10707d",
+    "experiments/exp511_crossfit_rank_ensemble_antigravity/preflight_antigravity.json": "0944e968200cd1d4244d65fefb10c27dcf74e7ec47fa1f319b7414ad1f93da06",
+    "docs/codemap/codemap_exp511_antigravity.json": "76c8f7a7c3dcdca734496cb4bbdc049c803519f752fa033893d2373e9aae7c2f",
+    "docs/codemap/codemap_exp511_antigravity.html": "022bc4638a9be2be8634c9e6e19eaebee2d036d2217229d9e07ea192ab7611d7",
+    "docs/codemap/codemap_exp511_antigravity.lock": "1fcf7ede8a9e52fce44536b9ffae5edd38f1f74833f306adb1457336542507ce"
+  },
+  "provenance": "Explicitly enumerated source and result files; SHA256 values freshly read before this record. No recursive history snapshot or original-file changes."
+}

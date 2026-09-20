@@ -88,10 +88,12 @@ def strict_statistics_reference_antigravity(
     )
 
 
-def _transformed_tuple_antigravity(features: Sequence[float]) -> np.ndarray:
+def _transformed_tuple_antigravity(
+    features: Sequence[float], feature_count: int = len(FEATURE_KEYS_ANTIGRAVITY)
+) -> np.ndarray:
     raw = np.asarray(tuple(float(value) for value in features), dtype=np.float64)
-    if raw.shape != (len(FEATURE_KEYS_ANTIGRAVITY),):
-        raise ValueError("features must contain the seven frozen values")
+    if raw.shape != (feature_count,):
+        raise ValueError("features must match the registered feature count")
     transformed = raw.copy()
     if np.isfinite(transformed[0]):
         transformed[0] = np.log1p(max(0.0, float(transformed[0])))
@@ -100,11 +102,13 @@ def _transformed_tuple_antigravity(features: Sequence[float]) -> np.ndarray:
     return transformed
 
 
-def _require_exact_feature_keys_antigravity(features: Mapping[str, float]) -> None:
+def _require_exact_feature_keys_antigravity(
+    features: Mapping[str, float], expected: Sequence[str] = FEATURE_KEYS_ANTIGRAVITY
+) -> None:
     if not isinstance(features, Mapping):
         raise ValueError("features must be a mapping")
-    if set(features) != set(FEATURE_KEYS_ANTIGRAVITY):
-        raise ValueError("query must contain exactly the seven frozen feature keys")
+    if set(features) != set(expected):
+        raise ValueError("query must contain exactly the registered feature keys")
 
 
 def _enabled_set_antigravity(
@@ -153,6 +157,8 @@ class StrictResidualPolicyAntigravity:
         backend: str = "numpy_reference",
         distance_backend: str | None = None,
         distance_variant: str = "standard_euclidean",
+        feature_keys: Sequence[str] = FEATURE_KEYS_ANTIGRAVITY,
+        descriptor_values: Mapping[str, Sequence[float]] | None = None,
     ) -> None:
         if type(k) is not int or k < 1:
             raise ValueError("k must be a positive integer")
@@ -176,6 +182,14 @@ class StrictResidualPolicyAntigravity:
         self.backend = backend
         self.distance_variant = distance_variant
         self.distance_backend_used = resolved_distance_backend
+        self.feature_keys = tuple(feature_keys)
+        if (self.feature_keys[:2] != ("width", "n_train")
+                or any(type(key) is not str or not key for key in self.feature_keys)
+                or len(set(self.feature_keys)) != len(self.feature_keys)):
+            raise ValueError("descriptor keys must be unique and start with width, n_train")
+        if descriptor_values is None and self.feature_keys != FEATURE_KEYS_ANTIGRAVITY:
+            raise ValueError("custom descriptor keys require descriptor values")
+        self.descriptor_values = descriptor_values
         self._fitted = False
 
     def fit(
@@ -185,7 +199,10 @@ class StrictResidualPolicyAntigravity:
         if not fitted or any(type(row) is not EvidenceRowAntigravity for row in fitted):
             raise ValueError("fit requires strict EvidenceRowAntigravity rows")
         matrix = np.stack(
-            [_transformed_tuple_antigravity(row.features) for row in fitted]
+            [_transformed_tuple_antigravity(
+                row.features if self.descriptor_values is None else self.descriptor_values[row.dataset],
+                len(self.feature_keys),
+            ) for row in fitted]
         )
         finite = np.isfinite(matrix)
         medians = np.asarray(
@@ -265,7 +282,7 @@ class StrictResidualPolicyAntigravity:
         self, features: Mapping[str, float]
     ) -> tuple[StrictCandidateAssessmentAntigravity, ...]:
         raw = _transformed_tuple_antigravity(
-            tuple(float(features[key]) for key in FEATURE_KEYS_ANTIGRAVITY)
+            tuple(float(features[key]) for key in self.feature_keys), len(self.feature_keys)
         )
         raw = np.where(np.isfinite(raw), raw, self._medians)
         query = (raw - self._mean) / self._scale
@@ -342,7 +359,7 @@ class StrictResidualPolicyAntigravity:
             raise RuntimeError("fit must be called before route")
         if type(row_knn_method) is not str or row_knn_method not in METHODS_ANTIGRAVITY:
             raise ValueError("row_knn_method must be one of the four frozen methods")
-        _require_exact_feature_keys_antigravity(features)
+        _require_exact_feature_keys_antigravity(features, self.feature_keys)
         enabled = _enabled_set_antigravity(enabled_methods)
         if row_knn_method != BASELINE_METHOD_ANTIGRAVITY:
             return ResidualDecisionAntigravity(

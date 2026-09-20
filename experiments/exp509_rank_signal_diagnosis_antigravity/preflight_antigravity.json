@@ -1,0 +1,26 @@
+{
+  "state": "passed",
+  "utc": "2026-09-17T15:37:56.577739+00:00",
+  "artifacts": {
+    "experiments/exp509_rank_signal_diagnosis_antigravity/verify_antigravity.py": "2f5a32aa7c905fc000b7ab2263b5c4a11ad4fcf88780e65f0e1a889acff5a40f",
+    "experiments/exp509_rank_signal_diagnosis_antigravity/run_antigravity.py": "a9ca2aa5e3106346b3e20d934ce657c265995734dcce874c1a8e215e0bf6c565",
+    "experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py": "b13a119193c4ab7589d93f790c199a231576b48c1973f283a5e5efb5a92f9bcd",
+    "experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py": "add766bca9416d0a2a3f29452fe400dbc18e42e7b28f5c920887627cc92a199a",
+    "experiments/exp509_rank_signal_diagnosis_antigravity/protocol_antigravity.html": "c99485e31be6528b3745982a205cd3d77a204ac60c383f2f71c55735980a4636",
+    "experiments/exp509_rank_signal_diagnosis_antigravity/authorization_antigravity.json": "b3389c073a6f16f4fc8bb93a748c9960a8ec7264aba30176cea2862fc830a234",
+    "experiments/exp509_rank_signal_diagnosis_antigravity/design_review_antigravity.json": "9dfdbf87cdfbc1d5adac4574e273bd444a052ea62c91185eaea6417b2ecaaa89",
+    "experiments/exp509_rank_signal_diagnosis_antigravity/review_resolution_antigravity.json": "b6a5e44f1b53a216dee3448813d8a00f0fb2ff00cd1ab7a2e8a3f712d85263c6",
+    "experiments/exp509_rank_signal_diagnosis_antigravity/tests_all_antigravity.xml": "389d9ee760603e5b08e77e680646729a52a9f468465d044cb53f902ce42a469f",
+    "experiments/exp509_rank_signal_diagnosis_antigravity/tests_exit_antigravity.json": "e89df0eae5ec7db81135aed16463968955c578bcc4f2ec43172eff351f080c17",
+    "experiments/exp509_rank_signal_diagnosis_antigravity/acceleration_antigravity.json": "5c8ea84d57df116a5bc493a3b0b7a90a8dad0ae50ec15d8d2170d06c01c57212",
+    "docs/codemap/codemap_exp509_antigravity.json": "cc4a55653199d4a9cb22d3917f0514050d30acfbc4bcac5aa94d67be704b4f9c",
+    "docs/codemap/codemap_exp509_antigravity.html": "c44d96ad1bb3b3fb4d08c6386747f0c1a42f7557076d776eeaa8035ce743ed70",
+    "docs/codemap/codemap_exp509_antigravity.lock": "2a8e22f7ef11f0aad387315e79f5e4a56bd067e2200f48b9462d900facacec5e"
+  },
+  "tests_passed": 13,
+  "scope": "Exp509 diagnostic only",
+  "new_test_evaluation": false,
+  "exp510_authorized_for_execution": false,
+  "minimum_outer_fit": 32,
+  "selected_backend": "NumPy/SciPy float64 CPU"
+}

@@ -1,0 +1,33 @@
+{
+  "state": "passed_train_screen",
+  "datasets": 50,
+  "folds": 250,
+  "selected": "square_joint",
+  "unrestricted_winner": "square_joint",
+  "best_new_candidate": "square_joint",
+  "new_candidate_worst_proxy": 0.6825942639564146,
+  "anchor_worst_proxy": 0.6522197414956119,
+  "new_candidate_margin": 0.030374522460802744,
+  "required_proxy_margin": 0.02,
+  "eligible": [
+    "MiniRocket",
+    "oas_distance",
+    "square_distance",
+    "square_joint",
+    "rms_distance",
+    "rms_joint"
+  ],
+  "normal_tail": {
+    "MiniRocket": 2.9277101049968524,
+    "oas_distance": 2.5555495038907714,
+    "square_distance": 2.8499321046024644,
+    "square_joint": 2.7474077572533098,
+    "rms_distance": 2.7356406456118103,
+    "rms_joint": 2.7030297830071754
+  },
+  "anchor_fold_recalls_exact": true,
+  "source_hashes_passed": true,
+  "pilot_sha256": "6beeed2922a41158bf104641dbf30639685a2840315d8f3f63aca1c9b8bd2b6e",
+  "full_run_skipped": false,
+  "test_labels_read": false
+}

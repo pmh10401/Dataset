@@ -1,0 +1,32 @@
+{
+  "scope": "synthetic_only_no_DB_or_TEST",
+  "scale_power": 20,
+  "ordinary": [
+    {
+      "n": 2,
+      "length": 12,
+      "fit_features_exact": true,
+      "query_features_exact": true
+    },
+    {
+      "n": 16,
+      "length": 128,
+      "fit_features_exact": true,
+      "query_features_exact": true
+    },
+    {
+      "n": 16,
+      "length": 512,
+      "fit_features_exact": true,
+      "query_features_exact": true
+    }
+  ],
+  "near_linear": {
+    "rough_std": 4.008492382467921e-08,
+    "rough_range": 1.1920928955078125e-07,
+    "unscaled": "Input collection has too little variation",
+    "scaled20_std": 0.042032089084386826,
+    "scaled_finite": true,
+    "scaled20_21_features_exact": true
+  }
+}

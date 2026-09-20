@@ -1,0 +1,6 @@
+{
+  "reviewer": "sol_advisor_sol_reviewer",
+  "verdict": "ship",
+  "scope": "code/protocol/fold isolation/baseline test inspection; no DB/TEST access",
+  "findings": []
+}

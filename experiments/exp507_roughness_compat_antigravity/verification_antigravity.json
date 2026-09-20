@@ -1,0 +1,31 @@
+{
+  "state": "passed_train_screen",
+  "datasets": 50,
+  "folds": 250,
+  "selected": "roughness_joint",
+  "unrestricted_winner": "roughness_joint",
+  "best_new_candidate": "roughness_joint",
+  "new_candidate_worst_proxy": 0.6893184514009977,
+  "anchor_worst_proxy": 0.6522197414956119,
+  "new_candidate_margin": 0.037098709905385774,
+  "required_proxy_margin": 0.02,
+  "eligible": [
+    "MiniRocket",
+    "oas_distance",
+    "roughness_distance",
+    "roughness_joint"
+  ],
+  "normal_tail": {
+    "MiniRocket": 2.9277101049968524,
+    "oas_distance": 2.5555495038907714,
+    "roughness_distance": 2.647690443965482,
+    "roughness_joint": 2.6165244369377474
+  },
+  "anchor_fold_recalls_exact": true,
+  "source_hashes_passed": true,
+  "pilot_sha256": "a0a2667dffb7746d9e8190d5c6cf54a50efdf70ad58f60891b0828a8d2081a46",
+  "full_run_skipped": false,
+  "test_labels_read": false,
+  "parent506_all_fold_recalls_and_tails_exact": true,
+  "parent506_pilot_sha256": "d93d914312c355c06d4e15d32266646879205be06dfb31f727924783364a6890"
+}

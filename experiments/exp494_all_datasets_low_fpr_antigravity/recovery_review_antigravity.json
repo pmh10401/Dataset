@@ -1,0 +1,12 @@
+{
+  "state": "ship",
+  "reviewer": "01a0a904-c51e-76e1-ad1b-ce88c5a883f7",
+  "scope": "Read-only recovery finalization boundary review",
+  "resolved": [
+    "staged intermediate before atomic annotated publication",
+    "recorded finalizer hash checked before retry",
+    "existing result provenance checked before labels and state write"
+  ],
+  "tests": "3 recovery/publication tests passed; reviewer did not rerun",
+  "finalizer_sha256": "8e70385359e617ba334ff148a91b4871a0a0ec4c5670a85373d314630afb098a"
+}

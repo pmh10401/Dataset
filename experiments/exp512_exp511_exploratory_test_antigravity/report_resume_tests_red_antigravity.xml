@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="4" time="0.056" timestamp="2026-09-18T11:53:36.628686+09:00" hostname="macui-MacBookPro.local"><testcase classname="scratch.test_report_exp512_resume_antigravity" name="test_unobserved_scoring_exit_is_not_invented_after_verified_freeze" time="0.001"><failure message="AssertionError: Reporting lacks artifact-backed completion validation&#10;assert False&#10; +  where False = hasattr(report, 'validate_execution_evidence')">def test_unobserved_scoring_exit_is_not_invented_after_verified_freeze():
+        values=evidence();before=deepcopy(values)
+&gt;       validator()(*values)
+        ^^^^^^^^^^^
+
+scratch/test_report_exp512_resume_antigravity.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def validator():
+&gt;       assert hasattr(report,'validate_execution_evidence'), 'Reporting lacks artifact-backed completion validation'
+E       AssertionError: Reporting lacks artifact-backed completion validation
+E       assert False
+E        +  where False = hasattr(report, 'validate_execution_evidence')
+
+scratch/test_report_exp512_resume_antigravity.py:19: AssertionError</failure></testcase><testcase classname="scratch.test_report_exp512_resume_antigravity" name="test_observed_nonzero_scoring_exit_is_rejected" time="0.000" /><testcase classname="scratch.test_report_exp512_resume_antigravity" name="test_unverified_score_population_is_rejected" time="0.000" /><testcase classname="scratch.test_report_exp512_resume_antigravity" name="test_changed_score_boundary_is_rejected" time="0.000" /></testsuite></testsuites>

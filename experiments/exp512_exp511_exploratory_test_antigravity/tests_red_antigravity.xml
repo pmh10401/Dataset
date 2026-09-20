@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="0.134" timestamp="2026-09-18T08:44:54.427727+09:00" hostname="macui-MacBookPro.local"><testcase classname="experiments.exp512_exp511_exploratory_test_antigravity.test_exp512_antigravity" name="test_adapter_preserves_all_scores_fallback_components_and_roles" time="0.000"><failure message="AssertionError: scoring implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/scoring_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/scoring_antigravity.py') = with_name(('scoring' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py')">def test_adapter_preserves_all_scores_fallback_components_and_roles():
+&gt;       m=module('scoring')
+          ^^^^^^^^^^^^^^^^^
+
+experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'scoring'
+
+    def module(name):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(),name+' implementation missing'
+E       AssertionError: scoring implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/scoring_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/scoring_antigravity.py') = with_name(('scoring' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py')
+
+experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py:9: AssertionError</failure></testcase><testcase classname="experiments.exp512_exp511_exploratory_test_antigravity.test_exp512_antigravity" name="test_hash_boundary_refuses_tampered_artifact" time="0.046"><failure message="AssertionError: scoring implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/scoring_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/scoring_antigravity.py') = with_name(('scoring' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py')">tmp_path = PosixPath('/private/var/folders/th/yvv115s11t7glkfvzp688vsm0000gn/T/pytest-of-mac/pytest-267/test_hash_boundary_refuses_tam0')
+
+    def test_hash_boundary_refuses_tampered_artifact(tmp_path):
+&gt;       m=module('scoring');p=tmp_path/'source_antigravity.json';p.write_text('{"a":1}')
+          ^^^^^^^^^^^^^^^^^
+
+experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py:34: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'scoring'
+
+    def module(name):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(),name+' implementation missing'
+E       AssertionError: scoring implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/scoring_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/scoring_antigravity.py') = with_name(('scoring' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py')
+
+experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py:9: AssertionError</failure></testcase><testcase classname="experiments.exp512_exp511_exploratory_test_antigravity.test_exp512_antigravity" name="test_equal_family_weighting_bootstrap_and_regression_counts" time="0.000"><failure message="AssertionError: evaluation implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/evaluation_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/evaluation_antigravity.py') = with_name(('evaluation' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py')">def test_equal_family_weighting_bootstrap_and_regression_counts():
+&gt;       m=module('evaluation');records=[]
+          ^^^^^^^^^^^^^^^^^^^^
+
+experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'evaluation'
+
+    def module(name):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(),name+' implementation missing'
+E       AssertionError: evaluation implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/evaluation_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/evaluation_antigravity.py') = with_name(('evaluation' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py')
+
+experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py:9: AssertionError</failure></testcase><testcase classname="experiments.exp512_exp511_exploratory_test_antigravity.test_exp512_antigravity" name="test_retrospective_metric_preserves_ties_and_zero_fp" time="0.000"><failure message="AssertionError: evaluation implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/evaluation_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/evaluation_antigravity.py') = with_name(('evaluation' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py')">def test_retrospective_metric_preserves_ties_and_zero_fp():
+&gt;       m=module('evaluation');y=np.array([0,0,1,1]);scores=np.array([1.,2.,2.,3.])
+          ^^^^^^^^^^^^^^^^^^^^
+
+experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'evaluation'
+
+    def module(name):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(),name+' implementation missing'
+E       AssertionError: evaluation implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/evaluation_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/evaluation_antigravity.py') = with_name(('evaluation' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py')
+
+experiments/exp512_exp511_exploratory_test_antigravity/test_exp512_antigravity.py:9: AssertionError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,21 @@
+{
+  "state": "complete_verified_train_diagnostic",
+  "utc": "2026-09-17T15:45:27.354196+00:00",
+  "datasets": 50,
+  "folds": 250,
+  "tests_passed": 13,
+  "result_sha256": "2cb615b80a32ed0f2c8ccba61680cd6eb0d65a4a35481412f6926d09d85fb8c0",
+  "verification_sha256": "e985f3e3fb88888bf76f311067fece4bd8a55dd7fb88171cafb1d1895c5e14df",
+  "report": "docs/EXP509_SIGNAL_DIAGNOSIS_antigravity.html",
+  "report_sha256": "d792ddec930eeeb6050fb8db43623a80fd581f4815d1ce5074f87487f3235685",
+  "source_code_changed_after_run": false,
+  "exp510_started": false,
+  "test_evaluation_executed": false,
+  "model_promotion": false,
+  "ten_percent_goal_achieved": false,
+  "best_full_experiment": "exp502",
+  "best_full_primary_relative_gain": 0.037305683708692694,
+  "recommended_next_direction": "Separate normal representation-reference fit A, ranking fit B and external validation C",
+  "unresolved_projected_gradient_folds": 4,
+  "limitations": "Matched normal-TRAIN diagnostic; not component-level causal proof or generalization improvement."
+}

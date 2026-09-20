@@ -1,0 +1,15 @@
+{
+  "reviewer": "sol_advisor_sol_reviewer",
+  "agent": "01a0a883-4b1c-70a0-9b2e-c00d9d8a1617",
+  "status": "clear_after_fixes",
+  "fixes": [
+    "regenerated code map",
+    "pinned upstream checkpoint metadata and scores to frozen results",
+    "bound full new metadata at label boundary; validate alignment on cache read"
+  ],
+  "regressions": {
+    "passed": 30,
+    "log": "/private/tmp/exp493_regression_antigravity.log"
+  },
+  "grok_session": "01a0a87e-e739-7bb3-bc65-911f24a578e2"
+}

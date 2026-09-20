@@ -1,0 +1,17 @@
+{
+  "state": "passed",
+  "datasets": 50,
+  "families": 50,
+  "folds": 250,
+  "arrays_verified": 15250,
+  "result_sha256": "2cb615b80a32ed0f2c8ccba61680cd6eb0d65a4a35481412f6926d09d85fb8c0",
+  "verifier_sha256": "2f5a32aa7c905fc000b7ab2263b5c4a11ad4fcf88780e65f0e1a889acff5a40f",
+  "baseline_recalls_replayed": true,
+  "roles_verified": true,
+  "losses_projected_gradients_and_aggregation_recomputed": true,
+  "gradients_independent_recomputation": false,
+  "gradient_scope": "finite-difference unit test; full-vector gradients produced by frozen verified objective",
+  "test_values_read": false,
+  "test_labels_read": false,
+  "model_promotion": false
+}

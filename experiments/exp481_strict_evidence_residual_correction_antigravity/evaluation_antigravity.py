@@ -198,8 +198,12 @@ def evaluate_outer_row_antigravity(
     enabled = tuple(sorted(enabled_methods))
     features = _feature_mapping_antigravity(row)
     row_decision = row_policy.route(features, row.proposal)
+    descriptors = getattr(residual_policy, "descriptor_values", None)
+    residual_features = features if descriptors is None else dict(zip(
+        residual_policy.feature_keys, descriptors[row.dataset], strict=True
+    ))
     residual_decision = residual_policy.route(
-        features,
+        residual_features,
         row_knn_method=row_decision.method,
         enabled_methods=None,
     )
@@ -430,8 +434,8 @@ def apply_exp481_gates_antigravity(summary: Mapping[str, object]) -> dict[str, o
     return gates
 
 
-def _route_input_audit_antigravity() -> dict[str, object]:
-    keys = tuple(FEATURE_KEYS_ANTIGRAVITY)
+def _route_input_audit_antigravity(feature_keys=FEATURE_KEYS_ANTIGRAVITY) -> dict[str, object]:
+    keys = tuple(feature_keys)
     name_keys = tuple(
         key for key in keys if any(token in key for token in ("dataset", "family", "name"))
     )
@@ -496,7 +500,7 @@ def evaluate_nested_out_of_family_antigravity(
     leakage = {
         "family_overlap_count": family_overlap_count,
         "outer_family_seen_by_inner_count": outer_family_seen_by_inner_count,
-        **_route_input_audit_antigravity(),
+        **_route_input_audit_antigravity(residual_kwargs.get("feature_keys", FEATURE_KEYS_ANTIGRAVITY)),
         "held_out_scores_read_after_routing": True,
     }
     return {

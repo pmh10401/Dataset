@@ -1,0 +1,60 @@
+{
+  "edits": [
+    {
+      "file": "protocol_antigravity.html",
+      "old": "선택 키는 손상별 평균 재현율의 최솟값, 그다음 그 평균, 그다음 고정 후보 순서(뒤 인덱스가 동점에서 이긴다)이다.",
+      "new": "선택 키는 손상별 평균 재현율의 최솟값, 그다음 그 평균, 그다음 고정 후보 순서이다. 코드는 <code>-names.index</code>를 <code>max</code>와 쓰므로 더 이른 후보가 동점을 가져간다."
+    },
+    {
+      "file": "protocol_antigravity.html",
+      "old": "<li>공식 통합과 시험 실행은 Codex가 담당한다. 이 문서를 쓰는 시점에는 파일럿·가속·전체 러너를 실행하지 않고, DB·TEST 값·TEST 라벨도 읽지 않는다.</li>",
+      "new": "<li>공식 통합과 시험 실행은 Codex가 담당한다. 이 문서를 쓰는 시점에는 파일럿·가속·전체 러너를 실행하지 않고 DB도 읽지 않는다. TRAIN 파일럿은 TEST 값과 TEST 라벨을 읽지 않는다.</li>"
+    },
+    {
+      "file": "protocol_antigravity.html",
+      "old": "<li>점수와 코드·데이터·프로토콜 해시는 TEST 라벨을 보기 전에 고정한다.</li>",
+      "new": "<li>코드·후보·프로토콜 해시는 TEST 값을 읽기 전에 고정한다. 이후 전체 채점은 그 고정 뒤에 TEST 값을 읽고, 모든 점수와 메타를 고정한 뒤에만 TEST 라벨을 읽는다. TEST로 적합하지 않는다.</li>"
+    },
+    {
+      "file": "protocol_antigravity.html",
+      "old": "네 구간 연결은 4032로, 원시계열 PPV 차원과 같다.",
+      "new": "네 구간 연결은 4032로, 원시계열 PPV 차원과 같다. 적합과 질의 변환은 형상 <code>(4n, 1008)</code>을 요구하며 특징 수 폴백은 없다."
+    },
+    {
+      "file": "protocol_antigravity.html",
+      "old": "<li>경험 오경보율 0.1% 이하에서, 가족 매크로 TPR이 MiniRocket 대비 상대 10% 이상 개선.</li>\n<li>오경보 0 예산에서 비회귀.</li>\n<li>네 가지 오경보 예산과 세 가지 가중 모두를 통과해야 한다.</li>\n<li>점수와 해시는 TEST 라벨 전에 고정되어 있어야 한다.</li>\n</ul>\n<p>파일럿 승격은 이 목표의 대용이 아니다. TEST로 후보를 다시 고르지 않는다.</p>",
+      "new": "<li>일차 목표는 가족 매크로 경험 오경보율 0.1% 이하에서 MiniRocket 대비 상대 TPR 10% 이상 개선이고, 오경보 0 예산 비회귀이다.</li>\n<li>나머지 오경보 예산과 세 가지 가중은 모두 보고한다. 그 전부가 개선될 필요는 없다.</li>\n<li>이후 전체 채점은 코드와 후보를 고정한 뒤에 TEST 값을 읽고, 모든 점수와 메타를 고정한 뒤에만 TEST 라벨을 읽는다. TEST로 적합하지 않는다.</li>\n</ul>\n<p>파일럿 승격은 이 목표의 대용이 아니다. TEST로 후보를 다시 고르지 않는다. TRAIN 파일럿은 TEST 값과 TEST 라벨을 읽지 않는다.</p>"
+    },
+    {
+      "file": "protocol_antigravity.html",
+      "old": "<li>벤치마크 대상은 구간 재표본 헬퍼뿐이다. NumPy(기본)·Numba·Torch CPU를 같은 격자로 비교한다. 합성 적합 64×128, 질의 1024×128, 시드 503. 콜드·웜과 변환 오차를 기록한다.</li>\n<li>모든 점수가 유한하고 <code>rtol=1e-10</code>, <code>atol=1e-8</code>로 가까우며, 안정 정렬 순위와 정상 1000·예산 0/1/5/10의 후보 인덱스가 같아야 한다.</li>",
+      "new": "<li>시간 측정 단계는 헤드 적합과 질의 전체이다. 교체하는 구성 요소만 구간 재표본 헬퍼이다. NumPy(기본)·Numba·Torch CPU를 같은 격자로 비교한다. 합성 적합 64×128, 질의 1024×128, 시드 503. 콜드·웜과 변환 오차를 기록한다. 길이 128은 구간 32를 32로 보내므로 보간이 항등에 가깝다.</li>\n<li>모든 점수가 유한하고 <code>rtol=1e-10</code>, <code>atol=1e-8</code>로 가까우며, 안정 정렬 순위와 정상 1000·예산 0/1/5/10의 후보 인덱스가 같아야 한다. 실제 보간은 길이 11과 131에서 적합 8행·질의 1024행·앞 1000 의사 정상으로 같은 검사를 보충 기록한다.</li>"
+    },
+    {
+      "file": "protocol_antigravity.html",
+      "old": "<li>패리티와 속도 증거가 없으면 가속 생산 경로를 고르지 않는다. 기본은 NumPy 재표본이다.</li>",
+      "new": "<li>패리티와 속도 증거가 없으면 가속 생산 경로를 고르지 않는다. 길이 11과 131의 보간 패리티가 실패해도 가속기를 고르지 않고 정규 NumPy를 유지한다. 기본은 NumPy 재표본이다.</li>"
+    },
+    {
+      "file": "protocol_antigravity.html",
+      "old": "<li>TEST 값·TEST 라벨을 읽거나, TEST로 적합하거나, 데이터셋마다 후보를 고르는 일.</li>",
+      "new": "<li>TRAIN 파일럿에서 TEST 값 또는 TEST 라벨을 읽는 일, TEST로 적합하는 일, 데이터셋마다 후보를 고르는 일. TEST 적합은 언제나 금지이다. 이후 전체 채점이 TEST 값을 읽는 것은 코드·후보 고정 뒤에만 허용하고, TEST 라벨은 모든 점수와 메타를 고정한 뒤에만 허용한다.</li>"
+    },
+    {
+      "file": "spatial_antigravity.py",
+      "old": "        stacked=quarter_segments(x);encoded=self.quarter_encoder.fit_transform(stacked)\n        if encoded.shape[0]!=4*n:raise ValueError('quarter encoder did not return four blocks per row')\n        quarter=encoded.reshape(n,-1)",
+      "new": "        stacked=quarter_segments(x);encoded=self.quarter_encoder.fit_transform(stacked)\n        if encoded.shape!=(4*n,1008):raise ValueError('quarter encoder must return shape (4*n, 1008)')\n        quarter=encoded.reshape(n,4032)"
+    },
+    {
+      "file": "spatial_antigravity.py",
+      "old": "            quarter=self.quarter_encoder.transform(quarter_segments(x)).reshape(len(x),-1)",
+      "new": "            encoded=self.quarter_encoder.transform(quarter_segments(x))\n            if encoded.shape!=(4*len(x),1008):raise ValueError('quarter encoder must return shape (4*n, 1008)')\n            quarter=encoded.reshape(len(x),4032)"
+    },
+    {
+      "file": "acceleration_antigravity.py",
+      "old": "        finally:module.quarter_segments=original\n    path=P.parent/'exp495_normal_geometry_antigravity/acceleration_antigravity.json';old=json.loads(path.read_text())\n    records.update(selected='canonical NumPy quarter resample + official Numba aeon MiniRocket + float64 OAS CPU',scope='Complete raw and shared-quarter MiniRocket fit and transform, all OAS fits and queries, control and candidate scoring; timings include conversion and JIT warm-up',mlx=old['mlx'],mps=old['mps'],availability=old['availability'],inherited_gpu_probe_sha256=file_sha256_antigravity(path),source_sha256=file_sha256_antigravity(Path(__file__)),decision='Official MiniRocket is already Numba and cannot be replaced by a tensor rewrite under parity policy. Extra segment resampling is tensor-eligible but must pass complete-stage parity/speed. No accelerated production path is selected without that evidence. float64 GPU unavailable (inherited Exp495 probe); CPU remains canonical.')",
+      "new": "        finally:module.quarter_segments=original\n        records['supplementary_parity']={}\n        for length in (11,131):\n            xs=rng.normal(size=(8,length));qs=rng.normal(size=(1024,length));xs[-1]=0;qs[-1]=0\n            control_conv=original(qs);control_out=module.SpatialHeads(xs).score(qs)\n            block={}\n            for name,fn in [('numba',numba_quarters),('torch_cpu',torch_quarters)]:\n                try:\n                    module.quarter_segments=fn;conv=fn(qs);out=module.SpatialHeads(xs).score(qs)\n                    block[name]=dict(conversion_finite=bool(np.isfinite(conv).all() and np.isfinite(control_conv).all()),conversion_close=bool(np.allclose(conv,control_conv,rtol=1e-10,atol=1e-8)),finite=all(np.isfinite(v).all() for v in out.values()),scores_close=all(np.allclose(control_out[k],out[k],rtol=1e-10,atol=1e-8) for k in out),ranks_equal=all(np.array_equal(np.argsort(control_out[k],kind='stable'),np.argsort(out[k],kind='stable')) for k in out),candidates_equal=all(np.array_equal(np.flatnonzero(control_out[k]>np.sort(control_out[k][:1000])[::-1][j]),np.flatnonzero(out[k]>np.sort(out[k][:1000])[::-1][j])) for k in out for j in (0,1,5,10)))\n                finally:module.quarter_segments=original\n            records['supplementary_parity'][str(length)]=block\n    path=P.parent/'exp495_normal_geometry_antigravity/acceleration_antigravity.json';old=json.loads(path.read_text())\n    records.update(selected='canonical NumPy quarter resample + official Numba aeon MiniRocket + float64 OAS CPU',scope='Complete raw and shared-quarter MiniRocket fit and transform, all OAS fits and queries, control and candidate scoring; timings include conversion and JIT warm-up; interpolation parity smoke at lengths 11 and 131 is recorded separately',mlx=old['mlx'],mps=old['mps'],availability=old['availability'],inherited_gpu_probe_sha256=file_sha256_antigravity(path),source_sha256=file_sha256_antigravity(Path(__file__)),decision='Official MiniRocket is already Numba and cannot be replaced by a tensor rewrite under parity policy. Extra segment resampling is tensor-eligible but must pass complete-stage parity/speed, including interpolation smoke at lengths 11 and 131. Canonical NumPy is retained; an accelerator is not selected when any supplementary parity field is false. float64 GPU unavailable (inherited Exp495 probe); CPU remains canonical.')"
+    }
+  ],
+  "note": "Tie-break earlier-index; primary FPR/FP0 goal; TEST values after freeze, labels after scores; exact (4n,1008); interp smoke 11/131."
+}

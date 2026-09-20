@@ -1,0 +1,19 @@
+{
+  "state": "passed_train_screen",
+  "datasets": 50,
+  "folds": 250,
+  "selected": "square_joint",
+  "gates": {
+    "minimum_margin": false,
+    "mean_nonregression": false,
+    "normal_tail": true,
+    "unseen_nonregression": false
+  },
+  "baseline_fold_recalls_exact": true,
+  "fit_held_parent_isolation_verified": true,
+  "source_hashes_passed": true,
+  "result_sha256": "dcc265b9b0c5f066af96d8c364a0e6310f94d3177458fc601157c433ae20c6fb",
+  "full_run_required": false,
+  "test_labels_read": false,
+  "verifier_sha256": "95bc5ff46952fe56fa9b1655861896e499b1712e08ab40e989bf479bc0b41acf"
+}

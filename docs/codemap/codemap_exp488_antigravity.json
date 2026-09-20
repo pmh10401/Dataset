@@ -1,0 +1,100 @@
+{
+  "baseline": "docs/codemap/codemap_exp484_antigravity.json",
+  "nodes": [
+    {
+      "caller": "Exp481/484/488 evaluator",
+      "effect": "Frozen residual selection; optional numeric descriptor space",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
+      "planned": false,
+      "sha256": "d120bb0ece544bc48f7dd82b862bb8568bf3eaa82378a52554d70c4d37ccd62b",
+      "tests": [
+        "experiments/exp488_catch22_train_descriptors_antigravity/test_exp488_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests",
+        "experiments/exp484_distance_qualification_antigravity/tests"
+      ]
+    },
+    {
+      "caller": "Exp481/484/488 runners",
+      "effect": "Nested family exclusion and unchanged qualification gates",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+      "planned": false,
+      "sha256": "24e366cda5acefac3e83dce7e027c2dd50366dd68280686ce29a0009aad5d283",
+      "tests": [
+        "experiments/exp488_catch22_train_descriptors_antigravity/test_exp488_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/tests",
+        "experiments/exp484_distance_qualification_antigravity/tests"
+      ]
+    },
+    {
+      "caller": "Exp488 runner",
+      "effect": "Read-only normal TRAIN extraction and independent unscaled descriptors",
+      "path": "experiments/exp488_catch22_train_descriptors_antigravity/features_antigravity.py",
+      "planned": false,
+      "sha256": "9d94ef0026d7819219704ef373c36b2bd187947dbab9de9db9f86f3578c6a82a",
+      "tests": [
+        "experiments/exp488_catch22_train_descriptors_antigravity/test_exp488_antigravity.py"
+      ]
+    },
+    {
+      "caller": "python -m experiments.exp488_catch22_train_descriptors_antigravity.run_antigravity",
+      "effect": "Single preregistered arm, validation and separate result/manifest",
+      "path": "experiments/exp488_catch22_train_descriptors_antigravity/run_antigravity.py",
+      "planned": false,
+      "sha256": "b881fb8b4df6ea92d06cdd5164ee03e4cc96f6fa4a2ec79e0cd20c5dc8073496",
+      "tests": [
+        "experiments/exp488_catch22_train_descriptors_antigravity/test_exp488_antigravity.py"
+      ]
+    },
+    {
+      "caller": "pytest",
+      "effect": "Descriptor isolation and historical behavior regression",
+      "path": "experiments/exp488_catch22_train_descriptors_antigravity/test_exp488_antigravity.py",
+      "planned": false,
+      "sha256": "3de760ab7dd5087afa810b5c49be388ddcdb6bae28743a87694df598bc99369f",
+      "tests": [
+        "experiments/exp488_catch22_train_descriptors_antigravity/test_exp488_antigravity.py"
+      ]
+    },
+    {
+      "caller": "Exp488 runner",
+      "effect": "Frozen score and original seven-feature evidence",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.sqlite3",
+      "planned": false,
+      "sha256": "77c53e1afd0af071edf71ef692bd978458dda6a5f8a0fec110736b787fe1b998",
+      "tests": [
+        "experiments/exp488_catch22_train_descriptors_antigravity/test_exp488_antigravity.py"
+      ]
+    },
+    {
+      "caller": "Exp488 runner",
+      "effect": "Immutable baseline result identity",
+      "path": "experiments/exp484_distance_qualification_antigravity/results_antigravity.json",
+      "planned": false,
+      "sha256": "a5a097f8289477ca67e4e2cd9bdc7edffaa852b435a1f92fef338a0823dec415",
+      "tests": [
+        "experiments/exp488_catch22_train_descriptors_antigravity/test_exp488_antigravity.py"
+      ]
+    },
+    {
+      "caller": "Exp488 implementation and review",
+      "effect": "Preregistered descriptor, gates and input boundaries",
+      "path": "docs/superpowers/specs/2026-09-16-exp488-catch22-train-descriptors-antigravity.html",
+      "planned": false,
+      "sha256": "d2ed73d1946589d8e7f71727c363224c0723c0f3d8a7db171c1c4f255d39ea19",
+      "tests": [
+        "experiments/exp488_catch22_train_descriptors_antigravity/test_exp488_antigravity.py"
+      ]
+    },
+    {
+      "caller": "CLI",
+      "effect": "Versioned code-map consistency",
+      "path": "scratch/build_codemap_exp488_antigravity.py",
+      "planned": false,
+      "sha256": "32091dbea5d683526aed1e160f750220da3f90f189377777b7f946ea428a4a7f",
+      "tests": [
+        "--validate"
+      ]
+    }
+  ],
+  "schema": "exp488_codemap_v1"
+}

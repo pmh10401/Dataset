@@ -1,0 +1,18 @@
+{
+  "state": "passed",
+  "datasets": 1117,
+  "families": 128,
+  "frozen_boundaries_verified": true,
+  "overlaps_independently_recomputed": true,
+  "result_sha256": "e8acad7a92cd58c0e3433de619b3a0f3ce8cce93594cb7907974f0dd271bdf4b",
+  "verifier_sha256": "15b81e19dd771f5999392f915bad2ad371308d536b9e8c42439d2eb02621ffc1",
+  "descriptive_oracle_union_family_macro": [
+    0.6002118855896774,
+    0.6075189967098499,
+    0.6570321536351919,
+    0.6885174937493518
+  ],
+  "union_not_deployable_score": true,
+  "no_same_budget_claim": true,
+  "no_parameter_selection": true
+}

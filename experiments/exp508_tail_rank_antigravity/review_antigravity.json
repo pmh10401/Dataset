@@ -1,0 +1,14 @@
+{
+  "verdict": "ship",
+  "issues": [],
+  "mathematical_review": "loss_gradient matches the stated surrogate: tail=T*logsumexp(sN/T) is an unnormalized smooth max (upper bound of max normal, not a mean), d=margin+tail-sA, loss=mean(softplus(d))+reg*mean((w-1)^2). The gradient mean(σ(d))*(softmax(sN/T)@N)−σ(d)@A/|A|+2reg(w−1)/p is the exact chain rule: ∂tail/∂w is the softmax-weighted normal rows (independent of each anomaly), and ∂/∂d of mean softplus is mean(expit(d)). Softmax is exp(z−logsumexp(z)), so exponentials stay bounded. This is not empirical pAUC and does not target FPR=0.1%; the code does not claim that. fit_tail_weights: finite nonempty aligned G, G≥0, w0=1, exactly 80 float64 Adam steps (lr=0.05, β1=0.9, β2=0.999, ε=1e-8, t=1..80 bias correction), project only w onto [0.25,4], no early stop/query/adapt/silent fallback; nonfinite in/out raise; objective may increase and is only reported. Geometry/neighbors remain unweighted; score=G@w so all-ones preserves 3NN order (positive common scale is monotone) while nonuniform w can invert it. G_j=mean_k((q_j−r_kj)^2/d_k) with 0 when d_k=0 reconstructs mean kNN Euclidean even on ties (stable argsort; k=min(3,nref) at deploy, k=min(3,nref−1) with one excluded parent). Scale is a TRAIN-only positive LOO median mean-neighbor distance (+1e-9). Parent exclusion applies to the same parent index for that parent’s normal row and its four training mutations; encoder/OAS/scale use outer-fit normal TRAIN only (5-fold holdout is the caller’s split, not TEST). ntrain<16 copies square_joint and records fallback; Mini/OAS/square_joint stay the frozen all-reference scorers. No TEST labels, no diagnostic-label tuning, no silent row drop, no scoring-error fallback (raises). Improvement vs Mini/OAS is not guaranteed and is a later gated eval, not this module’s contract.",
+  "model": "grok-4.6",
+  "reasoning_effort": "high",
+  "session_id": "01a0ae6e-1a66-7c33-a464-e87d518e3906",
+  "independent_tests_run": false,
+  "private_data_shared": false,
+  "reviewed_sources": {
+    "optimizer_antigravity.py": "0793b68f68313edd5d72c8a75c7610d32fa0972d48d78deb8976989ad05506f4",
+    "ranking_antigravity.py": "9288530d514c31577548e0d41463ffea8af911c0106279a3c0056574a7496585"
+  }
+}

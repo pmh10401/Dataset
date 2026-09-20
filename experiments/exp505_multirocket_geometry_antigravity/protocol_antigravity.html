@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Exp505 MultiRocket 기하 프로토콜</title>
+</head>
+<body>
+<h1>Exp505 MultiRocket 기하</h1>
+<p>이 문서는 노출된 개발 벤치마크의 고정 프로토콜이며 홀드아웃이 아니다. 공식 평가 모집단은 데이터셋 1117개, 패밀리 128개다.</p>
+<h2>1차 목표</h2>
+<ul>
+<li>경험적 거짓양성률 0.1% 이하.</li>
+<li>MiniRocket 대비 패밀리 매크로 참양성률 상대 개선 10% 이상.</li>
+<li>거짓양성 0건 지점의 비회귀.</li>
+</ul>
+<p>네 가지 예산과 세 가지 평균은 모두 보고한다. 모든 지표가 좋아져야 하는 것은 아니다.</p>
+<h2>동결</h2>
+<p>점수와 코드 해시는 TEST 라벨을 읽기 전에 고정한다. TEST로 후보를 고르지 않고, TEST에 맞춰 문턱이나 게이트를 바꾸지 않는다. TRAIN 비교는 인과 증거가 아니다.</p>
+<h2>파일럿 선택 규칙</h2>
+<p>Exp504와 같이 모집단 50개 패밀리, 5폴드, 적합 폴드만 사용하며 같은 오염과 시드를 쓴다. 정상 점수의 폴드 최댓값을 엄격한 문턱으로 둔다. 정상 꼬리 중앙값이 MiniRocket의 3배를 넘는 후보는 제외한다. 남은 후보에서 최악 오염 평균 재현율, 그다음 평균, 그다음 앞선 이름으로 고른다. 신규 헤드의 최악 오염 재현율이 MiniRocket과 oas_distance 중 더 나은 쪽보다 0.02 이상 높고 평균 재현율도 그 앵커 이상이어야 한다. 그렇지 않으면 앵커를 고른다.</p>
+<h2>알고리즘</h2>
+<p>헤드 순서는 MiniRocket, oas_distance, multirocket_distance, multirocket_joint이다. 입력은 이미 고정된 전역 행 z-정규화를 거친다. 같은 정상 적합 행에 공식 MiniRocket(요청 n_kernels=4096, 실제 4032, n_jobs=1, seed 20260721)과 공식 MultiRocket(n_kernels=1024, n_features_per_kernel=4, n_jobs=1, normalise=False, seed 20260721)을 적합한다. 표현을 재구현하거나 파라미터를 바꾸거나 특성을 자르거나 가중치를 두거나 뷰를 정규화하지 않는다. 원본 MiniRocket과 LocalGap 기준은 그대로 두고, MultiRocket 뷰만 오른쪽에 0을 붙여 길이를 max(10, 원래 길이)로 만든 뒤 기존 래퍼에 넣는다. 공식 MultiRocket은 1차 차분 때문에 길이 9 입력이 차분 길이 8이 되어 브로드캐스트 오류가 나므로, 이 실험의 사전등록 경계 보정으로 최소 길이 10을 쓴다. 측정 결과를 보고 맞춘 것이 아니다. 질의의 원래 길이는 적합 길이와 같아야 하며 MiniRocket 쪽 길이별 폴백은 없다.</p>
+<p>기준 점수는 원본 MiniRocket 특성의 LocalGap이다. 원본, MultiRocket, 둘의 이어붙임 각각에 RobustScaler 분위수 10–90과 잔차 보존 OAS를 적합하고, 질의-참조 유클리드 거리의 최근접 min(3, n) 평균을 쓴다. 원본 OAS 스케일러는 LocalGap 스케일러와 같다. 참조 상한 1000과 그 시드는 이후 fullrunner에서만 적용한다.</p>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "verdict": "fix-first",
+  "issues": [
+    {
+      "issue": "Original TailRankHeads never calls fit_tail_weights when |F|<16 (fallback copies square_joint). Part 2 also yields |S|=|B|=0 for |F|<4 and |R|<2 is illegal for distance_contributions. The diagnostic text has no skip/record rule, so those folds can silently invent N,A, drop families from same50, or emit empty S/B statistics.",
+      "remedy": "Per fold, if original fallback: do not call fit_tail_weights, do not build N,A, do not run Adam-vs-L-BFGS, still replay the original fallback C scores. If |S|=0 or |R|<2: mark the participation contrast inapplicable and keep the fold in the denominator. No new split fractions, no silent family drop, no larger retry."
+    },
+    {
+      "issue": "Supplied sources only score; they do not define held recall, normal-tail summaries, or the eight C-proxy seed schedule. Re-coding those would be new threshold/candidate selection, which is out of scope.",
+      "remedy": "Import the frozen Exp508 aggregation and C-probe seeds unchanged (hash with the rest of the frozen protocol). Replay only. Do not choose a new tail quantile, pooling rule, or probe generator."
+    },
+    {
+      "issue": "Part 2 writes k=min(3,|R|) for queries and ‘the same’ R LOO scale. Original scale is median of mean 3-NN after diagonal inf, k=min(3,|R|-1), plus 1e-9. Using k=min(3,|R|) on R including self collapses self-distances and rescales every S/B score.",
+      "remedy": "Queries S,B vs R: exclude=None, k=min(3,|R|). R scale: copy the original pairwise formula on R only (diagonal inf, min(3,|R|-1), median of row means + 1e-9). Same R reference, scale, and k for S and B. Do not use S or B as neighbors and do not retune k."
+    },
+    {
+      "issue": "Part 1 requires EXACT same N,A and original loss. Numba/Torch/MLX/MPS are extra smoke stages. Substituting them for the Adam vs L-BFGS comparison, or running MPS float32 while labeling float64, breaks the optimizer audit. Scipy L-BFGS-B must actually honor jac=True and the named options (maxiter 2000, maxfun 5000, maxls 40, maxcor 20, gtol 1e-8, ftol 1e-15); older factr/pgtol-only APIs would ignore them.",
+      "remedy": "Official path: unchanged numpy float64 _objective plus canonical scipy L-BFGS-B, bounds [.25,4], start all-1, no restarts/fallback. Capture N,A via process-local try/finally around original fit_tail_weights; copy arrays. Backend ports: synthetic smoke, parity, timing only. If option names are ignored or float64 GPU is unavailable, record that and keep the numpy/scipy result as the diagnostic."
+    },
+    {
+      "issue": "Overclaim risk: scipy success, unit-step projected gradient, or a small KKT gap each treated as ‘converged optimum’; all-1 vs square_joint mismatch treated as a bug to fix; S/B gap treated as causal encoder proof or Exp510 license.",
+      "remedy": "Report status/message/nit/nfev, ||w-clip(w-g,.25,4)||_∞, objective delta, KKT gap, logits/sigmoids, empirical synthetic>max-normal, RMS displacement vs sqrt(L_init/0.1). If maxiter/maxfun hits, keep the iterate as unconverged; no larger retry. all-1 check is ordering/identity on frozen G, not a new head. Part 2 is one matched split of F, not a cause or a promotion decision."
+    }
+  ],
+  "math_review": "On fixed N,A the scores ns=Nw and az=Aw are affine in w. tail(w)=T logsumexp(ns/T) is convex (logsumexp of affine). Each delta_i=m+tail-a_i^T w is convex. softplus is convex and increasing, so mean_i softplus(delta_i) is convex. Regularizer λ mean((w-1)^2) with λ=0.1 has Hessian (2λ/p)I=(0.2/p)I. Data Hessian is only PSD, so the sum is strongly convex in Euclidean norm with μ=0.2/p, uniquely minimized on the box. Supplied gradient matches: ∂tail/∂w=softmax(ns/T)^T N, ∂L_data/∂w=mean(sigmoid(delta))·∂tail/∂w − A^T sigmoid(delta)/n_a, plus 2λ(w-1)/p. KKT quadratic tangent: y*=clip(w−g/μ,.25,4), d=w−y*, gap=g·d−(μ/2)||d||^2. For feasible w this gap is ≥0 up to roundoff (y* minimizes the quadratic model over the box) and, if g is exact and μ does not exceed true strong convexity, f(w)−f*≤gap. It is a training-surrogate certificate only; μ=0.2/p ignores extra data curvature so the bound is valid but often loose, especially large p. Unit-step projected gradient w−clip(w−g,.25,4)=0 iff box stationarity (any step α>0 is equivalent at exact zero); ||·||_∞≤1e-8 is not equivalent to a small gap because 1/μ=5p rescales the displacement. Scipy success is not that stationarity test. Nonworsening radius: L_data≥0 so λ mean((w−1)^2)≤L(w); any w with L(w)≤L_init satisfies RMS||w−1||≤sqrt(L_init/λ)=sqrt(L_init/0.1). That bound is not a convergence test. all-1 scores equal row-sums of G, i.e. mean kNN Euclidean in the OAS space divided by scale; they reconstruct square_joint ordering only if that head is a monotone function of the same kNN distances. Training uses parent LOO exclude and at most 128 parents; C scoring does not exclude—replay must keep that split. Hard max-normal and T=0.1 smoothmax are different tail functionals; sigmoid mean vs {≥0.01,≥0.1} fractions are different saturation views. 80-step clipped Adam is a finite feasible path, not a minimizer.",
+  "interpretation_limits": "TRAIN diagnostic only on the frozen same50 families and five normal folds, seed 20260721. C proxies are synthetic mutations of outer-held normals, not real anomalies and not TEST. Proxy recall cannot be read as detection performance or as permission for Exp510. Part 2 holds R, k, scale, and |S|=|B| fixed and only contrasts OAS/encoder participation of S vs B; it is one seed-fixed random split of F, not a component-wise cause, not a C-fold result, and not evidence that an inner-A refit would help. Upstream median-length / rowwise-z stays inherited; do not claim every step is inner-A-only. Unique minimizer, KKT gap, and RMS radius apply to the frozen-N,A surrogate, not to held-out risk. Artifacts without waveforms cannot re-audit encoder or distance_contributions, only loss/KKT/recall aggregation from stored vectors. No new candidates, no TEST labels/outcomes, no promotion.",
+  "model": "grok-4.6",
+  "session_id": "01a0aff9-09b0-7143-b5e1-a9a2a70b119d",
+  "scope": "design and original Exp508 math; new diagnostic code not yet reviewed",
+  "prompt_sha256": "ab1fe65984d05f6766952640992083ac817ee96b03431ac933b180d6bc43fa34",
+  "private_data_shared": false
+}

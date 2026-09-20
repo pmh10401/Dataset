@@ -1,0 +1,6 @@
+{
+  "reviewer": "sol_advisor_sol_reviewer",
+  "verdict": "ship",
+  "scope": "full runner adaptation, P paths, binding, cache replay and score freeze before labels",
+  "findings": []
+}

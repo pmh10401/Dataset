@@ -1,0 +1,16 @@
+{
+  "state": "passed",
+  "bootstrap_independently_recomputed": true,
+  "baseline_rankings_exact": true,
+  "datasets": 1117,
+  "families": 128,
+  "score_vectors": 2234,
+  "auc_max_abs_error": 1.1102230246251565e-16,
+  "primary_relative_gain": 0.037305683708692694,
+  "observed_target_met": false,
+  "result_sha256": "900c63d6a27915659566263e810b46e1498244c1a62f3e1117300638772070ee",
+  "verifier_sha256": "ddcd52313c9f1d24530d7fe8531e154c86291e3810134c8f16e5567f935cd628",
+  "every_low_fpr_point_recomputed": true,
+  "baseline_scores_reproduced": true,
+  "frozen_code_and_inputs_verified": true
+}

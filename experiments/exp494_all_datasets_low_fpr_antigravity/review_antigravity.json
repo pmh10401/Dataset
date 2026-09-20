@@ -1,0 +1,11 @@
+{
+  "scope": "Read-only preflight review of protocol, score extension, evaluation, runner and boundary tests",
+  "reviewer": "GPT-5.6 Sol / High",
+  "agent_id": "01a0a904-c51e-76e1-ad1b-ce88c5a883f7",
+  "verdict": "no blockers found",
+  "full_run_performed_by_reviewer": false,
+  "regression_tests": {
+    "passed": 20,
+    "command": "python -m pytest --import-mode=importlib -q -p no:cacheprovider [Exp489, Exp490, Exp493, Exp494 tests]"
+  }
+}

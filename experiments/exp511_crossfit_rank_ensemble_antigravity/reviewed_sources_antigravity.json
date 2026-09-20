@@ -1,0 +1,17 @@
+{
+  "prompt_sha256": "611b98e06079d0d8566b77cde70fb06477996eaedb3f332a0ada482b845529b0",
+  "source_hashes": {
+    "experiments/exp511_crossfit_rank_ensemble_antigravity/protocol_antigravity.html": "3f764ee23a6b3e3d4c2d7cf078a9b7be630c74fe41fa6d04de1ed872bf2d5a81",
+    "experiments/exp511_crossfit_rank_ensemble_antigravity/acceleration_antigravity.py": "6b0dbe393ce57d1fe1c2f3237848fd35fc633ff36f19c680aa1f8675afad2358",
+    "experiments/exp511_crossfit_rank_ensemble_antigravity/ensemble_antigravity.py": "4f1526715af6b0651310fc4570df104128f2d05d61819edd964fa3eb72bf2c11",
+    "experiments/exp511_crossfit_rank_ensemble_antigravity/pilot_antigravity.py": "2870797274de60a4d60f032436ead17bcafb8d9e96f28acf02b9032b5f34a0fc",
+    "experiments/exp511_crossfit_rank_ensemble_antigravity/test_exp511_antigravity.py": "60395f4b66d8f7108db9d851b9adfe6240f5f1e5e7bdac01d770f1624bdc07ef",
+    "experiments/exp511_crossfit_rank_ensemble_antigravity/verify_antigravity.py": "d447b8f98bed1f9dbe1b326691c66e65f46e2c409e12db25152a5692213f8c8d",
+    "experiments/exp510_separated_rank_antigravity/separated_antigravity.py": "7e59a0561a23aeff732b2f22b586dc17e426fc3c77fa82f80cdc0ff50368d994",
+    "experiments/exp508_tail_rank_antigravity/ranking_antigravity.py": "9288530d514c31577548e0d41463ffea8af911c0106279a3c0056574a7496585",
+    "experiments/exp508_tail_rank_antigravity/optimizer_antigravity.py": "0793b68f68313edd5d72c8a75c7610d32fa0972d48d78deb8976989ad05506f4",
+    "experiments/exp502_amplitude_envelope_antigravity/amplitude_antigravity.py": "a933fe07e8024a65e5918e7a0d0fbbd90107c96b0d6c2d355937adf8cd44af75",
+    "experiments/exp495_normal_geometry_antigravity/geometry_heads_antigravity.py": "956063cabc105896925f81678b5f39c9c96dd04998c068bef7fc132e17f4aefb",
+    "experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py": "b13a119193c4ab7589d93f790c199a231576b48c1973f283a5e5efb5a92f9bcd"
+  }
+}

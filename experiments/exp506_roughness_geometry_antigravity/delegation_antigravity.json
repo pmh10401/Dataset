@@ -1,0 +1,81 @@
+{
+  "state": "full_scoring_failed_before_labels",
+  "implementer": "grok-4.6",
+  "reasoning_effort": "high",
+  "worktree": "/private/tmp/exp506_grok_roughness_antigravity",
+  "brief_sha256": "ffe6e60d66602c0464d32933cf5eb548b7d966b1ddaa4761b00ca41f415a6b8c",
+  "permission_mode": "plan",
+  "delivery": "response JSON proposal; independent Codex integration",
+  "pro_status": "Two prior Pro consultation timeouts",
+  "scientific_review": "Sol proposed centered absolute first difference; Grok independent review requested before implementation",
+  "official_pilot_started": true,
+  "official_test_started": true,
+  "exec_session_id": 61089,
+  "grok_session_id": "01a0ad4e-e3e5-7373-9e84-4f30ecfbd911",
+  "next_action": "Read-only Grok review of fixed power-of-two view rescaling; any fix in a new preregistered experiment, preserve Exp506 and population.",
+  "initial_tests": "4 passed in12.96s, but canonical baseline comparison not yet covered",
+  "correction_exec_session_id": 89974,
+  "overflow_contract_before_fix": "finite float64 input returns nonfinite float32, reproduced; Grok correction pending",
+  "independent_review": "Sol ship pending known fixes, no additional concrete bug/leakage/goal drift",
+  "corrections_sha256": "18ca2d32c625ae925573941b6a4a675dd7c53f9959e7eecdb706ec1b78822b04",
+  "tests": "4 passed in5.48s; expected overflow-cast warning in rejection test",
+  "acceleration_sha256": "60f89115aa7da07a11387bea1a319abdaae8deda66cb721c03e5482c844cf92f",
+  "backend_decision": "Retain NumPy: full-stage warm NumPy1.00666s, Numba0.99938s, TorchCPU1.00687s; all parity exact, sub1percent difference does not establish material benefit.",
+  "verification": {
+    "state": "passed_train_screen",
+    "datasets": 50,
+    "folds": 250,
+    "selected": "roughness_joint",
+    "unrestricted_winner": "roughness_joint",
+    "best_new_candidate": "roughness_joint",
+    "new_candidate_worst_proxy": 0.6893184514009977,
+    "anchor_worst_proxy": 0.6522197414956119,
+    "new_candidate_margin": 0.037098709905385774,
+    "required_proxy_margin": 0.02,
+    "eligible": [
+      "MiniRocket",
+      "oas_distance",
+      "roughness_distance",
+      "roughness_joint"
+    ],
+    "normal_tail": {
+      "MiniRocket": 2.9277101049968524,
+      "oas_distance": 2.5555495038907714,
+      "roughness_distance": 2.647690443965482,
+      "roughness_joint": 2.6165244369377474
+    },
+    "anchor_fold_recalls_exact": true,
+    "source_hashes_passed": true,
+    "pilot_sha256": "d93d914312c355c06d4e15d32266646879205be06dfb31f727924783364a6890",
+    "full_run_skipped": false,
+    "test_labels_read": false
+  },
+  "full_runner_exec_session_id": 82216,
+  "full_review": "Sol ship; localoutput, fixedcandidate, population, prelabelbaselinechecks and source hashes verified",
+  "full_smoke": "4datasets passed, baseline maxabs0 and exactrank, noTESTlabels",
+  "full_failure": {
+    "state": "failed_scoring_before_labels",
+    "exec_session_id": 47006,
+    "exit_code": 1,
+    "completed": 1115,
+    "total": 1117,
+    "failures": [
+      {
+        "dataset": "AllGestureWiimoteX_normal_7",
+        "error": "Input collection has too little variation: std <= 1e-07 for 1 case/channel pair(s): (case=52, ch=0). Rescale (e.g., multiply by a constant) or normalise your data.",
+        "type": "ValueError"
+      },
+      {
+        "dataset": "AllGestureWiimoteZ_normal_7",
+        "error": "Input collection has too little variation: std <= 1e-07 for 1 case/channel pair(s): (case=78, ch=0). Rescale (e.g., multiply by a constant) or normalise your data.",
+        "type": "ValueError"
+      }
+    ],
+    "test_labels_opened": false,
+    "full_metrics_computed": false,
+    "frozen_source_hashes_passed": true,
+    "manifest_state_is_pre_failure_snapshot": "scoring",
+    "next_action": "Read-only Grok review of fixed power-of-two view rescaling; any fix in a new preregistered experiment, preserve Exp506 and population."
+  },
+  "variance_review_exec_session_id": 87649
+}

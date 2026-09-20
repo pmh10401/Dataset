@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang='ko'>
+<meta charset='utf-8'>
+<title>Exp504 QUANT 기하 프로토콜</title>
+<body>
+<h1>Exp504 QUANT 기하 이상탐지</h1>
+<p>가설. 공식 QUANT는 원시계열, 평활 1차차분, 2차차분, FFT 진폭의 다중 척도·이동 구간 분위수로 MiniRocket PPV가 담지 못하는 분포와 진폭을 포착한다는 가설을 둔다. 지도 분류기는 쓰지 않고 정상 표본만으로 OAS 3NN에 연결한다. 공개 구현은 Torch CPU float32이며 재구현하거나 GPU로 옮기지 않는다.</p>
+<p>모델. 입력은 기존 전처리로 행별 전역 z-정규화된 시계열이다. 원시 대조는 make_representation_antigravity('minirocket_local_gap', 20260721)의 4032 PPV와 LocalGap, RobustScaler 10-90, 잔차 OAS이다. QUANT 입력은 L이 512 이하면 길이를 보존하고, 512를 넘으면 학습 전에 각 행에 np.interp(linspace(0,1,512), linspace(0,1,L), row)만 적용한다. 추가 z나 클리핑은 없다. 512 상한은 학습 전 계산 한도이며 특징 차원을 약 4500으로 묶는다. 유한 float32 배열 (n, 1, min(L, 512))을 QUANTTransformer(interval_depth=6, quantile_divisor=4)에 넣고 정상 폴드에만 fit한 뒤 질의는 transform한다. 공식 float32 출력을 float64로 캐스팅해 기하에 쓴다.</p>
+<p>QuantHeads는 MiniRocket, oas_distance, quant_distance, quant_joint 순서로 점수를 낸다. quant_distance는 QUANT 단독, quant_joint는 4032와 QUANT를 잇는다. 후보마다 자체 RobustScaler 10-90과 기존 잔차 OASGeometry를 적용하고 참조까지 min(3, n) 평균 유클리드 거리를 쓴다. raw OAS만 대조 스케일러를 재사용한다. 가중치, 데이터셋별 선택, TEST 적합은 없다. 표본 수가 1이면 적합 전에 실패한다. L이 3 미만이면 신규 후보는 raw OAS와 같고 진단만 남긴다. 질의 길이는 적합 길이와 같아야 한다. 참조 상한 1000과 시드는 이후 전체 러너가 적용한다.</p>
+<p>선택. 파일럿은 Exp495 매니페스트의 메타데이터 가족 50개와 5겹, 적합 폴드만 사용한다. 오염 시드는 SEED+1709*(fold+1)이고 임계값은 보류 정상 점수의 최댓값이다. 신규 후보의 정상 꼬리 중앙값이 MiniRocket의 3배를 넘으면 제외한다. 1순위는 오염 종류별 가족 평균의 최솟값, 2순위는 평균, 동점이면 앞선 이름이다. 신규 후보는 최악 유형에서 최선 Mini/OAS보다 0.02 이상 높고 평균이 앵커 이상이어야 하며 그렇지 않으면 앵커를 고른다. TRAIN 파일럿은 TEST 값을 읽지 않는다.</p>
+<p>목표와 동결. 같은 1117 데이터셋, 128 가족에서 경험적 FPR 0.1% 이하, 가족 매크로 TPR MiniRocket 대비 상대 10% 이상, FP0 비회귀가 고정 목표이다. 예산 4개와 평균 3개를 모두 보고한다. 나머지 지표는 보고만 하며 모두 개선될 필요는 없다. 모든 점수와 해시는 TEST 라벨을 보기 전에 동결한다. 이 벤치마크는 개발에 노출되어 있으며 미공개 홀드아웃이 아니다. 인과를 주장하거나 TEST로 튜닝하지 않는다. 이전 TRAIN 관찰은 원인이 아니다. OAS 최악형 0.652220과 중심제곱 joint 0.682594는 게이트를 통과했고 공간 quarter MiniRocket joint 0.639677은 실패했다.</p>
+</body>
+</html>

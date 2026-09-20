@@ -1,0 +1,31 @@
+{
+  "state": "passed_train_screen_rejected_copula",
+  "datasets": 50,
+  "folds": 250,
+  "selected": "oas_distance",
+  "unrestricted_winner": "clipped_rank_oas_distance",
+  "observed_proxy_margin": 0.015137520851294162,
+  "required_proxy_margin": 0.02,
+  "eligible": [
+    "MiniRocket",
+    "oas_distance",
+    "rank_distance",
+    "rank_oas_distance",
+    "qt_oas_distance",
+    "clipped_rank_oas_distance",
+    "atom5_rank_oas_distance"
+  ],
+  "normal_tail": {
+    "MiniRocket": 2.927710104996852,
+    "oas_distance": 2.5555495038907714,
+    "rank_distance": 2.0332939237621477,
+    "rank_oas_distance": 2.0817461328081035,
+    "qt_oas_distance": 1.9898099231410986,
+    "clipped_rank_oas_distance": 1.9874618318205979,
+    "atom5_rank_oas_distance": 2.047607331482938
+  },
+  "pilot_sha256": "7d23b393165d746f3ae0b420143ad26ba87992c7c2eaeb1faa74a1c548b5ed98",
+  "full_run_skipped": true,
+  "test_labels_read": false,
+  "reused_result": "Exp495 canonical OAS distance"
+}

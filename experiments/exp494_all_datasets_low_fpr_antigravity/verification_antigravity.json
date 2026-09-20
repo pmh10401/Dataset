@@ -1,0 +1,15 @@
+{
+  "state": "passed",
+  "datasets": 1117,
+  "score_vectors": 7819,
+  "aggregate_rows": 49,
+  "auc_max_abs_error": 2.220446049250313e-16,
+  "all_low_fpr_points_recomputed": true,
+  "frozen_routes_verified": true,
+  "original_inputs_and_code_unchanged": true,
+  "raw_database_unchanged": true,
+  "label_boundary_metadata_unchanged": true,
+  "constant_recovery_provenance_verified": true,
+  "result_sha256": "bc8a2e9acf20e4f041153a982649c4eae7216d00207c1cc35fcbc81ffa7b6218",
+  "verifier_sha256": "d39cb0c8116b5dad7c9ce28f64d761b8f4f44ef27b49f9c4a17f60d9bb81cbb7"
+}

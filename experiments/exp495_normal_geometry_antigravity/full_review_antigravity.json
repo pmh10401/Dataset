@@ -1,0 +1,12 @@
+{
+  "state": "preflight_review_conditions_resolved",
+  "reviewer": "01a0ac9b-630e-7030-8db4-cb0c23e371b9",
+  "resolved": [
+    "current full-run source and evaluator bound in code map",
+    "cached baseline replay validates scores and exact ranking",
+    "all current 62 code-map hashes verified after regeneration"
+  ],
+  "code_map_sha256": "bb97903baae02884ab067ed8c6d788ee9184b6868f57a21abd44c461b1bbf0e0",
+  "code_nodes": 62,
+  "verified_at_utc": "2026-09-16T23:55:02.317930+00:00"
+}

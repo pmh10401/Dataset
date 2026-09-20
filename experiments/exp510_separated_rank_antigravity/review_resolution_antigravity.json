@@ -1,0 +1,41 @@
+{
+  "state": "review_resolved_preflight_pending",
+  "scope": "Preflight and TRAIN pilot; the frozen design and promotion gates are unchanged.",
+  "design_issues": {
+    "I0": "A separate code review was requested with the actual candidate, pilot, verifier, benchmark, tests and upstream geometry/objective source. Design-only review is not treated as code approval.",
+    "I1": "Exp508 distance_contributions uses scipy.cdist Euclidean length as radius. sum_j(residual_j^2/radius)=radius, including zero contribution when radius is zero. The independent A-model identity test passes. Removing the division would change the frozen experiment and is rejected.",
+    "I2": "pilot.worker generates all validation mutations from x[held]=C. Candidate construction receives x[fit] only; B supplies ranking parents. Training and validation seeds are distinct. Existing five-fold splits are replayed.",
+    "I3": "The conditional full evaluation uses the historical retrospective TEST-label ROC frontier only after score freezing. It does not estimate an operational threshold from B or A. No full runner exists or is approved by the TRAIN gate yet; its implementation requires separate verification if eligible.",
+    "I4": "The n<32 branch performs no A-only fit or optimization and copies square_joint for both new scores. fallback and optimizer_trained explicitly record this exception; tests cover n=2 and n=31.",
+    "I5": "Roles are separated by row index, not by unique waveform content. Distinct rows with equal values may occupy different roles. This is a limitation on novelty claims, not self-reference of the same row. Deduplication or removal of zero-distance neighbors would change the frozen protocol and is not introduced.",
+    "I6": "The fixed +0.02 gate is not capped. A required recall above one is a registered failure and does not authorize threshold relaxation.",
+    "I7": "The verifier recomputes loss from stored scores, stationarity from stored gradients, and recalls/tails/gates from stored validation scores. It does not independently reconstruct contributions, geometry or full gradients. This limitation is explicit in verification output; existing finite-difference and contribution-identity tests provide separate code checks.",
+    "I8": "The inherited loader derives target length from all normal TRAIN, including F and C, before cross-fitting. Only the subsequent candidate encoder/scaler/OAS/reference fit is A-only. The protocol already discloses inherited all-normal-TRAIN preprocessing.",
+    "I9": "Full-F controls are separately fitted with the original deterministic implementation and seed. Every original control recall and tail is checked against Exp508 pilot records; tests compare independently fitted full/A controls and ranking. Historical per-query score equality is not claimed for pilot records that do not store those vectors.",
+    "I10": "The original residual-preserving shrunk OASGeometry is reused, including its tau floor and orthogonal residual. Replacing it with sample covariance or deleting null-space residuals is rejected. Constant-input checks pass.",
+    "I11": "Finite final iterates remain the preregistered estimator. Solver status, iterations, objective, projected gradient and objective-gap upper bound are recorded. No retries, iteration extensions or convergence-based model substitution are added.",
+    "I12": "Tail uses the held C score vector, NumPy linear quantiles, and the frozen package version. The original controls replay the same tail statistic. Constant inputs are tested.",
+    "I13": "This remains a repeatedly exposed development benchmark. The 50-family screening subset does not create an untouched confirmatory population. No new holdout claim or selection rule is introduced.",
+    "I14": "The original scaler, k=min(3,|A|), leave-self-out k=min(3,|A|-1), and n<32 fallback remain fixed. Boundary and constant/short-input tests pass."
+  },
+  "acceleration_decision": {
+    "selected_backend": "numpy_scipy_float64",
+    "reason": "All three CPU paths meet score, ranking and candidate parity, but Numba speedup 0.9999297732 and Torch CPU speedup 1.0044333575 are below 1.1. Actual MLX GPU and MPS probes reject float64.",
+    "statistics_backend": "NumPy reductions and quantiles; official transforms and optimizer are unchanged."
+  },
+  "code_review": {
+    "artifact": "code_review_antigravity.json",
+    "reviewer_verdict": "issues_found",
+    "blocking_for_frozen_pilot": false,
+    "exact_source_packet_verified": true,
+    "resolution": {
+      "parent_cap": "The verified pilot normal-TRAIN range is 40 to 353, so every B set has at most 70 parents. The pilot-only verifier's <=128 assertion is valid for this frozen population. The capped head path remains covered by the existing unit test; a conditional full evaluator would require its own verifier.",
+      "independent_split_reconstruction": "The verifier intentionally reconstructs the preregistered constants and permutations independently. The actual crossfit implementation was checked against this reconstruction. Calling the same production split functions would reduce independence.",
+      "constant_fixture": "The bounded 32x9 zero-input probe confirms exact unit weights, an exactly zero initial gradient and successful solver termination at iteration zero. Some synthetic scores are nonzero; the initial diagnostic assumption that all were zero was incorrect. The registered test and solver remain unchanged.",
+      "atomic_output": "The verifier now uses the existing write_json_atomic_antigravity helper. A temporary-file overwrite/read-back check passed. This is the only post-review verifier change and does not change scoring or selection."
+    },
+    "followup_evidence": "review_checks_antigravity.json",
+    "remaining_boundary": "Regenerate the Exp510 code map and bind the reviewed source plus the atomic-output correction in preflight before any official pilot. No official pilot or full evaluation was started in this continuation."
+  },
+  "unresolved_pilot_blockers": []
+}

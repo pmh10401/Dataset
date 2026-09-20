@@ -1,0 +1,71 @@
+{
+  "model_edits": [
+    [
+      "\"\"\"Official MiniRocket on mean-centered absolute differences; TRAIN-only residual OAS geometry.\"\"\"",
+      "\"\"\"Official MiniRocket on mean-centered absolute differences; fixed 2**20 roughness scale; TRAIN-only residual OAS geometry.\"\"\""
+    ],
+    [
+      "    return y\n\nclass RoughnessHeads:",
+      "    return y\n\ndef scale_roughness(values):\n    values=np.asarray(values,dtype=np.float32)\n    if not np.isfinite(values).all():raise ValueError('nonfinite scaled roughness')\n    values=np.ldexp(values,20)\n    if not np.isfinite(values).all():raise ValueError('nonfinite scaled roughness')\n    return np.asarray(values,dtype=np.float32)\n\nclass RoughnessHeads:"
+    ],
+    [
+      "            self.diagnostics=dict(fallback=True,rough_featuredim=0,rough_constant_row_fraction=constant)\n            return\n        self.rough_encoder=make_representation_antigravity('minirocket_local_gap',SEED)\n        feat=self.rough_encoder.fit_transform(rough)\n        self.diagnostics=dict(fallback=False,rough_featuredim=int(feat.shape[1]),rough_constant_row_fraction=constant)",
+      "            self.diagnostics=dict(fallback=True,rough_featuredim=0,rough_constant_row_fraction=constant,scale_power=20)\n            return\n        self.rough_encoder=make_representation_antigravity('minirocket_local_gap',SEED)\n        feat=self.rough_encoder.fit_transform(scale_roughness(rough))\n        self.diagnostics=dict(fallback=False,rough_featuredim=int(feat.shape[1]),rough_constant_row_fraction=constant,scale_power=20)"
+    ],
+    [
+      "            feat=self.rough_encoder.transform(roughness_rows(x))",
+      "            feat=self.rough_encoder.transform(scale_roughness(roughness_rows(x)))"
+    ]
+  ],
+  "test_edits": [
+    [
+      "\"\"\"Contracts for Exp506 roughness OAS geometry.\"\"\"\nfrom experiments.exp495_normal_geometry_antigravity.diagnostics_antigravity import configure_inner_threads_antigravity,SEED\nconfigure_inner_threads_antigravity()\nimport numpy as np\nfrom experiments.exp449_residual_fn_method_qualification_antigravity.representations_antigravity import make_representation_antigravity\nfrom experiments.exp495_normal_geometry_antigravity.geometry_heads_antigravity import PairedHeads\nfrom experiments.exp506_roughness_geometry_antigravity.roughness_antigravity import roughness_rows,RoughnessHeads",
+      "\"\"\"Contracts for Exp507 roughness numerical compatibility.\"\"\"\nfrom experiments.exp495_normal_geometry_antigravity.diagnostics_antigravity import configure_inner_threads_antigravity,SEED\nconfigure_inner_threads_antigravity()\nimport numpy as np\nfrom experiments.exp449_residual_fn_method_qualification_antigravity.representations_antigravity import make_representation_antigravity\nfrom experiments.exp495_normal_geometry_antigravity.geometry_heads_antigravity import PairedHeads\nfrom experiments.exp507_roughness_compat_antigravity.roughness_antigravity import roughness_rows,RoughnessHeads,scale_roughness"
+    ],
+    [
+      "def test_official_minirocket_expected_rough_and_dims():\n    rng=np.random.default_rng(506);x=rng.normal(size=(6,16))\n    heads=RoughnessHeads(x);rough=roughness_rows(x)\n    want=make_representation_antigravity('minirocket_local_gap',SEED).fit_transform(rough)\n    got=heads.rough_encoder.transform(rough)\n    assert np.array_equal(got,want) and want.shape[1]==4032==heads.diagnostics['rough_featuredim']\n    assert heads.raw_encoder.transform(x).shape[1]==4032 and heads.models['roughness_joint'][2].shape[1]==8064",
+      "def test_official_minirocket_expected_rough_and_dims():\n    rng=np.random.default_rng(506);x=rng.normal(size=(6,16))\n    heads=RoughnessHeads(x);rough=roughness_rows(x)\n    want=make_representation_antigravity('minirocket_local_gap',SEED).fit_transform(rough)\n    got=heads.rough_encoder.transform(scale_roughness(rough))\n    assert np.array_equal(got,want) and want.shape[1]==4032==heads.diagnostics['rough_featuredim']\n    assert heads.diagnostics['scale_power']==20\n    raw_ref=make_representation_antigravity('minirocket_local_gap',SEED).fit_transform(x)\n    assert np.array_equal(heads.raw_encoder.transform(x),raw_ref)\n    assert heads.raw_encoder.transform(x).shape[1]==4032 and heads.models['roughness_joint'][2].shape[1]==8064"
+    ],
+    [
+      "    _raises(lambda:roughness_rows([[1.,np.inf],[0.,1.]]))\n    _raises(lambda:roughness_rows([[0,1e40,4e40,2e40]]))\n    _raises(lambda:h.score([[1.,np.nan]+[0.]*6,[0.]*8]))",
+      "    _raises(lambda:roughness_rows([[1.,np.inf],[0.,1.]]))\n    _raises(lambda:roughness_rows([[0,1e40,4e40,2e40]]))\n    _raises(lambda:h.score([[1.,np.nan]+[0.]*6,[0.]*8]))\n    _raises(lambda:scale_roughness(np.array([[1e35,-1e35]],dtype=np.float32)))\n\ndef test_unscaled_vs_scale_ordinary_parity():\n    rng=np.random.default_rng(507)\n    for n,L in ((2,12),(8,16)):\n        fit=rng.normal(size=(n,L));query=rng.normal(size=(n+4,L))\n        ru,rq=roughness_rows(fit),roughness_rows(query)\n        eu=make_representation_antigravity('minirocket_local_gap',SEED)\n        es=make_representation_antigravity('minirocket_local_gap',SEED)\n        assert np.array_equal(eu.fit_transform(ru),es.fit_transform(scale_roughness(ru)))\n        assert np.array_equal(eu.transform(rq),es.transform(scale_roughness(rq)))\n\ndef test_nearlinear_unscaled_query_rejects_scaled_accepts():\n    rng=np.random.default_rng(507)\n    t=np.arange(128,dtype=np.float64)\n    x=t+1e-6*rng.standard_normal((16,128))\n    x=x-x.mean(axis=1,keepdims=True)\n    x=np.asarray(x/x.std(axis=1,keepdims=True),dtype=np.float32)\n    rough=roughness_rows(x)\n    assert float(np.std(rough))>0\n    unscaled_fit_rejected=False\n    try:make_representation_antigravity('minirocket_local_gap',SEED).fit_transform(rough)\n    except Exception:unscaled_fit_rejected=True\n    assert unscaled_fit_rejected\n    enc=make_representation_antigravity('minirocket_local_gap',SEED)\n    scaled=scale_roughness(rough)\n    assert np.isfinite(enc.fit_transform(scaled)).all()\n    unscaled_query_rejected=False\n    try:enc.transform(rough)\n    except Exception:unscaled_query_rejected=True\n    assert unscaled_query_rejected\n    q=enc.transform(scaled)\n    assert np.isfinite(q).all() and q.shape[1]==4032\n    s=RoughnessHeads(x).score(x)\n    assert all(np.isfinite(s[k]).all() for k in RoughnessHeads.names)"
+    ]
+  ],
+  "acceleration_edits": [
+    [
+      "\"\"\"Complete-head CPU acceleration assessment for Exp506 roughness OAS geometry.\"\"\"",
+      "\"\"\"Complete-head CPU acceleration assessment for Exp507 roughness compatibility.\"\"\""
+    ],
+    [
+      "from experiments.exp506_roughness_geometry_antigravity import roughness_antigravity as R\nfrom experiments.exp506_roughness_geometry_antigravity.roughness_antigravity import RoughnessHeads,roughness_rows",
+      "from experiments.exp507_roughness_compat_antigravity import roughness_antigravity as R\nfrom experiments.exp507_roughness_compat_antigravity.roughness_antigravity import RoughnessHeads,roughness_rows"
+    ],
+    [
+      "    rng=np.random.default_rng(506)",
+      "    rng=np.random.default_rng(507)"
+    ],
+    [
+      "        seed=506,fit_shape=[64,128],query_shape=[1024,128],constant_fit_rows=1,constant_query_rows=1,",
+      "        seed=507,fit_shape=[64,128],query_shape=[1024,128],constant_fit_rows=1,constant_query_rows=1,scale_power=20,"
+    ],
+    [
+      "        notes='Canonical roughness_rows stays NumPy. A backend may be recorded as material only if full-stage parity and speedup hold; promotion needs Codex before pilot freeze. Official MiniRocket was not rewritten. Public NumPy/scipy geometry is retained. No GPU concurrent jobs. MLX/MPS float64 OAS is unsupported (inherited Exp495 probe). CPU policy is 11 workers with inner 1 thread.',",
+      "        notes='Canonical roughness_rows stays NumPy. Fixed scale_power 20 is applied in-model after the helper so Numba/Torch alternatives are assessed at the same S. A backend may be recorded as material only if full-stage parity and speedup hold; promotion needs Codex before pilot freeze. Official MiniRocket was not rewritten. Public NumPy/scipy geometry is retained. No GPU concurrent jobs. MLX/MPS float64 OAS is unsupported (inherited Exp495 probe). CPU policy is 11 workers with inner 1 thread.',"
+    ]
+  ],
+  "pilot_replacements": [
+    [
+      "codemap_exp506_antigravity.json",
+      "codemap_exp507_antigravity.json"
+    ]
+  ],
+  "full_run_replacements": [
+    [
+      "codemap_exp506_antigravity.json",
+      "codemap_exp507_antigravity.json"
+    ]
+  ],
+  "protocol_antigravity.html": "<!DOCTYPE html>\n<html lang=ko>\n<head>\n<meta charset=utf-8>\n<title>Exp507 거칠기 호환 보정 프로토콜</title>\n</head>\n<body>\n<h1>Exp507 거칠기 수치 호환 보정</h1>\n<p>실패한 동결 Exp506을 보존하기 위한 기록이다. 새 가설이나 격자, 가중치, 데이터 제외는 없다. 공식 MiniRocket이 거칠기 뷰의 작은 표준편차를 거부한 수치 호환만 고친다. 이 비교 뒤에는 목표 달성 여부와 관계없이 중지한다.</p>\n<h2>고정 수리</h2>\n<p>거칠기 행의 수학 정의는 그대로다. 원본 MiniRocket 경로와 길이 3 미만의 원본 OAS 폴백도 그대로다. 모든 정규 거칠기 적합과 질의는 공식 MiniRocket 앞에 같은 S=2**20만 곱한다. 영점화, 클리핑, 정규화, 검증 우회, 행 제거, 행별 적응은 없다. 양의 전역 스케일은 PPV를 대수적으로 보존하지만, 유한 부동소수점 일치는 검증해야 한다.</p>\n<h2>합성 증거의 한계</h2>\n<p>데이터베이스와 TEST를 쓰지 않은 합성에서, 보통 거칠기는 비스케일과 2**20의 적합·질의 PPV가 비트 단위로 같았다. 근선형은 비스케일이 공개 API에서 거부되고 고정 스케일은 수락되었다. 표준편차 약 1e-13 아래를 보편적으로 보장하지 않으며, 비공개 입력으로 스케일을 고르지 않았다.</p>\n<h2>게이트와 목표</h2>\n<p>파일럿은 같은 50가족, 5겹, 오염, 꼬리, +0.02 규칙이다. 후보는 다시 고르지 않고 roughness_joint를 유지한다. 개발에 노출된 1117개 데이터셋, 128가족에서 경험적 FPR 0.1% 이하 가족 매크로 TPR이 MiniRocket 대비 상대 10% 이상이고 FP0에서 퇴행하지 않는 것이 목표다. Exp506 전체 과정은 라벨 전에 실패했고, 그 라벨은 열지 않았다. Exp506 소스와 결과, 매니페스트는 수정하지 않는다.</p>\n</body>\n</html>",
+  "full_protocol_antigravity.html": "<!doctype html>\n<html lang=ko>\n<meta charset=utf-8>\n<title>Exp507 전체평가 고정</title>\n<body>\n<h1>거칠기 호환 보정의 전체 비교</h1>\n<p>Exp506은 동결한다. TRAIN에서 이미 고른 roughness_joint만 유지하고 후보를 다시 고르지 않는다. 정규 거칠기 적합과 질의에만 고정 S=2**20을 공식 MiniRocket 앞에 적용하는 수치 호환이다. 같은 50가족, 5겹, 오염, 꼬리, +0.02 게이트와 같은 1117개, 128가족 인구에서 한 번 비교한 뒤, 목표 달성 여부와 관계없이 중지한다.</p>\n<p>공식 채점은 RoughnessHeads다. 새로 저장하는 점수는 기준 MiniRocket과 roughness_joint뿐이다. 참조 상한 1000, 시드, 행 2개와 상수 특수 처리, 기존 2개 제외를 유지한다. 기준 MiniRocket은 상대 허용오차 1e-10, 절대 허용오차 1e-8과 전체 안정 순위가 Exp494 캐시와 일치해야 한다. 점수와 해시를 고정한 뒤에만 라벨을 읽는다. 실패하면 라벨을 열지 않는다. Exp506이 라벨 전에 실패했을 때 열지 않은 라벨은 그대로 열지 않는다.</p>\n<p>한도는 거짓양성 0, 0.1%, 0.5%, 1%이고 계열 평균, 데이터셋 평균, 이상 수 가중 평균과 계열 쌍 부트스트랩 2000회를 보고한다. 주지표는 FPR 0.1% 이하 가족 매크로 TPR의 상대 10% 개선과 FP0 비악화다. 이미 노출된 개발 집합이며 독립 홀드아웃이 아니다. 합성 패리티 증거는 제한적이며 보편 보장이 아니다.</p>\n</body>\n</html>",
+  "review": "Compatibility-only: every normal roughness TRAIN/query is ldexp-scaled by hardcoded 20 before official MiniRocket; roughness_rows math, raw Mini, and L<3 OAS fallback are unchanged. Tests cover unscaled-vs-S ordinary PPV, near-linear unscaled reject then S accept, overflow reject without clipping, and retained Mini/OAS/immutable refs. Accel maps 507, seed 507, records scale_power 20; S is applied in-model after monkeypatched helpers. Pilot/full only remap codemap 506→507 and keep roughness_joint, 1117 ranking/hash boundaries, and the same gate. Exp506 remains frozen. Grok did not run tests or scoring."
+}

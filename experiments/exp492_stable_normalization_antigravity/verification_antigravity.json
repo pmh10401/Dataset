@@ -1,0 +1,10 @@
+{
+  "state": "passed",
+  "datasets": 125,
+  "independent_score_evaluations": 500,
+  "max_auc_absolute_error": 2.220446049250313e-16,
+  "zf_exact": true,
+  "preserved_files": 47,
+  "result_sha256": "2b6e7b9c11bc46649f569b29534961d49e063d3f3e3fac04b5390163808a1470",
+  "method": "Mann-Whitney rank-sum AUC with average ties; independent strict normal-max ZF"
+}

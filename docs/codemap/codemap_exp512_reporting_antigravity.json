@@ -1,0 +1,29 @@
+{
+  "schema": "exp512_reporting_codemap_v1",
+  "frozen_score_codemap_sha256": "45ff3ce721b91781db35559f314ecf7d979f38be53f65316f3953728b5078d7f",
+  "nodes": [
+    {
+      "path": "scratch/report_exp512_antigravity.py",
+      "sha256": "127cf8874efc45166be6459a93c6408f6864624dc3ff472d6ebc3c897dc675c0",
+      "callers": [
+        "python -m scratch.report_exp512_antigravity",
+        "scratch/test_report_exp512_resume_antigravity.py"
+      ],
+      "effect": "Only verified-results HTML/CSV/closure reporting; no scoring, labels or model changes",
+      "tests": [
+        "scratch/test_report_exp512_resume_antigravity.py"
+      ]
+    },
+    {
+      "path": "scratch/test_report_exp512_resume_antigravity.py",
+      "sha256": "fe541bd2d2fc26467031db08dc44dbb336265a0980f338d614228265c9f1fa59",
+      "callers": [
+        "pytest"
+      ],
+      "effect": "Reporting completion-evidence regression tests",
+      "tests": [
+        "scratch/test_report_exp512_resume_antigravity.py"
+      ]
+    }
+  ]
+}

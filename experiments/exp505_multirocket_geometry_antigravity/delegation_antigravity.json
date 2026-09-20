@@ -1,0 +1,66 @@
+{
+  "state": "complete_grok_implementation_train_screen_rejected",
+  "implementer": "grok-4.6",
+  "reasoning_effort": "high",
+  "worktree": "/private/tmp/exp505_grok_multirocket_antigravity",
+  "brief_sha256": "66921bbff9e397a250bca41ca8c52a073c40d3d89f45c05c02e54e83afb9913c",
+  "permission_mode": "plan",
+  "tools": [
+    "read_file",
+    "list_dir"
+  ],
+  "delivery": "response JSON only, independent Codex review and integration",
+  "pro_status": "Two prior Pro consultation timeouts",
+  "official_pilot_started": true,
+  "official_test_started": false,
+  "exec_session_id": 51178,
+  "synthetic_probe_issue": "Existing representation wrapper pads to9, but official MultiRocket then differences to8 and its fit raises broadcast error. Need Grok correction based on verified min10, before TRAIN. Baseline MiniRocket remains unchanged.",
+  "grok_session_id": "01a0ad39-d97c-7ef2-a49f-ad82b84109dd",
+  "synthetic_probe": {
+    "L2": "broadcast error",
+    "L9": "broadcast error",
+    "L10_n2_n4": "finite8064features; fit-transform exact",
+    "L128_n12": "finite8064features; fit-transform exact"
+  },
+  "delivery_source": "Exact completed assistant response from Grok chat_history JSON; CLI log had line breaks inside streamed JSON",
+  "next_action": "No new TEST for rejected MultiRocket geometry; consider separately preregistered roughness view.",
+  "correction_exec_session_id": 7955,
+  "initial_test_exec_session_id": 57134,
+  "initial_test_exit_code": 1,
+  "initial_test_log": "initial_test_antigravity.log",
+  "initial_tests": "2 passed, 1 failed in6.69s: short-input broadcast error reproduced",
+  "independent_review": "Sol ship pending known Grok fixes; no additional concrete bug, leakage path or goal drift; no runs/DB/TEST/full results",
+  "corrections_sha256": "7e427ea13fcd274172f67d13d7a0dc1d62bc0d2034140e9c4f167be0d8e52ec6",
+  "tests": "3 passed in13.14s; corrected short-input, constant, official features, baseline/OAS and batch isolation checks passed",
+  "acceleration_sha256": "4f4e89ffd4f79faddace32bb7eefec1d091ca6095fa07e046f022e4d91379940",
+  "acceleration_parity_passed": true,
+  "verification": {
+    "state": "passed_train_screen",
+    "datasets": 50,
+    "folds": 250,
+    "selected": "oas_distance",
+    "unrestricted_winner": "oas_distance",
+    "best_new_candidate": "multirocket_joint",
+    "new_candidate_worst_proxy": 0.6445619006297852,
+    "anchor_worst_proxy": 0.6522197414956119,
+    "new_candidate_margin": -0.0076578408658266595,
+    "required_proxy_margin": 0.02,
+    "eligible": [
+      "MiniRocket",
+      "oas_distance",
+      "multirocket_distance",
+      "multirocket_joint"
+    ],
+    "normal_tail": {
+      "MiniRocket": 2.9277101049968524,
+      "oas_distance": 2.5555495038907714,
+      "multirocket_distance": 3.101238923172245,
+      "multirocket_joint": 3.2389886689617704
+    },
+    "anchor_fold_recalls_exact": true,
+    "source_hashes_passed": true,
+    "pilot_sha256": "e343aec2b3ed90b20cef774c8b0fb78602b756d4cff0b1e58d3bf69dbb05ca70",
+    "full_run_skipped": true,
+    "test_labels_read": false
+  }
+}

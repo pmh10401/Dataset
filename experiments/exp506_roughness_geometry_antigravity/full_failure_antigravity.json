@@ -1,0 +1,24 @@
+{
+  "state": "failed_scoring_before_labels",
+  "exec_session_id": 47006,
+  "exit_code": 1,
+  "completed": 1115,
+  "total": 1117,
+  "failures": [
+    {
+      "dataset": "AllGestureWiimoteX_normal_7",
+      "error": "Input collection has too little variation: std <= 1e-07 for 1 case/channel pair(s): (case=52, ch=0). Rescale (e.g., multiply by a constant) or normalise your data.",
+      "type": "ValueError"
+    },
+    {
+      "dataset": "AllGestureWiimoteZ_normal_7",
+      "error": "Input collection has too little variation: std <= 1e-07 for 1 case/channel pair(s): (case=78, ch=0). Rescale (e.g., multiply by a constant) or normalise your data.",
+      "type": "ValueError"
+    }
+  ],
+  "test_labels_opened": false,
+  "full_metrics_computed": false,
+  "frozen_source_hashes_passed": true,
+  "manifest_state_is_pre_failure_snapshot": "scoring",
+  "next_action": "Read-only Grok review of fixed power-of-two view rescaling; any fix in a new preregistered experiment, preserve Exp506 and population."
+}

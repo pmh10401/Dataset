@@ -1,0 +1,16 @@
+{
+  "state": "codex_followup_to_independent_comparison",
+  "grok_comparison": "../exp498_copula_geometry_antigravity/consultation_antigravity.json",
+  "pro_available": false,
+  "pro_reason": "two browser_page timeouts",
+  "decision": "Rank-copula TRAIN screen failed its frozen shipping gate; now separately test nonlinear support and nearest1 before any new TEST scoring",
+  "corrections": [
+    "low effective rank does not prove absence of curvature",
+    "kernel OneClassSVM is defined at n2; n16 gate is a fixed small-sample fallback choice"
+  ],
+  "normal_support_formula_probe": {
+    "raw_score_max_error": 1.3322676295501878e-15,
+    "far_scores_finite_and_ordered": true,
+    "raw_or_test_data_read": false
+  }
+}

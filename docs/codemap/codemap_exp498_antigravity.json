@@ -1,0 +1,522 @@
+{
+  "nodes": [
+    {
+      "callers": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/contracts_antigravity.py",
+      "sha256": "0bb4f6be3f22c5b2a6c2c113300d773a14dd23ff2181f17df1c0fc768b38de27",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py",
+        "experiments/exp495_normal_geometry_antigravity/diagnostics_antigravity.py",
+        "experiments/exp495_normal_geometry_antigravity/geometry_heads_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/copula_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/local_gap_antigravity.py",
+      "sha256": "d9ad3d3ce86003346d4ec5a957cfa26195031a402ef8e77afa7f9a96120dc141",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py",
+        "experiments/exp495_normal_geometry_antigravity/diagnostics_antigravity.py",
+        "experiments/exp495_normal_geometry_antigravity/pilot_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/pilot_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/representations_antigravity.py",
+      "sha256": "fbc9a67b07864b007196832db056605611fd77592a9e404a0cf83dd687298225",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp495_normal_geometry_antigravity/pilot_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/pilot_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py",
+      "sha256": "5abaee70a7023b8aaca5755a5d5d9cfb8b09b3500244d3a2f6f78cdcb56a5ec5",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/evaluation_antigravity.py",
+      "sha256": "3e8b727c1a9d05f711cf7480bbc200bc272f3122e64b36f18a26ba38936e7260",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp474_conservative_fallback_routing_antigravity/evaluation_antigravity.py",
+        "experiments/exp475_joint_tail_fallback_routing_antigravity/policy_antigravity.py",
+        "experiments/exp476_minimum_zf_fallback_routing_antigravity/policy_antigravity.py",
+        "experiments/exp_routing_label_free_antigravity/conservative_policy_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/policy_antigravity.py",
+      "sha256": "3df8a1ecf668bacafb69943ef9ae7d9d503d86ce8795e7d4b07af9b8db336b2b",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/ragged_features_antigravity.py",
+      "sha256": "7af412d0e2283cfe68519b7da5ee96b0d28ddddce4f866e74f883e837a0ebc2b",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp476_minimum_zf_fallback_routing_antigravity/policy_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp475_joint_tail_fallback_routing_antigravity/policy_antigravity.py",
+      "sha256": "c91d625e2565afd0bbc107a38f5ba36ea69eb660f4c660a122af0f0aaeec5840",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+        "experiments/exp_routing_label_free_antigravity/conservative_policy_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp476_minimum_zf_fallback_routing_antigravity/policy_antigravity.py",
+      "sha256": "6d3e8d0f9afadda866dab812edb18baaa2c84102a174b2afb848748eab40ed96",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp479_missing_score_recovery_antigravity/contracts_antigravity.py",
+        "experiments/exp491_gain_prediction_antigravity/runtime_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/config_antigravity.py",
+      "sha256": "3b5fa65b77ec22d58245ae85343c76ecc02e1c8bdcbac8f8d07cf69c34f397a2",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp479_missing_score_recovery_antigravity/preprocessing_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/contracts_antigravity.py",
+      "sha256": "a5fc2f1aa881787e72277181dd9c2129a7c95b4bad74918a41e5a8601cf0e4c2",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp495_normal_geometry_antigravity/diagnostics_antigravity.py",
+        "experiments/exp495_normal_geometry_antigravity/pilot_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/preprocessing_antigravity.py",
+      "sha256": "389ed992920116cec9dcd47a2d9321a124952e5becd6dde556b51fa3179f8903",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/contracts_antigravity.py",
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py",
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py",
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/policy_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/config_antigravity.py",
+      "sha256": "722946a8b93656e0c72cd699fd69410d4d849fbe93aab457b8f3e608eb5ac404",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py",
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py",
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/policy_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/run_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/acceleration_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/contracts_antigravity.py",
+      "sha256": "af92668efdb0f5ea6827b16a3dfc88762016d77cd078c1da5ec75345e463cddb",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py",
+      "sha256": "2612a1c36405a76f2b4da0c220102116dc8fb3722f9ccf8bdd210d7387247d85",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/run_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/run_antigravity.py",
+        "experiments/exp491_gain_prediction_antigravity/runtime_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py",
+      "sha256": "a052df0e23425c6a86bb70c39bf18bd05a17d0efa4f8d2d1460c6bedc507108b",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/policy_antigravity.py",
+      "sha256": "826e0014e48598b01ea09a489679d8f2f2185d4bd311b531d965b0add22b6a49",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/contracts_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/run_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/acceleration_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/config_antigravity.py",
+      "sha256": "563f16ec57982bf1d98019ba9b1f33a18317f06d701e1b3f5ae887b24018fe62",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/contracts_antigravity.py",
+      "sha256": "2b0837481ada8758c034098f99500c0677d3c7015a53bc375725bc41895a15db",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/run_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+      "sha256": "24e366cda5acefac3e83dce7e027c2dd50366dd68280686ce29a0009aad5d283",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/acceleration_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/kernels_numba_antigravity.py",
+      "sha256": "97bbb6299629b488df5b960d47322a52447726b1a16e9f6714d49a214b50af87",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/acceleration_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
+      "sha256": "d120bb0ece544bc48f7dd82b862bb8568bf3eaa82378a52554d70c4d37ccd62b",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp491_gain_prediction_antigravity/runtime_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/run_antigravity.py",
+      "sha256": "b134ca088a31ca0be26afbbd1aa03fe59aad7731e6405fd0623cb0abe7d05546",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp484_distance_qualification_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp484_distance_qualification_antigravity/acceleration_antigravity.py",
+      "sha256": "f4a372adbe3b1c4bdb509a488402420e598e889d5a23fdc33c5fa124dc914fa0",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp491_gain_prediction_antigravity/runtime_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp484_distance_qualification_antigravity/run_antigravity.py",
+      "sha256": "b6955524db81ab3792346411140ac1ce71c00a039ec5254eba0d4f525be6e7d1",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp495_normal_geometry_antigravity/diagnostics_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp491_gain_prediction_antigravity/runtime_antigravity.py",
+      "sha256": "4539d3af54e79d06a69967222180e20db0da904cfc382869e2f9c97a24ef3fde",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp495_normal_geometry_antigravity/pilot_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/acceleration_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/copula_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/pilot_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp495_normal_geometry_antigravity/diagnostics_antigravity.py",
+      "sha256": "60e136aecee28e561789890c0d9ce30296117230cc242f507b07fab5ca0c210d",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp495_normal_geometry_antigravity/pilot_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/acceleration_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/copula_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp495_normal_geometry_antigravity/geometry_heads_antigravity.py",
+      "sha256": "956063cabc105896925f81678b5f39c9c96dd04998c068bef7fc132e17f4aefb",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp498_copula_geometry_antigravity/pilot_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp495_normal_geometry_antigravity/pilot_antigravity.py",
+      "sha256": "85b8ebd30c92901831151e7d18bb1f0fcc39487453f7f4747e99061f6cff1381",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ],
+      "effect": "experiment implementation",
+      "path": "experiments/exp498_copula_geometry_antigravity/acceleration_antigravity.py",
+      "sha256": "1fd32fe4f4036d2430afeb24eb5e7b614ff29ddd6eb7743e7439d8b576dbcbf7",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp498_copula_geometry_antigravity/acceleration_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/pilot_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py"
+      ],
+      "effect": "experiment implementation",
+      "path": "experiments/exp498_copula_geometry_antigravity/copula_antigravity.py",
+      "sha256": "7be4b0fbddd1f14112fba411f218bd89aac2adfee231d9594d148461853ca668",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [],
+      "effect": "experiment implementation",
+      "path": "experiments/exp498_copula_geometry_antigravity/pilot_antigravity.py",
+      "sha256": "5391376219ec59e61726b86d2df591693b25daaca566a8abc9e3622fc38f38b2",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [],
+      "effect": "experiment implementation",
+      "path": "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+      "sha256": "280440ba4a5bdfd17950ef9b8723c511194b0f73f3e5125b00362760458109e5",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [],
+      "effect": "experiment implementation",
+      "path": "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py",
+      "sha256": "48e6daa0c381b3f4db3431b82bab8d6072dafd4e17e8d1e0a7a8df01ddb48a9d",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp_routing_label_free_antigravity/conservative_policy_antigravity.py",
+      "sha256": "56cc8b3f21c41046cd228a6a0d7bb5428e35cb25c8c023a5a7b8f72ce83f9583",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py",
+      "sha256": "9d42dad06e92ae136a760db8771506377b3ccdca8615122ce1b0b43bca0b927c",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp_routing_label_free_antigravity/conservative_policy_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp_routing_label_free_antigravity/routing_rules_antigravity.py",
+      "sha256": "fb4fa5e6088a23ad2135b695715d964f4428b37391ccbf3cd59f9d573fc5c8f2",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiment runners"
+      ],
+      "effect": "frozen protocol",
+      "path": "docs/superpowers/specs/2026-09-16-exp489-491-preregistration-antigravity.html",
+      "sha256": "ecd91b24c6ab90cf5628885d136d323a35c9bfda6d80bc51de2f357482be49d9",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "validated evidence loader"
+      ],
+      "effect": "historical development outcomes",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.sqlite3",
+      "sha256": "77c53e1afd0af071edf71ef692bd978458dda6a5f8a0fec110736b787fe1b998",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "descriptor loader"
+      ],
+      "effect": "normal TRAIN descriptors",
+      "path": "experiments/exp488_catch22_train_descriptors_antigravity/descriptor_cache_antigravity.json",
+      "sha256": "daf0a44837bd8afda4c814a419dfabf4e14ec6c1beca2fc195c5f6494f918985",
+      "tests": [
+        "experiments/exp498_copula_geometry_antigravity/test_exp498_antigravity.py",
+        "experiments/exp498_copula_geometry_antigravity/test_rank_backend_antigravity.py"
+      ]
+    }
+  ],
+  "schema": "exp498_codemap_v1"
+}

@@ -1,0 +1,17 @@
+{
+  "state": "passed_before_scoring",
+  "utc": "2026-09-17T03:53:59.922787+00:00",
+  "stop_after_this_comparison": true,
+  "new_hypotheses_authorized": false,
+  "artifacts": {
+    "experiments/exp507_roughness_compat_antigravity/verification_antigravity.json": "90fb06482d5109046d3a8d3495e5927440a434043c2b2d333a68fcf8bff67cd6",
+    "experiments/exp507_roughness_compat_antigravity/verify_antigravity.py": "d6a080ffa5dbb68c49568720f7c4573a186fb1f51b131eb1826f0752dc4885d6",
+    "experiments/exp507_roughness_compat_antigravity/pilot_results_antigravity.json": "a0a2667dffb7746d9e8190d5c6cf54a50efdf70ad58f60891b0828a8d2081a46",
+    "experiments/exp507_roughness_compat_antigravity/pilot_manifest_antigravity.json": "da04d2bbb307a2951beee69f5732220fc535b93ef09362ade3504d2f8e40e259",
+    "experiments/exp507_roughness_compat_antigravity/full_run_antigravity.py": "7e097aa5853679897c981d16bc37f9bf59e15dec3b8c49767f13e484a52781e7",
+    "experiments/exp507_roughness_compat_antigravity/acceleration_results_antigravity.json": "ebafe210bf2cc90b3369b0555bdce4da3cc8446279e144a241bbdced04879660",
+    "experiments/exp507_roughness_compat_antigravity/full_smoke_antigravity.json": "89594787f756e19815addf122fff37d2bdc414907bb29cb6c2d92aee87c06ded"
+  },
+  "reviewer": "01a0ac9b-630e-7030-8db4-cb0c23e371b9",
+  "reviewer_verdict": "ship for this one guarded run"
+}

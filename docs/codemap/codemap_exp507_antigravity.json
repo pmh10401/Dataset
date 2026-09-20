@@ -1,0 +1,776 @@
+{
+  "nodes": [
+    {
+      "callers": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py",
+        "experiments/exp479_missing_score_recovery_antigravity/evaluation_antigravity.py",
+        "experiments/exp492_stable_normalization_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/contracts_antigravity.py",
+      "sha256": "0bb4f6be3f22c5b2a6c2c113300d773a14dd23ff2181f17df1c0fc768b38de27",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py",
+        "experiments/exp489_lof_score_head_antigravity/lof_score_head_antigravity.py",
+        "experiments/exp490_behavior_descriptors_antigravity/behavior_descriptors_antigravity.py",
+        "experiments/exp493_stable_meta_routing_antigravity/behavior_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/scoring_antigravity.py",
+        "experiments/exp495_normal_geometry_antigravity/diagnostics_antigravity.py",
+        "experiments/exp495_normal_geometry_antigravity/geometry_heads_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/roughness_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/local_gap_antigravity.py",
+      "sha256": "d9ad3d3ce86003346d4ec5a957cfa26195031a402ef8e77afa7f9a96120dc141",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py",
+        "experiments/exp489_lof_score_head_antigravity/lof_score_head_antigravity.py",
+        "experiments/exp490_behavior_descriptors_antigravity/behavior_descriptors_antigravity.py",
+        "experiments/exp493_stable_meta_routing_antigravity/behavior_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/scoring_antigravity.py",
+        "experiments/exp495_normal_geometry_antigravity/diagnostics_antigravity.py",
+        "experiments/exp495_normal_geometry_antigravity/pilot_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/roughness_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/representations_antigravity.py",
+      "sha256": "fbc9a67b07864b007196832db056605611fd77592a9e404a0cf83dd687298225",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp479_missing_score_recovery_antigravity/evaluation_antigravity.py",
+        "experiments/exp489_lof_score_head_antigravity/lof_score_head_antigravity.py",
+        "experiments/exp490_behavior_descriptors_antigravity/behavior_descriptors_antigravity.py",
+        "experiments/exp492_stable_normalization_antigravity/run_antigravity.py",
+        "experiments/exp493_stable_meta_routing_antigravity/behavior_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/scoring_antigravity.py",
+        "experiments/exp495_normal_geometry_antigravity/pilot_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/full_run_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/pilot_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp449_residual_fn_method_qualification_antigravity/scoring_antigravity.py",
+      "sha256": "5abaee70a7023b8aaca5755a5d5d9cfb8b09b3500244d3a2f6f78cdcb56a5ec5",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/evaluation_antigravity.py",
+      "sha256": "3e8b727c1a9d05f711cf7480bbc200bc272f3122e64b36f18a26ba38936e7260",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp474_conservative_fallback_routing_antigravity/evaluation_antigravity.py",
+        "experiments/exp475_joint_tail_fallback_routing_antigravity/policy_antigravity.py",
+        "experiments/exp476_minimum_zf_fallback_routing_antigravity/policy_antigravity.py",
+        "experiments/exp_routing_label_free_antigravity/conservative_policy_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/policy_antigravity.py",
+      "sha256": "3df8a1ecf668bacafb69943ef9ae7d9d503d86ce8795e7d4b07af9b8db336b2b",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp474_conservative_fallback_routing_antigravity/ragged_features_antigravity.py",
+      "sha256": "7af412d0e2283cfe68519b7da5ee96b0d28ddddce4f866e74f883e837a0ebc2b",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp476_minimum_zf_fallback_routing_antigravity/policy_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp475_joint_tail_fallback_routing_antigravity/policy_antigravity.py",
+      "sha256": "c91d625e2565afd0bbc107a38f5ba36ea69eb660f4c660a122af0f0aaeec5840",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+        "experiments/exp_routing_label_free_antigravity/conservative_policy_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp476_minimum_zf_fallback_routing_antigravity/policy_antigravity.py",
+      "sha256": "6d3e8d0f9afadda866dab812edb18baaa2c84102a174b2afb848748eab40ed96",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp479_missing_score_recovery_antigravity/contracts_antigravity.py",
+        "experiments/exp479_missing_score_recovery_antigravity/evaluation_antigravity.py",
+        "experiments/exp489_lof_score_head_antigravity/lof_score_head_antigravity.py",
+        "experiments/exp490_behavior_descriptors_antigravity/behavior_descriptors_antigravity.py",
+        "experiments/exp491_gain_prediction_antigravity/gain_prediction_antigravity.py",
+        "experiments/exp491_gain_prediction_antigravity/runtime_antigravity.py",
+        "experiments/exp493_stable_meta_routing_antigravity/behavior_antigravity.py",
+        "experiments/exp493_stable_meta_routing_antigravity/run_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/scoring_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/config_antigravity.py",
+      "sha256": "3b5fa65b77ec22d58245ae85343c76ecc02e1c8bdcbac8f8d07cf69c34f397a2",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp479_missing_score_recovery_antigravity/evaluation_antigravity.py",
+        "experiments/exp479_missing_score_recovery_antigravity/preprocessing_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/constant_recovery_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/contracts_antigravity.py",
+      "sha256": "a5fc2f1aa881787e72277181dd9c2129a7c95b4bad74918a41e5a8601cf0e4c2",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp489_lof_score_head_antigravity/run_antigravity.py",
+        "experiments/exp492_stable_normalization_antigravity/run_antigravity.py",
+        "experiments/exp493_stable_meta_routing_antigravity/run_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/run_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/full_run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/evaluation_antigravity.py",
+      "sha256": "2a2404cedaaf6aa753eb25accfd388179c13bccbc604b9b85aa06aee06dff658",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp489_lof_score_head_antigravity/run_antigravity.py",
+        "experiments/exp490_behavior_descriptors_antigravity/behavior_descriptors_antigravity.py",
+        "experiments/exp492_stable_normalization_antigravity/run_antigravity.py",
+        "experiments/exp493_stable_meta_routing_antigravity/run_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/constant_recovery_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/run_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/scoring_antigravity.py",
+        "experiments/exp495_normal_geometry_antigravity/diagnostics_antigravity.py",
+        "experiments/exp495_normal_geometry_antigravity/pilot_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/full_run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp479_missing_score_recovery_antigravity/preprocessing_antigravity.py",
+      "sha256": "389ed992920116cec9dcd47a2d9321a124952e5becd6dde556b51fa3179f8903",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/contracts_antigravity.py",
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py",
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py",
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/policy_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/config_antigravity.py",
+      "sha256": "722946a8b93656e0c72cd699fd69410d4d849fbe93aab457b8f3e608eb5ac404",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py",
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py",
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/policy_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/acceleration_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/run_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/acceleration_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/contracts_antigravity.py",
+      "sha256": "af92668efdb0f5ea6827b16a3dfc88762016d77cd078c1da5ec75345e463cddb",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py",
+      "sha256": "2612a1c36405a76f2b4da0c220102116dc8fb3722f9ccf8bdd210d7387247d85",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/run_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/run_antigravity.py",
+        "experiments/exp488_catch22_train_descriptors_antigravity/run_antigravity.py",
+        "experiments/exp491_gain_prediction_antigravity/runtime_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py",
+      "sha256": "a052df0e23425c6a86bb70c39bf18bd05a17d0efa4f8d2d1460c6bedc507108b",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evaluation_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/policy_antigravity.py",
+      "sha256": "826e0014e48598b01ea09a489679d8f2f2185d4bd311b531d965b0add22b6a49",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp488_catch22_train_descriptors_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/acceleration_antigravity.py",
+      "sha256": "dae52ef08af27979e294d759572a8d644b76524fe512fddc1544ef940c5d9a1b",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/acceleration_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/contracts_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/run_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/acceleration_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/config_antigravity.py",
+      "sha256": "563f16ec57982bf1d98019ba9b1f33a18317f06d701e1b3f5ae887b24018fe62",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/contracts_antigravity.py",
+      "sha256": "2b0837481ada8758c034098f99500c0677d3c7015a53bc375725bc41895a15db",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/acceleration_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/run_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/run_antigravity.py",
+        "experiments/exp488_catch22_train_descriptors_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+      "sha256": "24e366cda5acefac3e83dce7e027c2dd50366dd68280686ce29a0009aad5d283",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/acceleration_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/acceleration_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/kernels_numba_antigravity.py",
+      "sha256": "97bbb6299629b488df5b960d47322a52447726b1a16e9f6714d49a214b50af87",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/acceleration_antigravity.py",
+        "experiments/exp481_strict_evidence_residual_correction_antigravity/evaluation_antigravity.py",
+        "experiments/exp484_distance_qualification_antigravity/acceleration_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/policy_antigravity.py",
+      "sha256": "d120bb0ece544bc48f7dd82b862bb8568bf3eaa82378a52554d70c4d37ccd62b",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp488_catch22_train_descriptors_antigravity/run_antigravity.py",
+        "experiments/exp491_gain_prediction_antigravity/runtime_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp481_strict_evidence_residual_correction_antigravity/run_antigravity.py",
+      "sha256": "b134ca088a31ca0be26afbbd1aa03fe59aad7731e6405fd0623cb0abe7d05546",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp484_distance_qualification_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp484_distance_qualification_antigravity/acceleration_antigravity.py",
+      "sha256": "f4a372adbe3b1c4bdb509a488402420e598e889d5a23fdc33c5fa124dc914fa0",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp488_catch22_train_descriptors_antigravity/run_antigravity.py",
+        "experiments/exp491_gain_prediction_antigravity/runtime_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp484_distance_qualification_antigravity/run_antigravity.py",
+      "sha256": "b6955524db81ab3792346411140ac1ce71c00a039ec5254eba0d4f525be6e7d1",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp488_catch22_train_descriptors_antigravity/run_antigravity.py",
+        "experiments/exp490_behavior_descriptors_antigravity/behavior_descriptors_antigravity.py",
+        "experiments/exp490_behavior_descriptors_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp488_catch22_train_descriptors_antigravity/features_antigravity.py",
+      "sha256": "9d94ef0026d7819219704ef373c36b2bd187947dbab9de9db9f86f3578c6a82a",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp490_behavior_descriptors_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp488_catch22_train_descriptors_antigravity/run_antigravity.py",
+      "sha256": "b881fb8b4df6ea92d06cdd5164ee03e4cc96f6fa4a2ec79e0cd20c5dc8073496",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp489_lof_score_head_antigravity/run_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/scoring_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp489_lof_score_head_antigravity/lof_score_head_antigravity.py",
+      "sha256": "7e5699987cd3a1d64f3f66afeaa6d786865916ddf09643b30c74771f1f131c21",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp493_stable_meta_routing_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp489_lof_score_head_antigravity/run_antigravity.py",
+      "sha256": "a5452debba3b0f6c326871556a0f6328fc3d5b8b314d405b422fa4c2bedcf743",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp490_behavior_descriptors_antigravity/run_antigravity.py",
+        "experiments/exp492_stable_normalization_antigravity/run_antigravity.py",
+        "experiments/exp493_stable_meta_routing_antigravity/behavior_antigravity.py",
+        "experiments/exp493_stable_meta_routing_antigravity/run_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/scoring_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp490_behavior_descriptors_antigravity/behavior_descriptors_antigravity.py",
+      "sha256": "9bd97c814e9e3a4bb71ca26f5c26821f89aa677f7f67b859a7b93d0e31a9291e",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp493_stable_meta_routing_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp490_behavior_descriptors_antigravity/run_antigravity.py",
+      "sha256": "66137ba219640508384a75d2b9b5f1c6562136331d8c55ddbbef0abadb4bf952",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp490_behavior_descriptors_antigravity/run_antigravity.py",
+        "experiments/exp493_stable_meta_routing_antigravity/meta_antigravity.py",
+        "experiments/exp493_stable_meta_routing_antigravity/run_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/evaluation_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp491_gain_prediction_antigravity/gain_prediction_antigravity.py",
+      "sha256": "601fb87971e4dff9afe5de5a0aa63fe647cbe5d07dbb30349321647c76a73499",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp489_lof_score_head_antigravity/run_antigravity.py",
+        "experiments/exp490_behavior_descriptors_antigravity/run_antigravity.py",
+        "experiments/exp491_gain_prediction_antigravity/gain_prediction_antigravity.py",
+        "experiments/exp492_stable_normalization_antigravity/run_antigravity.py",
+        "experiments/exp493_stable_meta_routing_antigravity/run_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/run_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/scoring_antigravity.py",
+        "experiments/exp495_normal_geometry_antigravity/diagnostics_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/full_run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp491_gain_prediction_antigravity/runtime_antigravity.py",
+      "sha256": "4539d3af54e79d06a69967222180e20db0da904cfc382869e2f9c97a24ef3fde",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp492_stable_normalization_antigravity/run_antigravity.py",
+        "experiments/exp492_stable_normalization_antigravity/scoring_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp492_stable_normalization_antigravity/normalization_antigravity.py",
+      "sha256": "be299aff95d083fee10e5c0f23d6483b3e2da9dab6dca3f53992a681e48d8e4a",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp493_stable_meta_routing_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp492_stable_normalization_antigravity/run_antigravity.py",
+      "sha256": "2606b3882a8315ab97eecf5bd489a99451afcfeb60b3b599c58b10ee0f36df65",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp492_stable_normalization_antigravity/run_antigravity.py",
+        "experiments/exp493_stable_meta_routing_antigravity/behavior_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/scoring_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp492_stable_normalization_antigravity/scoring_antigravity.py",
+      "sha256": "94c1422fc51d56b290b32baed4f8961c04f62759e681059e706c3994d767e8df",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp493_stable_meta_routing_antigravity/run_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/scoring_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp493_stable_meta_routing_antigravity/behavior_antigravity.py",
+      "sha256": "2ad3762898a19cb86fb35b1bfd5bf1432578510dfc3d6666888deac5e93cf9f7",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp493_stable_meta_routing_antigravity/run_antigravity.py",
+        "experiments/exp494_all_datasets_low_fpr_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp493_stable_meta_routing_antigravity/meta_antigravity.py",
+      "sha256": "4fe15bbf2f1ef17d56dd7e4f82cfde6fb062bc6ce9aa56aeba44b111bf3ffead",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp494_all_datasets_low_fpr_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp493_stable_meta_routing_antigravity/run_antigravity.py",
+      "sha256": "28e05bd580981bfc8bffbbb75b1d08a485e4a80a4789e87c940ffdb935fcd689",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp507_roughness_compat_antigravity/full_run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp494_all_datasets_low_fpr_antigravity/constant_recovery_antigravity.py",
+      "sha256": "c26ec4cf6e2bbc1f8cb90e7770bc5930e35042799fb82e1f0373c0795cdea5ae",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp494_all_datasets_low_fpr_antigravity/run_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/full_run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp494_all_datasets_low_fpr_antigravity/evaluation_antigravity.py",
+      "sha256": "ae660b53da9ab4665c47e2b823434e91fb7cc02c92566c2f0c332d2da9de0c8f",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp494_all_datasets_low_fpr_antigravity/constant_recovery_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp494_all_datasets_low_fpr_antigravity/run_antigravity.py",
+      "sha256": "f59ab15534a59edfaa970be04c4ba5b9e377136df739e8f5a57c0a6a94434ded",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp494_all_datasets_low_fpr_antigravity/run_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp494_all_datasets_low_fpr_antigravity/scoring_antigravity.py",
+      "sha256": "5770986482dbfb8a550a3a1c701ba16ac7049f0a835dc93a9143152575e93f8c",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp495_normal_geometry_antigravity/pilot_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/acceleration_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/full_run_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/pilot_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/roughness_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp495_normal_geometry_antigravity/diagnostics_antigravity.py",
+      "sha256": "60e136aecee28e561789890c0d9ce30296117230cc242f507b07fab5ca0c210d",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp495_normal_geometry_antigravity/pilot_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/acceleration_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/roughness_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp495_normal_geometry_antigravity/geometry_heads_antigravity.py",
+      "sha256": "956063cabc105896925f81678b5f39c9c96dd04998c068bef7fc132e17f4aefb",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp507_roughness_compat_antigravity/pilot_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp495_normal_geometry_antigravity/pilot_antigravity.py",
+      "sha256": "85b8ebd30c92901831151e7d18bb1f0fcc39487453f7f4747e99061f6cff1381",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [],
+      "effect": "experiment implementation",
+      "path": "experiments/exp507_roughness_compat_antigravity/acceleration_antigravity.py",
+      "sha256": "37e2044cb79693ea350dd06aa8941e068a70515e28dfe20560cc6341a29473bb",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [],
+      "effect": "experiment implementation",
+      "path": "experiments/exp507_roughness_compat_antigravity/full_run_antigravity.py",
+      "sha256": "7e097aa5853679897c981d16bc37f9bf59e15dec3b8c49767f13e484a52781e7",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp507_roughness_compat_antigravity/full_run_antigravity.py"
+      ],
+      "effect": "experiment implementation",
+      "path": "experiments/exp507_roughness_compat_antigravity/pilot_antigravity.py",
+      "sha256": "11ec2771f4478163277113579a8845e064ac7b8805a0ae60962139cf5a8cfada",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp507_roughness_compat_antigravity/acceleration_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/full_run_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/pilot_antigravity.py",
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ],
+      "effect": "experiment implementation",
+      "path": "experiments/exp507_roughness_compat_antigravity/roughness_antigravity.py",
+      "sha256": "27705fb7f4c6828a5a39673b2b1393b3b3809f46c2be39269317819dfd4412da",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [],
+      "effect": "experiment implementation",
+      "path": "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py",
+      "sha256": "e1012fc62054fea3aa5bb124d3b606616730c812f19d02c0ecb21d6e3454c2e5",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [],
+      "effect": "experiment implementation",
+      "path": "experiments/exp507_roughness_compat_antigravity/verify_antigravity.py",
+      "sha256": "d6a080ffa5dbb68c49568720f7c4573a186fb1f51b131eb1826f0752dc4885d6",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp_routing_label_free_antigravity/conservative_policy_antigravity.py",
+      "sha256": "56cc8b3f21c41046cd228a6a0d7bb5428e35cb25c8c023a5a7b8f72ce83f9583",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp_routing_label_free_antigravity/official_router_antigravity.py",
+      "sha256": "9d42dad06e92ae136a760db8771506377b3ccdca8615122ce1b0b43bca0b927c",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiments/exp_routing_label_free_antigravity/conservative_policy_antigravity.py"
+      ],
+      "effect": "reused immutable dependency",
+      "path": "experiments/exp_routing_label_free_antigravity/routing_rules_antigravity.py",
+      "sha256": "fb4fa5e6088a23ad2135b695715d964f4428b37391ccbf3cd59f9d573fc5c8f2",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "experiment runners"
+      ],
+      "effect": "frozen protocol",
+      "path": "docs/superpowers/specs/2026-09-16-exp489-491-preregistration-antigravity.html",
+      "sha256": "ecd91b24c6ab90cf5628885d136d323a35c9bfda6d80bc51de2f357482be49d9",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "validated evidence loader"
+      ],
+      "effect": "historical development outcomes",
+      "path": "experiments/exp480_family_balanced_evidence_routing_antigravity/evidence_antigravity.sqlite3",
+      "sha256": "77c53e1afd0af071edf71ef692bd978458dda6a5f8a0fec110736b787fe1b998",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    },
+    {
+      "callers": [
+        "descriptor loader"
+      ],
+      "effect": "normal TRAIN descriptors",
+      "path": "experiments/exp488_catch22_train_descriptors_antigravity/descriptor_cache_antigravity.json",
+      "sha256": "daf0a44837bd8afda4c814a419dfabf4e14ec6c1beca2fc195c5f6494f918985",
+      "tests": [
+        "experiments/exp507_roughness_compat_antigravity/test_exp507_antigravity.py"
+      ]
+    }
+  ],
+  "schema": "exp507_codemap_v1"
+}

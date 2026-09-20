@@ -1,0 +1,28 @@
+{
+  "state": "all_design_findings_resolved_by_codex",
+  "original_verdict": "fix-first",
+  "design_review_sha256": "9dfdbf87cdfbc1d5adac4574e273bd444a052ea62c91185eaea6417b2ecaaa89",
+  "resolutions": [
+    {
+      "issue": 1,
+      "resolution": "Actual frozen50 population minimum TRAIN40, outerfit32, R16, S=B8; runner prechecks eligibility and capture rejects fallback. No inapplicable folds or silent exclusion."
+    },
+    {
+      "issue": 2,
+      "resolution": "Imported original crossfit_plan, perturbations, unseen_perturbations; exact original seeds. Same strict held-normal max, same tail formula, exact all prior recalls checked for every fold. No new candidate/threshold selection."
+    },
+    {
+      "issue": 3,
+      "resolution": "participation_probe uses cdist(R,R), diagonal inf, min(3,len(R)-1), median+1e-9. Both S and B queries use the same R and min(3,len(R))."
+    },
+    {
+      "issue": 4,
+      "resolution": "solve uses official scipy.optimize.minimize(method=L-BFGS-B,jac=True) with explicit options and unchanged NumPy objective. Ports synthetic only, all score/rank/index parity passed but no speed gain; no GPU promotion."
+    },
+    {
+      "issue": 5,
+      "resolution": "Store solver status, projected gradient and convex objective-gap bound separately. No global/generalization success from solver flag. Matched S/B contrast diagnostic only; no Exp510 or TEST run."
+    }
+  ],
+  "model_review_scope": "design and original mathematical implementation; Codex owns new code review and validation"
+}

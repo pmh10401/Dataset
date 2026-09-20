@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="6" skipped="0" tests="6" time="2.644" timestamp="2026-09-18T01:42:31.267138+09:00" hostname="macui-MacBookPro.local"><testcase classname="experiments.exp510_separated_rank_antigravity.test_exp510_antigravity" name="test_split_is_fixed_disjoint_exhaustive_and_has_small_sample_fallback" time="0.001"><failure message="AssertionError: separated implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py') = with_name(('separated' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py')">def test_split_is_fixed_disjoint_exhaustive_and_has_small_sample_fallback():
+&gt;       m=module()
+          ^^^^^^^^
+
+experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'separated'
+
+    def module(name='separated'):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(), name+' implementation missing'
+E       AssertionError: separated implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py') = with_name(('separated' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py')
+
+experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py:11: AssertionError</failure></testcase><testcase classname="experiments.exp510_separated_rank_antigravity.test_exp510_antigravity" name="test_full_controls_and_same_reference_control_match_independent_models" time="0.000"><failure message="AssertionError: separated implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py') = with_name(('separated' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py')">def test_full_controls_and_same_reference_control_match_independent_models():
+&gt;       m=module()
+          ^^^^^^^^
+
+experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'separated'
+
+    def module(name='separated'):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(), name+' implementation missing'
+E       AssertionError: separated implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py') = with_name(('separated' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py')
+
+experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py:11: AssertionError</failure></testcase><testcase classname="experiments.exp510_separated_rank_antigravity.test_exp510_antigravity" name="test_changing_b_cannot_change_candidate_representation_or_reference" time="0.000"><failure message="AssertionError: separated implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py') = with_name(('separated' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py')">def test_changing_b_cannot_change_candidate_representation_or_reference():
+&gt;       m=module();rng=np.random.default_rng(610)
+          ^^^^^^^^
+
+experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'separated'
+
+    def module(name='separated'):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(), name+' implementation missing'
+E       AssertionError: separated implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py') = with_name(('separated' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py')
+
+experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py:11: AssertionError</failure></testcase><testcase classname="experiments.exp510_separated_rank_antigravity.test_exp510_antigravity" name="test_query_batch_order_and_fitted_state_are_independent" time="0.000"><failure message="AssertionError: separated implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py') = with_name(('separated' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py')">def test_query_batch_order_and_fitted_state_are_independent():
+&gt;       m=module();rng=np.random.default_rng(710);x=rng.normal(size=(32,17));q=rng.normal(size=(13,17))
+          ^^^^^^^^
+
+experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'separated'
+
+    def module(name='separated'):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(), name+' implementation missing'
+E       AssertionError: separated implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py') = with_name(('separated' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py')
+
+experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py:11: AssertionError</failure></testcase><testcase classname="experiments.exp510_separated_rank_antigravity.test_exp510_antigravity" name="test_fallback_and_constant_short_rows_do_not_invent_a_trained_model" time="0.000"><failure message="AssertionError: separated implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py') = with_name(('separated' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py')">def test_fallback_and_constant_short_rows_do_not_invent_a_trained_model():
+&gt;       m=module()
+          ^^^^^^^^
+
+experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py:78: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'separated'
+
+    def module(name='separated'):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(), name+' implementation missing'
+E       AssertionError: separated implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/separated_antigravity.py') = with_name(('separated' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py')
+
+experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py:11: AssertionError</failure></testcase><testcase classname="experiments.exp510_separated_rank_antigravity.test_exp510_antigravity" name="test_gate_must_beat_full_and_same_reference_controls_without_tuning" time="0.000"><failure message="AssertionError: pilot implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/pilot_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/pilot_antigravity.py') = with_name(('pilot' + '_antigravity.py'))&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py')">def test_gate_must_beat_full_and_same_reference_controls_without_tuning():
+&gt;       m=module('pilot');names=m.NAMES
+          ^^^^^^^^^^^^^^^
+
+experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'pilot'
+
+    def module(name='separated'):
+&gt;       assert Path(__file__).with_name(name+'_antigravity.py').exists(), name+' implementation missing'
+E       AssertionError: pilot implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/pilot_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/pilot_antigravity.py') = with_name(('pilot' + '_antigravity.py'))
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py')
+
+experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py:11: AssertionError</failure></testcase></testsuite></testsuites>

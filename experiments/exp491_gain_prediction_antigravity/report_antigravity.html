@@ -1,0 +1,256 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp491 결과</title>
+<style>body{font:16px/1.7 system-ui;max-width:1100px;margin:32px auto;padding:0 20px;color:#172033}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f2f5f8;padding:16px}</style>
+<h1>Exp491: 캐시된 이득 예측</h1>
+<p>고정 Ridge α=10, 출력 6개(대안−MiniRocket AUC 차이 3개와 ZF 차이 부호 3개). 소스 family 전체를 한 폴드씩 빼며, 결측 중앙값·표준화·Ridge는 donor에만 맞춥니다. 행 가중치는 1/가족행수라서 가족 합은 1입니다. 상수 비교는 같은 가중 평균입니다. 중앙값과 표준편차는 가중하지 않은 donor 행에 맞춥니다.</p>
+<p>행 1117개, family 128개. 질의 목표는 예측 뒤에만 평가에 사용했습니다. 양쪽 클래스가 있을 때만 양-이득 AUROC를 보고합니다.</p>
+<pre>{
+  &quot;family_mean_squared_error&quot;: {
+    &quot;delta_auc_multirocket_local_gap&quot;: {
+      &quot;ridge&quot;: 0.00831922386624706,
+      &quot;constant&quot;: 0.007985138925567037,
+      &quot;delta_ridge_minus_constant&quot;: 0.0003340849406800236
+    },
+    &quot;delta_auc_hydra_local_gap&quot;: {
+      &quot;ridge&quot;: 0.008510538853228795,
+      &quot;constant&quot;: 0.008627716781020197,
+      &quot;delta_ridge_minus_constant&quot;: -0.00011717792779140229
+    },
+    &quot;delta_auc_hydra_multirocket_local_gap&quot;: {
+      &quot;ridge&quot;: 0.005179928540913933,
+      &quot;constant&quot;: 0.005164346256656205,
+      &quot;delta_ridge_minus_constant&quot;: 1.5582284257727695e-05
+    },
+    &quot;sign_delta_zf_multirocket_local_gap&quot;: {
+      &quot;ridge&quot;: 0.35859303743911114,
+      &quot;constant&quot;: 0.3357509369063414,
+      &quot;delta_ridge_minus_constant&quot;: 0.02284210053276975
+    },
+    &quot;sign_delta_zf_hydra_local_gap&quot;: {
+      &quot;ridge&quot;: 0.39144746197216457,
+      &quot;constant&quot;: 0.35723926384288196,
+      &quot;delta_ridge_minus_constant&quot;: 0.03420819812928261
+    },
+    &quot;sign_delta_zf_hydra_multirocket_local_gap&quot;: {
+      &quot;ridge&quot;: 0.31818305410189696,
+      &quot;constant&quot;: 0.3227713083386027,
+      &quot;delta_ridge_minus_constant&quot;: -0.004588254236705724
+    }
+  },
+  &quot;block_mean_squared_error&quot;: {
+    &quot;delta_auc&quot;: {
+      &quot;ridge&quot;: 0.007336563753463262,
+      &quot;constant&quot;: 0.007259067321081146
+    },
+    &quot;sign_delta_zf&quot;: {
+      &quot;ridge&quot;: 0.35607451783772426,
+      &quot;constant&quot;: 0.338587169695942
+    }
+  },
+  &quot;directional_accuracy&quot;: {
+    &quot;delta_auc_multirocket_local_gap&quot;: {
+      &quot;family_balanced&quot;: 0.44478693788726686,
+      &quot;nonzero_target_family_balanced&quot;: 0.6766782224099297
+    },
+    &quot;delta_auc_hydra_local_gap&quot;: {
+      &quot;family_balanced&quot;: 0.35275212868346095,
+      &quot;nonzero_target_family_balanced&quot;: 0.5601314957801302
+    },
+    &quot;delta_auc_hydra_multirocket_local_gap&quot;: {
+      &quot;family_balanced&quot;: 0.3468790773457714,
+      &quot;nonzero_target_family_balanced&quot;: 0.5694163104119709
+    },
+    &quot;sign_delta_zf_multirocket_local_gap&quot;: {
+      &quot;family_balanced&quot;: 0.3051191309024368,
+      &quot;nonzero_target_family_balanced&quot;: 0.7655551568172927
+    },
+    &quot;sign_delta_zf_hydra_local_gap&quot;: {
+      &quot;family_balanced&quot;: 0.22745573496190274,
+      &quot;nonzero_target_family_balanced&quot;: 0.6152771065251129
+    },
+    &quot;sign_delta_zf_hydra_multirocket_local_gap&quot;: {
+      &quot;family_balanced&quot;: 0.23369795801539223,
+      &quot;nonzero_target_family_balanced&quot;: 0.6939438568304548
+    }
+  },
+  &quot;positive_gain_auroc&quot;: {
+    &quot;delta_auc_multirocket_local_gap&quot;: {
+      &quot;auroc&quot;: 0.49200322433781873,
+      &quot;reason&quot;: null,
+      &quot;n_positive&quot;: 142,
+      &quot;n_negative&quot;: 975
+    },
+    &quot;delta_auc_hydra_local_gap&quot;: {
+      &quot;auroc&quot;: 0.4409369967084397,
+      &quot;reason&quot;: null,
+      &quot;n_positive&quot;: 168,
+      &quot;n_negative&quot;: 949
+    },
+    &quot;delta_auc_hydra_multirocket_local_gap&quot;: {
+      &quot;auroc&quot;: 0.5598622473960562,
+      &quot;reason&quot;: null,
+      &quot;n_positive&quot;: 208,
+      &quot;n_negative&quot;: 909
+    },
+    &quot;sign_delta_zf_multirocket_local_gap&quot;: {
+      &quot;auroc&quot;: 0.337770217273177,
+      &quot;reason&quot;: null,
+      &quot;n_positive&quot;: 75,
+      &quot;n_negative&quot;: 1042
+    },
+    &quot;sign_delta_zf_hydra_local_gap&quot;: {
+      &quot;auroc&quot;: 0.46310022496714764,
+      &quot;reason&quot;: null,
+      &quot;n_positive&quot;: 96,
+      &quot;n_negative&quot;: 1021
+    },
+    &quot;sign_delta_zf_hydra_multirocket_local_gap&quot;: {
+      &quot;auroc&quot;: 0.5263857117053143,
+      &quot;reason&quot;: null,
+      &quot;n_positive&quot;: 110,
+      &quot;n_negative&quot;: 1007
+    }
+  }
+}</pre>
+<h2>제한</h2>
+<p>실패한 선형 탐침이 모든 모형을 기각하지는 않습니다. 하이퍼파라미터 탐색, 지역 게이트 변경, 결과로 고른 이웃, 라우팅 승격은 없습니다. 역사적 TEST 파생 점수는 개발용 메타 라벨이며 깨끗한 검증이 아닙니다.</p>
+<h2>재현</h2>
+<pre>PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m experiments.exp491_gain_prediction_antigravity.run_antigravity smoke
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m experiments.exp491_gain_prediction_antigravity.run_antigravity official</pre>
+<pre>{
+  &quot;schema&quot;: &quot;exp491_run_manifest_v1&quot;,
+  &quot;started_at_utc&quot;: &quot;2026-09-16T01:20:32.170687+00:00&quot;,
+  &quot;completed_at_utc&quot;: &quot;2026-09-16T01:20:33.967006+00:00&quot;,
+  &quot;elapsed_seconds&quot;: 1.7963540840428323,
+  &quot;cpu_policy&quot;: {
+    &quot;logical_cpu_count&quot;: 12,
+    &quot;workers&quot;: 11,
+    &quot;inner_threads&quot;: 1
+  },
+  &quot;evaluation_workers&quot;: 1,
+  &quot;execution_policy&quot;: &quot;serial_small_cached_ridge_stage; cpu_policy records available parallel capacity&quot;,
+  &quot;completed_folds&quot;: 128,
+  &quot;expected_folds&quot;: 128,
+  &quot;completed_rows&quot;: 1117,
+  &quot;expected_rows&quot;: 1117,
+  &quot;failed_folds&quot;: 0,
+  &quot;result_sha256&quot;: &quot;e1d25fd4ff0e57fe6750079b4087152e037f16fd379bc38046fab2c0c4961f92&quot;,
+  &quot;code_sha256&quot;: {
+    &quot;experiments/exp491_gain_prediction_antigravity/run_antigravity.py&quot;: &quot;246295af3bad4daabddc4992560b0a823335bcd697834f3568c237518463e7a1&quot;,
+    &quot;experiments/exp491_gain_prediction_antigravity/gain_prediction_antigravity.py&quot;: &quot;601fb87971e4dff9afe5de5a0aa63fe647cbe5d07dbb30349321647c76a73499&quot;,
+    &quot;experiments/exp491_gain_prediction_antigravity/runtime_antigravity.py&quot;: &quot;4539d3af54e79d06a69967222180e20db0da904cfc382869e2f9c97a24ef3fde&quot;,
+    &quot;experiments/exp484_distance_qualification_antigravity/run_antigravity.py&quot;: &quot;b6955524db81ab3792346411140ac1ce71c00a039ec5254eba0d4f525be6e7d1&quot;,
+    &quot;experiments/exp488_catch22_train_descriptors_antigravity/features_antigravity.py&quot;: &quot;9d94ef0026d7819219704ef373c36b2bd187947dbab9de9db9f86f3578c6a82a&quot;,
+    &quot;experiments/exp488_catch22_train_descriptors_antigravity/run_antigravity.py&quot;: &quot;b881fb8b4df6ea92d06cdd5164ee03e4cc96f6fa4a2ec79e0cd20c5dc8073496&quot;
+  },
+  &quot;preregistration_sha256&quot;: &quot;ecd91b24c6ab90cf5628885d136d323a35c9bfda6d80bc51de2f357482be49d9&quot;,
+  &quot;acceleration&quot;: {
+    &quot;concurrent_gpu_jobs&quot;: 0,
+    &quot;cpu_policy&quot;: {
+      &quot;inner_threads&quot;: 1,
+      &quot;logical_cpu_count&quot;: 12,
+      &quot;workers&quot;: 11
+    },
+    &quot;device&quot;: &quot;arm64&quot;,
+    &quot;mlx&quot;: {
+      &quot;candidate_index_parity&quot;: null,
+      &quot;fallback_reason&quot;: &quot;dense_ridge_not_promoted_without_float64_full_stage_parity_and_1.1x&quot;,
+      &quot;full_stage_seconds&quot;: null,
+      &quot;numerical_parity&quot;: null,
+      &quot;probe&quot;: {
+        &quot;available&quot;: true,
+        &quot;cpu_float64_finite&quot;: true,
+        &quot;cpu_solve_seconds&quot;: 0.04239366599358618,
+        &quot;default_device&quot;: &quot;Device(gpu, 0)&quot;,
+        &quot;metal_available&quot;: true,
+        &quot;probe_seconds&quot;: 0.0929746669717133
+      },
+      &quot;selected&quot;: false,
+      &quot;speedup&quot;: null,
+      &quot;tensor_eligible_stages&quot;: [
+        &quot;exp491_dense_ridge&quot;
+      ]
+    },
+    &quot;mps&quot;: {
+      &quot;available&quot;: true,
+      &quot;fallback_reason&quot;: &quot;mps_not_canonical_for_frozen_aeon_sklearn_cpu_algorithms&quot;,
+      &quot;selected&quot;: false
+    },
+    &quot;pytorch&quot;: {
+      &quot;fallback_reason&quot;: &quot;official_aeon_sklearn_cpu_remain_canonical_except_where_a_stage_is_tensor_eligible; dense_ridge_is_tensor_eligible_under_torch_but_not_promoted_without_float64_full_stage_parity_and_1.1x&quot;,
+      &quot;probe&quot;: {
+        &quot;available&quot;: true,
+        &quot;cpu_float64&quot;: true,
+        &quot;fallback_reason&quot;: &quot;Cannot convert a MPS Tensor to float64 dtype as the MPS framework doesn&#x27;t support float64. Please use float32 instead.&quot;,
+        &quot;mps_available&quot;: true,
+        &quot;mps_float64_finite&quot;: false,
+        &quot;probe_seconds&quot;: 1.0938498750329018,
+        &quot;version&quot;: &quot;2.13.0&quot;
+      },
+      &quot;selected&quot;: false,
+      &quot;tensor_eligible_stages&quot;: [
+        &quot;exp491_dense_ridge&quot;
+      ]
+    },
+    &quot;schema&quot;: &quot;exp489_491_acceleration_v1&quot;,
+    &quot;stages&quot;: {
+      &quot;exp489_minirocket_lof&quot;: {
+        &quot;canonical&quot;: &quot;aeon_minirocket_sklearn_lof_localgap_cpu&quot;,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;fallback_reason&quot;: &quot;official_aeon_MiniRocket_and_sklearn_LocalOutlierFactor_remain_canonical; do_not_rewrite_third_party_cpu_transformer&quot;,
+        &quot;measured_stage_seconds&quot;: 0.001839625183492899,
+        &quot;numba&quot;: {
+          &quot;fallback_reason&quot;: &quot;official_aeon_MiniRocket_and_sklearn_LocalOutlierFactor_have_no_supported_public_numba_rewrite; retain_existing_cpu_implementations&quot;,
+          &quot;selected&quot;: false
+        },
+        &quot;pytorch_tensor_eligible&quot;: false,
+        &quot;selected_backend&quot;: &quot;sklearn_aeon_cpu&quot;,
+        &quot;tensor_eligible&quot;: false,
+        &quot;warmup_seconds&quot;: 0.01500758295878768
+      },
+      &quot;exp490_rank_quantile&quot;: {
+        &quot;canonical&quot;: &quot;numpy_scipy_blas&quot;,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;fallback_reason&quot;: &quot;public_numba_compiler_path_for_scipy_spearmanr_and_numpy_quantile_orchestration is_unsupported_or_has_no_measured_speedup; retain_existing_numpy_scipy_blas&quot;,
+        &quot;measured_stage_seconds&quot;: 0.0008534998632967472,
+        &quot;numba&quot;: {
+          &quot;fallback_reason&quot;: &quot;public_numba_compiler_path_for_scipy_spearmanr_and_numpy_quantile_orchestration is_unsupported_or_has_no_measured_speedup; retain_existing_numpy_scipy_blas&quot;,
+          &quot;selected&quot;: false
+        },
+        &quot;pytorch_tensor_eligible&quot;: true,
+        &quot;selected_backend&quot;: &quot;numpy_scipy&quot;,
+        &quot;tensor_eligible&quot;: true,
+        &quot;warmup_seconds&quot;: 0.0023686671629548073
+      },
+      &quot;exp491_ridge&quot;: {
+        &quot;canonical&quot;: &quot;sklearn_ridge_cholesky_cpu&quot;,
+        &quot;exact_full_population_stage_benchmarked&quot;: false,
+        &quot;fallback_reason&quot;: &quot;dense_ridge_acceleration_not_canonical_without_float64_full_stage_parity_and_1.1x; not_promoted&quot;,
+        &quot;measured_stage_seconds&quot;: 0.0009463329333811998,
+        &quot;mlx_selected&quot;: false,
+        &quot;mlx_tensor_eligible&quot;: true,
+        &quot;numba&quot;: {
+          &quot;fallback_reason&quot;: &quot;sklearn_cholesky_ridge_retained; no_measured_numba_full_stage_float64_parity_and_1.1x&quot;,
+          &quot;selected&quot;: false
+        },
+        &quot;pytorch_selected&quot;: false,
+        &quot;pytorch_tensor_eligible&quot;: true,
+        &quot;selected_backend&quot;: &quot;sklearn_cpu&quot;,
+        &quot;tensor_eligible&quot;: true,
+        &quot;warmup_seconds&quot;: 0.0010421250481158495
+      }
+    },
+    &quot;versions&quot;: {
+      &quot;aeon&quot;: &quot;1.5.0&quot;,
+      &quot;architecture&quot;: &quot;arm64&quot;,
+      &quot;mlx&quot;: &quot;0.32.0&quot;,
+      &quot;mlx-metal&quot;: &quot;0.32.0&quot;,
+      &quot;numba&quot;: &quot;0.63.1&quot;,
+      &quot;numpy&quot;: &quot;2.3.5&quot;,
+      &quot;python&quot;: &quot;3.14.6&quot;,
+      &quot;scikit-learn&quot;: &quot;1.8.0&quot;,
+      &quot;scipy&quot;: &quot;1.17.1&quot;,
+      &quot;torch&quot;: &quot;2.13.0&quot;
+    }
+  }
+}</pre>
+</html>

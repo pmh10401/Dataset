@@ -1,0 +1,30 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>Exp512 보고 단계 코드맵</title><style>body{font:15px/1.7 system-ui;padding:24px}pre{white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>동결 평가 이후 보고 단계</h1><pre>{
+  &quot;schema&quot;: &quot;exp512_reporting_codemap_v1&quot;,
+  &quot;frozen_score_codemap_sha256&quot;: &quot;45ff3ce721b91781db35559f314ecf7d979f38be53f65316f3953728b5078d7f&quot;,
+  &quot;nodes&quot;: [
+    {
+      &quot;path&quot;: &quot;scratch/report_exp512_antigravity.py&quot;,
+      &quot;sha256&quot;: &quot;127cf8874efc45166be6459a93c6408f6864624dc3ff472d6ebc3c897dc675c0&quot;,
+      &quot;callers&quot;: [
+        &quot;python -m scratch.report_exp512_antigravity&quot;,
+        &quot;scratch/test_report_exp512_resume_antigravity.py&quot;
+      ],
+      &quot;effect&quot;: &quot;Only verified-results HTML/CSV/closure reporting; no scoring, labels or model changes&quot;,
+      &quot;tests&quot;: [
+        &quot;scratch/test_report_exp512_resume_antigravity.py&quot;
+      ]
+    },
+    {
+      &quot;path&quot;: &quot;scratch/test_report_exp512_resume_antigravity.py&quot;,
+      &quot;sha256&quot;: &quot;fe541bd2d2fc26467031db08dc44dbb336265a0980f338d614228265c9f1fa59&quot;,
+      &quot;callers&quot;: [
+        &quot;pytest&quot;
+      ],
+      &quot;effect&quot;: &quot;Reporting completion-evidence regression tests&quot;,
+      &quot;tests&quot;: [
+        &quot;scratch/test_report_exp512_resume_antigravity.py&quot;
+      ]
+    }
+  ]
+}
+</pre></html>

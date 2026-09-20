@@ -1,0 +1,16 @@
+{
+  "prompt_sha256": "54428198a7fde5d6f326cb8cd754e9ae44163a329f391ccf46c28da7d2f67a23",
+  "source_hashes": {
+    "experiments/exp510_separated_rank_antigravity/separated_antigravity.py": "7e59a0561a23aeff732b2f22b586dc17e426fc3c77fa82f80cdc0ff50368d994",
+    "experiments/exp510_separated_rank_antigravity/pilot_antigravity.py": "a9b455ae091538565c059028345526f1ec4b79d6bb2440bb8a405952acb3c5bf",
+    "experiments/exp510_separated_rank_antigravity/verify_antigravity.py": "0a751950d5f8314645f9daf3b96928167cd38e259f3cca19b5856fde5a706fd5",
+    "experiments/exp510_separated_rank_antigravity/acceleration_antigravity.py": "dd561b978d0fb98c7b331810b4316e8c8a05a241f059017e103c5a76c629bbff",
+    "experiments/exp510_separated_rank_antigravity/test_exp510_antigravity.py": "812e08d000f074a3d1616786d45e9de39768ea3cbda78cc9ffc50f09f9e59821",
+    "experiments/exp508_tail_rank_antigravity/ranking_antigravity.py": "9288530d514c31577548e0d41463ffea8af911c0106279a3c0056574a7496585",
+    "experiments/exp508_tail_rank_antigravity/optimizer_antigravity.py": "0793b68f68313edd5d72c8a75c7610d32fa0972d48d78deb8976989ad05506f4",
+    "experiments/exp502_amplitude_envelope_antigravity/amplitude_antigravity.py": "a933fe07e8024a65e5918e7a0d0fbbd90107c96b0d6c2d355937adf8cd44af75",
+    "experiments/exp495_normal_geometry_antigravity/geometry_heads_antigravity.py": "956063cabc105896925f81678b5f39c9c96dd04998c068bef7fc132e17f4aefb",
+    "experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py": "b13a119193c4ab7589d93f790c199a231576b48c1973f283a5e5efb5a92f9bcd"
+  },
+  "exact_packet_matches_review": true
+}

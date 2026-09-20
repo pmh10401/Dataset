@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="5" skipped="0" tests="5" time="2.657" timestamp="2026-09-18T00:28:46.942098+09:00" hostname="macui-MacBookPro.local"><testcase classname="experiments.exp509_rank_signal_diagnosis_antigravity.test_exp509_antigravity" name="test_bounded_solver_improves_and_satisfies_projected_gradient" time="0.000"><failure message="AssertionError: diagnostic implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py') = with_name('diagnostic_antigravity.py')&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py')">def test_bounded_solver_improves_and_satisfies_projected_gradient():
+&gt;       m = module()
+            ^^^^^^^^
+
+experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py:17: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+&gt;       assert Path(__file__).with_name('diagnostic_antigravity.py').exists(), 'diagnostic implementation missing'
+E       AssertionError: diagnostic implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py') = with_name('diagnostic_antigravity.py')
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py')
+
+experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py:12: AssertionError</failure></testcase><testcase classname="experiments.exp509_rank_signal_diagnosis_antigravity.test_exp509_antigravity" name="test_convex_certificate_has_correct_boundary_sign_and_exact_quadratic_gap" time="0.000"><failure message="AssertionError: diagnostic implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py') = with_name('diagnostic_antigravity.py')&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py')">def test_convex_certificate_has_correct_boundary_sign_and_exact_quadratic_gap():
+&gt;       m = module()
+            ^^^^^^^^
+
+experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+&gt;       assert Path(__file__).with_name('diagnostic_antigravity.py').exists(), 'diagnostic implementation missing'
+E       AssertionError: diagnostic implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py') = with_name('diagnostic_antigravity.py')
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py')
+
+experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py:12: AssertionError</failure></testcase><testcase classname="experiments.exp509_rank_signal_diagnosis_antigravity.test_exp509_antigravity" name="test_signal_statistics_agree_with_manual_loss_and_preserve_extremes" time="0.001"><failure message="AssertionError: diagnostic implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py') = with_name('diagnostic_antigravity.py')&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py')">def test_signal_statistics_agree_with_manual_loss_and_preserve_extremes():
+&gt;       m = module(); ns = np.array([0., 2.]); az = np.array([3., 4., 5., 6.]); w = np.array([.5, 1.5])
+            ^^^^^^^^
+
+experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+&gt;       assert Path(__file__).with_name('diagnostic_antigravity.py').exists(), 'diagnostic implementation missing'
+E       AssertionError: diagnostic implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py') = with_name('diagnostic_antigravity.py')
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py')
+
+experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py:12: AssertionError</failure></testcase><testcase classname="experiments.exp509_rank_signal_diagnosis_antigravity.test_exp509_antigravity" name="test_roles_are_equal_size_disjoint_deterministic_and_cover_fit" time="0.000"><failure message="AssertionError: diagnostic implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py') = with_name('diagnostic_antigravity.py')&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py')">def test_roles_are_equal_size_disjoint_deterministic_and_cover_fit():
+&gt;       m = module()
+            ^^^^^^^^
+
+experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+&gt;       assert Path(__file__).with_name('diagnostic_antigravity.py').exists(), 'diagnostic implementation missing'
+E       AssertionError: diagnostic implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py') = with_name('diagnostic_antigravity.py')
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py')
+
+experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py:12: AssertionError</failure></testcase><testcase classname="experiments.exp509_rank_signal_diagnosis_antigravity.test_exp509_antigravity" name="test_capture_replays_original_optimizer_and_control_geometry_is_shared" time="0.000"><failure message="AssertionError: diagnostic implementation missing&#10;assert False&#10; +  where False = exists()&#10; +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py').exists&#10; +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py') = with_name('diagnostic_antigravity.py')&#10; +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py').with_name&#10; +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py')">def test_capture_replays_original_optimizer_and_control_geometry_is_shared():
+&gt;       m = module()
+            ^^^^^^^^
+
+experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py:70: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def module():
+&gt;       assert Path(__file__).with_name('diagnostic_antigravity.py').exists(), 'diagnostic implementation missing'
+E       AssertionError: diagnostic implementation missing
+E       assert False
+E        +  where False = exists()
+E        +    where exists = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py').exists
+E        +      where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/diagnostic_antigravity.py') = with_name('diagnostic_antigravity.py')
+E        +        where with_name = PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py').with_name
+E        +          where PosixPath('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py') = Path('/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity/experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py')
+
+experiments/exp509_rank_signal_diagnosis_antigravity/test_exp509_antigravity.py:12: AssertionError</failure></testcase></testsuite></testsuites>
