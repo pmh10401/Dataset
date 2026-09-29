@@ -1,0 +1,465 @@
+{
+  "common_datasets": 940,
+  "common_exact_prediction_hash_matches": 940,
+  "common_metric_mismatches": 0,
+  "restored_datasets": [
+    "AllGestureWiimoteY_normal_3",
+    "GestureMidAirD1_normal_1",
+    "GestureMidAirD1_normal_4",
+    "GestureMidAirD1_normal_5",
+    "GestureMidAirD2_normal_1",
+    "GestureMidAirD2_normal_2",
+    "GestureMidAirD3_normal_13",
+    "GestureMidAirD3_normal_2",
+    "GesturePebbleZ1_normal_3",
+    "PLAID_normal_1",
+    "PLAID_normal_2",
+    "PLAID_normal_4",
+    "PLAID_normal_5",
+    "PLAID_normal_6",
+    "PLAID_normal_7"
+  ],
+  "restored_prior_exact_prediction_hash_matches": 15,
+  "old_summary": {
+    "schema": "database_evaluation_summary_v1",
+    "contract_sha256": "a5cdd4767b1ec596a2531ebf7d73f6f3f469669e10d78130abd28411d16b08e2",
+    "total_datasets": 1119,
+    "statuses": {
+      "completed": 940,
+      "failed": 16,
+      "unavailable": 163
+    },
+    "unavailable_reasons": {
+      "missing_verified_route": 2,
+      "insufficient_training_data": 161
+    },
+    "evaluated_test_rows": 192315,
+    "confusion": {
+      "true_positives": 1780,
+      "false_positives": 486,
+      "true_negatives": 187984,
+      "false_negatives": 2065
+    },
+    "recall": 0.46293888166449937,
+    "false_positive_rate": 0.0025786597336446117,
+    "dataset_mean_recall": 0.5386958976466899,
+    "dataset_mean_fpr": 0.0046205192905477725,
+    "family_mean_recall": 0.4107588939281725,
+    "family_mean_fpr": 0.0037685679723518484,
+    "dataset_mean_auc": 0.9826164964671352,
+    "family_count": 125,
+    "datasets_exceeding_target_fpr": 178,
+    "resolution_limited_candidates": 750,
+    "failed": [
+      {
+        "dataset_name": "AllGestureWiimoteY_normal_3",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "GestureMidAirD1_normal_1",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "GestureMidAirD1_normal_4",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "GestureMidAirD1_normal_5",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "GestureMidAirD2_normal_1",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "GestureMidAirD2_normal_2",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "GestureMidAirD3_normal_13",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "GestureMidAirD3_normal_2",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "GesturePebbleZ1_normal_3",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "PLAID_normal_1",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "PLAID_normal_2",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "PLAID_normal_4",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "PLAID_normal_5",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "PLAID_normal_6",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "PLAID_normal_7",
+        "error": "ValueError: standard TRAIN and TEST lengths must match"
+      },
+      {
+        "dataset_name": "UWaveGestureLibraryZ_normal_8",
+        "error": "ValueError: standard preparation requires finite non-constant rows"
+      }
+    ]
+  },
+  "new_summary": {
+    "schema": "database_evaluation_summary_v1",
+    "contract_sha256": "92f94250daa9a0d81582219f2431e2105005a9ee799b4e4d7b1e16f0a58ca64c",
+    "total_datasets": 1119,
+    "statuses": {
+      "completed": 955,
+      "unavailable": 163,
+      "failed": 1
+    },
+    "unavailable_reasons": {
+      "missing_verified_route": 2,
+      "insufficient_training_data": 161
+    },
+    "evaluated_test_rows": 193515,
+    "confusion": {
+      "true_positives": 1787,
+      "false_positives": 488,
+      "true_negatives": 189158,
+      "false_negatives": 2082
+    },
+    "recall": 0.4618764538640476,
+    "false_positive_rate": 0.002573215359142824,
+    "dataset_mean_recall": 0.5365174280501451,
+    "dataset_mean_fpr": 0.004590685298058135,
+    "family_mean_recall": 0.40824526263193245,
+    "family_mean_fpr": 0.0037217656373507556,
+    "dataset_mean_auc": 0.9826699016881819,
+    "family_count": 125,
+    "datasets_exceeding_target_fpr": 179,
+    "resolution_limited_candidates": 759,
+    "failed": [
+      {
+        "dataset_name": "UWaveGestureLibraryZ_normal_8",
+        "error": "ValueError: standard preparation requires finite non-constant rows"
+      }
+    ]
+  },
+  "restored_rows": [
+    {
+      "availability": "standard",
+      "dataset_name": "AllGestureWiimoteY_normal_3",
+      "elapsed_seconds": 1.558,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 0.9744897959183674,
+        "false_negatives": 1,
+        "false_positives": 0,
+        "true_negatives": 98,
+        "true_positives": 1
+      },
+      "prediction_sha256": "b33d21f8b37ec14c87e4a058356782c81423a77c44c792e17b29f0eaf8cf9181",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 1,
+      "status": "completed",
+      "target_length": 89,
+      "test_retained": 100,
+      "train_retained": 80
+    },
+    {
+      "availability": "standard",
+      "dataset_name": "GestureMidAirD1_normal_1",
+      "elapsed_seconds": 1.52,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 1.0,
+        "false_negatives": 0,
+        "false_positives": 2,
+        "true_negatives": 47,
+        "true_positives": 1
+      },
+      "prediction_sha256": "67b94d8ae34bab3ddc58f54f1c7abd034b61337243d9128a25cb5e11ffaa80c6",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 3,
+      "status": "completed",
+      "target_length": 170,
+      "test_retained": 50,
+      "train_retained": 10
+    },
+    {
+      "availability": "standard",
+      "dataset_name": "GestureMidAirD1_normal_4",
+      "elapsed_seconds": 1.661,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 1.0,
+        "false_negatives": 0,
+        "false_positives": 0,
+        "true_negatives": 49,
+        "true_positives": 1
+      },
+      "prediction_sha256": "8296014b7836284617cb0a1cd8fce7044ce11cbd411fb63aabe68586d1e37e86",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 1,
+      "status": "completed",
+      "target_length": 90,
+      "test_retained": 50,
+      "train_retained": 10
+    },
+    {
+      "availability": "standard",
+      "dataset_name": "GestureMidAirD1_normal_5",
+      "elapsed_seconds": 1.708,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 1.0,
+        "false_negatives": 1,
+        "false_positives": 0,
+        "true_negatives": 49,
+        "true_positives": 0
+      },
+      "prediction_sha256": "5bd11ee5ceec86eaace7df9bce43fdb42329b7d1a50175a0e8f37975bcb37f14",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 0,
+      "status": "completed",
+      "target_length": 171,
+      "test_retained": 50,
+      "train_retained": 10
+    },
+    {
+      "availability": "standard",
+      "dataset_name": "GestureMidAirD2_normal_1",
+      "elapsed_seconds": 3.2,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 1.0,
+        "false_negatives": 1,
+        "false_positives": 0,
+        "true_negatives": 49,
+        "true_positives": 0
+      },
+      "prediction_sha256": "71f88898b4f134a7fe58c32e81b1cb79eb0c85df35ff7712fdaeb98e54165275",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 0,
+      "status": "completed",
+      "target_length": 172,
+      "test_retained": 50,
+      "train_retained": 10
+    },
+    {
+      "availability": "standard",
+      "dataset_name": "GestureMidAirD2_normal_2",
+      "elapsed_seconds": 1.868,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 1.0,
+        "false_negatives": 0,
+        "false_positives": 0,
+        "true_negatives": 49,
+        "true_positives": 1
+      },
+      "prediction_sha256": "a598f3ad65436971cb9ff78e6b23132baea27b64c588e27594c7f3e6996979f6",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 1,
+      "status": "completed",
+      "target_length": 179,
+      "test_retained": 50,
+      "train_retained": 10
+    },
+    {
+      "availability": "standard",
+      "dataset_name": "GestureMidAirD3_normal_13",
+      "elapsed_seconds": 1.474,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 0.9795918367346939,
+        "false_negatives": 1,
+        "false_positives": 0,
+        "true_negatives": 49,
+        "true_positives": 0
+      },
+      "prediction_sha256": "b94070831171360f9d2bfe49ca4339cdb308d59ac41410c92c4b93b64957aa92",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 0,
+      "status": "completed",
+      "target_length": 179,
+      "test_retained": 50,
+      "train_retained": 10
+    },
+    {
+      "availability": "standard",
+      "dataset_name": "GestureMidAirD3_normal_2",
+      "elapsed_seconds": 1.575,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 1.0,
+        "false_negatives": 0,
+        "false_positives": 0,
+        "true_negatives": 49,
+        "true_positives": 1
+      },
+      "prediction_sha256": "5ad8a19b49d3e7cf2593dfb76d94b50278d65e975c4a54230b375558af46e708",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 1,
+      "status": "completed",
+      "target_length": 173,
+      "test_retained": 50,
+      "train_retained": 10
+    },
+    {
+      "availability": "standard",
+      "dataset_name": "GesturePebbleZ1_normal_3",
+      "elapsed_seconds": 1.555,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 1.0,
+        "false_negatives": 0,
+        "false_positives": 0,
+        "true_negatives": 49,
+        "true_positives": 1
+      },
+      "prediction_sha256": "9a92db18083580ab0054fb0ede6da06e2064a5ef534dd938e11fe5240af35c9f",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 1,
+      "status": "completed",
+      "target_length": 165,
+      "test_retained": 50,
+      "train_retained": 43
+    },
+    {
+      "availability": "standard",
+      "dataset_name": "PLAID_normal_1",
+      "elapsed_seconds": 2.804,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 0.9342403628117913,
+        "false_negatives": 3,
+        "false_positives": 0,
+        "true_negatives": 147,
+        "true_positives": 0
+      },
+      "prediction_sha256": "b11dcbc9a112cc34aa008fbffc70d451881689ae0b946072b6df9c0dc5865548",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 0,
+      "status": "completed",
+      "target_length": 200,
+      "test_retained": 150,
+      "train_retained": 140
+    },
+    {
+      "availability": "standard",
+      "dataset_name": "PLAID_normal_2",
+      "elapsed_seconds": 3.77,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 0.9846938775510204,
+        "false_negatives": 1,
+        "false_positives": 0,
+        "true_negatives": 98,
+        "true_positives": 1
+      },
+      "prediction_sha256": "363529c83022f2eb8753a634e56e82e5ac9046cb0c8c8b0ae811918954fe567d",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 1,
+      "status": "completed",
+      "target_length": 390,
+      "test_retained": 100,
+      "train_retained": 92
+    },
+    {
+      "availability": "standard",
+      "dataset_name": "PLAID_normal_4",
+      "elapsed_seconds": 3.574,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 0.9954648526077097,
+        "false_negatives": 3,
+        "false_positives": 0,
+        "true_negatives": 147,
+        "true_positives": 0
+      },
+      "prediction_sha256": "b4c86c3e26e5a936525ef787f9e323c63e7469714e386d2ad462c58e0f81cd69",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 0,
+      "status": "completed",
+      "target_length": 200,
+      "test_retained": 150,
+      "train_retained": 124
+    },
+    {
+      "availability": "standard",
+      "dataset_name": "PLAID_normal_5",
+      "elapsed_seconds": 2.803,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 1.0,
+        "false_negatives": 1,
+        "false_positives": 0,
+        "true_negatives": 49,
+        "true_positives": 0
+      },
+      "prediction_sha256": "2544f441b46cdf671e8479747d0c5e46a6ca8da97f3344dd91e90f7423328b24",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 0,
+      "status": "completed",
+      "target_length": 300,
+      "test_retained": 50,
+      "train_retained": 28
+    },
+    {
+      "availability": "standard",
+      "dataset_name": "PLAID_normal_6",
+      "elapsed_seconds": 2.82,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 0.9693877551020409,
+        "false_negatives": 2,
+        "false_positives": 0,
+        "true_negatives": 98,
+        "true_positives": 0
+      },
+      "prediction_sha256": "5b329e6747f0eda1a223618e39f1a89f7d470ee6965433d5d1c45a50832d20dd",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 0,
+      "status": "completed",
+      "target_length": 307,
+      "test_retained": 100,
+      "train_retained": 91
+    },
+    {
+      "availability": "standard",
+      "dataset_name": "PLAID_normal_7",
+      "elapsed_seconds": 2.708,
+      "method_name": "minirocket_local_gap",
+      "metrics": {
+        "auc": 0.9523809523809523,
+        "false_negatives": 3,
+        "false_positives": 0,
+        "true_negatives": 147,
+        "true_positives": 0
+      },
+      "prediction_sha256": "78aa15a7e26584becc25f26046be58fb055fde2ac35ed3c1c02c17c2655e1b22",
+      "preparation_mode": "recovery_numba",
+      "resolution_limited_count": 0,
+      "status": "completed",
+      "target_length": 230,
+      "test_retained": 150,
+      "train_retained": 137
+    }
+  ],
+  "prior_scores_sha256": "9f632aabf99c5ec3439ecf4ebb6d1be1289908f27f9c0e435eaf276fe9093b96",
+  "old_contract_sha256": "a5cdd4767b1ec596a2531ebf7d73f6f3f469669e10d78130abd28411d16b08e2",
+  "new_contract_sha256": "92f94250daa9a0d81582219f2431e2105005a9ee799b4e4d7b1e16f0a58ca64c",
+  "source_database_unchanged": true,
+  "checkpoint_integrity": "ok",
+  "csv_rows": 1119
+}

@@ -1,0 +1,14 @@
+{
+  "state": "passed",
+  "direct_decisions": 689700,
+  "datasets": 56,
+  "rows": 114550,
+  "input_hashes": true,
+  "source_map_hashes": true,
+  "labels_aligned_to_exp521_frozen_row_ids": true,
+  "strict_direct_counts": true,
+  "independent_confusion_and_family_bootstrap": true,
+  "result_sha256": "a3a95976fe70dd6a87ba2a9c66dd29fdf9f69eaf8bd877a80aa203ee1184fd63",
+  "report_sha256": "7cdb2e6f8b53750b036f9d58decb74a9b702bc3e838ca30e225aa4742ebe52fc",
+  "promoted": false
+}

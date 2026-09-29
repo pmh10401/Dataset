@@ -1,0 +1,11 @@
+{
+  "state": "passed",
+  "results_sha256": "0d1f152872cd4d8a69a93c79b5a5862ad386a80603f1f86d07f18de2f9604268",
+  "direct_conformal_decisions_checked": 115200,
+  "frozen_scores_scalar_checked": 43200,
+  "raw_feature_rows_checked_before_labels": 43200,
+  "row_ids_and_paired_metrics": true,
+  "no_raw_test_values_read_in_verify": true,
+  "post_label_score_block": true,
+  "verified_utc": "2026-09-22T02:50:25.457485+00:00"
+}

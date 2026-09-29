@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>소표본 이상 탐지 보정 실험 대시보드</title>
+  <style>
+    :root { --bg:#f4f7fb; --card:#fff; --line:#dbe3ed; --text:#192434; --muted:#5e6d82; --blue:#2354cf; --green:#107c41; --amber:#995c00; }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:28px 16px 48px; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.6; }
+    main { max-width:960px; margin:auto; }
+    header, section { margin-bottom:18px; padding:24px 28px; background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:0 4px 16px rgba(15,23,42,.04); }
+    h1 { margin:0 0 8px; font-size:28px; } h2 { margin:0 0 14px; font-size:20px; } p { margin:8px 0; }
+    .badge { display:inline-block; margin:8px 6px 0 0; padding:4px 10px; border-radius:999px; font-size:13px; font-weight:700; background:#eaf0ff; color:var(--blue); }
+    .badge.done { background:#eafaf1; color:var(--green); } .badge.wait { background:#fff8e8; color:var(--amber); }
+    ul { padding-left:22px; } .tasks { list-style:none; padding:0; display:grid; gap:9px; }
+    .tasks li { padding:10px 12px; border:1px solid var(--line); border-radius:9px; background:#fafcff; }
+    .tasks li.done { background:#f4fbf7; border-color:#c3e6d2; }
+    input { width:18px; height:18px; margin-right:8px; accent-color:var(--green); vertical-align:-3px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px; }
+    .metric { padding:14px; border:1px solid var(--line); border-radius:10px; background:#fbfdff; }
+    .metric strong { display:block; font-size:25px; } .muted { color:var(--muted); font-size:14px; }
+    .rule { padding:14px 16px; border-left:4px solid var(--blue); background:#f3f6ff; border-radius:0 8px 8px 0; }
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; margin-top:14px; font-size:14px; }
+    caption { margin-bottom:8px; color:var(--muted); text-align:left; }
+    th, td { padding:9px 10px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
+    th:first-child, td:first-child { text-align:left; }
+    th { background:#f7f9fc; }
+    code { padding:2px 5px; border-radius:4px; background:#eef3f9; color:#0f2b6e; }
+  a[data-unpublished]::after{content:" [미게시]";font-size:.85em;color:#666}</style>
+</head>
+<body><main>
+  <header>
+    <aside class="publication-note" style="padding:14px;margin:12px;border:1px solid #b9c9dc;background:#f2f6fa;color:#172438">연구 보고서의 정적 게시 사본입니다. 본문은 당시 결과이며 현재 배포 상태를 뜻하지 않습니다. 링크를 저장소 기준으로 바꾸고 실행 스크립트와 미게시 그림을 제외했습니다. 실시간 진행 표시·대화형 기능은 갱신되지 않습니다. <a href="../sources_antigravity.html#s-e486">원본 경로·해시·게시 사본 정보</a></aside><h1>소표본 이상 탐지 보정 실험</h1>
+    <p>학습 데이터가 적어서 기존 기준 <code>p ≤ 0.005</code>에 도달할 수 없는 데이터셋에서, 검출 누락을 줄일 수 있는지 확인합니다.</p>
+    <span class="badge done">설계 승인</span><span class="badge">대상 778개</span><span class="badge wait" id="run-state">전수 실행 완료 · 15개 미산출</span>
+  </header>
+
+  <section>
+    <h2>진행 상황</h2>
+    <ul class="tasks">
+      <li class="done"><label><input type="checkbox" checked disabled><strong>Task 1 — 원인 확인</strong>: 라우팅이 아니라 p값 해상도 한계임을 확인했습니다.</label></li>
+      <li class="done"><label><input type="checkbox" checked disabled><strong>Task 2 — 실험 범위 고정</strong>: 서비스와 분리하고, 라우팅·점수·seed는 바꾸지 않습니다.</label></li>
+      <li class="done"><label><input type="checkbox" checked disabled><strong>Task 3 — 평가기 구현</strong>: 기존 기준과 소표본 기준을 같은 점수로 비교합니다.</label></li>
+      <li class="done" id="task4"><label><input type="checkbox" checked disabled><strong>Task 4 — 작은 검증</strong>: Trace_normal_2에서 결과를 확인했습니다.</label></li>
+      <li class="done"><label><input type="checkbox" checked disabled><strong>Task 5 — 공식 전수 실행</strong>: 778개를 모두 시도해 763개 결과와 15개 전처리 실패를 보존했습니다.</label></li>
+      <li class="done"><label><input type="checkbox" checked disabled><strong>Task 6 — 검토 우선 후보 반영</strong>: 자동 판정은 유지하고, 소표본 후보를 별도 카드로 표시했습니다.</label></li>
+      <li class="done"><label><input type="checkbox" checked disabled><strong>Task 7 — 학습 크기별 영향 분석</strong>: 763개 산출 결과를 학습 수 구간별로 다시 계산했습니다.</label></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>실행 현황</h2>
+    <div class="grid">
+      <div class="metric"><span class="muted">완료</span><strong id="completed">0 / 778</strong></div>
+      <div class="metric"><span class="muted">성공</span><strong id="success">0</strong></div>
+      <div class="metric"><span class="muted">실패</span><strong id="failures">0</strong></div>
+      <div class="metric"><span class="muted">최근 데이터셋</span><strong id="latest" style="font-size:18px">아직 없음</strong></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>현재 확인된 사실</h2>
+    <div class="grid">
+      <div class="metric"><span class="muted">분석 가능한 데이터셋</span><strong>956</strong></div>
+      <div class="metric"><span class="muted">0.005 도달 불가</span><strong>778</strong></div>
+      <div class="metric"><span class="muted">Trace 학습 수</span><strong>40</strong></div>
+      <div class="metric"><span class="muted">Trace 최소 p값</span><strong>1/41</strong></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Trace_normal_2 작은 검증 결과</h2>
+    <div class="grid">
+      <div class="metric"><span class="muted">기존 방식</span><strong>TP 0 · FN 1</strong></div>
+      <div class="metric"><span class="muted">소표본 방식</span><strong>TP 1 · FN 0</strong></div>
+      <div class="metric"><span class="muted">추가 오탐</span><strong>0</strong></div>
+      <div class="metric"><span class="muted">찾은 시계열</span><strong>#49</strong></div>
+    </div>
+    <p>같은 MiniRocket 점수와 같은 라우팅을 사용한 채 p값 기준만 비교했습니다. AUC는 1.0으로 그대로이며, 이전에 놓친 이상 시계열 하나를 정확히 찾았습니다.</p>
+  </section>
+
+  <section>
+    <h2>778개 공식 실행 결과</h2>
+    <div class="grid">
+      <div class="metric"><span class="muted">성능 산출</span><strong>763개</strong></div>
+      <div class="metric"><span class="muted">미탐 감소</span><strong>523개</strong></div>
+      <div class="metric"><span class="muted">추가 오탐</span><strong>211개</strong></div>
+      <div class="metric"><span class="muted">자동 적용 판단</span><strong style="color:#b42318">탈락</strong></div>
+    </div>
+    <p>소표본 기준은 놓쳤던 이상 523개를 찾았지만 정상 시계열도 211개 잘못 골랐습니다. 따라서 모든 소표본 데이터셋에 자동 이상 규칙으로 적용하면 안 됩니다.</p>
+    <ul>
+      <li><strong>330개 데이터셋:</strong> 이상을 더 찾으면서 오탐은 늘지 않았습니다.</li>
+      <li><strong>129개 데이터셋:</strong> 이상을 더 찾았지만 오탐도 함께 늘었습니다.</li>
+      <li><strong>33개 데이터셋:</strong> 이상은 더 찾지 못하고 오탐만 늘었습니다.</li>
+      <li><strong>271개 데이터셋:</strong> 가장 작은 p값에서도 후보가 없었습니다.</li>
+    </ul>
+    <div class="rule"><strong>결론:</strong> 자동 이상 판정은 기존 기준을 유지하고, 소표본 기준은 연구자가 먼저 확인할 <strong>검토 우선 후보</strong>를 만드는 데 사용하는 것이 안전합니다.</div>
+    <p class="muted">15개는 TRAIN과 TEST의 길이가 일정하지 않아 현재 서비스의 표준 전처리로 점수를 만들 수 없었습니다. 결과를 숨기지 않고 실패로 보존했습니다.</p>
+  </section>
+
+  <section>
+    <h2>학습 크기에 맞춰 p 기준을 바꾸면?</h2>
+    <p>여기서는 학습 수가 <code>n</code>일 때 자동 탐지 기준을 <code>max(0.005, 1/(n+1))</code>로 바꾼 경우를 비교했습니다. 이번 대상은 모두 학습 수가 190개 이하라서, 실제로는 각 데이터셋에서 가능한 가장 작은 p값을 사용한 결과입니다.</p>
+    <div class="grid">
+      <div class="metric"><span class="muted">자동 후보</span><strong>0 → 734</strong></div>
+      <div class="metric"><span class="muted">정탐</span><strong>0 → 523</strong></div>
+      <div class="metric"><span class="muted">미탐</span><strong>990 → 467</strong></div>
+      <div class="metric"><span class="muted">오탐</span><strong>0 → 211</strong></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption>공식 실행에서 성능이 산출된 763개 데이터셋 기준</caption>
+        <thead>
+          <tr>
+            <th scope="col">학습 수</th>
+            <th scope="col">사용 p 기준</th>
+            <th scope="col">데이터셋</th>
+            <th scope="col">자동 후보</th>
+            <th scope="col">정탐</th>
+            <th scope="col">오탐</th>
+            <th scope="col">이상 탐지율</th>
+            <th scope="col">후보 정확도</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>5–9</td><td>0.1000–0.1667</td><td>74</td><td>66</td><td>53</td><td>13</td><td>71.6%</td><td>80.3%</td></tr>
+          <tr><td>10–19</td><td>0.0500–0.0909</td><td>235</td><td>241</td><td>164</td><td>77</td><td>69.8%</td><td>68.0%</td></tr>
+          <tr><td>20–39</td><td>0.0250–0.0476</td><td>78</td><td>53</td><td>35</td><td>18</td><td>44.9%</td><td>66.0%</td></tr>
+          <tr><td>40–79</td><td>0.0125–0.0244</td><td>236</td><td>206</td><td>136</td><td>70</td><td>56.2%</td><td>66.0%</td></tr>
+          <tr><td>80–190</td><td>0.0052–0.0123</td><td>140</td><td>168</td><td>135</td><td>33</td><td>37.4%</td><td>80.4%</td></tr>
+          <tr><th scope="row">전체</th><td>크기별 적용</td><td>763</td><td>734</td><td>523</td><td>211</td><td>52.8%</td><td>71.3%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul>
+      <li><strong>기존 0.005 기준:</strong> 가능한 최소 p값보다 작아서 자동 후보가 하나도 나오지 않았습니다.</li>
+      <li><strong>크기별 기준:</strong> 놓친 이상 523개를 찾지만, 정상 211개도 함께 선택합니다.</li>
+      <li><strong>학습 수만으로 결과가 일정하게 좋아지지는 않습니다.</strong> 이 규칙은 모든 구간에서 “평가 점수가 모든 학습 기준 점수보다 큰가”를 묻습니다. 실제 차이는 데이터의 난이도와 점수 순위 품질에도 크게 좌우됩니다.</li>
+      <li><strong>Trace_normal_2:</strong> 학습 수가 40개라 기준이 <code>1/41 ≈ 0.0244</code>가 되고, 미탐이던 #49가 후보에 들어옵니다.</li>
+    </ul>
+    <div class="rule"><strong>판단:</strong> 크기별 p 기준은 검토할 대상을 찾는 데는 유용하지만, 211개의 오탐 때문에 아직 자동 이상 판정으로 쓰기에는 과합니다. 현재처럼 별도 검토 후보로 보여주는 방식이 맞습니다.</div>
+  </section>
+
+  <section>
+    <h2>서비스 반영 결과</h2>
+    <p>학습 자료가 적어 <code>p ≤ 0.005</code>에 도달할 수 없을 때만, 가능한 가장 작은 p값의 시계열을 <strong>소표본 검토 우선 후보</strong>에 보여줍니다.</p>
+    <ul>
+      <li>기존 자동 이상 판정 기준은 바꾸지 않았습니다.</li>
+      <li>후보를 자동 이상으로 승격하지 않습니다.</li>
+      <li><strong>Trace_normal_2의 #49</strong>가 검토 우선 후보로 표시됩니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>승인된 비교 방법</h2>
+    <div class="rule">
+      <p><strong>기존 방식:</strong> p값이 0.005 이하인 시계열만 자동 이상으로 선택합니다.</p>
+      <p><strong>실험 방식:</strong> 0.005에 도달할 수 없는 경우에만, 가능한 가장 작은 p값인 <code>1/(학습 수+1)</code>까지 비교합니다.</p>
+    </div>
+    <ul>
+      <li>TEST 라벨은 후보 선택이 끝난 뒤에만 열어 정탐·오탐·미탐을 계산합니다.</li>
+      <li>전체 778개에서 오탐이 늘지 않고 미탐이 줄어야 자동 탐지 규칙으로 통과합니다.</li>
+      <li>오탐이 늘면 자동 탐지에는 넣지 않고, 사람이 먼저 볼 검토 후보로만 사용합니다.</li>
+      <li>라벨 결과로 데이터셋 이름별 허용 목록을 만들지 않습니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>가속 판단</h2>
+    <p>이번에 추가되는 계산은 p값 한 줄 비교와 개수 합산뿐이라 Numba나 MLX로 바꿀 성능 구간이 없습니다. 모델 점수 계산은 기존 검증 경로를 그대로 재사용합니다.</p>
+  </section>
+</main>
+
+
+</body>
+</html>

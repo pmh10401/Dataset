@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "results_sha256": "86279722226560fa094e851cb5c02e522ddc627bfe033795f18d6c046e67ed2c",
+  "preflight_sha256": "d94b466a7b0efde1a454a33f1e45bacbab46f6818c5acf8f8b9fb8bc0d6cfe7c",
+  "checks": [
+    "source hash",
+    "confusion nonempty",
+    "paired TP/FP arithmetic"
+  ]
+}

@@ -1,0 +1,276 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>Exp528 전체 데이터셋·시간 구간 특징 검증</title><style>body{font:16px/1.65 system-ui;margin:40px;max-width:1600px;color:#16252d}table{border-collapse:collapse;font-size:13px}td,th{padding:8px;border:1px solid #ccd4d9;text-align:right}th{background:#edf4f7}p{max-width:1100px}a{color:#087485}.scroll{overflow:auto}a[data-unpublished]::after{content:" [미게시]";font-size:.85em;color:#666}</style><body><aside class="publication-note" style="padding:14px;margin:12px;border:1px solid #b9c9dc;background:#f2f6fa;color:#172438">연구 보고서의 정적 게시 사본입니다. 본문은 당시 결과이며 현재 배포 상태를 뜻하지 않습니다. 링크를 저장소 기준으로 바꾸고 실행 스크립트와 미게시 그림을 제외했습니다. 실시간 진행 표시·대화형 기능은 갱신되지 않습니다. <a href="../sources_antigravity.html#s-e528">원본 경로·해시·게시 사본 정보</a></aside><h1>Exp528 전체 데이터셋·시간 구간 특징 검증</h1><!-- verified-conclusion-antigravity --><section style="padding:20px;background:#fff1ee;border-left:5px solid #b43d2b"><h2>검증된 결론: 이번 변형은 악화되어 채택하지 않습니다</h2><table><tr><th>0.5% 기준</th><th>Exp502</th><th>시간4구간 PPV</th><th>차이</th></tr><tr><td>전체1,118개 계열평균 탐지율(동일 TEST 오탐 예산 순위 비교)</td><td>61.66%</td><td>53.14%</td><td>-8.52%p</td></tr><tr><td>보정 가능56개 계열평균 탐지율(TRAIN 고정 임계값)</td><td>33.76%</td><td>27.38%</td><td>-6.38%p</td></tr></table><p>TRAIN 고정 임계값 비교에서는 오탐률도 0.2396% → 0.2485%로 증가했습니다. 새로 발견한 이상은 45개지만 기존에 찾던 이상 135개를 놓쳤습니다. 오탐은 74개 추가되고 64개 제거되어 10개 순증가했습니다.</p><p>세 기존 모델이 모두 놓친 이상 1,340개 중 25개(1.87%)를 회복했으나 전체 손실을 상쇄하지 못했습니다. 이 공통 미탐 진단은 같은0.5% 임계값 비교가 가능한56개·14계열에 한정됩니다. 전체 성능 평가는1,119개를 집계하고1,118개에서 수행했습니다.</p><p>직접 conformal 판정, 독립 ROC 검사, 전체18개 집계 조합의 별도 Python 검산을 통과했습니다. 이전 Exp502 점수는 전 대상에서 오차0으로 복원됐습니다. 이번 결과는 <strong>고정된4구간 PPV+OAS 개조를 기각</strong>하는 근거이며 모든 시간 정보 방법이 무용하다는 증거는 아닙니다. 기본 모델은 Exp502를 유지합니다. 명확한 성능 개선 방법을 찾는 목표는 아직 달성하지 못했습니다.</p><p><a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">56개 공통 미탐 상세 CSV</a> · <a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">독립 집계 검산 및 진단 JSON</a></p></section><p><strong>명확한 성능 개선은 확인되지 않았습니다. Exp502를 기본 모델로 유지합니다.</strong></p><p>전체 1119개·129계열을 집계했습니다. 순위 비교는 1,118개이며 Phoneme_normal_39는 정상 TRAIN 1개로 OAS 학습이 불가능합니다. TEST 원본 225,800행 중 비유한 235행을 제외했습니다. 평가 불가 데이터셋 50행은 오탐 0이나 성공으로 계산하지 않습니다.</p><p>새 후보는 raw+centered-square MiniRocket의 커널·dilation·bias를 유지하고 전체 convolution 응답의 PPV를 시간 4구간에 나눕니다. 각 구간은 원래 정규화 시간 좌표와 유효 응답 지지구간의 교집합입니다. 빈 구간에는 전체 PPV를 넣고 지지 개수 0을 기록합니다. 8,064→32,256차원이므로 시간 위치 효과와 OAS 차원 효과를 완전히 분리한 인과 검증은 아닙니다.</p><p>주지표는 계열평균 탐지율이며, 데이터셋 비율을 계열 안에서 평균한 후 계열을 같은 비중으로 평균합니다. 구간은 계열 단위 bootstrap 2,000회(20260922)입니다. 순위 비교의 임계값은 TEST 정상 라벨로 계산한 탐색적 진단입니다. 운영 성능은 별도의 정상 TRAIN 보정 임계값을 고정한 표로 판단합니다. 0.1%·0.5%·1% 고정 임계값 적용 가능 집단은 각각 5·56·111개이고 모두 가능한 공통 집단은 5개입니다.</p><p>명확한 개선 기준: 0.5%에서 전체 순위 비교와 TRAIN 고정 임계값 비교 모두 탐지율 차이의 95% 구간 하한이 0보다 크고, 새 후보의 전체·계열평균 실제 오탐률이 모두 0.5% 이내여야 합니다. 오탐 감소만으로 탐지 성능 개선이라 표현하지 않습니다. 결과에 따른 재조정·계열별 선택·승격은 하지 않습니다.</p><div class="scroll"><table><thead><tr><th>목표</th><th>비교</th><th>모델</th><th>데이터셋/계열</th><th>계열 탐지율</th><th>전체 오탐률</th><th>계열 오탐률</th><th>탐지율 차이 및 95% 구간</th><th>TP</th><th>FP</th><th>FN</th><th>TN</th><th>목표 초과 수</th></tr></thead><tbody><tr><td>0.1%</td><td>전체·동일 TEST 오탐 예산 순위 비교</td><td>square_joint</td><td>1118/129</td><td>56.188%</td><td>0.032%</td><td>0.006%</td><td>+0.000pp [+0.000, +0.000]</td><td>2107</td><td>71</td><td>2402</td><td>220935</td><td>0</td></tr><tr><td>0.1%</td><td>전체·동일 TEST 오탐 예산 순위 비교</td><td>temporal4</td><td>1118/129</td><td>47.737%</td><td>0.030%</td><td>0.006%</td><td>-8.451pp [-11.142, -5.782]</td><td>1904</td><td>67</td><td>2605</td><td>220939</td><td>0</td></tr><tr><td>0.1%</td><td>보정 가능 집단·전체 TRAIN 학습 순위 비교</td><td>square_joint</td><td>5/4</td><td>37.700%</td><td>0.093%</td><td>0.092%</td><td>+0.000pp [+0.000, +0.000]</td><td>199</td><td>40</td><td>679</td><td>42982</td><td>0</td></tr><tr><td>0.1%</td><td>보정 가능 집단·전체 TRAIN 학습 순위 비교</td><td>temporal4</td><td>5/4</td><td>34.904%</td><td>0.093%</td><td>0.094%</td><td>-2.796pp [-19.351, +10.962]</td><td>174</td><td>40</td><td>704</td><td>42982</td><td>0</td></tr><tr><td>0.1%</td><td>보정 가능 집단·동일 FIT 점수 순위 비교</td><td>square_joint</td><td>5/4</td><td>28.344%</td><td>0.093%</td><td>0.094%</td><td>+0.000pp [+0.000, +0.000]</td><td>147</td><td>40</td><td>731</td><td>42982</td><td>0</td></tr><tr><td>0.1%</td><td>보정 가능 집단·동일 FIT 점수 순위 비교</td><td>temporal4</td><td>5/4</td><td>33.037%</td><td>0.095%</td><td>0.095%</td><td>+4.693pp [-4.381, +18.462]</td><td>169</td><td>41</td><td>709</td><td>42981</td><td>0</td></tr><tr><td>0.1%</td><td>TRAIN 고정 임계값·실제 탐지/오탐</td><td>square_joint</td><td>5/4</td><td>19.583%</td><td>0.081%</td><td>0.046%</td><td>+0.000pp [+0.000, +0.000]</td><td>91</td><td>35</td><td>787</td><td>42987</td><td>1</td></tr><tr><td>0.1%</td><td>TRAIN 고정 임계값·실제 탐지/오탐</td><td>temporal4</td><td>5/4</td><td>27.242%</td><td>0.081%</td><td>0.055%</td><td>+7.659pp [-4.068, +24.177]</td><td>134</td><td>35</td><td>744</td><td>42987</td><td>1</td></tr><tr><td>0.5%</td><td>전체·동일 TEST 오탐 예산 순위 비교</td><td>square_joint</td><td>1118/129</td><td>61.655%</td><td>0.318%</td><td>0.136%</td><td>+0.000pp [+0.000, +0.000]</td><td>2660</td><td>703</td><td>1849</td><td>220303</td><td>0</td></tr><tr><td>0.5%</td><td>전체·동일 TEST 오탐 예산 순위 비교</td><td>temporal4</td><td>1118/129</td><td>53.137%</td><td>0.316%</td><td>0.135%</td><td>-8.518pp [-11.200, -5.876]</td><td>2439</td><td>699</td><td>2070</td><td>220307</td><td>0</td></tr><tr><td>0.5%</td><td>보정 가능 집단·전체 TRAIN 학습 순위 비교</td><td>square_joint</td><td>56/14</td><td>56.144%</td><td>0.457%</td><td>0.463%</td><td>+0.000pp [+0.000, +0.000]</td><td>1148</td><td>513</td><td>1143</td><td>111746</td><td>0</td></tr><tr><td>0.5%</td><td>보정 가능 집단·전체 TRAIN 학습 순위 비교</td><td>temporal4</td><td>56/14</td><td>50.651%</td><td>0.453%</td><td>0.452%</td><td>-5.493pp [-10.628, -1.154]</td><td>1076</td><td>509</td><td>1215</td><td>111750</td><td>0</td></tr><tr><td>0.5%</td><td>보정 가능 집단·동일 FIT 점수 순위 비교</td><td>square_joint</td><td>56/14</td><td>43.756%</td><td>0.435%</td><td>0.438%</td><td>+0.000pp [+0.000, +0.000]</td><td>987</td><td>488</td><td>1304</td><td>111771</td><td>0</td></tr><tr><td>0.5%</td><td>보정 가능 집단·동일 FIT 점수 순위 비교</td><td>temporal4</td><td>56/14</td><td>38.173%</td><td>0.435%</td><td>0.437%</td><td>-5.583pp [-9.766, -2.045]</td><td>892</td><td>488</td><td>1399</td><td>111771</td><td>0</td></tr><tr><td>0.5%</td><td>TRAIN 고정 임계값·실제 탐지/오탐</td><td>square_joint</td><td>56/14</td><td>33.759%</td><td>0.240%</td><td>0.178%</td><td>+0.000pp [+0.000, +0.000]</td><td>828</td><td>269</td><td>1463</td><td>111990</td><td>4</td></tr><tr><td>0.5%</td><td>TRAIN 고정 임계값·실제 탐지/오탐</td><td>temporal4</td><td>56/14</td><td>27.382%</td><td>0.249%</td><td>0.192%</td><td>-6.377pp [-14.412, -0.944]</td><td>738</td><td>279</td><td>1553</td><td>111980</td><td>5</td></tr><tr><td>1.0%</td><td>전체·동일 TEST 오탐 예산 순위 비교</td><td>square_joint</td><td>1118/129</td><td>65.331%</td><td>0.714%</td><td>0.354%</td><td>+0.000pp [+0.000, +0.000]</td><td>2900</td><td>1578</td><td>1609</td><td>219428</td><td>0</td></tr><tr><td>1.0%</td><td>전체·동일 TEST 오탐 예산 순위 비교</td><td>temporal4</td><td>1118/129</td><td>57.272%</td><td>0.712%</td><td>0.356%</td><td>-8.059pp [-10.846, -5.350]</td><td>2712</td><td>1573</td><td>1797</td><td>219433</td><td>0</td></tr><tr><td>1.0%</td><td>보정 가능 집단·전체 TRAIN 학습 순위 비교</td><td>square_joint</td><td>111/31</td><td>60.456%</td><td>0.945%</td><td>0.930%</td><td>+0.000pp [+0.000, +0.000]</td><td>1724</td><td>1356</td><td>1203</td><td>142067</td><td>0</td></tr><tr><td>1.0%</td><td>보정 가능 집단·전체 TRAIN 학습 순위 비교</td><td>temporal4</td><td>111/31</td><td>58.447%</td><td>0.941%</td><td>0.926%</td><td>-2.010pp [-5.165, +0.777]</td><td>1671</td><td>1350</td><td>1256</td><td>142073</td><td>0</td></tr><tr><td>1.0%</td><td>보정 가능 집단·동일 FIT 점수 순위 비교</td><td>square_joint</td><td>111/31</td><td>49.063%</td><td>0.930%</td><td>0.891%</td><td>+0.000pp [+0.000, +0.000]</td><td>1528</td><td>1334</td><td>1399</td><td>142089</td><td>0</td></tr><tr><td>1.0%</td><td>보정 가능 집단·동일 FIT 점수 순위 비교</td><td>temporal4</td><td>111/31</td><td>46.428%</td><td>0.928%</td><td>0.903%</td><td>-2.635pp [-7.308, +1.466]</td><td>1472</td><td>1331</td><td>1455</td><td>142092</td><td>0</td></tr><tr><td>1.0%</td><td>TRAIN 고정 임계값·실제 탐지/오탐</td><td>square_joint</td><td>111/31</td><td>36.576%</td><td>0.542%</td><td>0.439%</td><td>+0.000pp [+0.000, +0.000]</td><td>1294</td><td>778</td><td>1633</td><td>142645</td><td>9</td></tr><tr><td>1.0%</td><td>TRAIN 고정 임계값·실제 탐지/오탐</td><td>temporal4</td><td>111/31</td><td>33.403%</td><td>0.526%</td><td>0.366%</td><td>-3.173pp [-6.964, +0.496]</td><td>1196</td><td>754</td><td>1731</td><td>142669</td><td>6</td></tr></tbody></table></div><h2>공통 집단·악화·검증</h2><p>아래 결과 파일에는 세 예산의 공통 집단 비교와 Crop 제외 진단이 함께 있습니다. 데이터셋 CSV에는 개선뿐 아니라 새로운 미탐·추가 오탐과 모든 악화가 기록됩니다.</p><pre>{
+  &quot;common_calibrated&quot;: {
+    &quot;1&quot;: {
+      &quot;square_joint&quot;: {
+        &quot;datasets&quot;: 5,
+        &quot;families&quot;: 4,
+        &quot;normal&quot;: 43022,
+        &quot;anomaly&quot;: 878,
+        &quot;tp&quot;: 91,
+        &quot;fp&quot;: 35,
+        &quot;tn&quot;: 42987,
+        &quot;fn&quot;: 787,
+        &quot;pooled_recall&quot;: 0.10364464692482915,
+        &quot;pooled_fpr&quot;: 0.0008135372600065083,
+        &quot;family_macro_recall&quot;: 0.1958256040406142,
+        &quot;family_macro_fpr&quot;: 0.0004573624321523481,
+        &quot;recall_families&quot;: 4,
+        &quot;fpr_families&quot;: 4,
+        &quot;datasets_observed_above_nominal&quot;: 1,
+        &quot;rescue&quot;: 0,
+        &quot;loss&quot;: 0,
+        &quot;added_fp&quot;: 0,
+        &quot;removed_fp&quot;: 0,
+        &quot;recall_delta&quot;: 0.0,
+        &quot;recall_delta_ci95&quot;: [
+          0.0,
+          0.0
+        ]
+      },
+      &quot;temporal4&quot;: {
+        &quot;datasets&quot;: 5,
+        &quot;families&quot;: 4,
+        &quot;normal&quot;: 43022,
+        &quot;anomaly&quot;: 878,
+        &quot;tp&quot;: 134,
+        &quot;fp&quot;: 35,
+        &quot;tn&quot;: 42987,
+        &quot;fn&quot;: 744,
+        &quot;pooled_recall&quot;: 0.15261958997722094,
+        &quot;pooled_fpr&quot;: 0.0008135372600065083,
+        &quot;family_macro_recall&quot;: 0.2724170437405732,
+        &quot;family_macro_fpr&quot;: 0.0005522721909276532,
+        &quot;recall_families&quot;: 4,
+        &quot;fpr_families&quot;: 4,
+        &quot;datasets_observed_above_nominal&quot;: 1,
+        &quot;rescue&quot;: 60,
+        &quot;loss&quot;: 17,
+        &quot;added_fp&quot;: 12,
+        &quot;removed_fp&quot;: 12,
+        &quot;recall_delta&quot;: 0.07659143969995899,
+        &quot;recall_delta_ci95&quot;: [
+          -0.0406806400721208,
+          0.24177350427350427
+        ]
+      }
+    },
+    &quot;5&quot;: {
+      &quot;square_joint&quot;: {
+        &quot;datasets&quot;: 5,
+        &quot;families&quot;: 4,
+        &quot;normal&quot;: 43022,
+        &quot;anomaly&quot;: 878,
+        &quot;tp&quot;: 267,
+        &quot;fp&quot;: 168,
+        &quot;tn&quot;: 42854,
+        &quot;fn&quot;: 611,
+        &quot;pooled_recall&quot;: 0.3041002277904328,
+        &quot;pooled_fpr&quot;: 0.0039049788480312398,
+        &quot;family_macro_recall&quot;: 0.5069011748524933,
+        &quot;family_macro_fpr&quot;: 0.0033911560498057166,
+        &quot;recall_families&quot;: 4,
+        &quot;fpr_families&quot;: 4,
+        &quot;datasets_observed_above_nominal&quot;: 0,
+        &quot;rescue&quot;: 0,
+        &quot;loss&quot;: 0,
+        &quot;added_fp&quot;: 0,
+        &quot;removed_fp&quot;: 0,
+        &quot;recall_delta&quot;: 0.0,
+        &quot;recall_delta_ci95&quot;: [
+          0.0,
+          0.0
+        ]
+      },
+      &quot;temporal4&quot;: {
+        &quot;datasets&quot;: 5,
+        &quot;families&quot;: 4,
+        &quot;normal&quot;: 43022,
+        &quot;anomaly&quot;: 878,
+        &quot;tp&quot;: 268,
+        &quot;fp&quot;: 176,
+        &quot;tn&quot;: 42846,
+        &quot;fn&quot;: 610,
+        &quot;pooled_recall&quot;: 0.3052391799544419,
+        &quot;pooled_fpr&quot;: 0.0040909302217470135,
+        &quot;family_macro_recall&quot;: 0.5089594782799651,
+        &quot;family_macro_fpr&quot;: 0.003529678891892743,
+        &quot;recall_families&quot;: 4,
+        &quot;fpr_families&quot;: 4,
+        &quot;datasets_observed_above_nominal&quot;: 2,
+        &quot;rescue&quot;: 14,
+        &quot;loss&quot;: 13,
+        &quot;added_fp&quot;: 31,
+        &quot;removed_fp&quot;: 23,
+        &quot;recall_delta&quot;: 0.0020583034274718193,
+        &quot;recall_delta_ci95&quot;: [
+          0.0,
+          0.005769230769230971
+        ]
+      }
+    },
+    &quot;10&quot;: {
+      &quot;square_joint&quot;: {
+        &quot;datasets&quot;: 5,
+        &quot;families&quot;: 4,
+        &quot;normal&quot;: 43022,
+        &quot;anomaly&quot;: 878,
+        &quot;tp&quot;: 294,
+        &quot;fp&quot;: 360,
+        &quot;tn&quot;: 42662,
+        &quot;fn&quot;: 584,
+        &quot;pooled_recall&quot;: 0.3348519362186788,
+        &quot;pooled_fpr&quot;: 0.0083678118172098,
+        &quot;family_macro_recall&quot;: 0.5457338638373121,
+        &quot;family_macro_fpr&quot;: 0.007851594808274031,
+        &quot;recall_families&quot;: 4,
+        &quot;fpr_families&quot;: 4,
+        &quot;datasets_observed_above_nominal&quot;: 0,
+        &quot;rescue&quot;: 0,
+        &quot;loss&quot;: 0,
+        &quot;added_fp&quot;: 0,
+        &quot;removed_fp&quot;: 0,
+        &quot;recall_delta&quot;: 0.0,
+        &quot;recall_delta_ci95&quot;: [
+          0.0,
+          0.0
+        ]
+      },
+      &quot;temporal4&quot;: {
+        &quot;datasets&quot;: 5,
+        &quot;families&quot;: 4,
+        &quot;normal&quot;: 43022,
+        &quot;anomaly&quot;: 878,
+        &quot;tp&quot;: 287,
+        &quot;fp&quot;: 366,
+        &quot;tn&quot;: 42656,
+        &quot;fn&quot;: 591,
+        &quot;pooled_recall&quot;: 0.32687927107061504,
+        &quot;pooled_fpr&quot;: 0.00850727534749663,
+        &quot;family_macro_recall&quot;: 0.536671159769537,
+        &quot;family_macro_fpr&quot;: 0.00789132334336623,
+        &quot;recall_families&quot;: 4,
+        &quot;fpr_families&quot;: 4,
+        &quot;datasets_observed_above_nominal&quot;: 0,
+        &quot;rescue&quot;: 4,
+        &quot;loss&quot;: 11,
+        &quot;added_fp&quot;: 72,
+        &quot;removed_fp&quot;: 66,
+        &quot;recall_delta&quot;: -0.009062704067775096,
+        &quot;recall_delta_ci95&quot;: [
+          -0.018106915622128628,
+          -0.002136752136752129
+        ]
+      }
+    }
+  },
+  &quot;non_crop_primary&quot;: {
+    &quot;full_ranking&quot;: {
+      &quot;square_joint&quot;: {
+        &quot;datasets&quot;: 1094,
+        &quot;families&quot;: 128,
+        &quot;normal&quot;: 197486,
+        &quot;anomaly&quot;: 4029,
+        &quot;tp&quot;: 2344,
+        &quot;fp&quot;: 612,
+        &quot;tn&quot;: 196874,
+        &quot;fn&quot;: 1685,
+        &quot;pooled_recall&quot;: 0.5817820799205758,
+        &quot;pooled_fpr&quot;: 0.003098953849893157,
+        &quot;family_macro_recall&quot;: 0.6162265068256312,
+        &quot;family_macro_fpr&quot;: 0.0013430294250627074,
+        &quot;recall_families&quot;: 128,
+        &quot;fpr_families&quot;: 128,
+        &quot;datasets_observed_above_nominal&quot;: 0,
+        &quot;rescue&quot;: 0,
+        &quot;loss&quot;: 0,
+        &quot;added_fp&quot;: 0,
+        &quot;removed_fp&quot;: 0,
+        &quot;recall_delta&quot;: 0.0,
+        &quot;recall_delta_ci95&quot;: [
+          0.0,
+          0.0
+        ]
+      },
+      &quot;temporal4&quot;: {
+        &quot;datasets&quot;: 1094,
+        &quot;families&quot;: 128,
+        &quot;normal&quot;: 197486,
+        &quot;anomaly&quot;: 4029,
+        &quot;tp&quot;: 2109,
+        &quot;fp&quot;: 610,
+        &quot;tn&quot;: 196876,
+        &quot;fn&quot;: 1920,
+        &quot;pooled_recall&quot;: 0.5234549516008935,
+        &quot;pooled_fpr&quot;: 0.0030888265497301076,
+        &quot;family_macro_recall&quot;: 0.5301497529708424,
+        &quot;family_macro_fpr&quot;: 0.0013345277365742147,
+        &quot;recall_families&quot;: 128,
+        &quot;fpr_families&quot;: 128,
+        &quot;datasets_observed_above_nominal&quot;: 0,
+        &quot;rescue&quot;: 87,
+        &quot;loss&quot;: 322,
+        &quot;added_fp&quot;: 189,
+        &quot;removed_fp&quot;: 191,
+        &quot;recall_delta&quot;: -0.08607675385478886,
+        &quot;recall_delta_ci95&quot;: [
+          -0.11597136893434322,
+          -0.0607216398492707
+        ]
+      }
+    },
+    &quot;calibrated&quot;: {
+      &quot;square_joint&quot;: {
+        &quot;datasets&quot;: 32,
+        &quot;families&quot;: 13,
+        &quot;normal&quot;: 88739,
+        &quot;anomaly&quot;: 1811,
+        &quot;tp&quot;: 589,
+        &quot;fp&quot;: 228,
+        &quot;tn&quot;: 88511,
+        &quot;fn&quot;: 1222,
+        &quot;pooled_recall&quot;: 0.3252346769740475,
+        &quot;pooled_fpr&quot;: 0.0025693325369905004,
+        &quot;family_macro_recall&quot;: 0.32525257092358445,
+        &quot;family_macro_fpr&quot;: 0.0017853896990292035,
+        &quot;recall_families&quot;: 13,
+        &quot;fpr_families&quot;: 13,
+        &quot;datasets_observed_above_nominal&quot;: 0,
+        &quot;rescue&quot;: 0,
+        &quot;loss&quot;: 0,
+        &quot;added_fp&quot;: 0,
+        &quot;removed_fp&quot;: 0,
+        &quot;recall_delta&quot;: 0.0,
+        &quot;recall_delta_ci95&quot;: [
+          0.0,
+          0.0
+        ]
+      },
+      &quot;temporal4&quot;: {
+        &quot;datasets&quot;: 32,
+        &quot;families&quot;: 13,
+        &quot;normal&quot;: 88739,
+        &quot;anomaly&quot;: 1811,
+        &quot;tp&quot;: 519,
+        &quot;fp&quot;: 249,
+        &quot;tn&quot;: 88490,
+        &quot;fn&quot;: 1292,
+        &quot;pooled_recall&quot;: 0.2865819988956378,
+        &quot;pooled_fpr&quot;: 0.0028059815864501514,
+        &quot;family_macro_recall&quot;: 0.2597846693255608,
+        &quot;family_macro_fpr&quot;: 0.0019673947326254776,
+        &quot;recall_families&quot;: 13,
+        &quot;fpr_families&quot;: 13,
+        &quot;datasets_observed_above_nominal&quot;: 3,
+        &quot;rescue&quot;: 35,
+        &quot;loss&quot;: 105,
+        &quot;added_fp&quot;: 67,
+        &quot;removed_fp&quot;: 46,
+        &quot;recall_delta&quot;: -0.06546790159802363,
+        &quot;recall_delta_ci95&quot;: [
+          -0.15366316051809828,
+          -0.005440156943298101
+        ]
+      }
+    }
+  }
+}</pre><p>독립 검산: 통과(직접 conformal 비교·독립 ROC TP 검사·집계 재현·라벨 이후 재계산 차단)</p><p><a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">사전 고정 프로토콜</a></p><p><a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">데이터셋별 결과</a></p><p><a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">전체 대상·평가 불가</a></p><p><a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">전체 결과 JSON</a></p><p><a href="v528_antigravity.json">검증 기록</a></p></body></html>

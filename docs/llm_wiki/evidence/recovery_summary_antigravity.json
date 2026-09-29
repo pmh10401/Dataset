@@ -1,0 +1,37 @@
+{
+  "schema": "database_evaluation_summary_v1",
+  "contract_sha256": "92f94250daa9a0d81582219f2431e2105005a9ee799b4e4d7b1e16f0a58ca64c",
+  "total_datasets": 1119,
+  "statuses": {
+    "completed": 955,
+    "unavailable": 163,
+    "failed": 1
+  },
+  "unavailable_reasons": {
+    "missing_verified_route": 2,
+    "insufficient_training_data": 161
+  },
+  "evaluated_test_rows": 193515,
+  "confusion": {
+    "true_positives": 1787,
+    "false_positives": 488,
+    "true_negatives": 189158,
+    "false_negatives": 2082
+  },
+  "recall": 0.4618764538640476,
+  "false_positive_rate": 0.002573215359142824,
+  "dataset_mean_recall": 0.5365174280501451,
+  "dataset_mean_fpr": 0.004590685298058135,
+  "family_mean_recall": 0.40824526263193245,
+  "family_mean_fpr": 0.0037217656373507556,
+  "dataset_mean_auc": 0.9826699016881819,
+  "family_count": 125,
+  "datasets_exceeding_target_fpr": 179,
+  "resolution_limited_candidates": 759,
+  "failed": [
+    {
+      "dataset_name": "UWaveGestureLibraryZ_normal_8",
+      "error": "ValueError: standard preparation requires finite non-constant rows"
+    }
+  ]
+}

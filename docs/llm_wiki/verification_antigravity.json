@@ -1,0 +1,57 @@
+{
+  "status": "passed",
+  "verified_utc": "2026-09-29T00:39:16.799455+00:00",
+  "scope": "Publication documentation, source hashes, saved result bindings, local links and recorded aggregate consistency only; no experimental replay.",
+  "source_counts": {
+    "existing_repository": 37,
+    "report_snapshot": 41,
+    "local_only": 17,
+    "exact_copy": 31
+  },
+  "source_files_checked": 126,
+  "saved_result_verification_bindings_checked_against_originals": 19,
+  "html_pages": 48,
+  "wiki_pages": 7,
+  "local_links_checked": 496,
+  "new_publication_links_and_fragments_exist": true,
+  "wiki_structure_metadata_and_unique_ids": true,
+  "publication_html_has_no_scripts_or_event_handlers": true,
+  "credential_pattern_scan": "no_matches",
+  "original_research_files_unchanged": true,
+  "original_wiki_files_unchanged": true,
+  "existing_tracked_diff_unchanged": true,
+  "source_tracked_diff_sha256": "f1257bec5b8f031f7e02756d0f51a767b42d06429e48852b2380565351e0a488",
+  "maintenance_hash_check_passed": true,
+  "exp539_counts_confusion_and_selection_invariance_checked": true,
+  "exp539_report_and_result_review_hashes_match_originals": true,
+  "new_model_fits": 0,
+  "new_score_calculations": 0,
+  "raw_database_opened": false,
+  "test_labels_read": false,
+  "source_manifest_sha256": "398e892190ce1faff6d52b2dbbbd95971439a13dded92a47943a56abc96ba67f",
+  "wiki_file_sha256": {
+    "system_antigravity.html": "a95baa0b4ea20d1a7b92b8efd87c21f314f7b2e55145fe37e837345f64616d76",
+    "evaluation_antigravity.html": "0a9c512b71f3237d2469fbfdc1199d7877a1c6e8b1b2e778a7f292723e03b95a",
+    "sources_antigravity.html": "70a6880e22935c7bf256891dffef274608368a2f741d806121f74edfe91fe08a",
+    "findings_antigravity.html": "0f799227103dc09a1410320b1bc50567326e25f197c4273b2261d3330dacbdda",
+    "history_antigravity.html": "03892556fa01c489c9ae5ef131058aa08f1b3c78950e3340e7dd03b0489684a8",
+    "index_antigravity.html": "f6eeaf16cb4d67f4a9d9bca2a64a14ef426e461e083fb6f543406f6d09603020",
+    "maintenance_antigravity.html": "c906d70b47157576da3e3b6ad69871458803bf4e46a80063a5b18728f2ad29e6"
+  },
+  "initial_verification_sha256": "125f395035bda35a10470987cb791406fccbc2afe8a6caa9da00fda8ed8b72e8",
+  "browser_render_check": {
+    "status": "not_performed",
+    "reason": "The prior browser file:// security block remains; this task used static checks, no workaround."
+  },
+  "limitations": [
+    "HTML is source-viewable on GitHub; read it in a local repository checkout. No Pages deployment.",
+    "Historical report snapshots have scripts and unavailable figures removed; dynamic counters and interactions do not update.",
+    "Existing repository evidence is reused unchanged; its original outbound links were not recursively repaired.",
+    "17 detailed original results remain local; hashes and metadata alone do not reproduce those results.",
+    "Original verification artifact hashes bind original reports/results, not transformed reading copies.",
+    "External URLs and browser rendering were not verified during publication.",
+    "Latest research/service code, trained weights and execution environment are outside this documentation PR."
+  ],
+  "issues": [],
+  "report_snapshot_body_text_matches_originals": 41
+}

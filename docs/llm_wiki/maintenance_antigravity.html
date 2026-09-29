@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="wiki-snapshot" content="2026-09-29"><meta name="wiki-role" content="maintenance"><title>위키 사용·갱신 규칙과 작업 기록 · Time Series LLM Wiki</title><style>body{font:16px/1.7 -apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif;color:#20232b;background:#f6f7fb;margin:0}main{max-width:1120px;margin:auto;padding:40px 24px 64px}nav{display:flex;flex-wrap:wrap;gap:8px 18px;padding:16px 0;border-bottom:1px solid #dce1ea;margin-bottom:26px}a{color:#1455a0;text-underline-offset:3px}a:focus-visible{outline:3px solid #1769aa;outline-offset:4px}h1{font-size:32px;line-height:1.3}h2{font-size:23px;margin-top:38px}h3{font-size:18px}.lead{font-size:19px}.meta,small{color:#525e70}section{scroll-margin-top:16px}table{border-collapse:collapse;width:100%;margin:18px 0;display:block;overflow-x:auto;background:white}th,td{text-align:left;border:1px solid #dce1ea;padding:10px 12px;vertical-align:top}th{background:#edf2f8;white-space:nowrap}td{min-width:110px}td:last-child{min-width:140px}code{font:13px/1.6 ui-monospace,monospace;overflow-wrap:anywhere}pre{background:#eaf0f7;padding:18px;white-space:pre-wrap;overflow-wrap:anywhere}li{margin:8px 0}.source{font-size:12px;white-space:nowrap}footer{border-top:1px solid #dce1ea;margin-top:32px;padding-top:16px}.table-wrap{overflow-x:auto}@media(max-width:650px){main{padding:24px 16px}h1{font-size:26px}body{font-size:15px}}@media print{body{background:white}main{max-width:none}nav{display:none}table{display:table;font-size:11px}th,td{min-width:0;padding:6px}a{color:inherit}}</style></head><body><main><p class="meta">TIME SERIES · LLM WIKI · 2026-09-29 · 근거를 연결한 연구 기록</p><nav aria-label="연구 위키"><a href="index_antigravity.html">연구 위키 · 현재 상태</a> <a href="evaluation_antigravity.html">데이터와 평가 기준</a> <a href="history_antigravity.html">연구 연표</a> <a href="findings_antigravity.html">확인한 지식과 남은 질문</a> <a href="system_antigravity.html">모델·서비스·실행 구조</a> <a href="sources_antigravity.html">원본 근거 목록</a> <a href="maintenance_antigravity.html">위키 사용·갱신 규칙과 작업 기록</a></nav><h1>위키 사용·갱신 규칙과 작업 기록</h1><p class="meta"><strong>GitHub 문서 게시본:</strong> 2026-09-29 연구 작업트리의 기록이다. 최신 서비스 코드 전체의 배포본이 아니며, 미게시 자료와 원본/게시 사본의 구분은 <a href="sources_antigravity.html">출처 목록</a>에 있다.</p><section id="schema"><h2>LLM Wiki의 세 층</h2>
+<p>Karpathy의 제안에서 원본·연결된 지식·유지 규칙의 구분을 가져왔다. 이 프로젝트는 기존 보고서·결과 파일을 원본으로 보존하고, 이 폴더의 연결된 HTML을 지식 층으로 사용한다. 이 페이지가 위키 유지 규칙이다. 프로젝트의 새 인간용 문서 HTML 규칙에 따라 Markdown 복제본·별도 검색 서버·벡터 DB를 추가하지 않았다. <a href="https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f">Karpathy LLM Wiki 원문</a></p>
+<p><strong>에이전트 읽기 순서:</strong> <a href="index_antigravity.html">index</a> → 질문과 관련된 주제 → 해당 <a href="sources_antigravity.html">원본</a>. 수치와 결론은 원본에서 확인하고, 이 위키의 요약을 독립된 새 실험 근거로 재인용하지 않는다.</p></section>
+<section id="claims"><h2>한 주장에 필요한 정보</h2>
+<ul>
+<li>실험/시점, 정확한 방법과 대조군, 데이터셋·계열·평가 행 수 또는 해당 원본 링크.</li>
+<li>정상 TRAIN·합성 검증·이미 노출된 TEST·교차검증 목표 중 무엇을 썼는지.</li>
+<li>순위 평가인지 고정 문턱인지, 목표 FPR과 관측 FPR, 탐지 손실과 이득.</li>
+<li>관측 사실·판단·가설·미확인의 구분, 불확실성, 제외 사유, 후속 문서 관계.</li>
+<li>출처의 경로·SHA256과 확인 시점. 원본에 없는 원인이나 승인·완료 상태를 만들어 넣지 않는다.</li>
+</ul>
+<p>수치 충돌 시 결과 artifact/독립 검산 → 실제 실행 기록 → 사전 프로토콜 → 인수인계·종합 보고서 순으로 확인한다. 프로토콜은 계획, 결과는 실제 수행 근거다. 후속 결과로 실패 이력을 지우거나 사전 계획을 소급 변경하지 않는다.</p></section>
+<section id="ingest"><h2>새 결과를 기록하는 절차</h2>
+<ol>
+<li>현재 사용자 요청 범위와 작업트리·Git 상태를 확인한다. 원본 DB·TEST 라벨·저장 가중치를 위키에 복제하거나 외부로 전송하지 않는다.</li>
+<li>보고서와 aggregate 결과·검산 기록을 읽고 원본 해시를 확인한다. 기존 파일 해시가 달라지면 이유를 먼저 조사한다.</li>
+<li><code>sources_antigravity.json</code>에 출처와 확인 범위를 등록한다. 기존 source ID는 유지하고 바뀐 원본의 이전 해시·정정 이유를 작업 기록에 남긴다. 승인 없는 원본 수정은 하지 않는다.</li>
+<li>관련 주제·연표·현재 상태만 갱신한다. 새 결과가 이전 가설을 반박하면 양쪽 근거를 연결한다. ‘실패’와 ‘미실행’을 성공처럼 합치지 않는다.</li>
+<li>문서 링크·fragment·출처 해시·핵심 수치·동일 집단 비교를 검사하고 <code>verification_antigravity.json</code>을 새 기록으로 갱신한다. 기존 검증의 원본은 원래 실험 폴더에 보존한다.</li>
+<li>아래 로그에 날짜·입력·변경한 페이지·미검증 범위를 덧붙인다. 새 모델 실행·커밋·푸시는 문서 갱신과 별도 요청 범위다.</li>
+</ol></section>
+<section id="query"><h2>질의와 정기 점검</h2>
+<p>질문에 답할 때 해당 실험의 모집단·정책·TRAIN/TEST 경계를 함께 읽는다. 동일 수치처럼 보이더라도 family 평균·dataset 평균·전체 비율을 섞지 않는다. 새 비교 결론을 문서로 남길 때 원본을 함께 연결한다.</p>
+<p>점검할 항목: 출처 없는 주장, 깨진 링크, 후속 결과가 있는데도 남은 ‘미실행’, 버전이 다른 ‘현재 최고’, 해시 불일치, source 등록 없이 바뀐 숫자, 읽을 수 없는 로컬 경로. LLM 제안은 검증된 결과로 자동 승격하지 않는다. 정기 실행이나 모니터링 자동화는 설치하지 않았다.</p>
+<p>게시 파일 해시만 다시 확인하는 최소 명령이다. 체크아웃한 저장소의 위키 폴더에서 실행한다. 미게시 원본·성능 계산·DB는 검사하지 않는다.</p>
+<pre>python3 - &lt;&lt;&#x27;PY&#x27;
+import hashlib, json
+from pathlib import Path
+m = json.loads(Path(&#x27;sources_antigravity.json&#x27;).read_text())
+repo = Path.cwd().parents[1]
+checked = 0
+for source in m[&#x27;sources&#x27;]:
+    published = source[&#x27;publication&#x27;]
+    if published[&#x27;status&#x27;] == &#x27;local_only&#x27;:
+        continue
+    path = repo / published[&#x27;path&#x27;]
+    assert path.is_file(), source[&#x27;id&#x27;]
+    assert hashlib.sha256(path.read_bytes()).hexdigest() == published[&#x27;sha256&#x27;], source[&#x27;id&#x27;]
+    checked += 1
+print(&#x27;게시 파일 해시 일치:&#x27;, checked)
+print(&#x27;미게시 원본:&#x27;, m[&#x27;publication&#x27;][&#x27;source_counts&#x27;][&#x27;local_only&#x27;])
+PY</pre>
+<p>저장소를 체크아웃하고 <code>docs/llm_wiki/index_antigravity.html</code>을 브라우저로 열면 문서를 읽을 수 있다. GitHub의 HTML 파일 화면은 소스를 표시하며, 이번 게시에 GitHub Pages 배포는 포함하지 않는다. 기존 저장소 출처 링크도 있으므로 위키 폴더만 떼어 복사하면 일부 근거가 빠진다. JSON의 <code>roots</code>는 원본 위치의 이력이며 게시 검사의 입력이 아니다. 미게시 자료의 검산은 원본 작업트리를 복구해야 가능하다.</p></section>
+<section id="handoff"><h2>다음 세션의 시작 문장</h2><pre>docs/llm_wiki/index_antigravity.html과 maintenance_antigravity.html을 먼저 읽어라.
+관련 결론의 원본·해시·평가 조건을 확인한 다음 요청 범위에서 이어가라.
+완료 실험의 점수·임계값·라벨 접근 경계는 변경하지 마라.</pre></section>
+<section id="log"><h2>작업 기록 — 덧붙여 기록</h2>
+<article id="log-20260929"><h3>2026-09-29 · 최초 연구 기록 수집</h3>
+<p>사용자 요청: “지금까지의 연구 내용을 llm wiki에 기록하자”. 초기 연구 인수인계, Exp481~539의 주요 보고서·결과, 공유 계산·DB/CSV 서비스 문서를 읽어 현재 상태·연표·평가 기준·확인한 지식·시스템·출처·유지 규칙을 연결했다.</p>
+<p>확인 범위는 저장된 보고서와 aggregate artifact, 기존 검산의 해시 연결, 새 문서의 링크·수치·범위 일관성이다. 공식 성능 실험·학습·점수 계산·원시 DB 조회·배포·커밋·푸시·Codex 개인 메모리 갱신은 수행하지 않았다. 초기~Exp480의 전 실험별 재감사와 모델 채택 경위 전체 추적은 범위 밖이다.</p>
+<p>새 파일과 검증 내역: <a href="verification_antigravity.json">verification_antigravity.json</a>. 기존 서비스의 미커밋 변경과 과거 연구 산출물은 그대로 보존했다.</p>
+<p>문서 구조·로컬 링크·출처 해시 검사는 통과했다. 브라우저의 URL 보안 정책이 file:// 프로토콜을 차단해 화면 렌더링 검사는 수행하지 못했다. 다른 경로로 제한을 우회하지 않았다.</p></article><article id="log-publication-20260929"><h3>2026-09-29 · GitHub 게시본 준비</h3><p>사용자 요청: “깃허브에 올리자”. 최신 main에서 문서 전용 브랜치를 분리하고 위키의 출처 링크를 저장소 상대 경로로 정리했다. 37개 기존 원본을 재사용하고, 41개 보고서는 링크·스크립트·그림 처리와 출처 배너를 적용한 정적 사본으로, 31개 작은 JSON은 원문 그대로 추가했다. 17개 상세 결과는 미게시로 명시했다.</p><p>보고서의 원본 SHA256과 게시 사본 SHA256을 각각 보존한다. 실험 검산 JSON의 report/result 해시는 원본을 가리키며 새 사본의 해시로 바꾸지 않는다. 원본 연구 결과·DB·서비스 코드는 수정하지 않았고 성능 실험도 재실행하지 않았다. 이번 PR만으로 최신 서비스나 연구 실행 환경을 복구할 수 있다고 주장하지 않는다.</p><p>최초 로컬 위키 검증은 <a href="evidence/wiki_initial_verification_antigravity.json">별도 기록</a>으로 보존하고, 게시 파일·링크의 새 검사 결과는 <a href="verification_antigravity.json">현재 검증 기록</a>에 남긴다. Git 커밋·푸시·PR 상태는 저장소 이력을 따른다.</p></article></section><footer><a href="index_antigravity.html">위키 첫 화면</a> · <a href="maintenance_antigravity.html">사용·갱신 규칙</a> · <a href="verification_antigravity.json">문서 검증 기록</a><p class="meta">저장된 연구 결과를 요약한 문서다. 탐색적 비교를 독립 검증이나 운영 승격으로 바꾸지 않는다.</p></footer></main></body></html>

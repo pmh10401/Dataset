@@ -1,0 +1,10 @@
+{
+  "state": "passed",
+  "records": 1118,
+  "raw_population": 1119,
+  "result_sha256": "44e74d1dd7fd83b3eb1f3eec60e445b4ebf1e1b1fb5672d7e755b3f652475c43",
+  "direct_conformal": true,
+  "independent_roc_counts": true,
+  "stable_label_snapshot": true,
+  "utc": "2026-09-22T09:55:15.228941+00:00"
+}
