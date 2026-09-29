@@ -1,0 +1,103 @@
+{
+  "state": "complete_normal_only_pilot",
+  "records": [
+    {
+      "dataset": "ChlorineConcentration_normal_1",
+      "family": "ChlorineConcentration",
+      "fit_cal_rows": 600,
+      "audit_rows": 200,
+      "fold_fit_rows": [
+        480,
+        480,
+        480,
+        480,
+        480
+      ],
+      "target_lengths": [
+        166,
+        166,
+        166,
+        166,
+        166
+      ],
+      "baseline_fp": 0,
+      "cvplus_fp": 2,
+      "baseline_fpr": 0.0,
+      "cvplus_fpr": 0.01,
+      "p_min": 0.0033277870216306157,
+      "p_max": 0.9816971713810316,
+      "seconds": 13.79023625003174,
+      "source_score_sha256": "e37ca8fcf9660bad6ffe28a4466a8c84de88c6a092587c879660d9c8f952e87f",
+      "test_values_read": false,
+      "test_labels_read": false
+    },
+    {
+      "dataset": "Crop_normal_1",
+      "family": "Crop",
+      "fit_cal_rows": 600,
+      "audit_rows": 200,
+      "fold_fit_rows": [
+        480,
+        480,
+        480,
+        480,
+        480
+      ],
+      "target_lengths": [
+        46,
+        46,
+        46,
+        46,
+        46
+      ],
+      "baseline_fp": 1,
+      "cvplus_fp": 0,
+      "baseline_fpr": 0.005,
+      "cvplus_fpr": 0.0,
+      "p_min": 0.018302828618968387,
+      "p_max": 0.9966722129783694,
+      "seconds": 11.33628312498331,
+      "source_score_sha256": "cb8c52da844ad59659a889b6dfdc6d83e50833512790b0563663cd36109c187b",
+      "test_values_read": false,
+      "test_labels_read": false
+    },
+    {
+      "dataset": "FreezerRegularTrain_normal_1",
+      "family": "FreezerRegularTrain",
+      "fit_cal_rows": 900,
+      "audit_rows": 300,
+      "fold_fit_rows": [
+        720,
+        720,
+        720,
+        720,
+        720
+      ],
+      "target_lengths": [
+        301,
+        301,
+        301,
+        301,
+        301
+      ],
+      "baseline_fp": 3,
+      "cvplus_fp": 3,
+      "baseline_fpr": 0.01,
+      "cvplus_fpr": 0.01,
+      "p_min": 0.0022197558268590455,
+      "p_max": 0.9933407325194229,
+      "seconds": 21.257228832691908,
+      "source_score_sha256": "3024f37b1706d8ecf45d69e4ed4a5684fa9231c26747d4855fd53a3b48711494",
+      "test_values_read": false,
+      "test_labels_read": false
+    }
+  ],
+  "baseline_fp": 4,
+  "cvplus_fp": 5,
+  "audit_rows": 700,
+  "protocol_sha256": "ab3258d9bd46206b6b5c86960a600e9fa819fc48369465178d8c4330d501730c",
+  "code_map_sha256": "9ac2798447a4cda2194f020554150d9b4aa0fd932e4154160269fdcc6472a66d",
+  "test_values_read": false,
+  "test_labels_read": false,
+  "exact_finite_sample_FPR_guarantee": false
+}

@@ -1,0 +1,20 @@
+{
+  "state": "passed",
+  "utc": "2026-09-21T06:56:52.264366+00:00",
+  "all4509_anomaly_rank_costs_directly_checked": true,
+  "baseline_four_budget_replay": true,
+  "comparator_four_budget_replay": true,
+  "source_hashes_unchanged": true,
+  "exact_partition_and_family_reconciliation": true,
+  "anomalies_with_score_ties": 3,
+  "source": {
+    "experiments/exp516_per_dataset_normal_only_antigravity/results_antigravity.json": "25073634e57c7422b70b4bceb8b2be00487631779199762de80a218c99759352",
+    "experiments/exp516_per_dataset_normal_only_antigravity/score_freeze_antigravity.json": "1d5f73f69503469c7c127d337958139ca497282f1cbaa4eaeae31faf6bbd9456",
+    "experiments/exp516_per_dataset_normal_only_antigravity/manifest_antigravity.json": "a148963ea7b6cdfea1cf86a414edb326b7ddb08d50907e33c2446db2bdac9ae2",
+    "experiments/exp516_per_dataset_normal_only_antigravity/test_labels_antigravity.npz": "e41a5edc799bc846181f2703dcf2ce4dcc1024554c2ebae3397a231dd8002d3a",
+    "experiments/exp512_exp511_exploratory_test_antigravity/results_antigravity.json": "1aea8e55026f1f7655612b417d5148850035d3f782d9bd4f1c8376c6ec57ee5e",
+    "experiments/exp512_exp511_exploratory_test_antigravity/score_freeze_antigravity.json": "b127b43b18b5534c4bf6d57ed6fa784011c6ef398d3417352a226cd47e03bdb3",
+    "experiments/exp512_exp511_exploratory_test_antigravity/manifest_antigravity.json": "2ae242fea5ca41749f72c4ef7e26b6a227044ad7ed2b3e05d5fe7aa03477b0f7"
+  },
+  "result_sha256": "c6bec0092e1bf9a777149aca1b5e9f8507282c8e9a319dde0bc6fc684494b256"
+}

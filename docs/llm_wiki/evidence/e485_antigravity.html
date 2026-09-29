@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EXP485 진행 대시보드</title>
+  <style>
+    body{font-family:system-ui,-apple-system,sans-serif;max-width:920px;margin:32px auto;padding:0 20px;line-height:1.65;color:#172033}
+    section{border-top:1px solid #d8dee8;padding:18px 0}label{display:block;margin:10px 0}code{background:#eef2f7;padding:2px 5px;border-radius:4px}
+    .ok{color:#176b3a}.pending{color:#675d4a}.result{background:#f5f7fa;border-left:4px solid #4968a8;padding:14px}pre{overflow:auto;background:#111827;color:#e5e7eb;padding:12px}
+  a[data-unpublished]::after{content:" [미게시]";font-size:.85em;color:#666}</style>
+</head>
+<body>
+  <aside class="publication-note" style="padding:14px;margin:12px;border:1px solid #b9c9dc;background:#f2f6fa;color:#172438">연구 보고서의 정적 게시 사본입니다. 본문은 당시 결과이며 현재 배포 상태를 뜻하지 않습니다. 링크를 저장소 기준으로 바꾸고 실행 스크립트와 미게시 그림을 제외했습니다. 실시간 진행 표시·대화형 기능은 갱신되지 않습니다. <a href="../sources_antigravity.html#s-e485">원본 경로·해시·게시 사본 정보</a></aside><h1>EXP485 · 이상 시계열 확인 서비스</h1>
+  <p class="ok"><strong>현재 상태:</strong> Task 1~5 완료 · 로컬 서비스 실행 및 검증 완료</p>
+  <p>EXP484에서 유지한 최고 성능 경로를 이용해, 사용자가 선택한 데이터셋의 이상 시계열 전체를 눈으로 비교하는 로컬 서비스다.</p>
+
+  <section>
+    <h2>작업 진행</h2>
+    <label><input type="checkbox" checked disabled><strong>Task 1</strong> 모델 연결과 데이터셋 목록</label>
+    <label><input type="checkbox" checked disabled><strong>Task 2</strong> EXP484와 같은 점수와 곡선 자료</label>
+    <label><input type="checkbox" checked disabled><strong>Task 3</strong> 단일 작업 API</label>
+    <label><input type="checkbox" checked disabled><strong>Task 4</strong> 이상 시계열 확인 화면</label>
+    <label><input type="checkbox" checked disabled><strong>Task 5</strong> 코드맵·실제 DB·브라우저 검증</label>
+  </section>
+
+  <section>
+    <h2>Task 1 검증 결과</h2>
+    <div class="result">
+      <p><strong>테스트:</strong> <code>5 passed in 0.12s</code></p>
+      <p><strong>결과 고정:</strong> EXP481 SHA256 일치, 고유 데이터셋 1,117개</p>
+      <p><strong>선택 방법:</strong> MiniRocket 1,028개 · Hydra 88개 · MultiRocket 1개</p>
+      <p><strong>DB 확인:</strong> 이름, TRAIN 수, TEST 수, 시계열 길이만 읽으며 라벨과 실제 시계열 값은 목록 조회에 사용하지 않는다.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Task 2 결과</h2>
+    <p class="ok">두 seed 점수를 중앙값으로 합쳤고, 기존 <code>alpha=0.005</code> 경험적 p-value 규칙과 점수 내림차순을 그대로 사용한다. 선택한 TEST 곡선과 TRAIN 중앙값·10~90% 범위도 반환한다.</p>
+    <p>고정 배열 검사 7개가 통과했다. 이 단계의 NumPy 연산은 점수 계산 뒤의 작은 중앙값·분위수 정리이므로 Numba 컴파일 비용보다 작아 기존 구현을 유지했다.</p>
+  </section>
+
+  <section>
+    <h2>Task 3 결과</h2>
+    <p class="ok">데이터셋 목록, 분석 생성, 진행 상태, 선택 곡선 조회 API를 구현했다. 계산은 한 번에 하나씩 실행하며 같은 데이터셋의 완료 결과는 재사용한다.</p>
+    <p>로컬 임시 포트에서 정상·오류·직렬 실행을 포함한 전체 검사 11개가 통과했다.</p>
+  </section>
+
+  <section>
+    <h2>Task 4 결과</h2>
+    <p class="ok">데이터셋 검색과 선택, 분석 진행 상태, 점수 순위, 선택한 TEST 곡선과 TRAIN 기준 범위를 한 화면에 구현했다.</p>
+    <p>마우스와 키보드로 순위 행을 고를 수 있고, 오류는 화면에서 바로 알려 준다. 외부 화면 라이브러리는 추가하지 않았다. HTML 계약과 전체 로컬 API 검사 12개가 통과했다.</p>
+  </section>
+
+  <section>
+    <h2>Task 5 실제 결과</h2>
+    <div class="result">
+      <p><strong>전체 회귀:</strong> EXP485 서비스와 기반 EXP481·EXP484 검사 <code>82 passed in 5.10s</code></p>
+      <p><strong>최소 계산 사례:</strong> <code>FiftyWords_normal_41</code> · TRAIN 5 · TEST 50 · MiniRocket · 순위 50개 · 이상 0개</p>
+      <p>TRAIN 5개에서는 경험적 p값의 최솟값이 <code>1/6≈0.167</code>이므로 <code>alpha=0.005</code> 판정이 나올 수 없다. 점수 순위와 곡선 비교는 정상 동작했다.</p>
+      <p><strong>이상 판정 사례:</strong> <code>Chinatown_normal_2</code> · TRAIN 207 · TEST 250 · MiniRocket · 이상 1개 · 최고 점수의 p값 <code>1/208≈0.00480769</code></p>
+      <p><strong>브라우저:</strong> 검색 → 선택 → 대기/계산/완료 → 250개 순위 → 마우스·키보드 행 선택 → 곡선 변경을 확인했다. 모바일 390px에서 문서 가로 넘침은 없었고 표와 SVG는 366px 안에 맞았다.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>현재 지원 범위</h2>
+    <p>고정 목록은 1,117개지만, 현재 실시간 재계산 경로를 그대로 적용할 수 있는 상한은 801개다. 전체 801개를 전수 실행한 값이 아니라, 고정 결과와 DB 조건을 대조한 수치다.</p>
+    <ul>
+      <li>161개는 TRAIN이 5개 미만이라 기존 5겹 교차검증을 실행할 수 없다.</li>
+      <li>별도의 EXP479 전처리를 사용한 155개는 현재 화면의 EXP449 원본 로더와 맞지 않는다.</li>
+      <li>두 집합은 겹치지 않는다. 화면은 각 실패 원인을 쉬운 한국어로 알려 준다.</li>
+    </ul>
+    <p class="pending"><strong>다음 개선:</strong> 1,117개 전체 지원이 필요하면 161개용 소표본 보정 규칙과 155개용 EXP479 전처리 경로를 별도 실험으로 검증해야 한다. 검증 전에는 현재 모델과 같은 결과라고 주장하지 않는다.</p>
+  </section>
+
+  <section>
+    <h2>실행 방법</h2>
+    <pre><code>NUMBA_CACHE_DIR=/private/tmp/exp485_numba_cache_antigravity \
+/Users/mac/Documents/Dataset/venvs/detection-coverage-antigravity-aeon140-py314/bin/python \
+-m services.exp485_exp484_anomaly_viewer_antigravity.server_antigravity \
+--host 127.0.0.1 --port 8485</code></pre>
+    <p>브라우저 주소: <code>http://127.0.0.1:8485/</code></p>
+  </section>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "datasets": 1119,
+  "detail_sha256": "b24ff65fdf886205c0eb80c11f656b51db1492b669189c0bc2b0d3e792f25329",
+  "evaluation_manifest_binding": true,
+  "fpr_rows": 34128,
+  "independent_checks": [
+    "manual linear quantiles",
+    "direct >= counts and strict > decisions",
+    "array and record digests",
+    "all disjoint/nested row IDs",
+    "identical-reference controls",
+    "family aggregates and complete catalog"
+  ],
+  "ledger_order_exact": true,
+  "ledger_sha256": "c7fc19bb7e47d1a6d060be2a8e5e97054f3870e37f0e19c6707712ccc6ba3aba",
+  "new_model_fits_during_verification": 0,
+  "report_sha256": "cb32b355b240da5abd61dffff5e1474f48d00160512f289b8ca8271b072e4c77",
+  "results_sha256": "5d2446a0fc8c92274641f9e10acbc4055c95bdb76cc6cadd2110f9101a1e4154",
+  "score_change_rows": 2844,
+  "status": "passed",
+  "statuses": {
+    "completed": 948,
+    "failed": 1,
+    "unavailable": 170
+  },
+  "test_values_or_labels_queried": false,
+  "verified_utc": "2026-09-27T10:53:42.568533+00:00"
+}

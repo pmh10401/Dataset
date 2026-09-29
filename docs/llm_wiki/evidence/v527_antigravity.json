@@ -1,0 +1,18 @@
+{
+  "state": "passed",
+  "records": 280,
+  "unique_test_rows": 114550,
+  "direct_conformal_decisions": 1290400,
+  "scalar_joint_scores": 789980,
+  "dataset_csv_rows": 1120,
+  "prior_files_unchanged": 551,
+  "model_bundles": 56,
+  "fresh_process_restore_before_labels": true,
+  "paired_counts": true,
+  "family_aggregation": true,
+  "family_cluster_bootstrap": true,
+  "post_label_scoring_rejected": true,
+  "no_refit_or_new_test_scoring": true,
+  "results_sha256": "cdeafa1d56b72544ddf9f3fb71979c5e58f97a7241e84df6ffab2cd952e33ddf",
+  "verified_utc": "2026-09-22T07:46:02.589393+00:00"
+}

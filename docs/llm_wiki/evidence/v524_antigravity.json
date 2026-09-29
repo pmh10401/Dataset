@@ -1,0 +1,13 @@
+{
+  "state": "passed",
+  "direct_tail_counts": 720,
+  "raw_rows_scalar_verified": 43200,
+  "crop_datasets": 24,
+  "freezer_heads": 12,
+  "scalar_bootstrap_maxima": 24000,
+  "source_hashes_and_ids": true,
+  "fit_cal_audit_partition": true,
+  "normal_false_flags_reported": true,
+  "results_sha256": "221aa680f094d5042f971fad8646e50dc79355709712078c167b1e51c2f2158c",
+  "verified_utc": "2026-09-22T02:04:09.548734+00:00"
+}

@@ -1,0 +1,36 @@
+{
+  "datasets": 955,
+  "fits": 0,
+  "method": "Closed-form NumPy replay of saved scaler, coefficients, intercept and class order",
+  "outcome_label_reads": 0,
+  "predictions_sha256": "714735cadc1e5dfce056401b369ad7e7fc8665524742d02a8db2d39cfe85efc2",
+  "source_sha256": "cbbb5b3a0b463c6f5c2c368399abb3853cd6d8871d0a7ce727790b60491014b9",
+  "status": "passed",
+  "timings": [
+    {
+      "datasets": 165,
+      "fold": 0,
+      "seconds": 0.0001819159951992333
+    },
+    {
+      "datasets": 214,
+      "fold": 1,
+      "seconds": 0.00014637499407399446
+    },
+    {
+      "datasets": 106,
+      "fold": 2,
+      "seconds": 8.004099072422832e-05
+    },
+    {
+      "datasets": 213,
+      "fold": 3,
+      "seconds": 0.00013008300447836518
+    },
+    {
+      "datasets": 257,
+      "fold": 4,
+      "seconds": 0.00016224999853875488
+    }
+  ]
+}

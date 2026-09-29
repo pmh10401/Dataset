@@ -1,0 +1,46 @@
+{
+  "status": "passed",
+  "verified_utc": "2026-09-28T23:54:22.043944+00:00",
+  "scope": "Documentation provenance/link consistency only; saved metric artifacts inspected, no experimental replay",
+  "html_pages": 7,
+  "source_files_checked": 126,
+  "saved_result_verification_bindings": 19,
+  "local_links_checked": 411,
+  "external_urls_not_rechecked_this_task": [
+    "https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f"
+  ],
+  "html_structure_metadata_and_unique_ids": true,
+  "local_files_and_internal_fragments_exist": true,
+  "sources_unchanged": true,
+  "existing_tracked_diff_unchanged": true,
+  "existing_status_unchanged_excluding_wiki": true,
+  "exp539_current_counts_and_decision_invariance_checked": true,
+  "exp539_latest_report_review_hash_match": true,
+  "maintenance_source_hash_check_passed": true,
+  "new_model_fits": 0,
+  "new_score_calculations": 0,
+  "raw_database_opened": false,
+  "test_labels_read": false,
+  "commits_or_pushes": 0,
+  "source_manifest_sha256": "2c15163d97419d60e05d81abf50f1510ecea4e21571ecb4348da7aefe9d38fc3",
+  "wiki_file_sha256": {
+    "system_antigravity.html": "6802914a0ba2d07454a1e769b86ad5fc0122394da9f4c561d1ed7149fa24919b",
+    "evaluation_antigravity.html": "43b15c369650b1d80e04278cc93d027d8a903171461dc7682ff0eb42daba80a6",
+    "sources_antigravity.html": "72179435da24469b0bf6057b0d005ec02c1814b21966b12c0af9dac1cad6a501",
+    "findings_antigravity.html": "eb2a0cc62904ea1234bc301fdff99479d3ebce15d70af7a64805a804c8b21e71",
+    "history_antigravity.html": "05de817265deb13037ffe7b421b1420f50ddc26d59df185e9d4848b1206d2351",
+    "index_antigravity.html": "1ccbbde06d4334abfdeeaabbf123a84b7eab170216322e317d72b2973bd4872f",
+    "maintenance_antigravity.html": "e9a7f76eac4efc7d9cb8be61a021fb12b341593f98753afcbb1a3d40bf6a2630"
+  },
+  "limitations": [
+    "Historical evidence summarized, not all prior experiment calculations rerun",
+    "Local source links require the original worktrees",
+    "No performance or model promotion claims from this documentation update",
+    "Visual browser rendering unverified because the browser URL policy blocked file://"
+  ],
+  "issues": [],
+  "browser_render_check": {
+    "status": "blocked_not_performed",
+    "reason": "Browser URL security policy disallows file://; no workaround attempted"
+  }
+}

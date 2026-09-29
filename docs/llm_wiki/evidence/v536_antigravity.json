@@ -1,0 +1,6 @@
+{
+  "baseline_hash_matches": 949,
+  "groups": 24,
+  "note": "Aggregation and frozen hashes checked; independent rowwise p-value direct-count check also required before final interpretation.",
+  "status": "passed"
+}

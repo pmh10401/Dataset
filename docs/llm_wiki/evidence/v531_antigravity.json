@@ -1,0 +1,9 @@
+{
+  "state": "passed",
+  "result_sha256": "0b421727f5315856245cd5555e094bff2fccc109d4c1e03e5c6a06a591ae1163",
+  "threshold_freeze_sha256": "da1fc23d6b805e6e94c2437241bfb61b02a5e597be2fe5259405fe7b4414229b",
+  "direct_conformal_bisect": true,
+  "independent_counter": true,
+  "family_aggregate_replay": true,
+  "raw_population": 1119
+}

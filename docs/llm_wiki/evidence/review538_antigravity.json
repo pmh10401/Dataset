@@ -1,0 +1,64 @@
+{
+  "backend": "stdlib Counter/hash over identifiers; NumPy frozen quantiles; no numeric hot loop or GPU-eligible workload added",
+  "code_sha256": "6f263255e858de21c1270ad48530c00752c34b6723cf5a5c108a7a533f43c238",
+  "elapsed_seconds": 0.8930905419983901,
+  "local_gap_denominator_directly_measured": false,
+  "new_model_fits": 0,
+  "new_scores": 0,
+  "original_detail_sha256": "b24ff65fdf886205c0eb80c11f656b51db1492b669189c0bc2b0d3e792f25329",
+  "original_report_sha256": "cb32b355b240da5abd61dffff5e1474f48d00160512f289b8ca8271b072e4c77",
+  "original_results_sha256": "5d2446a0fc8c92274641f9e10acbc4055c95bdb76cc6cadd2110f9101a1e4154",
+  "posthoc_case": "Crop_normal_21",
+  "prespecified_sensitivity_datasets": 204,
+  "prespecified_sensitivity_families": 62,
+  "reviewed_report_sha256": "6fd2032a98bdb2ce8b680c86fa1f768a433ffb95cd62ed37770cc1ffb3af13bb",
+  "scope": "Frozen-result interpretation plus post-hoc normal TRAIN duplicate-identity audit; no new score/model",
+  "seed_duplicate_audit": [
+    {
+      "arm": "small",
+      "distinct_raw_rows": 189,
+      "maximum": 3.555845628463033,
+      "minimum": -3.465114881453092,
+      "q50": -0.7216607127144918,
+      "q90": 1.0869731722975708,
+      "raw_group_size_at_least4_rows": 212,
+      "reference_count": 512,
+      "seed": 20260721
+    },
+    {
+      "arm": "full",
+      "distinct_raw_rows": 193,
+      "maximum": 13419153174.5194,
+      "minimum": -13568814895.068365,
+      "q50": -2642134118.758849,
+      "q90": 441982895.57838905,
+      "raw_group_size_at_least4_rows": 373,
+      "reference_count": 640,
+      "seed": 20260721
+    },
+    {
+      "arm": "small",
+      "distinct_raw_rows": 189,
+      "maximum": 3.610201707417033,
+      "minimum": -3.5602907679710136,
+      "q50": -0.7058696830551846,
+      "q90": 1.255984718451277,
+      "raw_group_size_at_least4_rows": 212,
+      "reference_count": 512,
+      "seed": 20261721
+    },
+    {
+      "arm": "full",
+      "distinct_raw_rows": 193,
+      "maximum": 13819529735.8939,
+      "minimum": -13415204273.70214,
+      "q50": -2795066262.4645534,
+      "q90": 2292608546.261004,
+      "raw_group_size_at_least4_rows": 373,
+      "reference_count": 640,
+      "seed": 20261721
+    }
+  ],
+  "status": "passed",
+  "test_values_or_labels_queried": false
+}

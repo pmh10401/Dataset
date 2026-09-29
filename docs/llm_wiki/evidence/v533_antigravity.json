@@ -1,0 +1,11 @@
+{
+  "state": "passed_normal_only_pilot",
+  "result_sha256": "342ac9230efc5d665e68cd1c91bf6551e4fe4a9b495e84bcb7ecd7951cb603b9",
+  "protocol_sha256": "ab3258d9bd46206b6b5c86960a600e9fa819fc48369465178d8c4330d501730c",
+  "source_baseline_fp_matched": true,
+  "per_dataset_source_hashes_matched": true,
+  "direct_first_row_pairwise_count_checked_in_run": true,
+  "test_values_read": false,
+  "test_labels_read": false,
+  "not_a_full_pvalue_replay": true
+}

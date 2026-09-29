@@ -1,0 +1,564 @@
+{
+  "catalog_count": 1119,
+  "comparisons": [
+    {
+      "baseline": "gliclass_zero",
+      "delta_family_fpr": 0.0,
+      "delta_family_recall": 0.0,
+      "fpr_ci": [
+        0.0,
+        0.0
+      ],
+      "independent_groups": 80,
+      "policy": "gliclass_lora_oof",
+      "recall_ci": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "baseline": "numeric_logistic_oof",
+      "delta_family_fpr": -1.0619364628968476e-05,
+      "delta_family_recall": 0.005660591224632145,
+      "fpr_ci": [
+        -0.00011735175683149325,
+        0.00010625806688115355
+      ],
+      "independent_groups": 80,
+      "policy": "gliclass_lora_oof",
+      "recall_ci": [
+        -0.00987303087530974,
+        0.027946650465782447
+      ]
+    },
+    {
+      "baseline": "legacy_router_oof",
+      "delta_family_fpr": 0.0,
+      "delta_family_recall": 0.0,
+      "fpr_ci": [
+        0.0,
+        0.0
+      ],
+      "independent_groups": 80,
+      "policy": "gliclass_lora_oof",
+      "recall_ci": [
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "baseline": "current_service",
+      "delta_family_fpr": 5.170068027210884e-05,
+      "delta_family_recall": -0.00019047619047619045,
+      "fpr_ci": [
+        0.0,
+        0.00015581177708388352
+      ],
+      "independent_groups": 80,
+      "policy": "gliclass_lora_oof",
+      "recall_ci": [
+        -0.0006157635467980296,
+        0.0
+      ]
+    },
+    {
+      "baseline": "minirocket_local_gap",
+      "delta_family_fpr": 0.0,
+      "delta_family_recall": 0.0,
+      "fpr_ci": [
+        0.0,
+        0.0
+      ],
+      "independent_groups": 80,
+      "policy": "gliclass_lora_oof",
+      "recall_ci": [
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "evaluated_datasets": 955,
+  "families": 125,
+  "interpretation": "Retrospective exploratory source-group cross-validation. Historical TEST outcomes supervise outer-training groups only. Previously exposed datasets are not independent new validation. No promotion or outcome-driven retuning.",
+  "no_compliant_expert": 44,
+  "outcome_sha256": "8ac7e7715274755aeea61b81c32d4714c95633d4825d4f6103797e094cce9121",
+  "paired": [
+    {
+      "baseline": "numeric_logistic_oof",
+      "better_recall": 15,
+      "equal_recall": 935,
+      "less_fp": 13,
+      "more_fp": 6,
+      "worse_recall": 5
+    },
+    {
+      "baseline": "current_service",
+      "better_recall": 1,
+      "equal_recall": 952,
+      "less_fp": 1,
+      "more_fp": 3,
+      "worse_recall": 2
+    },
+    {
+      "baseline": "minirocket_local_gap",
+      "better_recall": 0,
+      "equal_recall": 955,
+      "less_fp": 0,
+      "more_fp": 0,
+      "worse_recall": 0
+    }
+  ],
+  "predictions_sha256": "714735cadc1e5dfce056401b369ad7e7fc8665524742d02a8db2d39cfe85efc2",
+  "source_groups": 80,
+  "status_counts": {
+    "completed": 955,
+    "failed": 1,
+    "unavailable": 163
+  },
+  "summaries": [
+    {
+      "above_target": 180,
+      "cohort": "all_scoreable",
+      "datasets": 955,
+      "families": 125,
+      "family_fpr": 0.0037734663176228647,
+      "family_recall": 0.4080547864414563,
+      "fn": 2083,
+      "fp": 490,
+      "fpr": 0.002583761323729475,
+      "policy": "minirocket_local_gap",
+      "recall": 0.46161798914448177,
+      "selection_counts": {
+        "minirocket_local_gap": 955
+      },
+      "tn": 189156,
+      "tp": 1786
+    },
+    {
+      "above_target": 185,
+      "cohort": "all_scoreable",
+      "datasets": 955,
+      "families": 125,
+      "family_fpr": 0.004046636109871155,
+      "family_recall": 0.28008941043495755,
+      "fn": 2630,
+      "fp": 510,
+      "fpr": 0.002689220969595984,
+      "policy": "multirocket_local_gap",
+      "recall": 0.3202377875420005,
+      "selection_counts": {
+        "multirocket_local_gap": 955
+      },
+      "tn": 189136,
+      "tp": 1239
+    },
+    {
+      "above_target": 170,
+      "cohort": "all_scoreable",
+      "datasets": 955,
+      "families": 125,
+      "family_fpr": 0.0032048647480720973,
+      "family_recall": 0.3043266132806162,
+      "fn": 2504,
+      "fp": 486,
+      "fpr": 0.002562669394556173,
+      "policy": "hydra_local_gap",
+      "recall": 0.3528043422072887,
+      "selection_counts": {
+        "hydra_local_gap": 955
+      },
+      "tn": 189160,
+      "tp": 1365
+    },
+    {
+      "above_target": 179,
+      "cohort": "all_scoreable",
+      "datasets": 955,
+      "families": 125,
+      "family_fpr": 0.003721765637350756,
+      "family_recall": 0.4082452626319325,
+      "fn": 2082,
+      "fp": 488,
+      "fpr": 0.002573215359142824,
+      "policy": "current_service",
+      "recall": 0.4618764538640476,
+      "selection_counts": {
+        "hydra_local_gap": 37,
+        "minirocket_local_gap": 917,
+        "multirocket_local_gap": 1
+      },
+      "tn": 189158,
+      "tp": 1787
+    },
+    {
+      "above_target": 180,
+      "cohort": "all_scoreable",
+      "datasets": 955,
+      "families": 125,
+      "family_fpr": 0.0037734663176228647,
+      "family_recall": 0.4080547864414563,
+      "fn": 2083,
+      "fp": 490,
+      "fpr": 0.002583761323729475,
+      "policy": "legacy_router_oof",
+      "recall": 0.46161798914448177,
+      "selection_counts": {
+        "hydra_local_gap": 1,
+        "minirocket_local_gap": 954
+      },
+      "tn": 189156,
+      "tp": 1786
+    },
+    {
+      "above_target": 182,
+      "cohort": "all_scoreable",
+      "datasets": 955,
+      "families": 125,
+      "family_fpr": 0.0037840856822518336,
+      "family_recall": 0.4023941952168242,
+      "fn": 2128,
+      "fp": 521,
+      "fpr": 0.002747223774822564,
+      "policy": "numeric_logistic_oof",
+      "recall": 0.4499870767640217,
+      "selection_counts": {
+        "hydra_local_gap": 27,
+        "minirocket_local_gap": 926,
+        "multirocket_local_gap": 2
+      },
+      "tn": 189125,
+      "tp": 1741
+    },
+    {
+      "above_target": 180,
+      "cohort": "all_scoreable",
+      "datasets": 955,
+      "families": 125,
+      "family_fpr": 0.0037734663176228647,
+      "family_recall": 0.4080547864414563,
+      "fn": 2083,
+      "fp": 490,
+      "fpr": 0.002583761323729475,
+      "policy": "gliclass_zero",
+      "recall": 0.46161798914448177,
+      "selection_counts": {
+        "minirocket_local_gap": 955
+      },
+      "tn": 189156,
+      "tp": 1786
+    },
+    {
+      "above_target": 180,
+      "cohort": "all_scoreable",
+      "datasets": 955,
+      "families": 125,
+      "family_fpr": 0.0037734663176228647,
+      "family_recall": 0.4080547864414563,
+      "fn": 2083,
+      "fp": 490,
+      "fpr": 0.002583761323729475,
+      "policy": "gliclass_lora_oof",
+      "recall": 0.46161798914448177,
+      "selection_counts": {
+        "minirocket_local_gap": 955
+      },
+      "tn": 189156,
+      "tp": 1786
+    },
+    {
+      "above_target": 10,
+      "cohort": "resolution_supported_n_ge_199",
+      "datasets": 177,
+      "families": 51,
+      "family_fpr": 0.001320826956785679,
+      "family_recall": 0.32237108141576076,
+      "fn": 1603,
+      "fp": 265,
+      "fpr": 0.0018926002899606483,
+      "policy": "minirocket_local_gap",
+      "recall": 0.4385288966725044,
+      "selection_counts": {
+        "minirocket_local_gap": 177
+      },
+      "tn": 139754,
+      "tp": 1252
+    },
+    {
+      "above_target": 14,
+      "cohort": "resolution_supported_n_ge_199",
+      "datasets": 177,
+      "families": 51,
+      "family_fpr": 0.0013593497071939262,
+      "family_recall": 0.2224812938499913,
+      "fn": 2036,
+      "fp": 257,
+      "fpr": 0.0018354651868674966,
+      "policy": "multirocket_local_gap",
+      "recall": 0.2868651488616462,
+      "selection_counts": {
+        "multirocket_local_gap": 177
+      },
+      "tn": 139762,
+      "tp": 819
+    },
+    {
+      "above_target": 10,
+      "cohort": "resolution_supported_n_ge_199",
+      "datasets": 177,
+      "families": 51,
+      "family_fpr": 0.001316898362899751,
+      "family_recall": 0.27511361782615407,
+      "fn": 1897,
+      "fp": 267,
+      "fpr": 0.001906884065733936,
+      "policy": "hydra_local_gap",
+      "recall": 0.33555166374781087,
+      "selection_counts": {
+        "hydra_local_gap": 177
+      },
+      "tn": 139752,
+      "tp": 958
+    },
+    {
+      "above_target": 10,
+      "cohort": "resolution_supported_n_ge_199",
+      "datasets": 177,
+      "families": 51,
+      "family_fpr": 0.001294149619183972,
+      "family_recall": 0.32237108141576076,
+      "fn": 1603,
+      "fp": 264,
+      "fpr": 0.0018854584020740043,
+      "policy": "current_service",
+      "recall": 0.4385288966725044,
+      "selection_counts": {
+        "hydra_local_gap": 2,
+        "minirocket_local_gap": 175
+      },
+      "tn": 139755,
+      "tp": 1252
+    },
+    {
+      "above_target": 10,
+      "cohort": "resolution_supported_n_ge_199",
+      "datasets": 177,
+      "families": 51,
+      "family_fpr": 0.001320826956785679,
+      "family_recall": 0.32237108141576076,
+      "fn": 1603,
+      "fp": 265,
+      "fpr": 0.0018926002899606483,
+      "policy": "legacy_router_oof",
+      "recall": 0.4385288966725044,
+      "selection_counts": {
+        "minirocket_local_gap": 177
+      },
+      "tn": 139754,
+      "tp": 1252
+    },
+    {
+      "above_target": 11,
+      "cohort": "resolution_supported_n_ge_199",
+      "datasets": 177,
+      "families": 51,
+      "family_fpr": 0.0013690859259365344,
+      "family_recall": 0.32810492645342704,
+      "fn": 1644,
+      "fp": 294,
+      "fpr": 0.002099715038673323,
+      "policy": "numeric_logistic_oof",
+      "recall": 0.42416812609457094,
+      "selection_counts": {
+        "hydra_local_gap": 24,
+        "minirocket_local_gap": 153
+      },
+      "tn": 139725,
+      "tp": 1211
+    },
+    {
+      "above_target": 10,
+      "cohort": "resolution_supported_n_ge_199",
+      "datasets": 177,
+      "families": 51,
+      "family_fpr": 0.001320826956785679,
+      "family_recall": 0.32237108141576076,
+      "fn": 1603,
+      "fp": 265,
+      "fpr": 0.0018926002899606483,
+      "policy": "gliclass_zero",
+      "recall": 0.4385288966725044,
+      "selection_counts": {
+        "minirocket_local_gap": 177
+      },
+      "tn": 139754,
+      "tp": 1252
+    },
+    {
+      "above_target": 10,
+      "cohort": "resolution_supported_n_ge_199",
+      "datasets": 177,
+      "families": 51,
+      "family_fpr": 0.001320826956785679,
+      "family_recall": 0.32237108141576076,
+      "fn": 1603,
+      "fp": 265,
+      "fpr": 0.0018926002899606483,
+      "policy": "gliclass_lora_oof",
+      "recall": 0.4385288966725044,
+      "selection_counts": {
+        "minirocket_local_gap": 177
+      },
+      "tn": 139754,
+      "tp": 1252
+    },
+    {
+      "above_target": 170,
+      "cohort": "resolution_limited_n_lt_199",
+      "datasets": 778,
+      "families": 85,
+      "family_fpr": 0.004930748255480924,
+      "family_recall": 0.43807731206260625,
+      "fn": 480,
+      "fp": 225,
+      "fpr": 0.004533822314465916,
+      "policy": "minirocket_local_gap",
+      "recall": 0.5266272189349113,
+      "selection_counts": {
+        "minirocket_local_gap": 778
+      },
+      "tn": 49402,
+      "tp": 534
+    },
+    {
+      "above_target": 171,
+      "cohort": "resolution_limited_n_lt_199",
+      "datasets": 778,
+      "families": 85,
+      "family_fpr": 0.005235116960337483,
+      "family_recall": 0.30668907845378435,
+      "fn": 594,
+      "fp": 253,
+      "fpr": 0.005098031313599452,
+      "policy": "multirocket_local_gap",
+      "recall": 0.41420118343195267,
+      "selection_counts": {
+        "multirocket_local_gap": 778
+      },
+      "tn": 49374,
+      "tp": 420
+    },
+    {
+      "above_target": 160,
+      "cohort": "resolution_limited_n_lt_199",
+      "datasets": 778,
+      "families": 85,
+      "family_fpr": 0.004019090817540632,
+      "family_recall": 0.31368668440727265,
+      "fn": 607,
+      "fp": 219,
+      "fpr": 0.004412920386080158,
+      "policy": "hydra_local_gap",
+      "recall": 0.40138067061143984,
+      "selection_counts": {
+        "hydra_local_gap": 778
+      },
+      "tn": 49408,
+      "tp": 407
+    },
+    {
+      "above_target": 169,
+      "cohort": "resolution_limited_n_lt_199",
+      "datasets": 778,
+      "families": 85,
+      "family_fpr": 0.004870724245877082,
+      "family_recall": 0.4383574241074242,
+      "fn": 479,
+      "fp": 224,
+      "fpr": 0.004513671993068289,
+      "policy": "current_service",
+      "recall": 0.5276134122287969,
+      "selection_counts": {
+        "hydra_local_gap": 35,
+        "minirocket_local_gap": 742,
+        "multirocket_local_gap": 1
+      },
+      "tn": 49403,
+      "tp": 535
+    },
+    {
+      "above_target": 170,
+      "cohort": "resolution_limited_n_lt_199",
+      "datasets": 778,
+      "families": 85,
+      "family_fpr": 0.004930748255480924,
+      "family_recall": 0.43807731206260625,
+      "fn": 480,
+      "fp": 225,
+      "fpr": 0.004533822314465916,
+      "policy": "legacy_router_oof",
+      "recall": 0.5266272189349113,
+      "selection_counts": {
+        "hydra_local_gap": 1,
+        "minirocket_local_gap": 777
+      },
+      "tn": 49402,
+      "tp": 534
+    },
+    {
+      "above_target": 171,
+      "cohort": "resolution_limited_n_lt_199",
+      "datasets": 778,
+      "families": 85,
+      "family_fpr": 0.004917409586680069,
+      "family_recall": 0.4263126061802533,
+      "fn": 484,
+      "fp": 227,
+      "fpr": 0.004574122957261169,
+      "policy": "numeric_logistic_oof",
+      "recall": 0.5226824457593688,
+      "selection_counts": {
+        "hydra_local_gap": 3,
+        "minirocket_local_gap": 773,
+        "multirocket_local_gap": 2
+      },
+      "tn": 49400,
+      "tp": 530
+    },
+    {
+      "above_target": 170,
+      "cohort": "resolution_limited_n_lt_199",
+      "datasets": 778,
+      "families": 85,
+      "family_fpr": 0.004930748255480924,
+      "family_recall": 0.43807731206260625,
+      "fn": 480,
+      "fp": 225,
+      "fpr": 0.004533822314465916,
+      "policy": "gliclass_zero",
+      "recall": 0.5266272189349113,
+      "selection_counts": {
+        "minirocket_local_gap": 778
+      },
+      "tn": 49402,
+      "tp": 534
+    },
+    {
+      "above_target": 170,
+      "cohort": "resolution_limited_n_lt_199",
+      "datasets": 778,
+      "families": 85,
+      "family_fpr": 0.004930748255480924,
+      "family_recall": 0.43807731206260625,
+      "fn": 480,
+      "fp": 225,
+      "fpr": 0.004533822314465916,
+      "policy": "gliclass_lora_oof",
+      "recall": 0.5266272189349113,
+      "selection_counts": {
+        "minirocket_local_gap": 778
+      },
+      "tn": 49402,
+      "tp": 534
+    }
+  ]
+}

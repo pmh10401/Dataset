@@ -1,0 +1,18 @@
+{
+  "state": "passed",
+  "datasets": 56,
+  "raw_test_rows": 114550,
+  "retained_test_rows": 114550,
+  "direct_policy_decisions_checked": 1510600,
+  "source_train_and_test_hashes_reloaded": true,
+  "original_role_indices_exact": true,
+  "saved_normal_score_replay_verified": true,
+  "fit_only_normalization_recomputed": true,
+  "strict_conformal_counts_verified": true,
+  "class_counts_and_rescue_loss_verified": true,
+  "independent_family_aggregation_and_bootstrap": true,
+  "labels_opened_after_global_freeze": true,
+  "model_refits_repeated": false,
+  "result_sha256": "b608210c9de18149ea3fa4addae232043a2333be951289be4263534204e992d9",
+  "promoted": false
+}

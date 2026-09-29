@@ -1,0 +1,40 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Exp526 실험 후보 활용</title><style>body{font:16px/1.7 system-ui,sans-serif;max-width:1050px;margin:36px auto;padding:0 24px;color:#17212b;background:#fafbf9}h1,h2{line-height:1.3}h2{margin-top:32px}table{width:100%;border-collapse:collapse;background:white}td,th{border-bottom:1px solid #d9e1e1;padding:10px;text-align:left}th{background:#e9f0ed}pre{background:#eaf0ef;padding:16px;overflow:auto}a{color:#07675b}.note{border-left:4px solid #cb922b;padding:10px 16px;background:#fff5dc}code{font-family:monospace}a[data-unpublished]::after{content:" [미게시]";font-size:.85em;color:#666}</style></head><body>
+<aside class="publication-note" style="padding:14px;margin:12px;border:1px solid #b9c9dc;background:#f2f6fa;color:#172438">연구 보고서의 정적 게시 사본입니다. 본문은 당시 결과이며 현재 배포 상태를 뜻하지 않습니다. 링크를 저장소 기준으로 바꾸고 실행 스크립트와 미게시 그림을 제외했습니다. 실시간 진행 표시·대화형 기능은 갱신되지 않습니다. <a href="../sources_antigravity.html#s-reuse526">원본 경로·해시·게시 사본 정보</a></aside><h1>Exp526을 0.5% 실험 후보로 활용</h1>
+<p>Exp526의 동결 점수와 판정을 다음 연구에서 바로 불러올 수 있습니다. 기본 선택은 Exp502이고, Exp526은 <strong>목표 오탐률 0.5%에서 명시적으로 선택하는 실험 후보</strong>입니다. 학습된 모델 파일을 배포하거나 기본 운영 모델로 승격한 것은 아닙니다.</p>
+<h2>현재 활용할 수 있는 결과</h2><p>기존 TEST 56개 데이터셋·14계열·114,550행(정상 112,259행, 이상 2,291행)의 결과입니다. 이번 작업은 기존 결과 재사용 기능이며 새 실험으로 얻은 개선이 아닙니다.</p>
+<table><thead><tr><th>목표 오탐률 0.5%</th><th>Exp502</th><th>Exp526</th></tr></thead><tbody><tr><td>계열평균 탐지율</td><td>33.759%</td><td>34.751%</td></tr><tr><td>탐지한 이상</td><td>828</td><td>882</td></tr><tr><td>전체 오탐</td><td>269</td><td>264</td></tr><tr><td>전체 오탐률</td><td>0.240%</td><td>0.235%</td></tr><tr><td>계열평균 오탐률</td><td>0.178%</td><td>0.181%</td></tr><tr><td>실제 오탐률이 0.5%를 넘은 데이터셋</td><td>4</td><td>4</td></tr></tbody></table>
+<p>추가 탐지 58건, 새 미탐 4건으로 순증 54건입니다. 추가 오탐 142건과 제거된 오탐 147건이 함께 있으므로, 이 결과를 단순 OR 결합의 성능으로 해석하면 안 됩니다.</p>
+<p class="note">탐지율 차이는 +0.992%p이며, 계열 단위 bootstrap 2,000회(시드 20260922)의 95% 구간은 [-0.028, +2.778]%p입니다. 0을 포함하므로 개선 확정은 아닙니다. 순증 탐지 54건 중 52건이 Crop 계열에서 발생했습니다. Crop만 선택해 적용하지 않습니다. 모든 데이터셋에서 실제 오탐률 0.5% 이하를 보장하지 않습니다.</p>
+<h2>사용 범위</h2><ul><li>Exp502: 기본 비교 모델. 기존 0.1%·0.5%·1% 임계값을 그대로 사용합니다.</li><li>Exp526: 0.5%에서만 명시적으로 선택할 수 있습니다. 다른 예산에서는 오류로 중단하며 모델을 자동 변경하지 않습니다.</li><li>0.1%에서 Exp502가 평가 가능한 집단은 5개 데이터셋·4계열입니다. 나머지 51개는 <code>unavailable</code>이며 판정을 빈칸으로 내보냅니다.</li><li>새 시계열 입력이나 새로운 행은 지원하지 않습니다. 학습된 모델 파일이 없으므로 이 도구는 원시 데이터 추론기가 아닙니다.</li></ul>
+<p>0.1%의 5개 평가 가능 데이터셋에서 계열평균 탐지율은 Exp502 19.58%, Exp526 3.09%였습니다. 1%의 56개 집단에서도 43.609%→43.502%로 소폭 낮아졌습니다. 0.5%의 개선을 다른 예산으로 일반화하지 않습니다. 이미 본 TEST 결과를 보고 후보로 보존한 판단 자체도 탐색적입니다.</p>
+<h2>바로 사용할 파일</h2><ul>
+<li><a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">Exp526 · 0.5% · 114,550행 판정 CSV</a> / <a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">지표·원본 해시·데이터셋별 임계값</a></li>
+<li><a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">Exp502 · 0.5% · 114,550행 판정 CSV</a> / <a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">비교 기준의 지표와 출처</a></li>
+<li><a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">실험 후보 정의와 사용 제한</a></li>
+<li><a href="e526_antigravity.html">원래 Exp526 실험 보고서</a></li></ul>
+<p>CSV에는 데이터셋, 계열, 원본 행 ID, 모델, 오탐 예산, 저장된 점수, 임계값, 판정, 적용 가능 상태가 들어 있습니다. TEST 라벨과 원본 시계열은 포함하지 않습니다. 행 식별자는 데이터셋 이름과 행 ID의 쌍입니다.</p>
+<h2>실행 방법</h2><p>다음 명령은 프로젝트의 해당 worktree 루트에서 실행합니다. 요약 조회는 파일을 생성하지 않습니다.</p>
+<pre>cd '/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity'
+
+# 기본: Exp502, 0.5%
+.venv/bin/python -m experiments.exp526_candidate_reuse_antigravity.reuse_antigravity
+
+# Exp526 실험 후보, 0.5%
+.venv/bin/python -m experiments.exp526_candidate_reuse_antigravity.reuse_antigravity --model exp526 --alpha 0.005
+
+# 엄격한 예산: Exp502, 0.1%; 부족한 보정 표본은 unavailable
+.venv/bin/python -m experiments.exp526_candidate_reuse_antigravity.reuse_antigravity --model exp502 --alpha 0.001
+
+# 검증
+.venv/bin/python -m unittest -v experiments.exp526_candidate_reuse_antigravity.test_reuse_antigravity</pre>
+<p><code>--export</code>를 붙이면 별도 폴더에 CSV·출처 JSON을 생성합니다. 이미 생성된 파일은 덮어쓰지 않습니다. 위의 0.5% 파일 두 쌍은 준비되어 있으므로 링크로 이용하면 됩니다.</p>
+<h2>다음 연구 코드에서 재사용</h2><pre>from experiments.exp526_candidate_reuse_antigravity.reuse_antigravity import load_candidate
+
+reference, reference_info = load_candidate()  # Exp502, 0.5%
+candidate, candidate_info = load_candidate('exp526', '0.005')
+# 각 항목: dataset, family, row_ids, scores, threshold, decision, status
+# decision=None은 평가 불가능이며 정상 판정이 아닙니다.</pre>
+<p>계열평균 지표는 데이터셋별 비율을 계열 안에서 평균한 뒤 계열을 같은 비중으로 평균합니다. 전체 오탐률은 평가 가능한 정상 행 전체를 분모로 사용합니다. 집단이 다른 예산의 지표를 같은 집단처럼 비교하지 않습니다.</p>
+<h2>보존과 검증</h2><p>원본 Exp526 코드·점수·임계값·라벨 접근 경계는 유지합니다. 재사용 도구는 원본 DB와 라벨을 읽거나 모델을 실행하지 않고, 완료 상태·해시·행 ID·임계값을 확인합니다. 독립 테스트는 저장된 라벨을 이용해 판정을 검산합니다. 원본 자료가 없거나 달라지면 재계산으로 복구하지 않고 중단합니다.</p>
+<ul><li><a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">재사용 기능 검증 기록</a></li><li><a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">Pro 범위 검토</a></li><li><a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">독립 코드 검토 기록</a></li><li><a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">재사용 코드맵</a></li></ul>
+</body></html>

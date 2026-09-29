@@ -1,0 +1,228 @@
+{
+  "catalog_count": 1119,
+  "common_miss_bins": [
+    694,
+    200,
+    540,
+    283
+  ],
+  "distribution": {
+    "hydra_local_gap": {
+      "datasets": 955,
+      "median_shift_q50": -1.0205837598087864,
+      "median_shift_q90": -0.6802061057319216,
+      "scale_floor_datasets": 0,
+      "supported_tail_datasets": 26,
+      "supported_threshold_above_test_q995": 23,
+      "test_q50_lower": 953,
+      "test_q90_lower": 942,
+      "threshold_support_one": 847
+    },
+    "minirocket_local_gap": {
+      "datasets": 955,
+      "median_shift_q50": -1.0082070608538276,
+      "median_shift_q90": -0.6351041890568813,
+      "scale_floor_datasets": 0,
+      "supported_tail_datasets": 26,
+      "supported_threshold_above_test_q995": 25,
+      "test_q50_lower": 952,
+      "test_q90_lower": 942,
+      "threshold_support_one": 847
+    },
+    "multirocket_local_gap": {
+      "datasets": 955,
+      "median_shift_q50": -0.617177469456823,
+      "median_shift_q90": -0.7028918503880657,
+      "scale_floor_datasets": 0,
+      "supported_tail_datasets": 26,
+      "supported_threshold_above_test_q995": 24,
+      "test_q50_lower": 952,
+      "test_q90_lower": 943,
+      "threshold_support_one": 847
+    },
+    "selected": {
+      "datasets": 955,
+      "median_shift_q50": -1.00969897215881,
+      "median_shift_q90": -0.6339206495365184,
+      "scale_floor_datasets": 0,
+      "supported_tail_datasets": 26,
+      "supported_threshold_above_test_q995": 25,
+      "test_q50_lower": 952,
+      "test_q90_lower": 944,
+      "threshold_support_one": 847
+    }
+  },
+  "evaluated_datasets": 955,
+  "groups": [
+    {
+      "alpha": 0.001,
+      "cohort": "all",
+      "datasets": 955,
+      "families": 125,
+      "family_fpr": 0.003525659883118406,
+      "family_recall": 0.37723276508466336,
+      "fn": 2518,
+      "fp": 317,
+      "fpr": 0.0016715353869841704,
+      "recall": 0.3491858361333678,
+      "tn": 189329,
+      "tp": 1351
+    },
+    {
+      "alpha": 0.001,
+      "cohort": "resolution_supported",
+      "datasets": 26,
+      "families": 12,
+      "family_fpr": 0.00028852706894311224,
+      "family_recall": 0.19078511657565345,
+      "fn": 956,
+      "fp": 28,
+      "fpr": 0.0004649540857840288,
+      "recall": 0.22213181448331978,
+      "tn": 60193,
+      "tp": 273
+    },
+    {
+      "alpha": 0.001,
+      "cohort": "resolution_limited",
+      "datasets": 929,
+      "families": 118,
+      "family_fpr": 0.003717582301715769,
+      "family_recall": 0.39135355014529993,
+      "fn": 1562,
+      "fp": 289,
+      "fpr": 0.002232953447942824,
+      "recall": 0.4083333333333333,
+      "tn": 129136,
+      "tp": 1078
+    },
+    {
+      "alpha": 0.005,
+      "cohort": "all",
+      "datasets": 955,
+      "families": 125,
+      "family_fpr": 0.003721765637350756,
+      "family_recall": 0.4082452626319325,
+      "fn": 2082,
+      "fp": 488,
+      "fpr": 0.002573215359142824,
+      "recall": 0.4618764538640476,
+      "tn": 189158,
+      "tp": 1787
+    },
+    {
+      "alpha": 0.005,
+      "cohort": "resolution_supported",
+      "datasets": 177,
+      "families": 51,
+      "family_fpr": 0.001294149619183972,
+      "family_recall": 0.32237108141576076,
+      "fn": 1603,
+      "fp": 264,
+      "fpr": 0.0018854584020740043,
+      "recall": 0.4385288966725044,
+      "tn": 139755,
+      "tp": 1252
+    },
+    {
+      "alpha": 0.005,
+      "cohort": "resolution_limited",
+      "datasets": 778,
+      "families": 85,
+      "family_fpr": 0.004870724245877082,
+      "family_recall": 0.4383574241074242,
+      "fn": 479,
+      "fp": 224,
+      "fpr": 0.004513671993068289,
+      "recall": 0.5276134122287969,
+      "tn": 49403,
+      "tp": 535
+    },
+    {
+      "alpha": 0.01,
+      "cohort": "all",
+      "datasets": 955,
+      "families": 125,
+      "family_fpr": 0.004160617923856202,
+      "family_recall": 0.4487577257863864,
+      "fn": 1757,
+      "fp": 724,
+      "fpr": 0.003817639180367632,
+      "recall": 0.5458774877229258,
+      "tn": 188922,
+      "tp": 2112
+    },
+    {
+      "alpha": 0.01,
+      "cohort": "resolution_supported",
+      "datasets": 252,
+      "families": 69,
+      "family_fpr": 0.0019496852464209941,
+      "family_recall": 0.40309106971600767,
+      "fn": 1423,
+      "fp": 510,
+      "fpr": 0.0033666699673234974,
+      "recall": 0.5393331175137585,
+      "tn": 150975,
+      "tp": 1666
+    },
+    {
+      "alpha": 0.01,
+      "cohort": "resolution_limited",
+      "datasets": 703,
+      "families": 76,
+      "family_fpr": 0.005862276644109035,
+      "family_recall": 0.44970685271247673,
+      "fn": 334,
+      "fp": 214,
+      "fpr": 0.005607819501585388,
+      "recall": 0.5717948717948718,
+      "tn": 37947,
+      "tp": 446
+    }
+  ],
+  "manifest_sha256": "4b4c9b6dbbc9375e85748808c9c0a709131b831e57fc1961143b077abc483740",
+  "misses": {
+    "common_fn": 1717,
+    "none_favorable": 1023,
+    "other_only_favorable": 188,
+    "other_source_detects": 365,
+    "selected_favorable": 506,
+    "service_fn": 2082
+  },
+  "seeds": {
+    "hydra_local_gap": {
+      "both_seed_alarm_final_miss_anomaly": 0,
+      "both_seed_alarm_final_miss_normal": 0,
+      "final_alarm_neither_seed_anomaly": 32,
+      "final_alarm_neither_seed_normal": 23,
+      "median_iqr_ratio": 1.156505652141723
+    },
+    "minirocket_local_gap": {
+      "both_seed_alarm_final_miss_anomaly": 3,
+      "both_seed_alarm_final_miss_normal": 0,
+      "final_alarm_neither_seed_anomaly": 35,
+      "final_alarm_neither_seed_normal": 28,
+      "median_iqr_ratio": 1.1029339672141032
+    },
+    "multirocket_local_gap": {
+      "both_seed_alarm_final_miss_anomaly": 2,
+      "both_seed_alarm_final_miss_normal": 0,
+      "final_alarm_neither_seed_anomaly": 76,
+      "final_alarm_neither_seed_normal": 34,
+      "median_iqr_ratio": 1.2280343194790146
+    },
+    "selected": {
+      "both_seed_alarm_final_miss_anomaly": 3,
+      "both_seed_alarm_final_miss_normal": 0,
+      "final_alarm_neither_seed_anomaly": 35,
+      "final_alarm_neither_seed_normal": 28,
+      "median_iqr_ratio": 1.1038143383273726
+    }
+  },
+  "status_counts": {
+    "completed": 955,
+    "failed": 1,
+    "unavailable": 163
+  }
+}

@@ -1,0 +1,28 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>공유 점수 경로 리팩터링 검증</title>
+<style>body{font:16px/1.7 system-ui,sans-serif;max-width:980px;margin:40px auto;padding:0 24px;color:#172b3a}h1{font-size:29px}h2{font-size:21px;margin-top:30px}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:10px;border-bottom:1px solid #dce2e8}th{background:#eef3f6}.result{background:#eaf5ee;padding:18px;border-left:4px solid #29734c}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f0f3f6;padding:16px;font-size:13px}a{color:#175c99}code{overflow-wrap:anywhere}a[data-unpublished]::after{content:" [미게시]";font-size:.85em;color:#666}</style></head><body>
+<small>2026-09-25 · Ponytail full · 현재 공유 계산 코어의 리팩터링</small><aside class="publication-note" style="padding:14px;margin:12px;border:1px solid #b9c9dc;background:#f2f6fa;color:#172438">연구 보고서의 정적 게시 사본입니다. 본문은 당시 결과이며 현재 배포 상태를 뜻하지 않습니다. 링크를 저장소 기준으로 바꾸고 실행 스크립트와 미게시 그림을 제외했습니다. 실시간 진행 표시·대화형 기능은 갱신되지 않습니다. <a href="../sources_antigravity.html#s-refactor">원본 경로·해시·게시 사본 정보</a></aside><h1>수식을 유지하고 계산 흐름을 정리했다</h1>
+<p class="result"><strong>회귀 검사 193개 통과.</strong> 전체 1,119개 데이터셋을 점검했고, 비교 가능한 1,117개의 TRAIN 표본에서 두 점수의 최대 오차는 0이었다. 순위와 엄격한 &gt; 판정도 일치했다.</p>
+<h2>변경한 부분</h2><table><tr><th>위치</th><th>변경</th></tr>
+<tr><td>기본 LocalGap 경로</td><td>OOF에서 사용하던 <code>_score_chunks</code>를 full-reference 계산에서도 재사용한다.</td></tr>
+<tr><td>공유 amplitude 경로</td><td>기본 경로를 먼저 반환하고, 나머지 루프에서는 amplitude를 계산한다. 루프 안 조건문은 2개에서 1개로 줄었다.</td></tr>
+<tr><td>LocalGap 모델</td><td>학습 중에만 필요한 이웃 모델과 이웃 수를 객체에 계속 보관하지 않는다. 최소 2행 조건상 도달하지 않는 단일 이웃 분기를 제거했다.</td></tr>
+<tr><td>내부 입력 검사</td><td>점수를 하나도 요청하지 않은 호출을 계산 전에 거부한다.</td></tr></table>
+<p>공개 함수와 반환형, 시드, 최대 1,000행 참조 선택, 5개 OOF 분할, 128행 청크, score 수식 및 기존 경보 정책은 유지했다. 기존 보호용 입력 검사와 출력 배열의 불변성도 유지했다.</p>
+<h2>검증 결과</h2><table><tr><th>검사</th><th>결과</th></tr>
+<tr><td>서비스 회귀</td><td>193개 통과 / 64.686초. 기존 3개 점수원·두 시드와 자동 경보 기대값 포함.</td></tr>
+<tr><td>작은 참조와 동점</td><td>2·3·4행 참조의 LocalGap 결과가 원본과 정확히 일치. 1행은 기존처럼 거부.</td></tr>
+<tr><td>전체 카탈로그</td><td>1,117개 통과 / 2개 비교 불가 / 불일치 0. 전체 기록이 리팩터링 전 카탈로그 기록과 동일.</td></tr>
+<tr><td>제외 사유</td><td>Phoneme_normal_10은 정상 TRAIN 2행, Phoneme_normal_39는 1행이어서 독립 FIT·query를 구성할 수 없음. 비유한 TRAIN 164행의 제외 ID도 이전과 동일.</td></tr>
+<tr><td>가속 경로</td><td>기존 CPU 유지. 첫 실행 포함 4회 총시간: NumPy 1.261초, Numba 1.501초, PyTorch CPU 1.276초. MLX·MPS의 float64 GPU 연산은 지원되지 않음.</td></tr>
+<tr><td>독립 검토·코드맵</td><td>AGY 코드 검토에서 차단 문제 없음. Codex가 수치·회귀 검사를 확인하고 코드맵 해시를 갱신.</td></tr></table>
+<p><strong>범위:</strong> 카탈로그 검사는 데이터셋당 최대 16행 FIT와 겹치지 않는 최대 4행 query를 정상 TRAIN에서 뽑았다. TEST 값이나 라벨을 읽지 않았다. 기존 서비스 회귀 검사에는 4개 대표 데이터셋의 TEST 결과 검사가 별도로 포함된다. 전체 행의 탐지율·오탐률 재평가는 수행하지 않았다.</p>
+<p>이전 보고서의 약 38% 시간 절감은 최초 공유 계산 구현의 고정 입력 벤치마크 결과다. 이번 리팩터링에서 추가 속도 또는 메모리 개선을 주장하지 않는다. 새 점수의 운영 경보 활성화도 포함하지 않는다.</p>
+<h2>변경 파일과 재현</h2><p><a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">score_sources.py</a> · <a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">LocalGap 회귀 검사</a> · <a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">공유 경로 검사</a> · <a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">코드맵</a></p>
+<p>작업 공간: <code>/Users/mac/.codex/worktrees/shared-score-integration-antigravity/Time Series</code>. 아래 명령은 이 디렉터리에서 실행한다. 카탈로그 출력에는 새 파일명을 사용한다.</p><pre>python3 -m unittest discover -s services/time_series_anomaly_diagnosis/tests
+python3 services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+python3 -m services.time_series_anomaly_diagnosis.tools.verify_shared_scores catalog \
+  --research-root &#x27;/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity&#x27; \
+  --database /Users/mac/Documents/Dataset/univariate_ts.db \
+  --output /tmp/shared_refactor_catalog_antigravity.json</pre>
+<p><a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">이번 검증의 전체 기록·해시·변경 diff</a> · <a href="shared_antigravity.html">이전 공유 계산 구현 보고서</a></p>
+</body></html>

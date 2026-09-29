@@ -1,0 +1,13 @@
+{
+  "state": "passed",
+  "common_miss_row_ids": 1340,
+  "datasets": 56,
+  "families": 14,
+  "direct_tail_counts_checked": 8040,
+  "all_label_alignment_reused_from_hash_verified_exp521": true,
+  "independent_bins_and_family_aggregation": true,
+  "deterministic_cases": 12,
+  "waveform_hashes_and_preprocessing": true,
+  "result_sha256": "7329e9c7836486d77f2fbe0920a912ad089e301f3eb0fc63628c9a720d176146",
+  "promoted": false
+}

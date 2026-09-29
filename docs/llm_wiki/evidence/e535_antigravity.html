@@ -1,0 +1,38 @@
+<!doctype html><html lang='ko'><meta charset='utf-8'><title>Exp535 동결 점수 비교</title>
+<style>body{font:16px/1.55 system-ui;max-width:1080px;margin:2rem auto;padding:0 1rem;color:#18222e}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccd;padding:.42rem;text-align:right}td:first-child,th:first-child{text-align:left}h1,h2{line-height:1.2}.note{background:#f5f6e9;padding:1rem}a[data-unpublished]::after{content:" [미게시]";font-size:.85em;color:#666}</style>
+<aside class="publication-note" style="padding:14px;margin:12px;border:1px solid #b9c9dc;background:#f2f6fa;color:#172438">연구 보고서의 정적 게시 사본입니다. 본문은 당시 결과이며 현재 배포 상태를 뜻하지 않습니다. 링크를 저장소 기준으로 바꾸고 실행 스크립트와 미게시 그림을 제외했습니다. 실시간 진행 표시·대화형 기능은 갱신되지 않습니다. <a href="../sources_antigravity.html#s-e535">원본 경로·해시·게시 사본 정보</a></aside><h1>Exp535: 두 분기의 동결 점수 직접 비교</h1>
+<p class='note'>동일 원본 1,119개를 장부에 포함했습니다. 기존 TEST는 이미 노출됐으므로 모든 수치는 탐색적입니다. 재학습·임계값 재조정·운영 승격은 없습니다.</p>
+<p class='note'><strong>결론:</strong> Exp502 후보 점수는 공통 955개 순위 진단에서 기존 MiniRocket보다 높았지만(계열평균 +3.01%p, bootstrap 95% 구간 +0.50~+5.47%p), 서비스의 저장된 경로 점수와의 차이는 +1.14%p이고 구간이 −1.47~+3.52%p로 0을 포함합니다. 실제 경보 비교가 가능한 55개에서 서비스가 이상을 48개 더 찾았으나 오탐도 51개 더 냈고, 계열평균 탐지율 차이의 구간이 0을 포함합니다. 따라서 어느 갈래를 운영상 개선으로 확정하거나 교체할 근거는 없습니다.</p>
+<h2>대상과 비교 경계</h2><p>서비스 점수 955개, 독립 보정된 Exp521 56개, 두 조건이 겹치는 55개입니다. 나머지 서비스 미평가 164개는 정상 TRAIN 5개 미만 161개, 상수열 1개, 기존 경로표 밖 2개입니다. Exp502 독립 보정 불가 집단은 성공이나 오탐 0으로 계산하지 않았습니다. <a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">1,119개 전체 장부</a>에 각 데이터셋의 적용 가능 여부를 기록했습니다.</p>
+<p>서비스 현행 자동 경보의 기준은 <strong>0.5%</strong>뿐입니다. 0.1%와 1% 표의 p-floor 열은 같은 계산 방식을 그 예산에 가정해 적용한 보조 반사실적 수치이며, 현재 서비스의 실제 정책 결과가 아닙니다.</p>
+<h2>주평가 0.5%: 같은 55개 내 가능한 대상</h2><table><tr><th>방법</th><th>데이터셋</th><th>계열평균 탐지율</th><th>전체 탐지율</th><th>전체 오탐률</th><th>TP</th><th>FP</th><th>목표 초과 데이터셋</th></tr>
+<tr><td>Exp502 독립 CAL</td><td>55</td><td>36.34%</td><td>45.36%</td><td>0.17%</td><td>827</td><td>156</td><td>4</td></tr>
+<tr><td>서비스 엄격 p</td><td>55</td><td>44.84%</td><td>48.00%</td><td>0.23%</td><td>875</td><td>207</td><td>5</td></tr>
+<tr><td>서비스 현재 p-floor</td><td>55</td><td>44.84%</td><td>48.00%</td><td>0.23%</td><td>875</td><td>207</td><td>5</td></tr>
+</table>
+<p>Exp502 대비 엄격 p: 추가 탐지 187, 놓친 탐지 139, 추가 오탐 155, 제거 오탐 104.</p>
+<p>Exp502 대비 현재 p-floor: 추가 탐지 187, 놓친 탐지 139, 추가 오탐 155, 제거 오탐 104.</p>
+<p>같은 55개에서 계열평균 오탐률은 Exp502 0.154%, 서비스 엄격 p·p-floor 0.198%입니다.</p>
+<h2>보조 0.1%: 같은 55개 내 가능한 대상</h2><table><tr><th>방법</th><th>데이터셋</th><th>계열평균 탐지율</th><th>전체 탐지율</th><th>전체 오탐률</th><th>TP</th><th>FP</th><th>목표 초과 데이터셋</th></tr>
+<tr><td>Exp502 독립 CAL</td><td>4</td><td>26.04%</td><td>21.95%</td><td>0.01%</td><td>90</td><td>3</td><td>0</td></tr>
+<tr><td>서비스 엄격 p</td><td>4</td><td>30.15%</td><td>28.05%</td><td>0.09%</td><td>115</td><td>18</td><td>1</td></tr>
+<tr><td>서비스 p-floor 가정</td><td>4</td><td>30.15%</td><td>28.05%</td><td>0.09%</td><td>115</td><td>18</td><td>1</td></tr>
+</table>
+<h2>보조 1%: 같은 55개 내 가능한 대상</h2><table><tr><th>방법</th><th>데이터셋</th><th>계열평균 탐지율</th><th>전체 탐지율</th><th>전체 오탐률</th><th>TP</th><th>FP</th><th>목표 초과 데이터셋</th></tr>
+<tr><td>Exp502 독립 CAL</td><td>55</td><td>46.86%</td><td>54.85%</td><td>0.51%</td><td>1000</td><td>453</td><td>3</td></tr>
+<tr><td>서비스 엄격 p</td><td>55</td><td>59.69%</td><td>59.02%</td><td>0.43%</td><td>1076</td><td>388</td><td>3</td></tr>
+<tr><td>서비스 p-floor 가정</td><td>55</td><td>59.69%</td><td>59.02%</td><td>0.43%</td><td>1076</td><td>388</td><td>3</td></tr>
+</table>
+<h2>서비스가 평가 가능한 955개: 현재 정책 재생</h2><table><tr><th>방법</th><th>계열평균 탐지율</th><th>전체 탐지율</th><th>전체 오탐률</th><th>TP</th><th>FP</th><th>목표 초과 데이터셋</th></tr>
+<tr><td>엄격 0.5%</td><td>11.52%</td><td>32.36%</td><td>0.14%</td><td>1252</td><td>264</td><td>10</td></tr>
+<tr><td>현재 p-floor 자동</td><td>40.82%</td><td>46.19%</td><td>0.26%</td><td>1787</td><td>488</td><td>179</td></tr>
+</table><p>p-floor는 0.5%를 달성할 수 없는 표본에서도 최소 p값을 자동 경보로 승격합니다. 엄격 규칙 대비 TP +535, FP +224이지만, 데이터셋별 목표 초과가 10개에서 179개로 늘었습니다. 계열평균 오탐률은 0.047%→0.372%입니다. 전체 오탐률이 0.5% 이내라는 사실만으로 각 데이터셋의 낮은 오탐이 보장되지는 않습니다. 저장 p값과 현행 코드 규칙으로 재생했으며 현재 서비스 전체 호출을 실행한 수치는 아닙니다.</p>
+<h2>955개 전체: 순위 진단</h2><p>이 표의 경계는 TEST 정상 점수에서 정했으므로 운영 탐지율·보장 오탐률이 아닙니다.</p><table><tr><th>점수</th><th>계열평균 탐지율</th><th>전체 탐지율</th><th>전체 오탐률</th><th>TP</th><th>FP</th></tr>
+<tr><td>Exp502 저장 MiniRocket</td><td>58.49%</td><td>60.97%</td><td>0.31%</td><td>2359</td><td>582</td></tr>
+<tr><td>Exp502 후보</td><td>61.50%</td><td>64.82%</td><td>0.31%</td><td>2508</td><td>587</td></tr>
+<tr><td>서비스 저장 경로 점수</td><td>60.37%</td><td>63.81%</td><td>0.31%</td><td>2469</td><td>587</td></tr>
+</table><h2>해석</h2><p>같은 행에서 TP·FP를 비교했습니다. 독립 보정 집단은 55개로 제한되며, 순위 진단의 955개 결과를 운영상 개선으로 해석해서는 안 됩니다. 보관된 검토 P1/P2/P3는 현재 자동 경보와 겹친 항목을 제외해 별도 JSON에 남겼습니다.</p>
+<p>55개 계열 bootstrap 2,000회: 서비스 엄격 p − Exp502 계열평균 탐지율 차이 +8.50%p, 95% 구간 −0.05~+17.97%p. 공통 55개에서는 p-floor와 엄격 p가 같은 판정을 냈습니다. 이미 노출된 TEST의 불확실성 참고치이며, 두 경보 방식은 서로 다른 TRAIN 보정 절차를 사용합니다.</p>
+<p>서비스의 보관된 P1/P2/P3 검토 후보 중 현재 p-floor 자동 경보와 겹친 행을 제외하면 각각 TP/FP가 8/5, 23/20, 273/383입니다. 단계별 목록은 서로 중복될 수 있으므로 더해서 단일 운영 규칙의 성능으로 해석하지 않습니다.</p>
+<p>순위 진단 955개에서 Exp502 후보 − 서비스 경로 점수의 계열평균 차이는 +1.14%p, 95% 구간 −1.47~+3.52%p입니다. 순위 진단은 TEST 정상 점수로 예산을 맞춘 사후 분석이며, 실제 배포 임계값의 성능이 아닙니다.</p>
+<p><a href="r535_antigravity.json">전체 결과 JSON</a> · <a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">데이터셋별 CSV</a> · <a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">전체 적용 장부</a> · <a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">동결·해시 기록</a> · <a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">독립 검산</a> · <a data-unpublished="true" title="로컬 자료 또는 실행 주소 · 이번 문서 게시에 포함하지 않음">분기점 분석</a></p></html>

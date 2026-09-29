@@ -1,0 +1,395 @@
+{
+  "status": "passed",
+  "catalog": 1119,
+  "completed": 950,
+  "confusion_matrices_direct_checked": 8550,
+  "aggregate_groups": 24,
+  "common_miss_datasets": 949,
+  "common_miss_recovered": {
+    "euclidean_3nn": 120,
+    "sbd_3nn": 129,
+    "dtw_3nn": 125
+  },
+  "exclusions": [
+    {
+      "dataset": "DodgerLoopDay_normal_1",
+      "split": "TEST",
+      "indices": [
+        5,
+        20,
+        34
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "DodgerLoopDay_normal_2",
+      "split": "TEST",
+      "indices": [
+        2,
+        12,
+        16,
+        31
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "DodgerLoopDay_normal_4",
+      "split": "TEST",
+      "indices": [
+        6,
+        7,
+        25,
+        30,
+        39,
+        41
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "DodgerLoopDay_normal_5",
+      "split": "TEST",
+      "indices": [
+        0,
+        2,
+        5,
+        7,
+        10,
+        18,
+        20,
+        24,
+        31,
+        34,
+        35,
+        45
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "DodgerLoopDay_normal_6",
+      "split": "TEST",
+      "indices": [
+        15,
+        18,
+        36,
+        46
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "DodgerLoopDay_normal_7",
+      "split": "TEST",
+      "indices": [
+        5,
+        23,
+        28,
+        31,
+        39
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "DodgerLoopGame_normal_1",
+      "split": "TEST",
+      "indices": [
+        2,
+        20,
+        36
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "DodgerLoopGame_normal_2",
+      "split": "TEST",
+      "indices": [
+        15,
+        20,
+        37,
+        38,
+        39
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "DodgerLoopWeekend_normal_1",
+      "split": "TEST",
+      "indices": [
+        4,
+        10,
+        14,
+        19,
+        33,
+        42,
+        44,
+        50,
+        55,
+        59,
+        63,
+        65,
+        73,
+        83,
+        85
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "DodgerLoopWeekend_normal_2",
+      "split": "TEST",
+      "indices": [
+        8,
+        38
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "MelbournePedestrian_normal_1",
+      "split": "TEST",
+      "indices": [
+        39,
+        119,
+        242
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "MelbournePedestrian_normal_10",
+      "split": "TEST",
+      "indices": [
+        61,
+        64,
+        348
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "MelbournePedestrian_normal_2",
+      "split": "TEST",
+      "indices": [
+        14,
+        62,
+        88,
+        119,
+        199,
+        223,
+        233,
+        241,
+        249,
+        343
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "MelbournePedestrian_normal_3",
+      "split": "TEST",
+      "indices": [
+        0,
+        3,
+        17,
+        26,
+        36,
+        39,
+        51,
+        57,
+        60,
+        81,
+        110,
+        115,
+        119,
+        137,
+        171,
+        180,
+        200,
+        218,
+        228,
+        229,
+        238,
+        273,
+        282,
+        301
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "MelbournePedestrian_normal_4",
+      "split": "TEST",
+      "indices": [
+        83
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "MelbournePedestrian_normal_5",
+      "split": "TEST",
+      "indices": [
+        93,
+        137
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "MelbournePedestrian_normal_6",
+      "split": "TEST",
+      "indices": [
+        27,
+        48,
+        108,
+        114,
+        123,
+        145,
+        206,
+        228,
+        295,
+        346,
+        348
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "MelbournePedestrian_normal_7",
+      "split": "TEST",
+      "indices": [
+        131,
+        255,
+        346
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "MelbournePedestrian_normal_8",
+      "split": "TEST",
+      "indices": [
+        5,
+        6,
+        11,
+        18,
+        24,
+        30,
+        31,
+        37,
+        40,
+        54,
+        57,
+        65,
+        75,
+        81,
+        87,
+        102,
+        116,
+        121,
+        124,
+        139,
+        144,
+        146,
+        147,
+        150,
+        153,
+        177,
+        197,
+        217,
+        220,
+        227,
+        233,
+        244,
+        246,
+        258,
+        266,
+        268,
+        275,
+        288,
+        292,
+        294,
+        298,
+        301,
+        311,
+        322,
+        330,
+        335,
+        340
+      ],
+      "reason": "nonfinite raw row"
+    },
+    {
+      "dataset": "MelbournePedestrian_normal_9",
+      "split": "TEST",
+      "indices": [
+        3,
+        7,
+        9,
+        32,
+        37,
+        39,
+        44,
+        45,
+        47,
+        57,
+        59,
+        61,
+        65,
+        67,
+        71,
+        72,
+        73,
+        78,
+        81,
+        84,
+        90,
+        92,
+        97,
+        110,
+        113,
+        120,
+        128,
+        140,
+        141,
+        154,
+        158,
+        165,
+        177,
+        179,
+        183,
+        186,
+        191,
+        192,
+        194,
+        205,
+        214,
+        221,
+        225,
+        243,
+        245,
+        248,
+        250,
+        258,
+        262,
+        264,
+        265,
+        274,
+        276,
+        280,
+        287,
+        288,
+        290,
+        295,
+        299,
+        305,
+        307,
+        311,
+        312,
+        313,
+        315,
+        328,
+        330,
+        331,
+        333,
+        334,
+        342,
+        349
+      ],
+      "reason": "nonfinite raw row"
+    }
+  ],
+  "verified_sources": 14,
+  "baseline_hash_matches": 949,
+  "freeze_sha256": "b58c66590d1e01cd64d4ca5cb584ac2269b88502b4866fd3a1264dbc833a4cbd",
+  "audit_code_sha256": "2509605a6058a677f7a4c01585fb53d0aafa6bce30fe53f773841ed6ddb9f9c6",
+  "test_rows": 215415
+}

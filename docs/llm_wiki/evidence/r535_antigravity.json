@@ -1,0 +1,704 @@
+{
+  "state": "complete_exploratory_audit",
+  "preflight_sha256": "d94b466a7b0efde1a454a33f1e45bacbab46f6818c5acf8f8b9fb8bc0d6cfe7c",
+  "population": {
+    "database": 1119,
+    "service_eligible": 955,
+    "exp521_operating": 56,
+    "paired_operating": 55,
+    "service_unavailable": 164
+  },
+  "comparison": {
+    "1": {
+      "all_955": {
+        "service_strict": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 273,
+          "fp": 28,
+          "fn": 3596,
+          "tn": 189618,
+          "pooled_recall": 0.07056086844145774,
+          "pooled_fpr": 0.00014764350421311284,
+          "family_macro_recall": 0.010621680414166853,
+          "family_macro_fpr": 2.112553914703179e-05,
+          "datasets_above_nominal_fpr": 3
+        },
+        "service_floor": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 1351,
+          "fp": 317,
+          "fn": 2518,
+          "tn": 189329,
+          "pooled_recall": 0.3491858361333678,
+          "pooled_fpr": 0.0016715353869841704,
+          "family_macro_recall": 0.37723276508466336,
+          "family_macro_fpr": 0.003525659883118406,
+          "datasets_above_nominal_fpr": 208
+        },
+        "minirocket_rank": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 1884,
+          "fp": 48,
+          "fn": 1985,
+          "tn": 189598,
+          "pooled_recall": 0.48694753166192817,
+          "pooled_fpr": 0.00025310315007962203,
+          "family_macro_recall": 0.537353409905284,
+          "family_macro_fpr": 5.5310971892078756e-05,
+          "datasets_above_nominal_fpr": 0
+        },
+        "exp502_rank": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 1956,
+          "fp": 49,
+          "fn": 1913,
+          "tn": 189597,
+          "pooled_recall": 0.5055569914706642,
+          "pooled_fpr": 0.0002583761323729475,
+          "family_macro_recall": 0.558539202500066,
+          "family_macro_fpr": 5.757854558822388e-05,
+          "datasets_above_nominal_fpr": 0
+        },
+        "service_route_rank": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 1960,
+          "fp": 47,
+          "fn": 1909,
+          "tn": 189599,
+          "pooled_recall": 0.5065908503489274,
+          "pooled_fpr": 0.00024783016778629657,
+          "family_macro_recall": 0.559562085824627,
+          "family_macro_fpr": 5.3514119971699814e-05,
+          "datasets_above_nominal_fpr": 0
+        }
+      },
+      "paired_955_rank": {
+        "datasets": 955,
+        "left": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 1884,
+          "fp": 48,
+          "fn": 1985,
+          "tn": 189598,
+          "pooled_recall": 0.48694753166192817,
+          "pooled_fpr": 0.00025310315007962203,
+          "family_macro_recall": 0.537353409905284,
+          "family_macro_fpr": 5.5310971892078756e-05,
+          "datasets_above_nominal_fpr": 0
+        },
+        "right": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 1956,
+          "fp": 49,
+          "fn": 1913,
+          "tn": 189597,
+          "pooled_recall": 0.5055569914706642,
+          "pooled_fpr": 0.0002583761323729475,
+          "family_macro_recall": 0.558539202500066,
+          "family_macro_fpr": 5.757854558822388e-05,
+          "datasets_above_nominal_fpr": 0
+        },
+        "extra_tp": 326,
+        "lost_tp": 254,
+        "extra_fp": 23,
+        "removed_fp": 22
+      },
+      "shared_calibrated": {
+        "exp502_cal": {
+          "datasets": 4,
+          "families": 3,
+          "tp": 90,
+          "fp": 3,
+          "fn": 320,
+          "tn": 20087,
+          "pooled_recall": 0.21951219512195122,
+          "pooled_fpr": 0.00014932802389248383,
+          "family_macro_recall": 0.26038855467523486,
+          "family_macro_fpr": 0.0001446732539169514,
+          "datasets_above_nominal_fpr": 0
+        },
+        "service_strict": {
+          "datasets": 4,
+          "families": 3,
+          "tp": 115,
+          "fp": 18,
+          "fn": 295,
+          "tn": 20072,
+          "pooled_recall": 0.2804878048780488,
+          "pooled_fpr": 0.000895968143354903,
+          "family_macro_recall": 0.301547014325919,
+          "family_macro_fpr": 0.0009965003783220727,
+          "datasets_above_nominal_fpr": 1
+        },
+        "service_floor": {
+          "datasets": 4,
+          "families": 3,
+          "tp": 115,
+          "fp": 18,
+          "fn": 295,
+          "tn": 20072,
+          "pooled_recall": 0.2804878048780488,
+          "pooled_fpr": 0.000895968143354903,
+          "family_macro_recall": 0.301547014325919,
+          "family_macro_fpr": 0.0009965003783220727,
+          "datasets_above_nominal_fpr": 1
+        }
+      },
+      "paired_cal_service_strict": {
+        "datasets": 4,
+        "left": {
+          "datasets": 4,
+          "families": 3,
+          "tp": 90,
+          "fp": 3,
+          "fn": 320,
+          "tn": 20087,
+          "pooled_recall": 0.21951219512195122,
+          "pooled_fpr": 0.00014932802389248383,
+          "family_macro_recall": 0.26038855467523486,
+          "family_macro_fpr": 0.0001446732539169514,
+          "datasets_above_nominal_fpr": 0
+        },
+        "right": {
+          "datasets": 4,
+          "families": 3,
+          "tp": 115,
+          "fp": 18,
+          "fn": 295,
+          "tn": 20072,
+          "pooled_recall": 0.2804878048780488,
+          "pooled_fpr": 0.000895968143354903,
+          "family_macro_recall": 0.301547014325919,
+          "family_macro_fpr": 0.0009965003783220727,
+          "datasets_above_nominal_fpr": 1
+        },
+        "extra_tp": 39,
+        "lost_tp": 14,
+        "extra_fp": 15,
+        "removed_fp": 0
+      },
+      "paired_cal_service_floor": {
+        "datasets": 4,
+        "left": {
+          "datasets": 4,
+          "families": 3,
+          "tp": 90,
+          "fp": 3,
+          "fn": 320,
+          "tn": 20087,
+          "pooled_recall": 0.21951219512195122,
+          "pooled_fpr": 0.00014932802389248383,
+          "family_macro_recall": 0.26038855467523486,
+          "family_macro_fpr": 0.0001446732539169514,
+          "datasets_above_nominal_fpr": 0
+        },
+        "right": {
+          "datasets": 4,
+          "families": 3,
+          "tp": 115,
+          "fp": 18,
+          "fn": 295,
+          "tn": 20072,
+          "pooled_recall": 0.2804878048780488,
+          "pooled_fpr": 0.000895968143354903,
+          "family_macro_recall": 0.301547014325919,
+          "family_macro_fpr": 0.0009965003783220727,
+          "datasets_above_nominal_fpr": 1
+        },
+        "extra_tp": 39,
+        "lost_tp": 14,
+        "extra_fp": 15,
+        "removed_fp": 0
+      }
+    },
+    "5": {
+      "all_955": {
+        "service_strict": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 1252,
+          "fp": 264,
+          "fn": 2617,
+          "tn": 189382,
+          "pooled_recall": 0.32359782889635563,
+          "pooled_fpr": 0.0013920673254379213,
+          "family_macro_recall": 0.11515903963570949,
+          "family_macro_fpr": 0.0004715455181491569,
+          "datasets_above_nominal_fpr": 10
+        },
+        "service_floor": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 1787,
+          "fp": 488,
+          "fn": 2082,
+          "tn": 189158,
+          "pooled_recall": 0.4618764538640476,
+          "pooled_fpr": 0.002573215359142824,
+          "family_macro_recall": 0.4082452626319325,
+          "family_macro_fpr": 0.003721765637350756,
+          "datasets_above_nominal_fpr": 179
+        },
+        "minirocket_rank": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 2359,
+          "fp": 582,
+          "fn": 1510,
+          "tn": 189064,
+          "pooled_recall": 0.6097182734556733,
+          "pooled_fpr": 0.003068875694715417,
+          "family_macro_recall": 0.5849451999570151,
+          "family_macro_fpr": 0.0013613714718220405,
+          "datasets_above_nominal_fpr": 0
+        },
+        "exp502_rank": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 2508,
+          "fp": 587,
+          "fn": 1361,
+          "tn": 189059,
+          "pooled_recall": 0.6482295166709744,
+          "pooled_fpr": 0.0030952406061820446,
+          "family_macro_recall": 0.6150237951957195,
+          "family_macro_fpr": 0.0013664447581611249,
+          "datasets_above_nominal_fpr": 0
+        },
+        "service_route_rank": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 2469,
+          "fp": 587,
+          "fn": 1400,
+          "tn": 189059,
+          "pooled_recall": 0.638149392607909,
+          "pooled_fpr": 0.0030952406061820446,
+          "family_macro_recall": 0.6036609854390904,
+          "family_macro_fpr": 0.0013650693570857594,
+          "datasets_above_nominal_fpr": 0
+        }
+      },
+      "paired_955_rank": {
+        "datasets": 955,
+        "left": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 2359,
+          "fp": 582,
+          "fn": 1510,
+          "tn": 189064,
+          "pooled_recall": 0.6097182734556733,
+          "pooled_fpr": 0.003068875694715417,
+          "family_macro_recall": 0.5849451999570151,
+          "family_macro_fpr": 0.0013613714718220405,
+          "datasets_above_nominal_fpr": 0
+        },
+        "right": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 2508,
+          "fp": 587,
+          "fn": 1361,
+          "tn": 189059,
+          "pooled_recall": 0.6482295166709744,
+          "pooled_fpr": 0.0030952406061820446,
+          "family_macro_recall": 0.6150237951957195,
+          "family_macro_fpr": 0.0013664447581611249,
+          "datasets_above_nominal_fpr": 0
+        },
+        "extra_tp": 348,
+        "lost_tp": 199,
+        "extra_fp": 356,
+        "removed_fp": 351
+      },
+      "shared_calibrated": {
+        "exp502_cal": {
+          "datasets": 55,
+          "families": 13,
+          "tp": 827,
+          "fp": 156,
+          "fn": 996,
+          "tn": 89171,
+          "pooled_recall": 0.45364783324190894,
+          "pooled_fpr": 0.00174639246812274,
+          "family_macro_recall": 0.36338948742588567,
+          "family_macro_fpr": 0.0015404347150632307,
+          "datasets_above_nominal_fpr": 4
+        },
+        "service_strict": {
+          "datasets": 55,
+          "families": 13,
+          "tp": 875,
+          "fp": 207,
+          "fn": 948,
+          "tn": 89120,
+          "pooled_recall": 0.4799780581459133,
+          "pooled_fpr": 0.0023173284673167127,
+          "family_macro_recall": 0.44837003611545234,
+          "family_macro_fpr": 0.0019840715246630825,
+          "datasets_above_nominal_fpr": 5
+        },
+        "service_floor": {
+          "datasets": 55,
+          "families": 13,
+          "tp": 875,
+          "fp": 207,
+          "fn": 948,
+          "tn": 89120,
+          "pooled_recall": 0.4799780581459133,
+          "pooled_fpr": 0.0023173284673167127,
+          "family_macro_recall": 0.44837003611545234,
+          "family_macro_fpr": 0.0019840715246630825,
+          "datasets_above_nominal_fpr": 5
+        }
+      },
+      "paired_cal_service_strict": {
+        "datasets": 55,
+        "left": {
+          "datasets": 55,
+          "families": 13,
+          "tp": 827,
+          "fp": 156,
+          "fn": 996,
+          "tn": 89171,
+          "pooled_recall": 0.45364783324190894,
+          "pooled_fpr": 0.00174639246812274,
+          "family_macro_recall": 0.36338948742588567,
+          "family_macro_fpr": 0.0015404347150632307,
+          "datasets_above_nominal_fpr": 4
+        },
+        "right": {
+          "datasets": 55,
+          "families": 13,
+          "tp": 875,
+          "fp": 207,
+          "fn": 948,
+          "tn": 89120,
+          "pooled_recall": 0.4799780581459133,
+          "pooled_fpr": 0.0023173284673167127,
+          "family_macro_recall": 0.44837003611545234,
+          "family_macro_fpr": 0.0019840715246630825,
+          "datasets_above_nominal_fpr": 5
+        },
+        "extra_tp": 187,
+        "lost_tp": 139,
+        "extra_fp": 155,
+        "removed_fp": 104
+      },
+      "paired_cal_service_floor": {
+        "datasets": 55,
+        "left": {
+          "datasets": 55,
+          "families": 13,
+          "tp": 827,
+          "fp": 156,
+          "fn": 996,
+          "tn": 89171,
+          "pooled_recall": 0.45364783324190894,
+          "pooled_fpr": 0.00174639246812274,
+          "family_macro_recall": 0.36338948742588567,
+          "family_macro_fpr": 0.0015404347150632307,
+          "datasets_above_nominal_fpr": 4
+        },
+        "right": {
+          "datasets": 55,
+          "families": 13,
+          "tp": 875,
+          "fp": 207,
+          "fn": 948,
+          "tn": 89120,
+          "pooled_recall": 0.4799780581459133,
+          "pooled_fpr": 0.0023173284673167127,
+          "family_macro_recall": 0.44837003611545234,
+          "family_macro_fpr": 0.0019840715246630825,
+          "datasets_above_nominal_fpr": 5
+        },
+        "extra_tp": 187,
+        "lost_tp": 139,
+        "extra_fp": 155,
+        "removed_fp": 104
+      }
+    },
+    "10": {
+      "all_955": {
+        "service_strict": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 1666,
+          "fp": 510,
+          "fn": 2203,
+          "tn": 189136,
+          "pooled_recall": 0.4306022227965883,
+          "pooled_fpr": 0.002689220969595984,
+          "family_macro_recall": 0.19256853020719086,
+          "family_macro_fpr": 0.0010089400787070806,
+          "datasets_above_nominal_fpr": 7
+        },
+        "service_floor": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 2112,
+          "fp": 724,
+          "fn": 1757,
+          "tn": 188922,
+          "pooled_recall": 0.5458774877229258,
+          "pooled_fpr": 0.003817639180367632,
+          "family_macro_recall": 0.4487577257863864,
+          "family_macro_fpr": 0.004160617923856202,
+          "datasets_above_nominal_fpr": 166
+        },
+        "minirocket_rank": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 2599,
+          "fp": 1340,
+          "fn": 1270,
+          "tn": 188306,
+          "pooled_recall": 0.6717498061514603,
+          "pooled_fpr": 0.007065796273056115,
+          "family_macro_recall": 0.6237395642429829,
+          "family_macro_fpr": 0.0035580226950448417,
+          "datasets_above_nominal_fpr": 0
+        },
+        "exp502_rank": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 2743,
+          "fp": 1344,
+          "fn": 1126,
+          "tn": 188302,
+          "pooled_recall": 0.7089687257689326,
+          "pooled_fpr": 0.007086888202229417,
+          "family_macro_recall": 0.6528970915383661,
+          "family_macro_fpr": 0.003573929676779096,
+          "datasets_above_nominal_fpr": 0
+        },
+        "service_route_rank": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 2716,
+          "fp": 1340,
+          "fn": 1153,
+          "tn": 188306,
+          "pooled_recall": 0.7019901783406565,
+          "pooled_fpr": 0.007065796273056115,
+          "family_macro_recall": 0.646620121533588,
+          "family_macro_fpr": 0.0035894648748539607,
+          "datasets_above_nominal_fpr": 0
+        }
+      },
+      "paired_955_rank": {
+        "datasets": 955,
+        "left": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 2599,
+          "fp": 1340,
+          "fn": 1270,
+          "tn": 188306,
+          "pooled_recall": 0.6717498061514603,
+          "pooled_fpr": 0.007065796273056115,
+          "family_macro_recall": 0.6237395642429829,
+          "family_macro_fpr": 0.0035580226950448417,
+          "datasets_above_nominal_fpr": 0
+        },
+        "right": {
+          "datasets": 955,
+          "families": 125,
+          "tp": 2743,
+          "fp": 1344,
+          "fn": 1126,
+          "tn": 188302,
+          "pooled_recall": 0.7089687257689326,
+          "pooled_fpr": 0.007086888202229417,
+          "family_macro_recall": 0.6528970915383661,
+          "family_macro_fpr": 0.003573929676779096,
+          "datasets_above_nominal_fpr": 0
+        },
+        "extra_tp": 325,
+        "lost_tp": 181,
+        "extra_fp": 830,
+        "removed_fp": 826
+      },
+      "shared_calibrated": {
+        "exp502_cal": {
+          "datasets": 55,
+          "families": 13,
+          "tp": 1000,
+          "fp": 453,
+          "fn": 823,
+          "tn": 88874,
+          "pooled_recall": 0.5485463521667581,
+          "pooled_fpr": 0.005071255051664111,
+          "family_macro_recall": 0.4686463787085234,
+          "family_macro_fpr": 0.004945767419780216,
+          "datasets_above_nominal_fpr": 3
+        },
+        "service_strict": {
+          "datasets": 55,
+          "families": 13,
+          "tp": 1076,
+          "fp": 388,
+          "fn": 747,
+          "tn": 88939,
+          "pooled_recall": 0.5902358749314317,
+          "pooled_fpr": 0.004343591523279636,
+          "family_macro_recall": 0.5968504480650411,
+          "family_macro_fpr": 0.003407922862889288,
+          "datasets_above_nominal_fpr": 3
+        },
+        "service_floor": {
+          "datasets": 55,
+          "families": 13,
+          "tp": 1076,
+          "fp": 388,
+          "fn": 747,
+          "tn": 88939,
+          "pooled_recall": 0.5902358749314317,
+          "pooled_fpr": 0.004343591523279636,
+          "family_macro_recall": 0.5968504480650411,
+          "family_macro_fpr": 0.003407922862889288,
+          "datasets_above_nominal_fpr": 3
+        }
+      },
+      "paired_cal_service_strict": {
+        "datasets": 55,
+        "left": {
+          "datasets": 55,
+          "families": 13,
+          "tp": 1000,
+          "fp": 453,
+          "fn": 823,
+          "tn": 88874,
+          "pooled_recall": 0.5485463521667581,
+          "pooled_fpr": 0.005071255051664111,
+          "family_macro_recall": 0.4686463787085234,
+          "family_macro_fpr": 0.004945767419780216,
+          "datasets_above_nominal_fpr": 3
+        },
+        "right": {
+          "datasets": 55,
+          "families": 13,
+          "tp": 1076,
+          "fp": 388,
+          "fn": 747,
+          "tn": 88939,
+          "pooled_recall": 0.5902358749314317,
+          "pooled_fpr": 0.004343591523279636,
+          "family_macro_recall": 0.5968504480650411,
+          "family_macro_fpr": 0.003407922862889288,
+          "datasets_above_nominal_fpr": 3
+        },
+        "extra_tp": 206,
+        "lost_tp": 130,
+        "extra_fp": 292,
+        "removed_fp": 357
+      },
+      "paired_cal_service_floor": {
+        "datasets": 55,
+        "left": {
+          "datasets": 55,
+          "families": 13,
+          "tp": 1000,
+          "fp": 453,
+          "fn": 823,
+          "tn": 88874,
+          "pooled_recall": 0.5485463521667581,
+          "pooled_fpr": 0.005071255051664111,
+          "family_macro_recall": 0.4686463787085234,
+          "family_macro_fpr": 0.004945767419780216,
+          "datasets_above_nominal_fpr": 3
+        },
+        "right": {
+          "datasets": 55,
+          "families": 13,
+          "tp": 1076,
+          "fp": 388,
+          "fn": 747,
+          "tn": 88939,
+          "pooled_recall": 0.5902358749314317,
+          "pooled_fpr": 0.004343591523279636,
+          "family_macro_recall": 0.5968504480650411,
+          "family_macro_fpr": 0.003407922862889288,
+          "datasets_above_nominal_fpr": 3
+        },
+        "extra_tp": 206,
+        "lost_tp": 130,
+        "extra_fp": 292,
+        "removed_fp": 357
+      }
+    }
+  },
+  "archived_review_tiers_excluding_current_floor": {
+    "1": {
+      "datasets": 955,
+      "families": 125,
+      "tp": 8,
+      "fp": 5,
+      "fn": 3861,
+      "tn": 189641,
+      "pooled_recall": 0.002067717756526234,
+      "pooled_fpr": 2.6364911466627295e-05,
+      "family_macro_recall": 0.001071563088512241,
+      "family_macro_fpr": 1.2825130052020809e-05,
+      "datasets_above_nominal_fpr": 0
+    },
+    "2": {
+      "datasets": 955,
+      "families": 125,
+      "tp": 23,
+      "fp": 20,
+      "fn": 3846,
+      "tn": 189626,
+      "pooled_recall": 0.005944688550012923,
+      "pooled_fpr": 0.00010545964586650918,
+      "family_macro_recall": 0.002677636808934296,
+      "family_macro_fpr": 3.2150726931397186e-05,
+      "datasets_above_nominal_fpr": 0
+    },
+    "3": {
+      "datasets": 955,
+      "families": 125,
+      "tp": 273,
+      "fp": 383,
+      "fn": 3596,
+      "tn": 189263,
+      "pooled_recall": 0.07056086844145774,
+      "pooled_fpr": 0.002019552218343651,
+      "family_macro_recall": 0.10299714113334826,
+      "family_macro_fpr": 0.003475272600574168,
+      "datasets_above_nominal_fpr": 162
+    }
+  },
+  "primary_family_bootstrap": {
+    "service_strict_minus_exp502": {
+      "delta": 0.0849805486895668,
+      "ci95": [
+        -0.00045573899500051034,
+        0.17969768893433083
+      ],
+      "families": 13,
+      "resamples": 2000,
+      "seed": 20260925
+    },
+    "service_floor_minus_exp502": {
+      "delta": 0.0849805486895668,
+      "ci95": [
+        -0.00045573899500051034,
+        0.17969768893433083
+      ],
+      "families": 13,
+      "resamples": 2000,
+      "seed": 20260925
+    }
+  },
+  "note": "Previously exposed TEST; 955-dataset rank metrics use TEST-normal thresholds and are diagnostic only. Current floor alert is a frozen-p replay, not a live service run. No promotion."
+}

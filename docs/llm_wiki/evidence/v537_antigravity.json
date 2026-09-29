@@ -1,0 +1,15 @@
+{
+  "datasets": 955,
+  "details_sha256": "cfcc9989e2c1310958dec02d1922efbe8ab2dfd554b9db0bfa9d45bc31375bf4",
+  "exp536_overlap_checks": 949,
+  "independent_pvalue_backend": "numba_direct_counts",
+  "live_prediction_hash_matches": 955,
+  "manifest_sha256": "4b4c9b6dbbc9375e85748808c9c0a709131b831e57fc1961143b077abc483740",
+  "model_fit_calls": 0,
+  "raw_values_read": false,
+  "results_sha256": "87148d3d3bbc240d45d506d5312a1ebccaf8e520866a8212bfffd62fde1ce94c",
+  "seed_fold_rows": 5730,
+  "source_distribution_rows": 2865,
+  "source_metrics": 8595,
+  "status": "passed"
+}

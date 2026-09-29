@@ -1,0 +1,2369 @@
+{
+  "schema": "research-wiki-sources-v1",
+  "snapshot_date": "2026-09-29",
+  "created_utc": "2026-09-28T23:52:06.921072+00:00",
+  "scope": "Research documentation only; no DB/label access, training, rescoring, service change, commit or push",
+  "coverage": {
+    "primary": "Exp481-539 and parallel service integration",
+    "historical": "Selected context through Exp480, not an exhaustive audit of every prior experiment"
+  },
+  "roots": {
+    "current": {
+      "path": "/Users/mac/.codex/worktrees/shared-score-integration-antigravity/Time Series",
+      "purpose": "current service and Exp536-539"
+    },
+    "archive": {
+      "path": "/Users/mac/Documents/Time Series/.worktrees/exp482-gate-failure-decomposition-antigravity",
+      "purpose": "historical Exp481-535 research"
+    }
+  },
+  "checkout": {
+    "head": "ce3e2aa8545621a7afe28c5a43b9cadde9af4220",
+    "branch": "codex/shared-score-integration-antigravity",
+    "diff_sha256": "f1257bec5b8f031f7e02756d0f51a767b42d06429e48852b2380565351e0a488",
+    "status_sha256": "9689a9ae1ef151371adf12653db0c19af3d4224a4d98183acf0e8fae22b62e03"
+  },
+  "sources": [
+    {
+      "id": "e481",
+      "root": "archive",
+      "path": "docs/EXP481_IMPLEMENTATION_REPORT_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 1425,
+      "sha256": "cc9567000eb23d7f62e8f16a01087b0072abee5bcd2678eee9aeb7334a7144e3",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP481_IMPLEMENTATION_REPORT_antigravity.html",
+        "sha256": "cc9567000eb23d7f62e8f16a01087b0072abee5bcd2678eee9aeb7334a7144e3",
+        "bytes": 1425
+      }
+    },
+    {
+      "id": "e482",
+      "root": "archive",
+      "path": "docs/EXP482_IMPLEMENTATION_REPORT_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 332332,
+      "sha256": "febadc731c67353cfb888db2b61a62e3c8486cc22859c5bdbe85afbeb6ea14ae",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP482_IMPLEMENTATION_REPORT_antigravity.html",
+        "sha256": "febadc731c67353cfb888db2b61a62e3c8486cc22859c5bdbe85afbeb6ea14ae",
+        "bytes": 332332
+      }
+    },
+    {
+      "id": "e483",
+      "root": "archive",
+      "path": "docs/EXP483_IMPLEMENTATION_REPORT_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 5076,
+      "sha256": "3af7aa9ccaa2246ae0723e9b0b4859bf61c89b87a8fffa237f1220e11d32cf56",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP483_IMPLEMENTATION_REPORT_antigravity.html",
+        "sha256": "3af7aa9ccaa2246ae0723e9b0b4859bf61c89b87a8fffa237f1220e11d32cf56",
+        "bytes": 5076
+      }
+    },
+    {
+      "id": "e484",
+      "root": "archive",
+      "path": "docs/EXP484_IMPLEMENTATION_REPORT_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 2526,
+      "sha256": "6c0938c9375fa97dd2c86fd226cf2c75cf23427cedb7c2c4f47c2dd74343f901",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP484_IMPLEMENTATION_REPORT_antigravity.html",
+        "sha256": "6c0938c9375fa97dd2c86fd226cf2c75cf23427cedb7c2c4f47c2dd74343f901",
+        "bytes": 2526
+      }
+    },
+    {
+      "id": "e489",
+      "root": "archive",
+      "path": "docs/EXP489_491_SUMMARY_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 6272,
+      "sha256": "ddcb1c12fdaabd1c2ac86d69f10802c57007a2c541f34da378df8904bc783fe1",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP489_491_SUMMARY_antigravity.html",
+        "sha256": "ddcb1c12fdaabd1c2ac86d69f10802c57007a2c541f34da378df8904bc783fe1",
+        "bytes": 6272
+      }
+    },
+    {
+      "id": "diag489",
+      "root": "archive",
+      "path": "docs/EXP489_491_DIAGNOSIS_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 10306,
+      "sha256": "e897f363ea360dd27aa7d99fd1685278e3e44c41c464a0a43978cebe186093c2",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP489_491_DIAGNOSIS_antigravity.html",
+        "sha256": "e897f363ea360dd27aa7d99fd1685278e3e44c41c464a0a43978cebe186093c2",
+        "bytes": 10306
+      }
+    },
+    {
+      "id": "e492",
+      "root": "archive",
+      "path": "docs/EXP492_REVIEW_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 38346,
+      "sha256": "0fef1911392f5b7dc89a319d7ef41ee84bb3836fc370d5e599d59ab197523364",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP492_REVIEW_antigravity.html",
+        "sha256": "0fef1911392f5b7dc89a319d7ef41ee84bb3836fc370d5e599d59ab197523364",
+        "bytes": 38346
+      }
+    },
+    {
+      "id": "e493",
+      "root": "archive",
+      "path": "docs/EXP493_REVIEW_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 11262,
+      "sha256": "7d617813e34897caa030439c7cf1dd9c0b52a044bcacb3cf6d3212479a841bac",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP493_REVIEW_antigravity.html",
+        "sha256": "7d617813e34897caa030439c7cf1dd9c0b52a044bcacb3cf6d3212479a841bac",
+        "bytes": 11262
+      }
+    },
+    {
+      "id": "e494",
+      "root": "archive",
+      "path": "docs/EXP494_ALL_DATASETS_LOW_FPR_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 19035,
+      "sha256": "f8f182d90c0ad9d8e70a17fe6eb2ec28b5d17dbc4af015e4919576bcf3097a54",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP494_ALL_DATASETS_LOW_FPR_antigravity.html",
+        "sha256": "f8f182d90c0ad9d8e70a17fe6eb2ec28b5d17dbc4af015e4919576bcf3097a54",
+        "bytes": 19035
+      }
+    },
+    {
+      "id": "e495",
+      "root": "archive",
+      "path": "docs/EXP495_FULL_COMPARISON_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 3493,
+      "sha256": "6ab4f3a4e7aeffc0157da27999424d7efc8b8ba1eb4441d884dcdf7d4cbd025e",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP495_FULL_COMPARISON_antigravity.html",
+        "sha256": "6ab4f3a4e7aeffc0157da27999424d7efc8b8ba1eb4441d884dcdf7d4cbd025e",
+        "bytes": 3493
+      }
+    },
+    {
+      "id": "status495",
+      "root": "archive",
+      "path": "docs/EXP495_497_STATUS_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 7072,
+      "sha256": "82bacab00051d49eee0aae4dd2e193aa400a7e17a45c19ac6172eee962b5b122",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP495_497_STATUS_antigravity.html",
+        "sha256": "82bacab00051d49eee0aae4dd2e193aa400a7e17a45c19ac6172eee962b5b122",
+        "bytes": 7072
+      }
+    },
+    {
+      "id": "e502",
+      "root": "archive",
+      "path": "docs/EXP502_FULL_COMPARISON_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 5099,
+      "sha256": "e19b5c19e639be180b32220209ab0fd3e8cabb96e1ffea8a3c08d1469d66dd08",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP502_FULL_COMPARISON_antigravity.html",
+        "sha256": "e19b5c19e639be180b32220209ab0fd3e8cabb96e1ffea8a3c08d1469d66dd08",
+        "bytes": 5099
+      }
+    },
+    {
+      "id": "e507",
+      "root": "archive",
+      "path": "docs/EXP507_FULL_COMPARISON_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 5750,
+      "sha256": "eb4b6afb49a4cf56f3e5e4cb4607a927d35e00cf43284d0a23dc28b4532d5dd7",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP507_FULL_COMPARISON_antigravity.html",
+        "sha256": "eb4b6afb49a4cf56f3e5e4cb4607a927d35e00cf43284d0a23dc28b4532d5dd7",
+        "bytes": 5750
+      }
+    },
+    {
+      "id": "e508",
+      "root": "archive",
+      "path": "docs/EXP508_TAIL_RANK_REVIEW_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 9595,
+      "sha256": "cadfc38a200d2added0febe3788a9fcf4e4f174fd02a4fe9c6dad4ba93632541",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP508_TAIL_RANK_REVIEW_antigravity.html",
+        "sha256": "cadfc38a200d2added0febe3788a9fcf4e4f174fd02a4fe9c6dad4ba93632541",
+        "bytes": 9595
+      }
+    },
+    {
+      "id": "e509",
+      "root": "archive",
+      "path": "docs/EXP509_SIGNAL_DIAGNOSIS_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 10621,
+      "sha256": "d792ddec930eeeb6050fb8db43623a80fd581f4815d1ce5074f87487f3235685",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP509_SIGNAL_DIAGNOSIS_antigravity.html",
+        "sha256": "d792ddec930eeeb6050fb8db43623a80fd581f4815d1ce5074f87487f3235685",
+        "bytes": 10621
+      }
+    },
+    {
+      "id": "e510",
+      "root": "archive",
+      "path": "docs/EXP510_SEPARATED_RANK_REVIEW_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 7403,
+      "sha256": "7b630d9c7d95f8b78355ccabec3ccd43a4549f875b30b5d9ebfbc3ddfc910289",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP510_SEPARATED_RANK_REVIEW_antigravity.html",
+        "sha256": "7b630d9c7d95f8b78355ccabec3ccd43a4549f875b30b5d9ebfbc3ddfc910289",
+        "bytes": 7403
+      }
+    },
+    {
+      "id": "e511",
+      "root": "archive",
+      "path": "docs/EXP511_CROSSFIT_RANK_ENSEMBLE_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 7662,
+      "sha256": "4e83e3bf5943b0dc2a75b10ac141467cef250133888351d18693d83099133aec",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP511_CROSSFIT_RANK_ENSEMBLE_antigravity.html",
+        "sha256": "4e83e3bf5943b0dc2a75b10ac141467cef250133888351d18693d83099133aec",
+        "bytes": 7662
+      }
+    },
+    {
+      "id": "e512",
+      "root": "archive",
+      "path": "docs/EXP512_EXP511_EXPLORATORY_TEST_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 10397,
+      "sha256": "d2b04cdfd6a55c4e707f187c83ffd6f73453f9b8526bf53bd22fbb99dfe2edcf",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP512_EXP511_EXPLORATORY_TEST_antigravity.html",
+        "sha256": "d2b04cdfd6a55c4e707f187c83ffd6f73453f9b8526bf53bd22fbb99dfe2edcf",
+        "bytes": 10397
+      }
+    },
+    {
+      "id": "coreml",
+      "root": "archive",
+      "path": "docs/COREML_EXP502_PROBE_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 5517,
+      "sha256": "73cee4d0fb4572476009b48211d3b7e78d8396e95436bb382b46eb4029360a1f",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/coreml_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 3
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "bd0cdbeb354a16d0b5f035033258cbeca3c9dc10d0710aedcca861044f4c01a4",
+        "bytes": 6286
+      }
+    },
+    {
+      "id": "e513",
+      "root": "archive",
+      "path": "docs/EXP513_LAYA_COREML_APPLICABILITY_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 19329,
+      "sha256": "decafde77e4da1f849e1da361cab199b01e3d8a45769c8a617a4f4e073bb1931",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e513_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 3
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "b452584005d0df4954a790ad3fd6f18ef0668d008c1e7948cc20ed386e50b59d",
+        "bytes": 19991
+      }
+    },
+    {
+      "id": "e514",
+      "root": "archive",
+      "path": "docs/EXP514_LAYA_FINETUNE_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 15879,
+      "sha256": "a28c681ac78ba36a8af6feecb50580592c135cb376225f40f68992a72c1f67b3",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e514_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "10f763f340a5ace49743f685dbdb78b1f67ca3372f5176110896ee16dae705df",
+        "bytes": 16486
+      }
+    },
+    {
+      "id": "e515",
+      "root": "archive",
+      "path": "docs/EXP515_LAYA_REAL_TEST_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 11673,
+      "sha256": "529286f6f8716ca93b87052254c6f4d4ed28d529a73195bc732c6d2c062a1ef7",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e515_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "f3a2700a6ea0a65f8e619801bdcc97ff32450de8cc8db1496e923711dcdd598a",
+        "bytes": 12280
+      }
+    },
+    {
+      "id": "e516",
+      "root": "archive",
+      "path": "docs/EXP516_NORMAL_ONLY_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 7759,
+      "sha256": "02b2b1b88d6b516b0753fdc10efec7b9a5b1afb0385fe27009781fde34b5f3f2",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e516_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 2
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "927dc05d93c7a1da94983c58d7b29a57407e53e03cc149e947b0f4a855d5d042",
+        "bytes": 8404
+      }
+    },
+    {
+      "id": "e517",
+      "root": "archive",
+      "path": "docs/EXP517_COUNTERFACTUAL_VERIFICATION_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 7604,
+      "sha256": "162c7efef109aa58c576ddf44e3ba984cc927b5098dafdea8e5ab79b9bca56c7",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e517_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 4
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "3ebcebe1974b87e1be51460beb4bbbb64a47696561a35b9d28ea0dc6123c1965",
+        "bytes": 8281
+      }
+    },
+    {
+      "id": "e518",
+      "root": "archive",
+      "path": "docs/EXP518_FAILURE_DECOMPOSITION_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 10223,
+      "sha256": "7bdface0c861a08e7825e1dd585340c7b58ccce6baf2d8e43ea9777c29d52497",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e518_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 7,
+          "links_rebased": 2
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "4867edb5d5209b394197c374094084ae7b426c9bb8de58fe87122ca59359ef14",
+        "bytes": 10909
+      }
+    },
+    {
+      "id": "e519",
+      "root": "archive",
+      "path": "docs/EXP519_NORMAL_CALIBRATION_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 6851,
+      "sha256": "e39499653678c32cf41683a324854c92645ba5751d0319f975ef9bf160e9f4d9",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e519_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 5,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "ead1c1fb76862e6fcc09dcac4cec5075725bea094e1842bfb705dcff0896d1ea",
+        "bytes": 7544
+      }
+    },
+    {
+      "id": "e520",
+      "root": "archive",
+      "path": "docs/EXP520_PAIRED_REVIEW_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 6931,
+      "sha256": "54a415901f9eaf9bc453759bedefbb5076f2f59291450c99bf948b0f1be845b1",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e520_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 5,
+          "links_rebased": 2
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "57a8c28b1493c37caf1cffbb1b4c8f76f6f2d21a87161bae588d30ed43b12f9d",
+        "bytes": 7542
+      }
+    },
+    {
+      "id": "e521",
+      "root": "archive",
+      "path": "docs/EXP521_FIXED_RECALL_FUSION_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 56944,
+      "sha256": "086d83b5591292aac112048edcc0df895d994faddb111fca4d1080f9fc650024",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e521_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 6,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "fc602f2955b6fc77e4efdcf31504aa15cc1db7c2f8858d6feb2845105563d0ce",
+        "bytes": 57637
+      }
+    },
+    {
+      "id": "e522",
+      "root": "archive",
+      "path": "docs/EXP522_PAIR_DIAGNOSIS_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 13492,
+      "sha256": "7cdb2e6f8b53750b036f9d58decb74a9b702bc3e838ca30e225aa4742ebe52fc",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e522_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 5,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "b4c89944fb94c7f40904e6156bde1f4ffc2883bde6d9e8c038c29e8f37990036",
+        "bytes": 14198
+      }
+    },
+    {
+      "id": "e523",
+      "root": "archive",
+      "path": "docs/EXP523_COMMON_MISS_DIAGNOSIS_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 11874,
+      "sha256": "f0dd0fa5154855ca1aad52631d1c267cc623b150fd319706b7d400fe06ad4e54",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e523_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 11,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "879acb18e3a5c64e0b9282b00db25d25be5d32a054ea1a677e9539bb93ec63fe",
+        "bytes": 12366
+      }
+    },
+    {
+      "id": "e524",
+      "root": "archive",
+      "path": "docs/EXP524_FREEZER_CROP_AUDIT_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 16626,
+      "sha256": "b75df1988bc98eef4cf22336e9100487d61c6a7a6b41c04c8a39dbe0ab04c997",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e524_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 9,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "c6659968f3b5790a0efc730bb03005c8580e321642d4a2427ca82de3b458ad5b",
+        "bytes": 17406
+      }
+    },
+    {
+      "id": "e525",
+      "root": "archive",
+      "path": "docs/EXP525_RAW_MOMENT_SCORE_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 12774,
+      "sha256": "adfb7a1e4cd040ea688882aa851f12a4288d7da98783bec58397a1e38cfb1605",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e525_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 7,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "c290ef9b99611ce790c0b63b632853c43e54d77adc682a870f001a2192b0aeb4",
+        "bytes": 13523
+      }
+    },
+    {
+      "id": "e526",
+      "root": "archive",
+      "path": "docs/EXP526_SHAPE_MOMENT_JOINT_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 20229,
+      "sha256": "44fbd6790956c367fe1d7a214eee999c389ca5a82a9f1985c54c36855e283b95",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e526_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 9,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "538b5ab1c66c935bc663ee476d01da66136afebbfd1aa9e50efea8c6b2e15cfb",
+        "bytes": 20973
+      }
+    },
+    {
+      "id": "reuse526",
+      "root": "archive",
+      "path": "docs/EXP526_CANDIDATE_REUSE_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 7385,
+      "sha256": "595f4f07f6508e7e120c73abb4ef0dd45f15c8e0651c3ef1da118a14069226d8",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/reuse526_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 9,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "496082650b055b07f515024ffed3fa4c6aaac71c9754d2e964e7461638856900",
+        "bytes": 8175
+      }
+    },
+    {
+      "id": "e527",
+      "root": "archive",
+      "path": "docs/EXP527_NORMAL_RETRAIN_STABILITY_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 8151,
+      "sha256": "ab5eacfde1161946c2c0080eedb5f33eb4545057a6a51c920c25253508e01905",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e527_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 8,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "03fb928da82104ed3507271b9263fda913379b42c26a737be37be5550aac0593",
+        "bytes": 8850
+      }
+    },
+    {
+      "id": "e528",
+      "root": "archive",
+      "path": "docs/EXP528_TEMPORAL_POOLING_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 21466,
+      "sha256": "a84f7d1dd8868eff29e1340e478634d8606b4cb613e2b3ead84e018580d9e800",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e528_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 6,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "7367a0c1f6cf068045562e2b96c198744fc0f759c6bdc338edd457bc0159b9d0",
+        "bytes": 22074
+      }
+    },
+    {
+      "id": "e529",
+      "root": "archive",
+      "path": "docs/EXP529_MULTIROCKET_REAL_TEST_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 22185,
+      "sha256": "28e408014eac74b4c057d8f88bfad4aa4779a7275da2af6a1a1fc506d8e99ec7",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e529_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 5,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "8b2e09961f22c129a9278123c809eaeca50dd2316c48ab086fe16f79aefb54f7",
+        "bytes": 22840
+      }
+    },
+    {
+      "id": "e530",
+      "root": "archive",
+      "path": "docs/EXP530_LW_REAL_TEST_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 44830,
+      "sha256": "510ad7de52ce08193c200b077e248e6ae0da7954e7d42fd39aa03b3b4bc3c699",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e530_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 4,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "5d4a315860996617298c68314518bf11adf19e16e9cec8c878e585340b679d49",
+        "bytes": 45519
+      }
+    },
+    {
+      "id": "gate530",
+      "root": "archive",
+      "path": "docs/EXP530_LW_NUMERICAL_GATE_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 4950,
+      "sha256": "1dfc66eb06d996c5b771aeb2cb3febfc5eb9d5322da476f8c0843d8044d176bb",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/gate530_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 5
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "16fe43f76baa9354a15704378ba30b02a352af50412cc716a2ca93598eb237b8",
+        "bytes": 5705
+      }
+    },
+    {
+      "id": "e531",
+      "root": "archive",
+      "path": "docs/EXP531_POOLED_CALIBRATION_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 3435,
+      "sha256": "3018e4047015bd6a2075971727b24b79682ae24a4d3edca9729512acafc731b4",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e531_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "a51fcba31cb82963cc7eb52671beef9e7aa752e368b507579ea154ec8609774e",
+        "bytes": 4042
+      }
+    },
+    {
+      "id": "e532",
+      "root": "archive",
+      "path": "docs/EXP532_FIT_REAL_TEST_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 3625,
+      "sha256": "072a248dd9c7fbf50965fe3bd3707f88bc560784f221e8dbd65ae597abc8ed0b",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e532_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "3274aa619cef49f217c6966e967c1482d4561ad177295a80cc2f7ef82a0b4e82",
+        "bytes": 4232
+      }
+    },
+    {
+      "id": "ready532",
+      "root": "archive",
+      "path": "docs/EXP532_FIT_ALLOCATION_FEASIBILITY_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 3465,
+      "sha256": "366afac3ebcd629d7ef345d69d32d2338474f057dbdbf1f0173a9e9f9c7274b7",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/ready532_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 2,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "376d481a6a0a66bdb9439fde96d8b96f8c3cb237c44bed9e2e56876c45a14b34",
+        "bytes": 4155
+      }
+    },
+    {
+      "id": "e533",
+      "root": "archive",
+      "path": "docs/EXP533_NORMAL_CVPLUS_PILOT_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 1636,
+      "sha256": "294cbdade70c10a51fcd9f4ed42c9802570e86c01ea847eb7493943a4117dd96",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e533_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "830e93b664a6b2d7cba2f61af4aa4906e81295082d0015fc802fd05b192fc681",
+        "bytes": 2243
+      }
+    },
+    {
+      "id": "e534",
+      "root": "archive",
+      "path": "docs/EXP534_NORMAL_PREFLIGHT_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 4352,
+      "sha256": "c2666d7109576c417b35f6db70bd8f1aff0c457e228608ebd065b9d46dfe79aa",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e534_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 4
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "c94daaadae2c9cd89b4582e48e22f07c48bcf4a8fae570331554ca6e91016c9f",
+        "bytes": 5180
+      }
+    },
+    {
+      "id": "e535",
+      "root": "archive",
+      "path": "docs/EXP535_PARALLEL_FROZEN_COMPARISON_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 7958,
+      "sha256": "540c889091a413f6c1bbf6235508a930b90a62eaa630be518c85b0ff0949b93d",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e535_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 6,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "0995b06f4f24e5612eb0d5578f74177cb7674bd4706d03b138a0ad04996fef9a",
+        "bytes": 8623
+      }
+    },
+    {
+      "id": "interim",
+      "root": "archive",
+      "path": "docs/PROJECT_INTERIM_EXP522_20260922_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 25806,
+      "sha256": "a870bc33484d2e9ec81aca9abe0363e59dfc3fa1e6c720624053148ec371d6aa",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/interim_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "links_rebased": 14,
+          "unpublished_references": 10
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "792af5e653fc71045709145526ef1f5384a7ecdf95f24a03c2d3ca1e66787d16",
+        "bytes": 26653
+      }
+    },
+    {
+      "id": "oldstatus",
+      "root": "archive",
+      "path": "docs/CURRENT_MODEL_IMPROVEMENT_STATUS_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 23293,
+      "sha256": "5549bf47a40b9b9c1810e7f77897283979bfa09876c2941fa7f33b7956fc904e",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/CURRENT_MODEL_IMPROVEMENT_STATUS_antigravity.html",
+        "sha256": "5549bf47a40b9b9c1810e7f77897283979bfa09876c2941fa7f33b7956fc904e",
+        "bytes": 23293
+      }
+    },
+    {
+      "id": "e449",
+      "root": "current",
+      "path": "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 2688,
+      "sha256": "07b0c7f3fb026f728caf8e152f67c58162c70951890ef3eac5b742b91d98ad91",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP449_IMPLEMENTATION_REPORT_antigravity.html",
+        "sha256": "07b0c7f3fb026f728caf8e152f67c58162c70951890ef3eac5b742b91d98ad91",
+        "bytes": 2688
+      }
+    },
+    {
+      "id": "e475",
+      "root": "current",
+      "path": "docs/EXP475_DASHBOARD_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 6604,
+      "sha256": "09d81e94f2362a47e46640874b3f0352dcc25a58a04c25b61f42a0151947be6b",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP475_DASHBOARD_antigravity.html",
+        "sha256": "09d81e94f2362a47e46640874b3f0352dcc25a58a04c25b61f42a0151947be6b",
+        "bytes": 6604
+      }
+    },
+    {
+      "id": "e480",
+      "root": "current",
+      "path": "docs/EXP480_ROOT_CAUSE_RESEARCH_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 14899,
+      "sha256": "431435b814254c81b179900550117bbbf5d7748104b3e7933e8c7c2b67bf6351",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP480_ROOT_CAUSE_RESEARCH_antigravity.html",
+        "sha256": "431435b814254c81b179900550117bbbf5d7748104b3e7933e8c7c2b67bf6351",
+        "bytes": 14899
+      }
+    },
+    {
+      "id": "e485",
+      "root": "current",
+      "path": "docs/EXP485_DASHBOARD_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 5977,
+      "sha256": "158e1f3349afdcca446e4a1bc75ba1e5d8df4627d9c005c04638c7030cd58bb3",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e485_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "a1d89e565c89da07a3810837a1cede5b522cf09c4c237caf95fa8ef768a0d3fe",
+        "bytes": 6584
+      }
+    },
+    {
+      "id": "e486",
+      "root": "current",
+      "path": "docs/EXP486_DASHBOARD_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 13750,
+      "sha256": "e634d886c5970a1ad4a9aa2183ecb54f062efd598e9880a76fe614a079b87911",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e486_antigravity.html",
+        "transformations": {
+          "scripts_removed": 2
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "482ab1185992e03ca3701626390b228f19b54b587093aa768532bc75cb68ded7",
+        "bytes": 13457
+      }
+    },
+    {
+      "id": "e487",
+      "root": "current",
+      "path": "docs/EXP487_DASHBOARD_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 412475,
+      "sha256": "a75acd8c3f5b1d207b66b4cf4085b5fc107ff21ddd5c7b217f8962148e4282ae",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e487_antigravity.html",
+        "transformations": {
+          "scripts_removed": 2
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "5ba02a73a1c9638527b5b0e8755a2b26b8cdeb007a8b5056656dd0304fb1ecc4",
+        "bytes": 394021
+      }
+    },
+    {
+      "id": "e536",
+      "root": "current",
+      "path": "docs/EXP536_DIRECT_SHAPE_SEARCH_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 18317,
+      "sha256": "f1b2a80a9bd47aa1db4fd47dbb7d1ce9e4b97e8c8e50846fc683f64bafd3c558",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e536_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 7,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "0571ad8e925bb9b04492caf3c291c886b5f347f80951cf16d9d02c9236c448e5",
+        "bytes": 19037
+      }
+    },
+    {
+      "id": "e537",
+      "root": "current",
+      "path": "docs/EXP537_CALIBRATION_GAP_DIAGNOSIS_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 14910,
+      "sha256": "1dda81e4a31e62610c333e00854955d3ff9867765a568799cad81d2cb0ae9e57",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e537_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 9,
+          "links_rebased": 2
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "8a1581a851371d130c9de400f630c5ae7f45ba5a2bdac5d83abf5d967d721336",
+        "bytes": 15510
+      }
+    },
+    {
+      "id": "e538",
+      "root": "current",
+      "path": "docs/EXP538_NORMAL_TRAIN_FIT_GAP_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 14295,
+      "sha256": "6fd2032a98bdb2ce8b680c86fa1f768a433ffb95cd62ed37770cc1ffb3af13bb",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e538_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "links_rebased": 3,
+          "unpublished_references": 8
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "7cad7dccffc865fee760f250c099a6bf2527a3282c318b64e58d6918ce05de7c",
+        "bytes": 14898
+      }
+    },
+    {
+      "id": "e539",
+      "root": "current",
+      "path": "docs/EXP539_GLICLASS_ROUTER_antigravity.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 12904,
+      "sha256": "238a8c8e9d20c8b86bcb4fe3b844a7cb6a9898ca1e1ad3c214cc6cd3dc4972ea",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/e539_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "links_rebased": 2,
+          "unpublished_references": 5
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "cc6225a5bbcf276de0d9b9a1f26adad5c0367d2e5ecf238e5b449f19e00286fc",
+        "bytes": 13521
+      }
+    },
+    {
+      "id": "context",
+      "root": "current",
+      "path": "docs/PROJECT_RESEARCH_CONTEXT_KO.md",
+      "role": "report",
+      "read_scope": "historical context; selected sections reviewed",
+      "bytes": 26858,
+      "sha256": "6666be4c3724f5bdff72b53638f1fa31266bc37dfd46e25b7b79e798e5e0f2b0",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/PROJECT_RESEARCH_CONTEXT_KO.md",
+        "sha256": "6666be4c3724f5bdff72b53638f1fa31266bc37dfd46e25b7b79e798e5e0f2b0",
+        "bytes": 26858
+      }
+    },
+    {
+      "id": "handoff",
+      "root": "current",
+      "path": "docs/HANDOFF_20260728_EXP403_408_KO.md",
+      "role": "report",
+      "read_scope": "historical context; selected sections reviewed",
+      "bytes": 7234,
+      "sha256": "a500f61b6722e74adf330cf15adb8f2e0d1d5c258380e91aeadf7583fa392598",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/HANDOFF_20260728_EXP403_408_KO.md",
+        "sha256": "a500f61b6722e74adf330cf15adb8f2e0d1d5c258380e91aeadf7583fa392598",
+        "bytes": 7234
+      }
+    },
+    {
+      "id": "class479",
+      "root": "current",
+      "path": "docs/EXP479_CLASS_COUNT_REPORT_antigravity.html",
+      "role": "report",
+      "read_scope": "historical context; selected sections reviewed",
+      "bytes": 564879,
+      "sha256": "a93abf0cf4abb72a89772204290eff767c7b724d0afa431cd693277e4da34424",
+      "publication": {
+        "status": "existing_repository",
+        "path": "docs/EXP479_CLASS_COUNT_REPORT_antigravity.html",
+        "sha256": "a93abf0cf4abb72a89772204290eff767c7b724d0afa431cd693277e4da34424",
+        "bytes": 564879
+      }
+    },
+    {
+      "id": "shared",
+      "root": "current",
+      "path": "services/time_series_anomaly_diagnosis/docs/shared_scoring_integration.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 8848,
+      "sha256": "2473f62cca153a45828bec99d25f26f96f9bfeb24aac0880286192655bcd1dcd",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/shared_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 5
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "6b3d8052051119d075159dcebc9e398ea6b923f32fdf3751d7d8d80c5d22b05c",
+        "bytes": 9867
+      }
+    },
+    {
+      "id": "refactor",
+      "root": "current",
+      "path": "services/time_series_anomaly_diagnosis/docs/shared_scoring_refactor.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 5107,
+      "sha256": "829f5d9973c68a1962481f5509898c4a3552152ac41a6aa620fd5e5ff184eb0e",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/refactor_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 5,
+          "links_rebased": 1
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "34292333cb4f2c2c54b376042ca789580cedcae9131f4eb010e901f42946df37",
+        "bytes": 6104
+      }
+    },
+    {
+      "id": "database",
+      "root": "current",
+      "path": "services/time_series_anomaly_diagnosis/docs/database_evaluation.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 9399,
+      "sha256": "48a5a84d366c4250068642a0592b6236954021318020641a56b73844f98ba2f0",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/database_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "unpublished_references": 5
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "84d954f0ba0849d6a60b5f8793ee44a195ce30b9e376f36c30bdc32577b2b3c4",
+        "bytes": 10362
+      }
+    },
+    {
+      "id": "recovery",
+      "root": "current",
+      "path": "services/time_series_anomaly_diagnosis/docs/database_recovery.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 7464,
+      "sha256": "80fdd2fe4a46723fd09e866b0f49ff43532993707ad02b66bb6e879c91e3f3b6",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/recovery_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0,
+          "links_rebased": 3,
+          "unpublished_references": 4
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "de9bd2412df282b4b5be6c169b2a2f3008bd559af76f62d03a491fbe26f3140d",
+        "bytes": 8213
+      }
+    },
+    {
+      "id": "start",
+      "root": "current",
+      "path": "services/time_series_anomaly_diagnosis/docs/database_start.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 2490,
+      "sha256": "6c375500debfdbdb8a9d3e619f49d658d71ab27d0f526a60cdf25ad1b6e8bc58",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/start_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "44f98baf7daf23da801020af776300a3885a96744ef0622806b0d87cfe3155e9",
+        "bytes": 3098
+      }
+    },
+    {
+      "id": "csv",
+      "root": "current",
+      "path": "services/time_series_anomaly_diagnosis/docs/raw_csv_input.html",
+      "role": "report",
+      "read_scope": "reviewed report text",
+      "bytes": 4704,
+      "sha256": "21ef18bddd5e17242d2397a3e42556c49e1f3a49c8fd711ea770f9202f6602b3",
+      "publication": {
+        "status": "report_snapshot",
+        "path": "docs/llm_wiki/evidence/csv_antigravity.html",
+        "transformations": {
+          "scripts_removed": 0
+        },
+        "note": "Static reading copy; original unchanged. Links rebased or disabled, scripts removed, omitted figures marked, provenance banner added.",
+        "sha256": "3d8c883b190f8968d1a03c5e347034200ca681d2d05f85f7ab5283701a8ca938",
+        "bytes": 5310
+      }
+    },
+    {
+      "id": "e497",
+      "root": "archive",
+      "path": "experiments/exp497_anchored_exposure_antigravity/pilot_results_antigravity.json",
+      "role": "results",
+      "read_scope": "selected/state/aggregate fields reviewed; not full experimental replay",
+      "bytes": 329301,
+      "sha256": "3d8fbc38e4f6587b9008ad3e17fed48d60ed5615a8567ce98cd75e441be6b7ba",
+      "publication": {
+        "status": "existing_repository",
+        "path": "experiments/exp497_anchored_exposure_antigravity/pilot_results_antigravity.json",
+        "sha256": "3d8fbc38e4f6587b9008ad3e17fed48d60ed5615a8567ce98cd75e441be6b7ba",
+        "bytes": 329301
+      }
+    },
+    {
+      "id": "e498",
+      "root": "archive",
+      "path": "experiments/exp498_copula_geometry_antigravity/pilot_results_antigravity.json",
+      "role": "results",
+      "read_scope": "selected/state/aggregate fields reviewed; not full experimental replay",
+      "bytes": 285589,
+      "sha256": "7d23b393165d746f3ae0b420143ad26ba87992c7c2eaeb1faa74a1c548b5ed98",
+      "publication": {
+        "status": "existing_repository",
+        "path": "experiments/exp498_copula_geometry_antigravity/pilot_results_antigravity.json",
+        "sha256": "7d23b393165d746f3ae0b420143ad26ba87992c7c2eaeb1faa74a1c548b5ed98",
+        "bytes": 285589
+      }
+    },
+    {
+      "id": "e499",
+      "root": "archive",
+      "path": "experiments/exp499_normal_support_antigravity/pilot_results_antigravity.json",
+      "role": "results",
+      "read_scope": "selected/state/aggregate fields reviewed; not full experimental replay",
+      "bytes": 258212,
+      "sha256": "ff9746d25e98acc30e1d340019d1fbc634494b0caf929d966f2f694aad315397",
+      "publication": {
+        "status": "existing_repository",
+        "path": "experiments/exp499_normal_support_antigravity/pilot_results_antigravity.json",
+        "sha256": "ff9746d25e98acc30e1d340019d1fbc634494b0caf929d966f2f694aad315397",
+        "bytes": 258212
+      }
+    },
+    {
+      "id": "e500",
+      "root": "archive",
+      "path": "experiments/exp500_temporal_geometry_antigravity/pilot_results_antigravity.json",
+      "role": "results",
+      "read_scope": "selected/state/aggregate fields reviewed; not full experimental replay",
+      "bytes": 186607,
+      "sha256": "a4132f962471c083e179b077a5de4ca584c4851aa40fb4e54740edf120d5a2a6",
+      "publication": {
+        "status": "existing_repository",
+        "path": "experiments/exp500_temporal_geometry_antigravity/pilot_results_antigravity.json",
+        "sha256": "a4132f962471c083e179b077a5de4ca584c4851aa40fb4e54740edf120d5a2a6",
+        "bytes": 186607
+      }
+    },
+    {
+      "id": "e501",
+      "root": "archive",
+      "path": "experiments/exp501_energy_lift_antigravity/pilot_results_antigravity.json",
+      "role": "results",
+      "read_scope": "selected/state/aggregate fields reviewed; not full experimental replay",
+      "bytes": 179556,
+      "sha256": "b1a1d918a6d5f1e176a18dd90999d7cac6638a2379136cec55b237e8f3f4f7a4",
+      "publication": {
+        "status": "existing_repository",
+        "path": "experiments/exp501_energy_lift_antigravity/pilot_results_antigravity.json",
+        "sha256": "b1a1d918a6d5f1e176a18dd90999d7cac6638a2379136cec55b237e8f3f4f7a4",
+        "bytes": 179556
+      }
+    },
+    {
+      "id": "e503",
+      "root": "archive",
+      "path": "experiments/exp503_spatial_pyramid_antigravity/pilot_results_antigravity.json",
+      "role": "results",
+      "read_scope": "selected/state/aggregate fields reviewed; not full experimental replay",
+      "bytes": 174231,
+      "sha256": "dbdb5add94bc68cf6b1d4f5637b1cb5f25f683467ccb8083bdbd23398f3c6761",
+      "publication": {
+        "status": "existing_repository",
+        "path": "experiments/exp503_spatial_pyramid_antigravity/pilot_results_antigravity.json",
+        "sha256": "dbdb5add94bc68cf6b1d4f5637b1cb5f25f683467ccb8083bdbd23398f3c6761",
+        "bytes": 174231
+      }
+    },
+    {
+      "id": "e504",
+      "root": "archive",
+      "path": "experiments/exp504_quant_geometry_antigravity/pilot_results_antigravity.json",
+      "role": "results",
+      "read_scope": "selected/state/aggregate fields reviewed; not full experimental replay",
+      "bytes": 167443,
+      "sha256": "c9db83779dea48fbe179339baf5f6a553e81a987f37187c367e11585826daddf",
+      "publication": {
+        "status": "existing_repository",
+        "path": "experiments/exp504_quant_geometry_antigravity/pilot_results_antigravity.json",
+        "sha256": "c9db83779dea48fbe179339baf5f6a553e81a987f37187c367e11585826daddf",
+        "bytes": 167443
+      }
+    },
+    {
+      "id": "e505",
+      "root": "archive",
+      "path": "experiments/exp505_multirocket_geometry_antigravity/pilot_results_antigravity.json",
+      "role": "results",
+      "read_scope": "selected/state/aggregate fields reviewed; not full experimental replay",
+      "bytes": 191968,
+      "sha256": "e343aec2b3ed90b20cef774c8b0fb78602b756d4cff0b1e58d3bf69dbb05ca70",
+      "publication": {
+        "status": "existing_repository",
+        "path": "experiments/exp505_multirocket_geometry_antigravity/pilot_results_antigravity.json",
+        "sha256": "e343aec2b3ed90b20cef774c8b0fb78602b756d4cff0b1e58d3bf69dbb05ca70",
+        "bytes": 191968
+      }
+    },
+    {
+      "id": "e506",
+      "root": "archive",
+      "path": "experiments/exp506_roughness_geometry_antigravity/pilot_results_antigravity.json",
+      "role": "results",
+      "read_scope": "selected/state/aggregate fields reviewed; not full experimental replay",
+      "bytes": 182252,
+      "sha256": "d93d914312c355c06d4e15d32266646879205be06dfb31f727924783364a6890",
+      "publication": {
+        "status": "existing_repository",
+        "path": "experiments/exp506_roughness_geometry_antigravity/pilot_results_antigravity.json",
+        "sha256": "d93d914312c355c06d4e15d32266646879205be06dfb31f727924783364a6890",
+        "bytes": 182252
+      }
+    },
+    {
+      "id": "e488",
+      "root": "archive",
+      "path": "experiments/exp488_catch22_train_descriptors_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "gates, summary, family/dataset counts reviewed",
+      "bytes": 414510,
+      "sha256": "5f99a5683c3a82d71ab00f3f2d6c90dc2c3e9d8d967ba733e350cc30e86a8ef1",
+      "publication": {
+        "status": "existing_repository",
+        "path": "experiments/exp488_catch22_train_descriptors_antigravity/results_antigravity.json",
+        "sha256": "5f99a5683c3a82d71ab00f3f2d6c90dc2c3e9d8d967ba733e350cc30e86a8ef1",
+        "bytes": 414510
+      }
+    },
+    {
+      "id": "r487",
+      "root": "current",
+      "path": "experiments/exp487_p_multi_evidence_revalidation_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "decision fields reviewed",
+      "bytes": 2737,
+      "sha256": "8d728d00846180719fa98fcddb5361e10e0cf7bd8db4ce9950bbb4e3045e27cb",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "r502",
+      "root": "archive",
+      "path": "experiments/exp502_amplitude_envelope_antigravity/full_results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 367532,
+      "sha256": "900c63d6a27915659566263e810b46e1498244c1a62f3e1117300638772070ee",
+      "publication": {
+        "status": "existing_repository",
+        "path": "experiments/exp502_amplitude_envelope_antigravity/full_results_antigravity.json",
+        "sha256": "900c63d6a27915659566263e810b46e1498244c1a62f3e1117300638772070ee",
+        "bytes": 367532
+      }
+    },
+    {
+      "id": "v502",
+      "root": "archive",
+      "path": "experiments/exp502_amplitude_envelope_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 970,
+      "sha256": "a46aab4ca44604036bb7a497ab38545001201c3eba79d76e1f0dccb244a46f70",
+      "publication": {
+        "status": "existing_repository",
+        "path": "experiments/exp502_amplitude_envelope_antigravity/verification_antigravity.json",
+        "sha256": "a46aab4ca44604036bb7a497ab38545001201c3eba79d76e1f0dccb244a46f70",
+        "bytes": 970
+      }
+    },
+    {
+      "id": "r516",
+      "root": "archive",
+      "path": "experiments/exp516_per_dataset_normal_only_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 10413862,
+      "sha256": "25073634e57c7422b70b4bceb8b2be00487631779199762de80a218c99759352",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "r518",
+      "root": "archive",
+      "path": "experiments/exp518_failure_decomposition_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 5622996,
+      "sha256": "c6bec0092e1bf9a777149aca1b5e9f8507282c8e9a319dde0bc6fc684494b256",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v518",
+      "root": "archive",
+      "path": "experiments/exp518_failure_decomposition_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 1530,
+      "sha256": "984145a72266bb655cf752e6f9f0358b7431cd033c38d08508c2b91f1373bf9b",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v518_antigravity.json",
+        "sha256": "984145a72266bb655cf752e6f9f0358b7431cd033c38d08508c2b91f1373bf9b",
+        "bytes": 1530
+      }
+    },
+    {
+      "id": "r520",
+      "root": "archive",
+      "path": "experiments/exp520_train_calibrated_validation_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 159849,
+      "sha256": "8b609fa9783ab0fd846564e7388f6ecbf377b87fddaf9330455ff73991979815",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v520",
+      "root": "archive",
+      "path": "experiments/exp520_train_calibrated_validation_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 471,
+      "sha256": "a87f508eed09f047796cf0af1f5c4bedbf6255bee6a2095acd99d5a9c9eb81fb",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v520_antigravity.json",
+        "sha256": "a87f508eed09f047796cf0af1f5c4bedbf6255bee6a2095acd99d5a9c9eb81fb",
+        "bytes": 471
+      }
+    },
+    {
+      "id": "r521",
+      "root": "archive",
+      "path": "experiments/exp521_fixed_recall_fusion_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 290037,
+      "sha256": "b608210c9de18149ea3fa4addae232043a2333be951289be4263534204e992d9",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v521",
+      "root": "archive",
+      "path": "experiments/exp521_fixed_recall_fusion_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 661,
+      "sha256": "a81b6e40ce596efea0b076361f5a8733d12594ba9fa30859976e2b5e4ae1898b",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v521_antigravity.json",
+        "sha256": "a81b6e40ce596efea0b076361f5a8733d12594ba9fa30859976e2b5e4ae1898b",
+        "bytes": 661
+      }
+    },
+    {
+      "id": "r522",
+      "root": "archive",
+      "path": "experiments/exp522_pair_diagnosis_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 159806,
+      "sha256": "a3a95976fe70dd6a87ba2a9c66dd29fdf9f69eaf8bd877a80aa203ee1184fd63",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v522",
+      "root": "archive",
+      "path": "experiments/exp522_pair_diagnosis_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 474,
+      "sha256": "f8dec0bfade0aede47ef8297ccc04ffa2c93eea54bcd913fde23021961e20051",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v522_antigravity.json",
+        "sha256": "f8dec0bfade0aede47ef8297ccc04ffa2c93eea54bcd913fde23021961e20051",
+        "bytes": 474
+      }
+    },
+    {
+      "id": "r523",
+      "root": "archive",
+      "path": "experiments/exp523_common_miss_diagnosis_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 1468456,
+      "sha256": "7329e9c7836486d77f2fbe0920a912ad089e301f3eb0fc63628c9a720d176146",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v523",
+      "root": "archive",
+      "path": "experiments/exp523_common_miss_diagnosis_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 425,
+      "sha256": "967ac3c0d3d5eb1b1a45a29f71070e0b9ef65df424e28c2b5ab770434ebbf260",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v523_antigravity.json",
+        "sha256": "967ac3c0d3d5eb1b1a45a29f71070e0b9ef65df424e28c2b5ab770434ebbf260",
+        "bytes": 425
+      }
+    },
+    {
+      "id": "r524",
+      "root": "archive",
+      "path": "experiments/exp524_freezer_crop_audit_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 277199,
+      "sha256": "221aa680f094d5042f971fad8646e50dc79355709712078c167b1e51c2f2158c",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v524",
+      "root": "archive",
+      "path": "experiments/exp524_freezer_crop_audit_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 420,
+      "sha256": "5fade156fff3653f8e4083c39064efe44b96c82f3fbce02377fa80d35c146ebb",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v524_antigravity.json",
+        "sha256": "5fade156fff3653f8e4083c39064efe44b96c82f3fbce02377fa80d35c146ebb",
+        "bytes": 420
+      }
+    },
+    {
+      "id": "r525",
+      "root": "archive",
+      "path": "experiments/exp525_raw_moment_score_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 124494,
+      "sha256": "0d1f152872cd4d8a69a93c79b5a5862ad386a80603f1f86d07f18de2f9604268",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v525",
+      "root": "archive",
+      "path": "experiments/exp525_raw_moment_score_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 422,
+      "sha256": "56b5a2991fdbd637a40113d03906f804b2d5677c120f4a232337033429865880",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v525_antigravity.json",
+        "sha256": "56b5a2991fdbd637a40113d03906f804b2d5677c120f4a232337033429865880",
+        "bytes": 422
+      }
+    },
+    {
+      "id": "r526",
+      "root": "archive",
+      "path": "experiments/exp526_shape_moment_joint_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 224265,
+      "sha256": "b229577295989940b49d9e57defab9ab644ca0e6d92c5c3ebcb2a70dcf8eeb87",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v526",
+      "root": "archive",
+      "path": "experiments/exp526_shape_moment_joint_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 830,
+      "sha256": "f8a31990ecc913b17aea390af676f8d19d8689ff53b3cc3a66ce943f8514e843",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v526_antigravity.json",
+        "sha256": "f8a31990ecc913b17aea390af676f8d19d8689ff53b3cc3a66ce943f8514e843",
+        "bytes": 830
+      }
+    },
+    {
+      "id": "r527",
+      "root": "archive",
+      "path": "experiments/exp527_normal_retrain_stability_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 580816,
+      "sha256": "cdeafa1d56b72544ddf9f3fb71979c5e58f97a7241e84df6ffab2cd952e33ddf",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v527",
+      "root": "archive",
+      "path": "experiments/exp527_normal_retrain_stability_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 587,
+      "sha256": "924fdb8d8293e8d15ae23f2c04ac252db05c6c4f1e5518e531991dadbbbe2cdb",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v527_antigravity.json",
+        "sha256": "924fdb8d8293e8d15ae23f2c04ac252db05c6c4f1e5518e531991dadbbbe2cdb",
+        "bytes": 587
+      }
+    },
+    {
+      "id": "r528",
+      "root": "archive",
+      "path": "experiments/exp528_full_population_method_search_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 3576264,
+      "sha256": "44e74d1dd7fd83b3eb1f3eec60e445b4ebf1e1b1fb5672d7e755b3f652475c43",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v528",
+      "root": "archive",
+      "path": "experiments/exp528_full_population_method_search_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 295,
+      "sha256": "595832d860738a0ea73a46bdc6b522805ab53d32cb47b7d995b598fcf4ed8ae1",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v528_antigravity.json",
+        "sha256": "595832d860738a0ea73a46bdc6b522805ab53d32cb47b7d995b598fcf4ed8ae1",
+        "bytes": 295
+      }
+    },
+    {
+      "id": "r529",
+      "root": "archive",
+      "path": "experiments/exp529_multirocket_real_test_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 3687612,
+      "sha256": "36f5080682bde5c0c93bf4e834bc850b46c43d5ce4695b8ad5c5defe14dc7ff4",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v529",
+      "root": "archive",
+      "path": "experiments/exp529_multirocket_real_test_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 295,
+      "sha256": "933cc1df3d31df78dbfe3b769b7420be4d6e1cd89dd6a0e83672fa47178d3c4e",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v529_antigravity.json",
+        "sha256": "933cc1df3d31df78dbfe3b769b7420be4d6e1cd89dd6a0e83672fa47178d3c4e",
+        "bytes": 295
+      }
+    },
+    {
+      "id": "r530",
+      "root": "archive",
+      "path": "experiments/exp530_lw_geometry_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 6604565,
+      "sha256": "2c1c83895bb6d92f2c0f29d51a9e58377522e48ab9dfe43daf768e49679e62ae",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v530",
+      "root": "archive",
+      "path": "experiments/exp530_lw_geometry_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 295,
+      "sha256": "e2cc2712c94c65f81d6437c90677be8cfe639b303fc631eb86dba09f3e3f8455",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v530_antigravity.json",
+        "sha256": "e2cc2712c94c65f81d6437c90677be8cfe639b303fc631eb86dba09f3e3f8455",
+        "bytes": 295
+      }
+    },
+    {
+      "id": "r531",
+      "root": "archive",
+      "path": "experiments/exp531_pooled_calibration_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 550810,
+      "sha256": "0b421727f5315856245cd5555e094bff2fccc109d4c1e03e5c6a06a591ae1163",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v531",
+      "root": "archive",
+      "path": "experiments/exp531_pooled_calibration_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 334,
+      "sha256": "ecc85da47188b915a29aace00e29a90714441203d96f62f604cc6aac8772961d",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v531_antigravity.json",
+        "sha256": "ecc85da47188b915a29aace00e29a90714441203d96f62f604cc6aac8772961d",
+        "bytes": 334
+      }
+    },
+    {
+      "id": "r532",
+      "root": "archive",
+      "path": "experiments/exp532_fit_preserve_cal_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 2972728,
+      "sha256": "ccbcd03f57bffcd43afab2129717c0c539253a03d90995b00529249ad2374067",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v532",
+      "root": "archive",
+      "path": "experiments/exp532_fit_preserve_cal_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 323,
+      "sha256": "22bad443fa9b04e888b2d5d7ea61c3150a9b3b5d0c0527a7bdb7613669ce92c2",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v532_antigravity.json",
+        "sha256": "22bad443fa9b04e888b2d5d7ea61c3150a9b3b5d0c0527a7bdb7613669ce92c2",
+        "bytes": 323
+      }
+    },
+    {
+      "id": "r533",
+      "root": "archive",
+      "path": "experiments/exp533_normal_crossconformal_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 2535,
+      "sha256": "342ac9230efc5d665e68cd1c91bf6551e4fe4a9b495e84bcb7ecd7951cb603b9",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/r533_antigravity.json",
+        "sha256": "342ac9230efc5d665e68cd1c91bf6551e4fe4a9b495e84bcb7ecd7951cb603b9",
+        "bytes": 2535
+      }
+    },
+    {
+      "id": "v533",
+      "root": "archive",
+      "path": "experiments/exp533_normal_crossconformal_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 453,
+      "sha256": "12309b0ea8d0bbafc54ccf2561899fadca7b3b243c2cef63f4303a29be550dfc",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v533_antigravity.json",
+        "sha256": "12309b0ea8d0bbafc54ccf2561899fadca7b3b243c2cef63f4303a29be550dfc",
+        "bytes": 453
+      }
+    },
+    {
+      "id": "r535",
+      "root": "archive",
+      "path": "experiments/exp535_parallel_frozen_comparison_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 21375,
+      "sha256": "86279722226560fa094e851cb5c02e522ddc627bfe033795f18d6c046e67ed2c",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/r535_antigravity.json",
+        "sha256": "86279722226560fa094e851cb5c02e522ddc627bfe033795f18d6c046e67ed2c",
+        "bytes": 21375
+      }
+    },
+    {
+      "id": "v535",
+      "root": "archive",
+      "path": "experiments/exp535_parallel_frozen_comparison_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 292,
+      "sha256": "5b3ccabc7bb00f024e1c48fa07c6bdf3ad27598c2d86816f5251f0e2776a2888",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v535_antigravity.json",
+        "sha256": "5b3ccabc7bb00f024e1c48fa07c6bdf3ad27598c2d86816f5251f0e2776a2888",
+        "bytes": 292
+      }
+    },
+    {
+      "id": "r536",
+      "root": "current",
+      "path": "experiments/exp536_direct_shape_search_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 221616,
+      "sha256": "480976f49c8a7be124fd2a546c7911cdff5892fa43c7cdf9e8c3ca57508fa279",
+      "publication": {
+        "status": "local_only",
+        "path": null,
+        "reason": "Detailed historical result records retained locally; excluded from documentation publication."
+      }
+    },
+    {
+      "id": "v536",
+      "root": "current",
+      "path": "experiments/exp536_direct_shape_search_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 215,
+      "sha256": "0a058bb65dc0391649966e3b3e9d6561a01c583f899a0cc90526758828d2117c",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v536_antigravity.json",
+        "sha256": "0a058bb65dc0391649966e3b3e9d6561a01c583f899a0cc90526758828d2117c",
+        "bytes": 215
+      }
+    },
+    {
+      "id": "r537",
+      "root": "current",
+      "path": "experiments/exp537_calibration_gap_diagnosis_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 6118,
+      "sha256": "87148d3d3bbc240d45d506d5312a1ebccaf8e520866a8212bfffd62fde1ce94c",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/r537_antigravity.json",
+        "sha256": "87148d3d3bbc240d45d506d5312a1ebccaf8e520866a8212bfffd62fde1ce94c",
+        "bytes": 6118
+      }
+    },
+    {
+      "id": "v537",
+      "root": "current",
+      "path": "experiments/exp537_calibration_gap_diagnosis_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 575,
+      "sha256": "b21c0584ec69204e58bcd9069f1c3a169b1d6d8d79c25b99faaa6486c8671528",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v537_antigravity.json",
+        "sha256": "b21c0584ec69204e58bcd9069f1c3a169b1d6d8d79c25b99faaa6486c8671528",
+        "bytes": 575
+      }
+    },
+    {
+      "id": "r538",
+      "root": "current",
+      "path": "experiments/exp538_normal_train_fit_gap_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 36865,
+      "sha256": "5d2446a0fc8c92274641f9e10acbc4055c95bdb76cc6cadd2110f9101a1e4154",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/r538_antigravity.json",
+        "sha256": "5d2446a0fc8c92274641f9e10acbc4055c95bdb76cc6cadd2110f9101a1e4154",
+        "bytes": 36865
+      }
+    },
+    {
+      "id": "v538",
+      "root": "current",
+      "path": "experiments/exp538_normal_train_fit_gap_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 992,
+      "sha256": "12bde6006bc7efbd5dda31281904534e1eb63588ab264b8bae4f2718e1658022",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v538_antigravity.json",
+        "sha256": "12bde6006bc7efbd5dda31281904534e1eb63588ab264b8bae4f2718e1658022",
+        "bytes": 992
+      }
+    },
+    {
+      "id": "r539",
+      "root": "current",
+      "path": "experiments/exp539_gliclass_router_antigravity/results_antigravity.json",
+      "role": "results",
+      "read_scope": "aggregate source registered; contents parsed, not a full metric replay",
+      "bytes": 14441,
+      "sha256": "84d0a165dbf93a8bdca5820a7545bc93fae9d27f3fe51674a7dc2f9cb2fde7ae",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/r539_antigravity.json",
+        "sha256": "84d0a165dbf93a8bdca5820a7545bc93fae9d27f3fe51674a7dc2f9cb2fde7ae",
+        "bytes": 14441
+      }
+    },
+    {
+      "id": "v539",
+      "root": "current",
+      "path": "experiments/exp539_gliclass_router_antigravity/verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved verification metadata inspected; not rerun",
+      "bytes": 490,
+      "sha256": "1eb913eb573e93b34538090cce21435724790aa0fa645c8ecada2a0b5eac2d65",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/v539_antigravity.json",
+        "sha256": "1eb913eb573e93b34538090cce21435724790aa0fa645c8ecada2a0b5eac2d65",
+        "bytes": 490
+      }
+    },
+    {
+      "id": "n539",
+      "root": "current",
+      "path": "experiments/exp539_gliclass_router_antigravity/numeric_state_verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved aggregate/provenance source",
+      "bytes": 843,
+      "sha256": "49166846f639957d3d38e7cddeab1b5f8114457d93c6e303db5484e826be3992",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/n539_antigravity.json",
+        "sha256": "49166846f639957d3d38e7cddeab1b5f8114457d93c6e303db5484e826be3992",
+        "bytes": 843
+      }
+    },
+    {
+      "id": "review539",
+      "root": "current",
+      "path": "experiments/exp539_gliclass_router_antigravity/report_review_antigravity.json",
+      "role": "results",
+      "read_scope": "saved aggregate/provenance source",
+      "bytes": 1424,
+      "sha256": "ab9a86d91d2224901a58d3b6495dd666d37fb2275e88bb7a217e0b5734ba70c6",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/review539_antigravity.json",
+        "sha256": "ab9a86d91d2224901a58d3b6495dd666d37fb2275e88bb7a217e0b5734ba70c6",
+        "bytes": 1424
+      }
+    },
+    {
+      "id": "review538",
+      "root": "current",
+      "path": "experiments/exp538_normal_train_fit_gap_antigravity/review_verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved aggregate/provenance source",
+      "bytes": 2282,
+      "sha256": "1c8dfef8dcb8c927586e7897343270b1f36f5b2f46078e043416334d1b666163",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/review538_antigravity.json",
+        "sha256": "1c8dfef8dcb8c927586e7897343270b1f36f5b2f46078e043416334d1b666163",
+        "bytes": 2282
+      }
+    },
+    {
+      "id": "ind536",
+      "root": "current",
+      "path": "experiments/exp536_direct_shape_search_antigravity/independent_verification_antigravity.json",
+      "role": "verification",
+      "read_scope": "saved aggregate/provenance source",
+      "bytes": 6376,
+      "sha256": "940e397a89bafa91b291acaa6b010234495c409b82a667247cf2a584bd1c69c6",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/ind536_antigravity.json",
+        "sha256": "940e397a89bafa91b291acaa6b010234495c409b82a667247cf2a584bd1c69c6",
+        "bytes": 6376
+      }
+    },
+    {
+      "id": "recovery_summary",
+      "root": "current",
+      "path": "services/time_series_anomaly_diagnosis/runtime/full_database_evaluation_recovery/summary.json",
+      "role": "results",
+      "read_scope": "saved aggregate/provenance source",
+      "bytes": 1091,
+      "sha256": "7b1b2337caecd9918f8fc3736463b138231e516abc4ebe150e15b0c97e62d7c3",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/recovery_summary_antigravity.json",
+        "sha256": "7b1b2337caecd9918f8fc3736463b138231e516abc4ebe150e15b0c97e62d7c3",
+        "bytes": 1091
+      }
+    },
+    {
+      "id": "recovery_verification",
+      "root": "current",
+      "path": "services/time_series_anomaly_diagnosis/runtime/full_database_evaluation_recovery/verification.json",
+      "role": "verification",
+      "read_scope": "saved aggregate/provenance source",
+      "bytes": 14922,
+      "sha256": "44b961a7a637de9dbccc7b13994858a537c4d80a9d5f1fa6ca03fc3cfb7e00b6",
+      "publication": {
+        "status": "exact_copy",
+        "path": "docs/llm_wiki/evidence/recovery_verification_antigravity.json",
+        "sha256": "44b961a7a637de9dbccc7b13994858a537c4d80a9d5f1fa6ca03fc3cfb7e00b6",
+        "bytes": 14922
+      }
+    }
+  ],
+  "source_result_bindings": [
+    {
+      "experiment": 518,
+      "verification_source": "v518",
+      "result_source": "r518",
+      "key": "result_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 520,
+      "verification_source": "v520",
+      "result_source": "r520",
+      "key": "result_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 521,
+      "verification_source": "v521",
+      "result_source": "r521",
+      "key": "result_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 522,
+      "verification_source": "v522",
+      "result_source": "r522",
+      "key": "result_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 523,
+      "verification_source": "v523",
+      "result_source": "r523",
+      "key": "result_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 524,
+      "verification_source": "v524",
+      "result_source": "r524",
+      "key": "results_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 525,
+      "verification_source": "v525",
+      "result_source": "r525",
+      "key": "results_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 526,
+      "verification_source": "v526",
+      "result_source": "r526",
+      "key": "results_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 527,
+      "verification_source": "v527",
+      "result_source": "r527",
+      "key": "results_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 528,
+      "verification_source": "v528",
+      "result_source": "r528",
+      "key": "result_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 529,
+      "verification_source": "v529",
+      "result_source": "r529",
+      "key": "result_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 530,
+      "verification_source": "v530",
+      "result_source": "r530",
+      "key": "result_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 531,
+      "verification_source": "v531",
+      "result_source": "r531",
+      "key": "result_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 532,
+      "verification_source": "v532",
+      "result_source": "r532",
+      "key": "result_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 533,
+      "verification_source": "v533",
+      "result_source": "r533",
+      "key": "result_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 535,
+      "verification_source": "v535",
+      "result_source": "r535",
+      "key": "results_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 537,
+      "verification_source": "v537",
+      "result_source": "r537",
+      "key": "results_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 538,
+      "verification_source": "v538",
+      "result_source": "r538",
+      "key": "results_sha256",
+      "matches": true
+    },
+    {
+      "experiment": 539,
+      "verification_source": "v539",
+      "result_source": "r539",
+      "key": "results_sha256",
+      "matches": true
+    }
+  ],
+  "directly_cited_source_ids": [
+    "class479",
+    "context",
+    "coreml",
+    "csv",
+    "database",
+    "diag489",
+    "e449",
+    "e475",
+    "e480",
+    "e481",
+    "e482",
+    "e483",
+    "e484",
+    "e485",
+    "e486",
+    "e487",
+    "e488",
+    "e489",
+    "e492",
+    "e493",
+    "e494",
+    "e495",
+    "e497",
+    "e498",
+    "e499",
+    "e500",
+    "e501",
+    "e502",
+    "e503",
+    "e504",
+    "e505",
+    "e506",
+    "e507",
+    "e508",
+    "e509",
+    "e510",
+    "e511",
+    "e512",
+    "e513",
+    "e514",
+    "e515",
+    "e516",
+    "e517",
+    "e518",
+    "e519",
+    "e520",
+    "e521",
+    "e522",
+    "e523",
+    "e524",
+    "e525",
+    "e526",
+    "e527",
+    "e528",
+    "e529",
+    "e530",
+    "e531",
+    "e532",
+    "e533",
+    "e534",
+    "e535",
+    "e536",
+    "e537",
+    "e538",
+    "e539",
+    "gate530",
+    "handoff",
+    "interim",
+    "n539",
+    "oldstatus",
+    "r487",
+    "r539",
+    "ready532",
+    "recovery",
+    "refactor",
+    "reuse526",
+    "shared",
+    "start",
+    "status495",
+    "v539"
+  ],
+  "external_references": [
+    {
+      "url": "https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f",
+      "purpose": "knowledge-management pattern, not numerical evidence",
+      "read_in_prior_link_review": true
+    }
+  ],
+  "publication": {
+    "schema": "research-wiki-publication-v1",
+    "repository": "https://github.com/pmh10401/Dataset",
+    "base_commit": "d6ad7265f6224b6549d4932443403192347a21da",
+    "scope": "Documentation snapshot only; current research/service code, database, raw scores and trained weights are not published.",
+    "source_counts": {
+      "existing_repository": 37,
+      "report_snapshot": 41,
+      "local_only": 17,
+      "exact_copy": 31
+    },
+    "source_wiki_file_sha256": {
+      "system_antigravity.html": "6802914a0ba2d07454a1e769b86ad5fc0122394da9f4c561d1ed7149fa24919b",
+      "evaluation_antigravity.html": "43b15c369650b1d80e04278cc93d027d8a903171461dc7682ff0eb42daba80a6",
+      "sources_antigravity.html": "72179435da24469b0bf6057b0d005ec02c1814b21966b12c0af9dac1cad6a501",
+      "findings_antigravity.html": "eb2a0cc62904ea1234bc301fdff99479d3ebce15d70af7a64805a804c8b21e71",
+      "history_antigravity.html": "05de817265deb13037ffe7b421b1420f50ddc26d59df185e9d4848b1206d2351",
+      "index_antigravity.html": "1ccbbde06d4334abfdeeaabbf123a84b7eab170216322e317d72b2973bd4872f",
+      "sources_antigravity.json": "2c15163d97419d60e05d81abf50f1510ecea4e21571ecb4348da7aefe9d38fc3",
+      "verification_antigravity.json": "125f395035bda35a10470987cb791406fccbc2afe8a6caa9da00fda8ed8b72e8",
+      "maintenance_antigravity.html": "e9a7f76eac4efc7d9cb8be61a021fb12b341593f98753afcbb1a3d40bf6a2630"
+    },
+    "initial_wiki_verification": "docs/llm_wiki/evidence/wiki_initial_verification_antigravity.json",
+    "original_roots_are_provenance_only": true,
+    "html_reading": "GitHub displays HTML source; open index_antigravity.html from a repository checkout. No Pages deployment."
+  }
+}
