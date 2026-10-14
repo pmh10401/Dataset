@@ -1,0 +1,364 @@
+{
+  "edges": [
+    {
+      "from": "windows_build_workflow",
+      "to": "desktop_package_builder",
+      "type": "runs"
+    },
+    {
+      "from": "windows_build_workflow",
+      "to": "packaged_smoke",
+      "type": "verifies executable with"
+    },
+    {
+      "from": "service_launcher",
+      "to": "dataset_importer",
+      "type": "installs local database with"
+    },
+    {
+      "from": "dataset_importer",
+      "to": "dataset_repository",
+      "type": "produces database for"
+    },
+    {
+      "from": "dataset_repository",
+      "to": "model_resources",
+      "type": "imports"
+    },
+    {
+      "from": "service_resource_builder",
+      "to": "model_resources",
+      "type": "produces resources for"
+    },
+    {
+      "from": "anomaly_detection",
+      "to": "score_sources",
+      "type": "imports"
+    },
+    {
+      "from": "anomaly_detection",
+      "to": "dataset_repository",
+      "type": "imports"
+    },
+    {
+      "from": "anomaly_detection",
+      "to": "routing_policy",
+      "type": "imports"
+    },
+    {
+      "from": "routing_policy",
+      "to": "score_sources",
+      "type": "imports"
+    },
+    {
+      "from": "policy_qualification",
+      "to": "dataset_repository",
+      "type": "imports"
+    },
+    {
+      "from": "policy_qualification",
+      "to": "score_sources",
+      "type": "imports"
+    },
+    {
+      "from": "policy_qualification",
+      "to": "anomaly_detection",
+      "type": "imports"
+    },
+    {
+      "from": "policy_qualification",
+      "to": "routing_policy",
+      "type": "imports"
+    },
+    {
+      "from": "residual_fn_routing_qualification",
+      "to": "policy_qualification",
+      "type": "imports"
+    },
+    {
+      "from": "residual_fn_routing_qualification",
+      "to": "anomaly_detection",
+      "type": "imports"
+    },
+    {
+      "from": "residual_fn_routing_qualification",
+      "to": "routing_policy",
+      "type": "imports"
+    },
+    {
+      "from": "residual_fn_routing_qualification",
+      "to": "score_sources",
+      "type": "imports"
+    },
+    {
+      "from": "application_server",
+      "to": "model_resources",
+      "type": "consumes"
+    },
+    {
+      "from": "application_server",
+      "to": "multi_evidence_review",
+      "type": "ranks review candidates with"
+    },
+    {
+      "from": "model_resources",
+      "to": "multi_evidence_review",
+      "type": "parses review evidence with"
+    },
+    {
+      "from": "application_server",
+      "to": "dataset_repository",
+      "type": "consumes"
+    },
+    {
+      "from": "application_server",
+      "to": "anomaly_detection",
+      "type": "consumes"
+    },
+    {
+      "from": "application_server",
+      "to": "analysis_history",
+      "type": "consumes"
+    },
+    {
+      "from": "web_application",
+      "to": "application_server",
+      "type": "calls"
+    },
+    {
+      "from": "service_launcher",
+      "to": "application_server",
+      "type": "starts"
+    },
+    {
+      "from": "desktop_package_builder",
+      "to": "service_launcher",
+      "type": "packages"
+    },
+    {
+      "from": "desktop_package_builder",
+      "to": "model_resources",
+      "type": "packages resources for"
+    },
+    {
+      "from": "desktop_package_builder",
+      "to": "web_application",
+      "type": "packages assets for"
+    }
+  ],
+  "nodes": [
+    {
+      "caller": "Pull requests to main, main pushes, release branches, and manual runs",
+      "effect": "Tests service contracts and builds a Windows executable with analysis and restart smoke verification",
+      "id": "windows_build_workflow",
+      "path": ".github/workflows/windows_service_antigravity.yml",
+      "sha256": "f04fb369230a00dcf3c868bb1671994a7c76db7d261b4bca84bc36a0bd1dd529",
+      "tests": [
+        "tests/test_cross_platform_service.py",
+        "tests/test_packaging.py",
+        "tests/test_release_bundle.py",
+        "tests/test_code_map.py"
+      ]
+    },
+    {
+      "caller": "Windows release preparation",
+      "effect": "Snapshots the full read-only DB and splits a history-free Windows distribution with checksums",
+      "id": "release_bundle",
+      "path": "services/time_series_anomaly_diagnosis/packaging/release_bundle.py",
+      "sha256": "8576b7eba9f614b0a33c1e96c9a05ed65a0de4477b497d794ea0fb4d78af947f",
+      "tests": [
+        "tests/test_release_bundle.py"
+      ]
+    },
+    {
+      "caller": "Windows GitHub Actions build",
+      "effect": "Exercises offline database registration, analysis, and restart through the packaged executable",
+      "id": "packaged_smoke",
+      "path": "services/time_series_anomaly_diagnosis/packaging/smoke_executable.py",
+      "sha256": "af4232c8714bab6be74de1fd8ef1068d92e5a2e0d328c783eed4671898e16d1e",
+      "tests": [
+        "packaging/smoke_executable.py"
+      ]
+    },
+    {
+      "caller": "Task completion workflow",
+      "effect": "Builds and validates the service relationship map",
+      "id": "code_map",
+      "path": "services/time_series_anomaly_diagnosis/tools/build_code_map.py",
+      "sha256": "1bcc9ac7f4b80684d097e0d8d2076f6211897c09a13a2873305a33fe88aa1bf6",
+      "tests": [
+        "tests/test_code_map.py"
+      ]
+    },
+    {
+      "caller": "dataset_repository.py, analysis workflows",
+      "effect": "Loads and verifies service-owned routing, recovery, and label-free review metadata",
+      "id": "model_resources",
+      "path": "services/time_series_anomaly_diagnosis/model_resources.py",
+      "sha256": "b71a1ff0d3d6db377b6f54ef48da4aa340eb33d05cf4cb497b26cee87a1ee336",
+      "tests": [
+        "tests/test_data_access.py",
+        "tests/test_model_resources.py",
+        "tests/test_multi_evidence_review.py",
+        "tests/test_real_data_smoke.py",
+        "tests/test_cross_platform_service.py"
+      ]
+    },
+    {
+      "caller": "Release resource preparation workflow",
+      "effect": "Copies model inputs and sanitizes trusted review evidence into deterministic service resources",
+      "id": "service_resource_builder",
+      "path": "services/time_series_anomaly_diagnosis/tools/build_service_resources.py",
+      "sha256": "bef978da3a935468ea1bda0a2183e7da7cc75ec1f7c3c58d79b25011dea722d7",
+      "tests": [
+        "tests/test_model_resources.py"
+      ]
+    },
+    {
+      "caller": "Analysis API and service workflows",
+      "effect": "Opens an explicit read-only source database and provides catalog, chart, and preparation access",
+      "id": "dataset_repository",
+      "path": "services/time_series_anomaly_diagnosis/dataset_repository.py",
+      "sha256": "479a703ac9d426eb05e29416dadabc62e6a0d156b51e14ca39b37d631c364fd9",
+      "tests": [
+        "tests/test_data_access.py",
+        "tests/test_real_data_smoke.py",
+        "tests/test_cross_platform_service.py"
+      ]
+    },
+    {
+      "caller": "Offline administrator module command and portable launcher import mode",
+      "effect": "Validates and atomically installs a locally derived database for dataset_repository.py",
+      "id": "dataset_importer",
+      "path": "services/time_series_anomaly_diagnosis/dataset_importer.py",
+      "sha256": "78602bca826d3b42935848946cfc13c49bd8c579116fa3b1de870567e4dfdd4a",
+      "tests": [
+        "tests/test_dataset_importer.py",
+        "tests/test_service_launcher.py",
+        "tests/test_cross_platform_service.py"
+      ]
+    },
+    {
+      "caller": "anomaly_detection.py and policy qualification workflows",
+      "effect": "Computes the three approved deterministic aeon LocalGap score sources",
+      "id": "score_sources",
+      "path": "services/time_series_anomaly_diagnosis/score_sources.py",
+      "sha256": "82a48237a43e3d0c811b5e4929b9eb0af91f5ff8f779e7752922e2b288397742",
+      "tests": [
+        "tests/test_score_sources.py",
+        "tests/test_real_data_smoke.py",
+        "tests/test_cross_platform_service.py"
+      ]
+    },
+    {
+      "caller": "Analysis API and service workflows",
+      "effect": "Combines two score seeds into A/B/C policy decisions, current review evidence, and evaluation metrics",
+      "id": "anomaly_detection",
+      "path": "services/time_series_anomaly_diagnosis/anomaly_detection.py",
+      "sha256": "82ed06088cc3bad3736e219cbe9a18f61ccce98a1e45e4fcfd785d6076ac5a7f",
+      "tests": [
+        "tests/test_anomaly_detection.py",
+        "tests/test_real_data_smoke.py",
+        "tests/test_cross_platform_service.py"
+      ]
+    },
+    {
+      "caller": "anomaly_detection.py and policy qualification workflows",
+      "effect": "Extracts seven original-TRAIN features and selects one score method from anonymous group evidence",
+      "id": "routing_policy",
+      "path": "services/time_series_anomaly_diagnosis/routing_policy.py",
+      "sha256": "9342780101f7681fd607a42265dda9558f78610c2b8f2c39b2bf34feb6cd7006",
+      "tests": [
+        "tests/test_routing_policy.py",
+        "tests/test_anomaly_detection.py"
+      ]
+    },
+    {
+      "caller": "Task 4/5 qualification CLI",
+      "effect": "Builds label-free manifests, reusable score checkpoints, frozen predictions, policy metrics, and acceleration decisions",
+      "id": "policy_qualification",
+      "path": "services/time_series_anomaly_diagnosis/policy_qualification.py",
+      "sha256": "04f08badb8f88584bc7f68a5cd14175ea1d09a5e3eb73c59a93d3a703d312108",
+      "tests": [
+        "tests/test_policy_qualification.py",
+        "tests/test_anomaly_detection.py"
+      ]
+    },
+    {
+      "caller": "Cached follow-up qualification workflow",
+      "effect": "Replays frozen scores and tests anonymous routing against residual FN with FP guardrails",
+      "id": "residual_fn_routing_qualification",
+      "path": "services/time_series_anomaly_diagnosis/residual_fn_routing_qualification.py",
+      "sha256": "d17492a17e722599738570bc37d4932f2e42c0863e236b13eddbfedb4f9417fe",
+      "tests": [
+        "tests/test_residual_fn_routing_qualification.py"
+      ]
+    },
+    {
+      "caller": "Model resource loader, application server, research reproduction, tests",
+      "effect": "Parses label-free review evidence and ranks review-only candidates without changing automatic decisions",
+      "id": "multi_evidence_review",
+      "path": "services/time_series_anomaly_diagnosis/multi_evidence_review.py",
+      "sha256": "194ad0d5ca306ac26c9f3a710f7f2f1fdeec84d8b52182c82656dcbd113f265d",
+      "tests": [
+        "tests/test_multi_evidence_review.py"
+      ]
+    },
+    {
+      "caller": "Analysis API, application server, and service workflows",
+      "effect": "Persists analysis run status, timing, errors, and completed results in SQLite",
+      "id": "analysis_history",
+      "path": "services/time_series_anomaly_diagnosis/analysis_history.py",
+      "sha256": "9aa96faf86623a0ff232f076c65718e8da32989996649456d65a0ac032024225",
+      "tests": [
+        "tests/test_analysis_history.py",
+        "tests/test_cross_platform_service.py"
+      ]
+    },
+    {
+      "caller": "Portable launcher, direct CLI, HTTP clients, tests",
+      "effect": "Assembles runtime dependencies, ranks review candidates before labels, and queues current database analyses",
+      "id": "application_server",
+      "path": "services/time_series_anomaly_diagnosis/application_server.py",
+      "sha256": "1737429d8cb9f4c49fb32f2497fbf67ff6b048a6c19a97e66c6af079c4eb50e0",
+      "tests": [
+        "tests/test_application_server.py",
+        "tests/test_web_interface.py",
+        "tests/test_cross_platform_service.py"
+      ]
+    },
+    {
+      "caller": "Packaged Windows executable and macOS app",
+      "effect": "Resolves portable paths, imports a local database on request, or prepares the Numba cache and starts the server and browser",
+      "id": "service_launcher",
+      "path": "services/time_series_anomaly_diagnosis/service_launcher.py",
+      "sha256": "fe1b708bac89aac75152a27aed4710e60cd9bfbb46f5f431ea21ed0258df54b4",
+      "tests": [
+        "tests/test_service_launcher.py"
+      ]
+    },
+    {
+      "caller": "Release packaging workflow",
+      "effect": "Builds and finalizes the current operating system's database-free desktop distribution",
+      "id": "desktop_package_builder",
+      "path": "services/time_series_anomaly_diagnosis/packaging/build_package.py",
+      "sha256": "759dbdd39f242f56b4e49f023aec80b3a29208c2496b6092397c7f6d13fd035e",
+      "tests": [
+        "tests/test_packaging.py"
+      ]
+    },
+    {
+      "caller": "Browser users through web/index.html",
+      "effect": "Checks service status and calls application server HTTP APIs to manage datasets, analyses, and results",
+      "id": "web_application",
+      "path": "services/time_series_anomaly_diagnosis/web/application.js",
+      "sha256": "c69980e6a27af9f350569704e05e48fe6c3d4fa37af67f1d95cde3d88f3008b1",
+      "tests": [
+        "tests/test_web_interface.py"
+      ]
+    }
+  ],
+  "schema": "time_series_anomaly_diagnosis_code_map_v1",
+  "scope": "Standalone diagnosis service integration on main",
+  "unknown_relationships": []
+}

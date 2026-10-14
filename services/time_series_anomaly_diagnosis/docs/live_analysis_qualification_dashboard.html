@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>실시간 분석 정책 공식 검증 결과</title>
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#5d687a; --line:#dfe4ec; --bg:#f5f7fa; --card:#fff; --ok:#16794b; --bad:#a33a32; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.6 system-ui,-apple-system,"Noto Sans KR",sans-serif; }
+    main { width:min(1120px,calc(100% - 32px)); margin:32px auto 56px; }
+    h1,h2 { line-height:1.25; } h1 { margin-bottom:8px; } h2 { margin-top:0; font-size:1.18rem; }
+    .muted { color:var(--muted); } .notice { border-left:5px solid var(--bad); background:#fff4f2; padding:16px 18px; margin:24px 0; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin:20px 0; }
+    .card, section { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+    .card strong { display:block; font-size:1.55rem; } section { margin-top:16px; overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; min-width:840px; } th,td { padding:10px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
+    th:first-child,td:first-child { text-align:left; } thead th { background:#f0f3f7; } .pass { color:var(--ok); } .fail { color:var(--bad); font-weight:700; }
+    code { overflow-wrap:anywhere; white-space:normal; } ul { padding-left:22px; }
+  </style>
+</head>
+<body><main>
+  <h1>실시간 분석 정책 공식 검증 결과</h1>
+  <p class="muted">2026-09-06 · 공식 모집단과 고정된 판정 기준으로 완료</p>
+  <div class="notice"><strong>선택된 정책 없음</strong><br>후보 A·B·C가 모두 현행 기준보다 잔여 FN 수와 family 균형 잔여 FN 비율을 동시에 낮추지 못했습니다. <code>qualified_policy.json</code>에는 <code>policy_id: null</code>이 기록됐으며, 서비스 연결 단계는 진행하지 않습니다.</div>
+
+  <div class="grid">
+    <div class="card"><span>공식 요청</span><strong>1,117</strong><small>검증된 출처의 전체 모집단</small></div>
+    <div class="card"><span>평가 가능</span><strong>955</strong><small>공통 값 준비를 통과</small></div>
+    <div class="card"><span>준비 실패</span><strong>162</strong><small>전체 분모에 그대로 보존</small></div>
+    <div class="card"><span>방법 실패</span><strong>0</strong><small>955개 × 3방법 × 2초기값 완료</small></div>
+  </div>
+
+  <section>
+    <h2>정책 비교</h2>
+    <table>
+      <thead><tr><th>정책</th><th>잔여 FN</th><th>잔여 FN 비율</th><th>family 균형 FN 비율</th><th>검토 포함 FP</th><th>자동 FP</th><th>데이터셋 평균 AUC</th><th>family 균형 AUC</th><th>평가 시간</th><th>판정</th></tr></thead>
+      <tbody>
+        <tr><td>현행 기준</td><td>2,082</td><td>0.538124</td><td>0.591755</td><td>488</td><td>264</td><td>0.980121</td><td>0.970148</td><td>0.746초</td><td>비교 기준</td></tr>
+        <tr><td>A · 단일 MiniRocket</td><td>2,139</td><td>0.552856</td><td>0.624401</td><td>407</td><td>265</td><td>0.980137</td><td>0.970434</td><td>0.754초</td><td class="fail">탈락</td></tr>
+        <tr><td>B · 세 방법 합의</td><td>2,269</td><td>0.586456</td><td>0.594398</td><td>365</td><td>124</td><td>0.983772</td><td>0.973600</td><td>1.186초</td><td class="fail">탈락</td></tr>
+        <tr><td>C · TRAIN 특징 라우터</td><td>2,139</td><td>0.552856</td><td>0.624401</td><td>407</td><td>265</td><td>0.980137</td><td>0.970434</td><td>0.772초</td><td class="fail">탈락</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">AUC와 시간은 진단용이며 승자 선택 조건이 아닙니다. 평가는 955개 데이터셋의 TEST 193,515행을 사용했습니다.</p>
+  </section>
+
+  <section>
+    <h2>고정된 통과 조건</h2>
+    <p>후보는 현행 기준과 비교해 ① 잔여 FN 수 감소, ② family 균형 잔여 FN 비율 감소, ③ 검토 포함 FP 비증가, ④ 자동 FP 비증가를 모두 만족해야 합니다.</p>
+    <ul>
+      <li><strong>A:</strong> FN 두 조건과 자동 FP 조건 실패(2,139 &gt; 2,082, 0.624401 &gt; 0.591755, 265 &gt; 264).</li>
+      <li><strong>B:</strong> FN 두 조건 실패(2,269 &gt; 2,082, 0.594398 &gt; 0.591755). FP 두 조건은 통과했습니다.</li>
+      <li><strong>C:</strong> A와 같은 결과로 FN 두 조건과 자동 FP 조건을 실패했습니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>준비 실패와 실행 환경</h2>
+    <ul>
+      <li>161개: 유한한 정상 TRAIN 행이 최소 5개보다 적음.</li>
+      <li>1개: 유한하고 값이 변하는 행이 없음.</li>
+      <li>CPU 작업자 7개를 사용했습니다. aeon 변환기는 비교 가능성을 위해 공식 CPU 구현을 유지했습니다.</li>
+      <li>Numba 재표본화와 경험적 p값은 동일성·결정 일치·전체 단계 속도 기준을 통과해 사용했습니다. MLX는 설치되어 있지 않아 사용하지 않았습니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>무결성 식별자</h2>
+    <ul>
+      <li>실행 계약 SHA-256: <code>b0bc12e10946a8bddc51df4ddc7f997f4c97a23c3ab956d40d698b64cf6e8aa2</code></li>
+      <li>모집단 파일 SHA-256: <code>9acce8af40f596fd31580e3bd2814882d2c7ddb2441e2e420d5e1639753f8cdb</code></li>
+      <li>결과 파일 SHA-256: <code>31c2a76b9cfafa8d80c9fca1b7570618fbbde597afa76a458dea8ae8dc897144</code></li>
+      <li>선택 정책 파일 SHA-256: <code>f19071f7eac72193c134573e42680117f18680d2a47a5a6305b6d3f516e70ed5</code></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>해석 범위</h2>
+    <p>이 결과는 고정된 공식 모집단에서 공통 준비가 가능했던 955개에 대한 정책 비교입니다. 준비 실패 162개는 결과에서 숨기지 않았지만 성능 계산에는 들어가지 않았습니다. DB에 별도로 추가된 CornellWhaleChallenge와 Phoneme_normal_39는 공식 모집단 밖이며 향후 라이브 분석을 막지 않습니다. 이번 검증은 정책을 서비스에 배포하거나 연결하지 않습니다.</p>
+  </section>
+
+  <section>
+    <h2><label><input type="checkbox" checked disabled> 후속 원인 진단 완료</label></h2>
+    <p>현행 대비 잔여 FN 증가 57개를 다시 나눈 결과, 검토 후보 규칙 차이가 56개이고 순수 라우팅 차이가 1개였습니다. 후보 C가 모두 MiniRocket으로 돌아간 직접 원인은 두 대체 방법이 955개 전부에서 AUC 비악화율 90% 관문을 통과하지 못했기 때문입니다.</p>
+    <p><a href="router_collapse_diagnosis.html">쉬운 설명과 전체 근거 보기</a></p>
+  </section>
+
+  <section>
+    <h2><label><input type="checkbox" checked disabled> 잔여 FN 직접 라우팅 재검증 완료</label></h2>
+    <p>같은 최종 p값 판정 규칙과 동결 점수로 두 TRAIN 기반 라우터를 검증했습니다. 기존 특징 7개 후보는 잔여 FN 2,105개로 현행보다 23개 늘었고, 점수 안정성 특징을 더한 13개 후보는 2,090개로 8개 늘었습니다.</p>
+    <ul>
+      <li>7개 특징 후보: 자동 FP 257, 검토 포함 FP 473, 최종 탈락.</li>
+      <li>13개 특징 후보: 자동 FP 278, 검토 포함 FP 500, 최종 탈락.</li>
+      <li>두 번 반복한 경로·예측 해시가 일치했습니다.</li>
+      <li>Numba는 결정이 같았지만 최초 실행 포함 1.1배 속도 기준을 넘지 못해 NumPy를 유지했습니다.</li>
+    </ul>
+    <p><strong>선택된 정책 없음:</strong> 서비스 연결 단계는 계속 진행하지 않습니다. <a href="router_replay_qualification.html">전체 재검증 보고서 보기</a></p>
+  </section>
+</main></body>
+</html>

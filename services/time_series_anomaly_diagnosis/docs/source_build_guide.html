@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>시계열 이상 진단 · 소스 실행과 Windows 빌드</title>
+<style>body{max-width:900px;margin:48px auto;padding:0 24px;font:16px/1.7 system-ui,sans-serif;color:#1d1d1f}pre{padding:16px;background:#f5f5f7;overflow:auto;border-radius:8px}code{font-family:monospace}</style>
+<h1>소스 실행과 Windows 빌드</h1>
+<p>연구팀이 로컬 DB에서 데이터셋을 선택하고, 분석 작업과 결과를 확인하는 서비스입니다. 완성된 Windows 실행 파일은 <a href="windows_release_guide.html">Windows 시작 안내</a>를 참고하세요. 소스 저장소에는 원본 DB와 개인 분석 기록을 포함하지 않습니다.</p>
+<h2>소스에서 실행하기</h2>
+<p>Python 3.12와 이 저장소가 필요합니다. 아래 명령은 저장소 루트에서 실행합니다. Windows에서는 먼저 가상 환경을 만드세요.</p>
+<pre><code>py -3.12 -m venv .venv
+.venv\Scripts\activate
+python -m pip install torch==2.13.0 --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -r services/time_series_anomaly_diagnosis/packaging/requirements-build.txt</code></pre>
+<p>macOS에서는 <code>python3.12 -m venv .venv</code>와 <code>source .venv/bin/activate</code>를 사용하고, 같은 requirements 파일을 설치합니다. Windows용 CPU wheel 명령은 생략합니다.</p>
+<p>로컬 원본 DB를 새 데이터 폴더에 등록하고 서버를 실행합니다. <code>--import-database</code> 경로는 실제 파일 위치로 바꾸세요. 등록 과정에서 TRAIN의 가장 큰 클래스를 정상으로 정하고 정상·이상 라벨을 변환합니다. 원본 DB는 읽기 전용으로 열지만, 지정한 data 폴더에 등록 DB가 이미 있으면 새 등록 DB로 교체하므로 처음 등록할 때는 새 폴더를 사용하세요.</p>
+<pre><code>python -m services.time_series_anomaly_diagnosis.service_launcher --data-dir ./data --import-database "D:/datasets/source.db"
+python -m services.time_series_anomaly_diagnosis.service_launcher --data-dir ./data --host 127.0.0.1 --port 8485 --public-host 127.0.0.1</code></pre>
+<p>브라우저 주소는 <code>http://127.0.0.1:8485/</code>입니다. 등록 DB·분석 기록·Numba 캐시는 지정한 data 폴더에 저장됩니다. 종료할 때는 실행 창에서 Ctrl+C를 누릅니다.</p>
+<h2>검증하기</h2>
+<pre><code>python services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+python -m unittest services.time_series_anomaly_diagnosis.tests.test_service_launcher services.time_series_anomaly_diagnosis.tests.test_packaging services.time_series_anomaly_diagnosis.tests.test_release_bundle services.time_series_anomaly_diagnosis.tests.test_cross_platform_service services.time_series_anomaly_diagnosis.tests.test_web_interface services.time_series_anomaly_diagnosis.tests.test_code_map</code></pre>
+<p>전체 테스트는 <code>python -m unittest discover -s services/time_series_anomaly_diagnosis/tests -t .</code>로 실행합니다. 일부 실제 데이터 회귀 검사는 <code>/Users/mac/Documents/Dataset/univariate_ts.db</code>를 사용하므로 해당 DB가 있는 연구 환경에서 실행하세요. Windows CI는 임시 합성 DB로 등록·동시 조회·분석·재시작을 검증합니다.</p>
+<h2>Windows 실행 파일 만들기</h2>
+<p>Windows PC에서 다음 명령을 실행합니다. macOS에서 Windows 실행 파일을 직접 빌드하지 않습니다.</p>
+<pre><code>python services/time_series_anomaly_diagnosis/packaging/build_package.py --clean --output dist/windows
+python -m services.time_series_anomaly_diagnosis.packaging.smoke_executable --executable dist/windows/TimeSeriesAnomalyDiagnosis/TimeSeriesAnomalyDiagnosis.exe --report dist/windows/TimeSeriesAnomalyDiagnosis/windows_smoke.json</code></pre>
+<p>실행 파일은 <code>dist/windows/TimeSeriesAnomalyDiagnosis/TimeSeriesAnomalyDiagnosis.exe</code>입니다. 이 빌드는 DB를 포함하지 않습니다. 전체 DB를 포함한 분할 배포본이 필요하면 다음 명령을 실행합니다. 원본 DB는 읽기 전용으로 열고 SQLite backup으로 일관된 사본을 만듭니다.</p>
+<pre><code>python -m services.time_series_anomaly_diagnosis.packaging.release_bundle --package dist/windows/TimeSeriesAnomalyDiagnosis --database "D:/datasets/univariate_ts.db" --output dist/windows-offline</code></pre>
+<h2>자동 빌드</h2>
+<p>GitHub Actions의 <strong>Windows diagnosis service</strong>는 서비스 코드나 워크플로를 변경하는 main 대상 PR, main 반영, 기존 배포 브랜치에서 실행됩니다. Actions 화면에서 수동 실행도 가능합니다. 문서만 바뀌는 변경은 자동 빌드를 생략합니다. 테스트·실행 파일 빌드·분석과 재시작 검사를 통과하면 <code>windows-verified-application</code> 아티팩트를 7일 동안 보관합니다. 아티팩트는 DB를 포함하지 않으며 GitHub Release를 자동 게시하지 않습니다.</p>
+</html>

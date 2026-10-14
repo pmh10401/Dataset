@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>시계열 이상 진단 서비스 사용 안내서</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #5d687a;
+      --line: #dbe2ea;
+      --panel: #ffffff;
+      --soft: #f3f7fb;
+      --blue: #2457d6;
+      --green: #19724a;
+      --amber: #9a5b00;
+      --code-bg: #152033;
+      --code-fg: #eef5ff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #eef3f8;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      padding: 32px 16px;
+    }
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    header, section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 26px 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 6px 20px rgba(36, 55, 82, 0.05);
+    }
+    h1 { font-size: clamp(24px, 3.5vw, 32px); margin-bottom: 8px; color: var(--ink); }
+    h2 { font-size: 20px; margin-top: 4px; margin-bottom: 14px; border-bottom: 2px solid var(--soft); padding-bottom: 8px; }
+    h3 { font-size: 16px; margin-top: 14px; margin-bottom: 8px; }
+    p { margin-bottom: 12px; }
+    ul, ol { margin-left: 20px; margin-bottom: 14px; }
+    li { margin-bottom: 6px; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      background: #e9efff;
+      color: #193f9b;
+      margin-right: 6px;
+    }
+    .callout {
+      border-left: 5px solid var(--blue);
+      background: #f2f6ff;
+      padding: 14px 16px;
+      border-radius: 6px;
+      margin: 14px 0;
+    }
+    .callout-amber {
+      border-left-color: var(--amber);
+      background: #fff8ec;
+    }
+    .callout-title {
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-fg);
+      padding: 14px 16px;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 10px 0 14px;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: #edf2f8;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    pre code { background: none; padding: 0; color: inherit; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 16px; }
+    th, td { border-bottom: 1px solid var(--line); padding: 10px 12px; text-align: left; vertical-align: top; }
+    th { background: var(--soft); font-size: 14px; }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>시계열 이상 진단 서비스 사용 안내서</h1>
+    <p>연구팀이 데이터베이스의 시계열 데이터셋을 선택해 자동 판정 결과와 직접 확인할 후보를 한 화면에서 볼 수 있는 독립 서비스입니다.</p>
+    <div>
+      <span class="badge">누구나 쉽게 이해하는 가이드</span>
+      <span class="badge">검증된 분석 모델 기반</span>
+      <span class="badge">표본 수 제한 승격 시 경고 표시</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>1. 서비스 소개</h2>
+    <p>시계열 데이터란 심전도 측정값, 기계 진동 소리, 날씨 변화처럼 <strong>시간의 흐름에 따라 연속으로 기록된 숫자들의 묶음</strong>을 말합니다.</p>
+    <p>이 서비스는 정상적인 데이터의 통계적 특징과 형태를 미리 학습한 인공지능 모델을 활용하여, 새로 입력된 평가 시계열 중에 이상한 패턴이 있는지 빠르게 탐지하고, 연구자가 어떤 부분을 먼저 눈여겨봐야 할지 순서대로 정리해 보여줍니다.</p>
+    <p>데이터셋의 정상 기준은 특정 번호(라벨 0)를 고정하지 않고, 원본 데이터베이스에서 다수결(최빈 클래스)로 도출된 라벨 정의를 그대로 따릅니다. 기존에 검증된 점수 계산 규칙 또한 일절 변경하지 않습니다.</p>
+  </section>
+
+  <section>
+    <h2>2. 관리자가 설치하고 실행하는 방법</h2>
+    <p>중앙 서버 한 대에 운영체제에 맞는 폴더형 패키지를 풉니다. 연구팀의 다른 PC에서는 브라우저만 사용합니다. 서버 실행에 별도 Python 설치는 필요하지 않으며, CUDA가 없어도 CPU·Numba로 분석합니다.</p>
+    <table>
+      <caption>운영체제별 배포 폴더</caption>
+      <thead><tr><th scope="col">Mac</th><th scope="col">Windows</th></tr></thead>
+      <tbody><tr><td><code>TimeSeriesAnomalyDiagnosis.app</code><br><code>data/</code><br><code>runtime_manifest.json</code></td><td><code>TimeSeriesAnomalyDiagnosis.exe</code><br><code>_internal/</code><br><code>data/</code><br><code>runtime_manifest.json</code></td></tr></tbody>
+    </table>
+    <ol>
+      <li>현재 형식으로 준비된 파생 DB는 패키지 옆의 <code>data/univariate_ts.db</code>에 둡니다. 원본 다중 클래스 DB는 다음 절의 등록 명령을 먼저 실행합니다.</li>
+      <li>Mac은 <code>.app</code>, Windows는 <code>.exe</code> 아이콘을 실행합니다. 준비되면 기본 브라우저가 열립니다.</li>
+      <li>새 분석 화면에서 데이터셋을 선택하고 <strong>분석 시작</strong>을 누릅니다. 분석은 공용 대기열에서 한 건씩 실행됩니다.</li>
+      <li>다른 연구원은 서버 PC의 내부 IP 주소로 접속합니다. 예: <code>http://192.168.1.100:8485/</code>. 이 주소는 예시이며 실제 서버 주소를 사용합니다.</li>
+    </ol>
+    <p>프로그램만 업데이트할 때는 <code>data/</code>를 보존합니다. 원본 DB, 분석 기록 <code>analysis_history.sqlite3</code>, 계산 캐시가 이 폴더에 들어 있습니다. 모델 자료와 화면 파일은 패키지 내부에 포함됩니다.</p>
+    <div class="callout callout-amber"><p>Windows 빌드·실기기 실행과 두 운영체제 간 판정 일치는 아직 확인하지 않았습니다. 최신 확인 범위는 <a href="dashboard.html#cross-platform-verification">검증 대시보드</a>에서 확인합니다. 같은 Mac의 동시 HTTP 요청 시험은 실제 연구팀 PC 10대의 네트워크 시험과 구분합니다.</p></div>
+  </section>
+
+  <section>
+    <h2>3. 데이터 등록과 운영</h2>
+    <h3>3.1 원본 DB를 서버에서 직접 등록</h3>
+    <p>서비스를 종료한 뒤, 관리자가 원본 SQLite 파일을 서버의 <code>incoming/</code> 폴더에 직접 복사합니다. 웹 업로드는 제공하지 않습니다. 아래 명령은 패키지 폴더에서 실행하며 별도 Python을 사용하지 않습니다.</p>
+    <p>Mac 터미널:</p>
+    <pre><code>./TimeSeriesAnomalyDiagnosis.app/Contents/MacOS/TimeSeriesAnomalyDiagnosis \
+  --data-dir ./data \
+  --import-database ./incoming/source.sqlite3 \
+  --import-report ./database_import_report.html</code></pre>
+    <p>Windows PowerShell:</p>
+    <pre><code>.\TimeSeriesAnomalyDiagnosis.exe --data-dir .\data --import-database .\incoming\source.sqlite3 --import-report .\database_import_report.html</code></pre>
+    <p>원본에는 <code>datasets</code>와 <code>instances</code> 표가 있어야 합니다. <code>instances</code>에는 TRAIN·TEST 구분, 원본 라벨, 시계열 순서, little-endian float32 값 배열이 필요합니다. CSV·Excel 변환은 현재 등록기의 범위에 포함되지 않습니다.</p>
+    <p>원본 TRAIN에서 <strong>가장 많이 등장한 하나의 라벨</strong>을 정상으로 선택합니다. 파생 DB에는 이를 <code>0</code>, 나머지는 <code>1</code>로 저장합니다. 동률이면 등록을 거절합니다. 원래 정상 라벨과 개수는 HTML 보고서에서 확인할 수 있습니다.</p>
+    <p>등록 명령은 검사와 DB 교체를 마친 뒤 종료합니다. 완료 보고서를 확인한 다음 아이콘으로 서비스를 다시 실행합니다. 등록에 실패하면 기존 DB를 유지합니다. 등록기는 모든 값이 유한한 float32 배열을 받습니다. 결측값이 포함된 원본은 등록 전에 처리해야 합니다.</p>
+    <p>검증된 분석 경로가 없는 새 이름도 DB에는 등록할 수 있지만, 목록에 <strong>검증된 분석 경로 없음</strong>으로 표시됩니다. 이름으로 임의의 분석 방법을 고르지 않습니다.</p>
+
+    <h3>3.2 포트·데이터 폴더 변경</h3>
+    <p>기본 포트 <code>8485</code>를 다른 서비스가 사용한다면 먼저 그 실행 여부를 확인하거나 다른 포트를 지정합니다. 명령으로 실행하면 데이터 폴더와 팀 접속 주소를 지정할 수 있습니다.</p>
+    <p>같은 <code>data</code> 폴더에는 서버를 하나만 실행합니다. 실행 중인 서버의 포트를 바꾸려면 그 서버를 먼저 종료합니다.</p>
+    <pre><code># Mac: 패키지 폴더에서 실행
+./TimeSeriesAnomalyDiagnosis.app/Contents/MacOS/TimeSeriesAnomalyDiagnosis \
+  --data-dir ./data --port 8486 --public-host 192.168.1.100
+
+# Windows PowerShell
+.\TimeSeriesAnomalyDiagnosis.exe --data-dir .\data --port 8486 --public-host 192.168.1.100</code></pre>
+    <p>서버 PC만 사용할 때는 <code>--host 127.0.0.1 --public-host 127.0.0.1</code>을 추가합니다. 다른 연구팀 PC에서 접속할 때 <code>127.0.0.1</code>은 서버 주소가 아닙니다.</p>
+
+    <h3>3.3 종료와 분석 기록</h3>
+    <p>터미널·명령 창에서 실행했다면 <code>Ctrl + C</code>로 종료합니다. Mac 아이콘으로 시작했다면 활성 상태 보기에서 해당 프로그램을 선택해 종료합니다. 브라우저 탭을 닫아도 서버는 계속 실행됩니다.</p>
+    <p>완료 결과는 <code>data/analysis_history.sqlite3</code>에 저장됩니다. 재시작 후에도 같은 분석 기록을 열 수 있습니다. 강제 종료로 남은 대기·실행 작업은 재시작할 때 <strong>중단됨</strong>으로 바뀌며 다시 분석할 수 있습니다.</p>
+
+    <h3>3.4 빌드 담당자</h3>
+    <p>Mac 패키지는 Mac에서, Windows 패키지는 Windows에서 만듭니다. 동일한 Python 3.14.6과 <code>packaging/requirements-build.txt</code>의 고정 버전을 사용합니다. 저장소 최상위 폴더에서 빌드용 Python으로 실행합니다.</p>
+    <pre><code>python -m pip install -r services/time_series_anomaly_diagnosis/packaging/requirements-build.txt
+python services/time_series_anomaly_diagnosis/packaging/build_package.py --clean --output dist/time_series_anomaly_diagnosis</code></pre>
+    <p><code>python</code>은 준비한 빌드 환경의 실행 파일 이름입니다. Mac 환경에서는 <code>python3</code>일 수 있습니다. 배포 폴더의 <code>runtime_manifest.json</code>에서 실제 운영체제·라이브러리 버전·모델 자료 해시를 확인합니다. DB는 배포 폴더에 포함하지 않습니다.</p>
+  </section>
+
+  <section>
+    <h2>4. 데이터셋 분석 가능 상태와 이유</h2>
+    <p>2026-09-09 검증에 사용한 DB의 목록은 <strong>1,119개</strong>이며 <strong>956개</strong>가 분석 가능한 상태였습니다. 새 DB를 등록하면 화면의 개수도 달라집니다. 아래는 이 DB의 상태 분류이며, 이번 설치본 점수 비교는 대표 5개에서 수행했습니다.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>분석 가능 여부</th>
+          <th>분류 상태</th>
+          <th>데이터셋 수</th>
+          <th>설명</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color: var(--green); font-weight: 700;">실행 가능</td>
+          <td><strong>표준 (standard)</strong></td>
+          <td>801개</td>
+          <td>시계열 길이가 일정하고 정상 학습 데이터가 충분하여 기본 검증 모델로 바로 분석할 수 있는 데이터셋입니다.</td>
+        </tr>
+        <tr>
+          <td style="color: var(--green); font-weight: 700;">실행 가능</td>
+          <td><strong>복구 전처리 (recovery_numba)</strong></td>
+          <td>155개</td>
+          <td>시계열 길이가 서로 다르거나 결측이 있어, 고속 Numba 선형 재표본화로 길이를 표준화한 후 분석하는 데이터셋입니다.</td>
+        </tr>
+        <tr>
+          <td style="color: var(--amber); font-weight: 700;">분석 보류</td>
+          <td><strong>학습 데이터 부족 (insufficient_training_data)</strong></td>
+          <td>161개</td>
+          <td>정상 학습 시계열이 5개 미만이어서, 정상 기준을 신뢰성 있게 학습하기 어려워 분석을 제공하지 않습니다.</td>
+        </tr>
+        <tr>
+          <td style="color: var(--muted); font-weight: 700;">분석 보류</td>
+          <td><strong>검증된 경로 없음 (missing_verified_route)</strong></td>
+          <td>2개</td>
+          <td>공식 검증된 알고리즘 경로가 아직 배정되지 않아 분석을 제공하지 않는 데이터셋입니다.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>5. 자동 탐지와 표본 수 제한 경고</h2>
+    <p>분석이 완료되면 <strong>자동 확정 이상</strong>과 그중 <strong>표본 수 제한 규칙으로 확정된 항목</strong>을 함께 보여줍니다. 두 결과는 현재 선택한 데이터셋의 DB 값으로 매번 새로 계산합니다.</p>
+
+    <h3>5.1 자동 확정 이상</h3>
+    <p>모델은 평가 시계열에 이상 점수를 매긴 뒤, 그 점수가 정상 자료와 비교해 얼마나 드문지를 <strong>p값</strong>으로 나타냅니다. 정상 자료가 충분하면 p값이 0.005 이하인 시계열을 자동 이상으로 확정합니다.</p>
+
+    <h3>5.2 표본 수 제한 자동 확정</h3>
+    <p>정상 학습 자료가 <code>N</code>개이면 이 방식이 만들 수 있는 가장 작은 p값은 <code>1 / (N + 1)</code>입니다. 정상 자료가 40개인 <code>Trace_normal_2</code>에서는 최소 p값이 약 0.0244이므로, 아무리 점수가 강해도 자동 기준 0.005에는 도달할 수 없습니다.</p>
+    <p>이때 가능한 최소 p값에 도달한 강한 후보는 자동 이상으로 확정합니다. <code>Trace_normal_2</code>에서는 시계열 #49가 여기에 해당합니다. 화면은 이 항목이 일반 기준을 통과한 것이 아니라 표본 수 제한 규칙으로 확정됐으며 통계적 확신이 더 낮다는 경고를 함께 표시합니다.</p>
+
+    <h3>5.3 현재 서비스 범위</h3>
+    <p>첫 서비스 버전은 DB에 등록된 데이터셋과 이미 검증된 데이터셋별 최적 방법을 사용합니다. 새 데이터셋의 이름만 보고 방법을 고르지는 않습니다. 등록되지 않은 데이터셋까지 일반화하는 라우팅은 검증을 통과한 뒤 별도로 연결합니다.</p>
+    <p>예전 결과 형식으로 저장된 분석 기록은 현재 판단에 섞지 않습니다. 해당 기록을 열면 현재 DB 값으로 다시 분석하라는 안내가 나옵니다.</p>
+
+    <div class="callout callout-amber">
+      <div class="callout-title">핵심 원칙: 확정과 경고를 함께 제공</div>
+      <p><strong>표본 수 제한 강한 후보는 자동 이상에 포함하되 경고를 숨기지 않습니다.</strong> 평가 지표에도 실제 자동 판정으로 포함되며, 연구자는 낮은 통계적 확신을 확인한 뒤 결과를 해석합니다.</p>
+    </div>
+  </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>교차 운영체제 이상 진단 서비스 구현 계획</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #f5f5f7;
+      --surface: #ffffff;
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --line: #d9d9de;
+      --blue: #0071e3;
+      --green: #248a3d;
+      --amber: #8a5a00;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--page);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+      font-size: 15px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    main { width: min(1120px, calc(100% - 32px)); margin: 46px auto 80px; }
+    header, section { padding: 30px 0; border-bottom: 1px solid var(--line); }
+    h1, h2, h3 { margin-top: 0; line-height: 1.22; letter-spacing: -.024em; }
+    h1 { max-width: 820px; margin-bottom: 14px; font-size: clamp(31px, 5vw, 50px); }
+    h2 { margin-bottom: 16px; font-size: 25px; }
+    h3 { margin: 22px 0 8px; font-size: 18px; }
+    p { margin: 8px 0; }
+    ul, ol { margin: 10px 0; padding-left: 24px; }
+    li + li { margin-top: 8px; }
+    a { color: var(--blue); }
+    code { padding: 2px 5px; border-radius: 4px; background: #ececf0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .91em; }
+    pre { overflow-x: auto; margin: 12px 0; padding: 15px 17px; border-radius: 10px; background: #1d1d1f; color: #f5f5f7; line-height: 1.5; }
+    pre code { padding: 0; background: transparent; color: inherit; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 13px; font-weight: 650; }
+    .kicker { margin-bottom: 8px; color: var(--blue); font-size: 13px; font-weight: 650; }
+    .lede { max-width: 820px; color: var(--muted); font-size: 18px; }
+    .meta { display: grid; grid-template-columns: 150px 1fr; gap: 7px 18px; margin-top: 24px; }
+    .meta dt { color: var(--muted); }
+    .meta dd { margin: 0; }
+    .checklist { display: grid; gap: 10px; }
+    .checklist label { display: flex; gap: 9px; align-items: flex-start; }
+    input[type="checkbox"] { width: 17px; height: 17px; margin-top: 4px; accent-color: var(--green); }
+    .task { margin-top: 28px; padding: 26px; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); }
+    .task > h2 label { display: flex; gap: 10px; align-items: flex-start; }
+    .step { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .step > label { display: flex; gap: 9px; align-items: flex-start; font-weight: 650; }
+    .note { padding: 14px 16px; border-left: 3px solid var(--blue); background: var(--surface); }
+    .warning { border-left-color: var(--amber); }
+    .done { color: var(--green); font-weight: 650; }
+    .pending { color: var(--amber); font-weight: 650; }
+    .small { color: var(--muted); font-size: 13px; }
+    @media (max-width: 720px) {
+      main { margin-top: 22px; }
+      .meta { grid-template-columns: 1fr; gap: 2px; }
+      .meta dd { margin-bottom: 8px; }
+      .task { padding: 20px 16px; border-radius: 14px; }
+      table { display: block; overflow-x: auto; white-space: nowrap; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="kicker">승인된 설계의 실행 계획</p>
+    <h1>Windows·Mac 이상 진단 서비스 구현 계획</h1>
+    <p class="lede">현재 동작하는 DB 기반 분석 서비스를 버리지 않고, 경로·실행기·로컬 DB 등록·화면·패키지만 순서대로 교체합니다. 각 Task가 끝날 때마다 테스트와 코드맵을 확인합니다.</p>
+    <p><strong>에이전트 실행 규칙:</strong> 구현 시 <code>superpowers:subagent-driven-development</code> 또는 <code>superpowers:executing-plans</code>를 사용해 Task별로 진행합니다.</p>
+    <dl class="meta">
+      <dt>목표</dt><dd>한 대의 중앙 서버에서 아이콘으로 실행되고, Windows와 Mac의 연구팀 브라우저가 DB 데이터셋을 골라 분석 결과까지 확인하는 자체 포함 프로그램을 만듭니다.</dd>
+      <dt>구조</dt><dd>기존 Python <code>ThreadingHTTPServer</code>, 분석 작업자 1개, 읽기 전용 원본 SQLite, 결과 SQLite를 유지합니다. 새 서버 프레임워크나 별도 작업 큐는 추가하지 않습니다.</dd>
+      <dt>기술</dt><dd>Python 3.14.6, SQLite, NumPy 2.3.5, Numba 0.63.1, aeon 1.4.0, scikit-learn 1.7.2, HTML/CSS/JavaScript, PyInstaller 6.22.2.</dd>
+      <dt>설계서</dt><dd><a href="cross_platform_service_design.html">교차 운영체제 서비스 설계서</a></dd>
+      <dt>UI 기준</dt><dd><a href="cross_platform_service_ui_prototype.html">승인된 작업 중심 UI 시안</a></dd>
+    </dl>
+  </header>
+
+  <section>
+    <h2>진행 상태</h2>
+    <div class="checklist">
+      <label><input type="checkbox" checked disabled><span>요구사항과 구조 확정</span></label>
+      <label><input type="checkbox" checked disabled><span>UI A안 승인</span></label>
+      <label><input type="checkbox" checked disabled><span>HTML 설계서 최종 승인</span></label>
+      <label><input type="checkbox" checked disabled><span>현재 서비스 코드맵 최신 상태 확인</span></label>
+      <label><input type="checkbox" checked disabled><span>HTML 구현 계획 작성 및 자체 검토</span></label>
+      <label><input type="checkbox" checked disabled><span>HTML 구현 계획 사용자 승인</span></label>
+      <label><input type="checkbox" checked disabled><span>Task 1~6 코드 구현·자동 검증</span></label>
+      <label><input type="checkbox" checked disabled><span>실제 Mac 패키지 기동·Hydra 분석 검증</span></label>
+      <label><input type="checkbox" disabled><span>실제 Windows 패키지 검증</span></label>
+    </div>
+  </section>
+
+  <section>
+    <h2>전체 제약</h2>
+    <ul>
+      <li>연구팀은 10명 이내이며 중앙 서버 한 대를 사용합니다.</li>
+      <li>웹 업로드 화면과 업로드 API를 만들지 않습니다. 1.6GB 원본 DB는 패키지에 넣지 않고 중앙 서버에 직접 복사합니다.</li>
+      <li>원본 DB는 읽기 전용으로 열고, 분석 기록은 별도 SQLite에 저장합니다.</li>
+      <li>분석은 기존처럼 한 건씩 실행합니다. 요청 조회만 여러 브라우저가 동시에 할 수 있습니다.</li>
+      <li>현재 검증된 데이터셋별 방법 매핑만 사용합니다. 새 이름을 보고 방법을 추정하지 않습니다.</li>
+      <li>로컬 등록 시 원본 TRAIN에서 가장 많은 라벨을 정상으로 정합니다. 최다 라벨이 둘 이상이면 임의 선택하지 않고 등록을 거절합니다.</li>
+      <li>CPU·Numba 경로는 CUDA가 없는 PC에서도 반드시 동작합니다. 이 계획에서는 새 CUDA·MLX 계산 코드를 만들지 않습니다.</li>
+      <li>Windows 패키지는 Windows에서, Mac 패키지는 Mac에서 각각 만듭니다.</li>
+      <li>서비스 폴더의 새 파일 이름에는 실험 번호와 내부 프로젝트 접미사를 사용하지 않습니다.</li>
+      <li>문서는 HTML로 작성하고 완료된 Task와 Step에만 체크합니다.</li>
+      <li>모듈 경계나 데이터 흐름이 바뀌면 <code>docs/code_map_v1.html</code>, <code>.json</code>, <code>.lock</code>을 같은 변경에 갱신합니다.</li>
+      <li>각 커밋 전 Ponytail 검토와 승인 게이트를 실행합니다. push는 별도 요청이 있을 때만 합니다.</li>
+    </ul>
+    <p class="note"><strong>Numba 판단:</strong> 이상 점수와 재표본화는 현재 Numba 경로를 유지합니다. DB 복사, 경로 계산, HTTP, HTML 생성은 계산 병목이 아니므로 Numba로 바꾸지 않습니다.</p>
+  </section>
+
+  <section>
+    <h2>파일 책임</h2>
+    <table>
+      <thead><tr><th>파일</th><th>책임</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td><code>dataset_repository.py</code></td><td>전달받은 원본 DB를 읽기 전용으로 열고 데이터셋 값을 조회</td><td>수정</td></tr>
+        <tr><td><code>model_resources.py</code></td><td>서비스 내부 <code>resources</code>의 매핑 파일과 해시 검증</td><td>수정</td></tr>
+        <tr><td><code>tools/build_service_resources.py</code></td><td>승인된 모델 자료를 서비스용 이름으로 복사하고 manifest 생성</td><td>생성</td></tr>
+        <tr><td><code>resources/</code></td><td>라우팅 목록, 복구 목록, 파일 해시를 패키지에 포함</td><td>생성</td></tr>
+        <tr><td><code>application_server.py</code></td><td>명시적 경로로 서버 생성, 준비 상태 API 제공</td><td>수정</td></tr>
+        <tr><td><code>service_launcher.py</code></td><td>실행 경로 설정, Numba 캐시 준비, 서버 시작, 브라우저 열기</td><td>생성</td></tr>
+        <tr><td><code>dataset_importer.py</code></td><td>서버 로컬에서 원본 SQLite를 검사하고 이진 파생 DB로 안전하게 교체</td><td>생성</td></tr>
+        <tr><td><code>web/index.html</code></td><td>승인된 작업 중심 화면의 구조</td><td>수정</td></tr>
+        <tr><td><code>web/service_styles.css</code></td><td>반응형 화면과 접근 가능한 상태 표현</td><td>수정</td></tr>
+        <tr><td><code>web/application.js</code></td><td>기존 API와 새 화면을 연결하고 화면 상태 관리</td><td>수정</td></tr>
+        <tr><td><code>packaging/requirements-build.txt</code></td><td>두 운영체제 빌드에 사용할 직접 의존성 버전 고정</td><td>생성</td></tr>
+        <tr><td><code>packaging/service_app.spec</code></td><td>PyInstaller one-folder 패키지 구성</td><td>생성</td></tr>
+        <tr><td><code>packaging/build_package.py</code></td><td>빌드 실행과 runtime manifest 기록</td><td>생성</td></tr>
+        <tr><td><code>tests/</code></td><td>경로, 자료, 등록, 서버, UI, 패키지, 엔드투엔드 검증</td><td>수정·생성</td></tr>
+      </tbody>
+    </table>
+    <h3>코드맵에 추가할 관계</h3>
+    <table>
+      <thead><tr><th>새 노드</th><th>호출자</th><th>영향</th><th>검증</th></tr></thead>
+      <tbody>
+        <tr><td><code>service_resource_builder</code></td><td>패키지 준비 작업</td><td>서비스 model resources</td><td><code>test_model_resources.py</code></td></tr>
+        <tr><td><code>service_launcher</code></td><td>패키지 실행 파일</td><td><code>application_server</code>, data·resources 경로</td><td><code>test_service_launcher.py</code></td></tr>
+        <tr><td><code>dataset_importer</code></td><td>중앙 서버 관리자 CLI</td><td>읽기 전용 분석 DB 교체</td><td><code>test_dataset_importer.py</code></td></tr>
+        <tr><td><code>package_builder</code></td><td>Windows·Mac 빌드 작업</td><td>launcher, web, resources 묶음</td><td><code>test_packaging.py</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="task" id="task-1">
+    <h2><label><input type="checkbox" checked disabled><span>Task 1 — Mac 전용 경로 제거와 서비스 자료 고정</span></label></h2>
+    <p><strong>파일:</strong> Modify <code>dataset_repository.py</code>, <code>model_resources.py</code>, <code>tests/test_data_access.py</code>. Create <code>tools/build_service_resources.py</code>, <code>tests/test_model_resources.py</code>, <code>resources/routing_catalog.json</code>, <code>resources/recovery_catalog.json</code>, <code>resources/model_manifest.json</code>.</p>
+    <p><strong>Consumes:</strong> 승인된 라우팅 결과 JSON, 복구 전처리 감사 JSON.</p>
+    <p><strong>Produces:</strong> <code>open_source_database(path: Path) -&gt; sqlite3.Connection</code>, <code>parse_model_resources(route_payload, recovery_payload) -&gt; ModelResources</code>, <code>load_model_resources(resource_directory: Path) -&gt; ModelResources</code>, <code>build_service_resources(repository_root, output, routing_sha256, recovery_sha256) -&gt; None</code>.</p>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 1. 경로와 해시 검증 실패 테스트 작성</span></label>
+      <pre><code>def test_loads_only_from_service_resource_directory(self):
+    resources = load_model_resources(self.resource_directory)
+    self.assertEqual(len(resources.route_by_dataset), 1117)
+    self.assertEqual(len(resources.recovery_datasets), 155)
+
+def test_rejects_changed_service_resource(self):
+    (self.resource_directory / "routing_catalog.json").write_text("{}")
+    with self.assertRaisesRegex(ValueError, "changed"):
+        load_model_resources(self.resource_directory)
+
+def test_source_database_path_is_required(self):
+    with self.assertRaises(TypeError):
+        open_source_database()</code></pre>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 2. 테스트가 현재 함수 서명과 누락 자료 때문에 실패하는지 확인</span></label>
+      <pre><code>"$DIAGNOSIS_PYTHON" -m unittest \
+  services.time_series_anomaly_diagnosis.tests.test_model_resources \
+  services.time_series_anomaly_diagnosis.tests.test_data_access -v</code></pre>
+      <p>예상: <code>load_model_resources()</code>가 경로 인자를 받지 못하고 서비스 <code>resources</code>가 없어서 실패합니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 3. 명시적 경로와 서비스 자료 로더를 최소 구현</span></label>
+      <pre><code>def open_source_database(path: Path) -&gt; sqlite3.Connection:
+    target = Path(path).resolve()
+    connection = sqlite3.connect(
+        f"{target.as_uri()}?mode=ro", uri=True, check_same_thread=False
+    )
+    connection.row_factory = sqlite3.Row
+    connection.execute("PRAGMA query_only=ON")
+    return connection
+
+def load_model_resources(resource_directory: Path) -&gt; ModelResources:
+    directory = Path(resource_directory)
+    manifest = json.loads((directory / "model_manifest.json").read_text("utf-8"))
+    route_payload = verified_json(
+        directory / "routing_catalog.json", manifest["files"]["routing_catalog.json"]
+    )
+    recovery_payload = verified_json(
+        directory / "recovery_catalog.json", manifest["files"]["recovery_catalog.json"]
+    )
+    return parse_model_resources(route_payload, recovery_payload)</code></pre>
+      <pre><code>def find_json_by_sha256(
+    repository_root: Path, expected: str, excluded_directory: Path
+) -&gt; Path:
+    excluded = excluded_directory.resolve()
+    matches = [
+        path for path in repository_root.rglob("*.json")
+        if excluded not in path.resolve().parents
+        and sha256(path.read_bytes()).hexdigest() == expected
+    ]
+    if len(matches) != 1:
+        raise ValueError(f"expected one JSON with sha256 {expected}, found {len(matches)}")
+    return matches[0]
+
+def build_service_resources(
+    repository_root: Path,
+    output: Path,
+    routing_sha256: str,
+    recovery_sha256: str,
+) -&gt; None:
+    sources = {
+        "routing_catalog.json": find_json_by_sha256(repository_root, routing_sha256, output),
+        "recovery_catalog.json": find_json_by_sha256(repository_root, recovery_sha256, output),
+    }
+    output.mkdir(parents=True, exist_ok=True)
+    for name, source in sources.items():
+        shutil.copyfile(source, output / name)
+    files = {name: sha256((output / name).read_bytes()).hexdigest() for name in sources}
+    (output / "model_manifest.json").write_text(
+        json.dumps({"schema": "service_model_resources_v1", "files": files}, sort_keys=True),
+        encoding="utf-8",
+    )</code></pre>
+      <p><code>parse_model_resources</code>에는 현재의 1,117개·155개·허용 방법 검사를 그대로 옮깁니다. 실험 폴더 상수와 사용자 홈을 가리키는 절대 경로 기본값은 제거합니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 4. 서비스 자료를 만들고 단위·실데이터 smoke 통과</span></label>
+      <pre><code>"$DIAGNOSIS_PYTHON" services/time_series_anomaly_diagnosis/tools/build_service_resources.py \
+  --repository-root . \
+  --routing-sha256 7038b994e422dc93a18927c810ce5e3bdb7601039ba01d2b388895444e09956f \
+  --recovery-sha256 c90ab4704b5fbc4f60472b5f4b4d5251fb2570af1e74f11ab6a27504708975bf \
+  --output services/time_series_anomaly_diagnosis/resources
+
+"$DIAGNOSIS_PYTHON" -m unittest \
+  services.time_series_anomaly_diagnosis.tests.test_model_resources \
+  services.time_series_anomaly_diagnosis.tests.test_data_access \
+  services.time_series_anomaly_diagnosis.tests.test_real_data_smoke -v</code></pre>
+      <p>예상: 모든 테스트 PASS, runtime 코드에서 <code>experiments/</code>와 <code>/Users/mac/</code> 검색 결과 0건.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 5. 코드맵 갱신, Ponytail 검토, 커밋</span></label>
+      <pre><code>"$DIAGNOSIS_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py
+"$DIAGNOSIS_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+# 현재 diff에 @ponytail-review 실행
+node /Users/mac/.codex/hooks/ponytail-review-gate.js approve
+git add \
+  services/time_series_anomaly_diagnosis/dataset_repository.py \
+  services/time_series_anomaly_diagnosis/model_resources.py \
+  services/time_series_anomaly_diagnosis/tools/build_service_resources.py \
+  services/time_series_anomaly_diagnosis/tests/test_data_access.py \
+  services/time_series_anomaly_diagnosis/tests/test_model_resources.py \
+  services/time_series_anomaly_diagnosis/resources/routing_catalog.json \
+  services/time_series_anomaly_diagnosis/resources/recovery_catalog.json \
+  services/time_series_anomaly_diagnosis/resources/model_manifest.json \
+  services/time_series_anomaly_diagnosis/tools/build_code_map.py \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.html \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.json \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.lock \
+  services/time_series_anomaly_diagnosis/docs/cross_platform_service_design.html \
+  services/time_series_anomaly_diagnosis/docs/cross_platform_service_ui_prototype.html \
+  services/time_series_anomaly_diagnosis/docs/cross_platform_service_implementation_plan.html
+git commit -m "refactor: make service data and model paths portable"</code></pre>
+    </div>
+  </section>
+
+  <section class="task" id="task-2">
+    <h2><label><input type="checkbox" checked disabled><span>Task 2 — 아이콘 실행용 서버 시작 흐름</span></label></h2>
+    <p><strong>파일:</strong> Modify <code>application_server.py</code>, <code>tests/test_application_server.py</code>. Create <code>service_launcher.py</code>, <code>tests/test_service_launcher.py</code>.</p>
+    <p><strong>Consumes:</strong> Task 1의 명시적 원본 DB 경로와 서비스 자료 경로.</p>
+    <p><strong>Produces:</strong> <code>build_runtime_dependencies(source, history, resources) -&gt; SimpleNamespace</code>, <code>create_runtime_server(host, port, public_host, source_database, history_database, resources_directory) -&gt; ApplicationServer</code>, <code>GET /api/status</code>, <code>service_launcher.main()</code>.</p>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 1. 준비 상태와 실행 경로 테스트 작성</span></label>
+      <pre><code>def test_status_reports_ready_without_cuda(self):
+    with running_test_server() as ctx:
+        status, body = ctx.request("/api/status")
+    self.assertEqual(status, HTTPStatus.OK)
+    self.assertEqual(body["status"], "ready")
+    self.assertEqual(body["backend"], "cpu_numba")
+
+def test_default_data_directory_is_next_to_windows_executable(self):
+    actual = resolve_data_directory(None, Path("C:/Diagnosis/Diagnosis.exe"), "win32")
+    self.assertEqual(actual, Path("C:/Diagnosis/data"))
+
+def test_default_data_directory_is_next_to_mac_app(self):
+    executable = Path("/Applications/Diagnosis.app/Contents/MacOS/Diagnosis")
+    self.assertEqual(resolve_data_directory(None, executable, "darwin"), Path("/Applications/data"))</code></pre>
+      <p>Mac 설치 폴더 구조는 <code>Diagnosis.app</code>과 <code>data</code>가 같은 폴더에 있는 one-folder 배포를 기준으로 합니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 2. 새 API와 실행기가 없어 실패하는지 확인</span></label>
+      <pre><code>"$DIAGNOSIS_PYTHON" -m unittest \
+  services.time_series_anomaly_diagnosis.tests.test_application_server \
+  services.time_series_anomaly_diagnosis.tests.test_service_launcher -v</code></pre>
+      <p>예상: <code>/api/status</code>는 404이고 <code>service_launcher</code> import가 실패합니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 3. 서버 조립 함수와 준비 상태 API 구현</span></label>
+      <pre><code>def create_runtime_server(
+    host: str,
+    port: int,
+    public_host: str,
+    source_database: Path,
+    history_database: Path,
+    resources_directory: Path,
+) -&gt; ApplicationServer:
+    resources = load_model_resources(resources_directory)
+    source = open_source_database(source_database)
+    history = open_history_database(history_database)
+    dependencies = build_runtime_dependencies(source, history, resources)
+    server = create_application_server(host, port, source, history, dependencies)
+    server.service_status = {
+        "status": "ready",
+        "backend": "cpu_numba",
+        "team_url": f"http://{public_host}:{server.server_port}/",
+    }
+    return server
+
+# ApplicationRequestHandler.do_GET
+if path == "/api/status":
+    self._send_json(HTTPStatus.OK, self.server.service_status)
+    return</code></pre>
+      <p><code>ApplicationServer</code>는 테스트에서도 쓸 수 있는 기본 <code>service_status</code>를 만들고, <code>create_runtime_server</code>가 실제 팀 주소로 덮어씁니다. <code>build_runtime_dependencies</code>에는 현재 <code>main</code>의 두 Lock, 데이터셋 목록, 준비·탐지·평가 함수를 그대로 옮깁니다. CLI에는 <code>--source-database</code>, <code>--history-database</code>, <code>--resources-directory</code>, <code>--public-host</code>를 추가합니다. <code>--public-host</code> 기본값은 <code>socket.gethostname()</code>이며 이름 해석이 안 되는 내부망에서는 관리자가 서버 IP를 넘깁니다. 누락 파일 검사를 마치기 전에는 브라우저를 열지 않습니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 4. Numba 캐시를 먼저 준비하고 브라우저를 여는 실행기 구현</span></label>
+      <pre><code>def resolve_data_directory(explicit: Path | None, executable: Path, platform: str) -&gt; Path:
+    if explicit is not None:
+        return explicit.resolve()
+    if platform == "darwin" and executable.parent.name == "MacOS":
+        return executable.parents[3] / "data"
+    return executable.parent / "data"
+
+def main(arguments: list[str] | None = None) -&gt; None:
+    parser = ArgumentParser(description="Time Series Anomaly Diagnosis")
+    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--port", type=int, default=8485)
+    parser.add_argument("--public-host", default=socket.gethostname())
+    parser.add_argument("--data-dir", type=Path)
+    parser.add_argument(
+        "--resources-directory",
+        type=Path,
+        default=Path(__file__).resolve().parent / "resources",
+    )
+    args = parser.parse_args(arguments)
+    data_directory = resolve_data_directory(args.data_dir, Path(sys.executable), sys.platform)
+    cache_directory = data_directory / "cache" / "numba"
+    cache_directory.mkdir(parents=True, exist_ok=True)
+    os.environ["NUMBA_CACHE_DIR"] = str(cache_directory)
+
+    # Numba 환경을 정한 뒤 import해야 패키지 내부의 읽기 전용 경로에 쓰지 않습니다.
+    from services.time_series_anomaly_diagnosis.application_server import create_runtime_server
+
+    server = create_runtime_server(
+        args.host,
+        args.port,
+        args.public_host,
+        data_directory / "univariate_ts.db",
+        data_directory / "analysis_history.sqlite3",
+        args.resources_directory,
+    )
+    local_url = f"http://127.0.0.1:{server.server_port}/"
+    print(server.service_status["team_url"], flush=True)
+    webbrowser.open(local_url)
+
+    def stop_server(*_ignored: object) -&gt; None:
+        Thread(target=server.shutdown, daemon=True).start()
+
+    signal.signal(signal.SIGINT, stop_server)
+    signal.signal(signal.SIGTERM, stop_server)
+    try:
+        server.serve_forever()
+    finally:
+        server.server_close()</code></pre>
+      <p>기본 bind 주소는 팀 접속을 위해 <code>0.0.0.0</code>, 기본 포트는 <code>8485</code>입니다. 원격 종료 API와 부팅 자동 실행은 만들지 않습니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 5. 서버 테스트, 코드맵, Ponytail 검토, 커밋</span></label>
+      <pre><code>"$DIAGNOSIS_PYTHON" -m unittest \
+  services.time_series_anomaly_diagnosis.tests.test_application_server \
+  services.time_series_anomaly_diagnosis.tests.test_service_launcher -v
+"$DIAGNOSIS_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py
+"$DIAGNOSIS_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+# 현재 diff에 @ponytail-review 실행
+node /Users/mac/.codex/hooks/ponytail-review-gate.js approve
+git add \
+  services/time_series_anomaly_diagnosis/application_server.py \
+  services/time_series_anomaly_diagnosis/service_launcher.py \
+  services/time_series_anomaly_diagnosis/tests/test_application_server.py \
+  services/time_series_anomaly_diagnosis/tests/test_service_launcher.py \
+  services/time_series_anomaly_diagnosis/tools/build_code_map.py \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.html \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.json \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.lock
+git commit -m "feat: add portable service launcher"</code></pre>
+    </div>
+  </section>
+
+  <section class="task" id="task-3">
+    <h2><label><input type="checkbox" checked disabled><span>Task 3 — 네트워크를 쓰지 않는 로컬 DB 등록</span></label></h2>
+    <p><strong>파일:</strong> Create <code>dataset_importer.py</code>, <code>tests/test_dataset_importer.py</code>. Modify <code>docs/usage_guide.html</code>.</p>
+    <p><strong>입력 계약:</strong> SQLite의 <code>datasets</code>와 <code>instances</code> 테이블. <code>instances</code>는 데이터셋, TRAIN·TEST, 행 번호, 원본 라벨, little-endian float32 BLOB을 가져야 합니다.</p>
+    <p><strong>Produces:</strong> <code>ImportedDataset</code>, <code>ImportSummary</code>, <code>choose_normal_label(counts)-&gt; str</code>, <code>build_derived_database(source_path, output_path)-&gt; ImportSummary</code>, <code>validate_derived_database(path, summary)-&gt; None</code>, <code>render_import_report(summary)-&gt; str</code>, <code>install_database(source_path, data_directory, report_path)-&gt; ImportSummary</code>.</p>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 1. 정상 라벨과 안전한 교체 테스트 작성</span></label>
+      <pre><code>def test_majority_train_label_becomes_zero(self):
+    make_source_database(self.source, train_labels=("normal", "normal", "fault"))
+    summary = build_derived_database(self.source, self.output)
+    self.assertEqual(summary.datasets[0].normal_source_label, "normal")
+    self.assertEqual(read_labels(self.output, "TRAIN"), ("0", "0", "1"))
+
+def test_tied_train_labels_do_not_replace_current_database(self):
+    self.current.write_bytes(b"existing database")
+    make_source_database(self.source, train_labels=("A", "B"))
+    with self.assertRaisesRegex(ValueError, "unique majority"):
+        install_database(self.source, self.data_directory, self.report)
+    self.assertEqual(self.current.read_bytes(), b"existing database")</code></pre>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 2. 새 등록 모듈이 없어 실패하는지 확인</span></label>
+      <pre><code>"$DIAGNOSIS_PYTHON" -m unittest \
+  services.time_series_anomaly_diagnosis.tests.test_dataset_importer -v</code></pre>
+      <p>예상: <code>dataset_importer</code> import 실패.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 3. 최다 TRAIN 라벨과 파생 DB 생성을 구현</span></label>
+      <pre><code>@dataclass(frozen=True, slots=True)
+class ImportedDataset:
+    name: str
+    normal_source_label: str
+    train_count: int
+    test_count: int
+
+@dataclass(frozen=True, slots=True)
+class ImportSummary:
+    source_database: str
+    datasets: tuple[ImportedDataset, ...]
+
+def choose_normal_label(counts: dict[str, int]) -&gt; str:
+    if not counts:
+        raise ValueError("TRAIN labels are required")
+    largest = max(counts.values())
+    winners = [label for label, count in counts.items() if count == largest]
+    if len(winners) != 1:
+        raise ValueError("TRAIN labels must have one unique majority")
+    return winners[0]
+
+def derived_label(source_label: str, normal_source_label: str) -&gt; str:
+    return "0" if source_label == normal_source_label else "1"</code></pre>
+      <p><code>build_derived_database</code>는 출력 DB에 현재 <code>datasets</code>·<code>instances</code> schema를 새로 만들고 행을 순서대로 복사합니다. 각 BLOB의 길이가 4의 배수이고 모든 값이 유한한지 검사합니다. 데이터셋 표의 개수 열은 변환된 라벨로 다시 계산하며 원본 데이터셋 이름은 그대로 보존합니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 4. 같은 폴더의 임시 DB를 완성한 뒤 한 번에 교체</span></label>
+      <pre><code>def install_database(source_path: Path, data_directory: Path, report_path: Path) -&gt; ImportSummary:
+    data_directory.mkdir(parents=True, exist_ok=True)
+    target = data_directory / "univariate_ts.db"
+    with NamedTemporaryFile(dir=data_directory, suffix=".sqlite3", delete=False) as handle:
+        staged = Path(handle.name)
+    try:
+        summary = build_derived_database(source_path, staged)
+        validate_derived_database(staged, summary)
+        os.replace(staged, target)
+        report_path.write_text(render_import_report(summary), encoding="utf-8")
+        return summary
+    finally:
+        staged.unlink(missing_ok=True)</code></pre>
+      <p><code>validate_derived_database</code>는 <code>PRAGMA integrity_check</code>, 데이터셋별 TRAIN·TEST 개수, 라벨이 0·1뿐인지 검사합니다. <code>render_import_report</code>는 데이터셋 이름, 원본 정상 라벨, 행 수, 성공 상태를 <code>html.escape</code>로 이스케이프한 표로 만듭니다. 서비스는 중지한 상태에서만 등록을 실행합니다. CSV·Excel·웹 업로드는 입력 계약이 정해지지 않았으므로 이 버전에서 만들지 않습니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 5. 등록 테스트, 사용 안내, 코드맵, Ponytail 검토, 커밋</span></label>
+      <pre><code>"$DIAGNOSIS_PYTHON" -m unittest \
+  services.time_series_anomaly_diagnosis.tests.test_dataset_importer \
+  services.time_series_anomaly_diagnosis.tests.test_data_access -v
+"$DIAGNOSIS_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py
+"$DIAGNOSIS_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+# 현재 diff에 @ponytail-review 실행
+node /Users/mac/.codex/hooks/ponytail-review-gate.js approve
+git add \
+  services/time_series_anomaly_diagnosis/dataset_importer.py \
+  services/time_series_anomaly_diagnosis/tests/test_dataset_importer.py \
+  services/time_series_anomaly_diagnosis/docs/usage_guide.html \
+  services/time_series_anomaly_diagnosis/tools/build_code_map.py \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.html \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.json \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.lock
+git commit -m "feat: add offline database registration"</code></pre>
+    </div>
+  </section>
+
+  <section class="task" id="task-4">
+    <h2><label><input type="checkbox" checked disabled><span>Task 4 — 승인된 작업 중심 UI를 실제 API에 연결</span></label></h2>
+    <p><strong>파일:</strong> Modify <code>web/index.html</code>, <code>web/service_styles.css</code>, <code>web/application.js</code>, <code>tests/test_web_interface.py</code>.</p>
+    <p><strong>Consumes:</strong> 기존 데이터셋·분석·시계열 API와 Task 2의 <code>GET /api/status</code>.</p>
+    <p><strong>Produces:</strong> 새 분석, 작업 대기열, 분석 기록, 결과를 한 화면에서 이동하는 반응형 웹 작업 공간.</p>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 1. 실제 데이터만 쓰는 화면 계약 테스트 작성</span></label>
+      <pre><code>def test_workspace_uses_approved_structure_without_sample_rows(self):
+    html = (WEB / "index.html").read_text("utf-8")
+    script = (WEB / "application.js").read_text("utf-8")
+    for element_id in (
+        "analysis-view", "queue-view", "history-view", "dataset-search",
+        "dataset-list", "selected-dataset-info", "start-analysis",
+        "result-workspace", "series-chart", "global-alert",
+    ):
+        self.assertIn(f'id="{element_id}"', html)
+    self.assertNotIn("Trace_normal_2", html)
+    self.assertIn("/api/status", script)
+    self.assertNotIn("/api/upload", html + script)</code></pre>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 2. 테스트가 새 화면 ID와 상태 API 연결 부재로 실패하는지 확인</span></label>
+      <pre><code>"$DIAGNOSIS_PYTHON" -m unittest \
+  services.time_series_anomaly_diagnosis.tests.test_web_interface -v</code></pre>
+      <p>예상: 새 화면 ID와 <code>/api/status</code> 문자열이 없어 실패합니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 3. 시안의 구조를 옮기되 기존 결과 기능과 ID 유지</span></label>
+      <pre><code>&lt;nav aria-label="주요 화면"&gt;
+  &lt;button type="button" data-view="analysis-view" aria-current="page"&gt;새 분석&lt;/button&gt;
+  &lt;button type="button" data-view="queue-view"&gt;작업 대기열&lt;/button&gt;
+  &lt;button type="button" data-view="history-view"&gt;분석 기록&lt;/button&gt;
+  &lt;span id="connection-state" aria-live="polite"&gt;연결 확인 중&lt;/span&gt;
+&lt;/nav&gt;
+
+&lt;main&gt;
+  &lt;section id="analysis-view"&gt;
+    &lt;label for="dataset-search"&gt;데이터셋 검색&lt;/label&gt;
+    &lt;input id="dataset-search" type="search" autocomplete="off"&gt;
+    &lt;div id="dataset-list" role="listbox" aria-label="데이터셋"&gt;&lt;/div&gt;
+    &lt;aside id="selected-dataset-info" aria-live="polite"&gt;&lt;/aside&gt;
+    &lt;button id="start-analysis" type="button" disabled&gt;분석 시작&lt;/button&gt;
+  &lt;/section&gt;
+  &lt;section id="queue-view" hidden&gt;&lt;div id="queue-list"&gt;&lt;/div&gt;&lt;/section&gt;
+  &lt;section id="history-view" hidden&gt;&lt;div id="history-list"&gt;&lt;/div&gt;&lt;/section&gt;
+  &lt;section id="result-workspace" hidden&gt;
+    &lt;canvas id="series-chart" aria-label="선택한 시계열 그래프"&gt;&lt;/canvas&gt;
+    &lt;div id="detection-summary"&gt;&lt;/div&gt;
+    &lt;div id="automatic-detections"&gt;&lt;/div&gt;
+    &lt;div id="resolution-limited-warning" role="status"&gt;&lt;/div&gt;
+    &lt;div id="model-evaluation"&gt;&lt;/div&gt;
+  &lt;/section&gt;
+  &lt;div id="global-alert" role="alert" aria-live="assertive"&gt;&lt;/div&gt;
+&lt;/main&gt;</code></pre>
+      <pre><code>function switchView(viewId) {
+  for (const section of document.querySelectorAll("[id$='-view']")) {
+    section.hidden = section.id !== viewId;
+  }
+  for (const button of document.querySelectorAll("nav [data-view]")) {
+    button.toggleAttribute("aria-current", button.dataset.view === viewId);
+  }
+}
+
+async function loadServiceStatus() {
+  const status = await requestJson("/api/status");
+  document.querySelector("#connection-state").textContent =
+    `연결됨 · ${status.team_url}`;
+}</code></pre>
+      <p>시안의 예시 데이터 행은 복사하지 않습니다. 현재의 자동 확정 이상, 표본 수 제한 경고, 다중 증거 검토 후보, 모델 평가 표시를 그대로 연결합니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 4. 키보드·모바일·실패 상태를 확인</span></label>
+      <pre><code>"$DIAGNOSIS_PYTHON" -m unittest \
+  services.time_series_anomaly_diagnosis.tests.test_web_interface \
+  services.time_series_anomaly_diagnosis.tests.test_application_server -v
+
+# 실행 중 브라우저 확인 순서
+# 1) 이름 검색  2) 키보드 선택  3) 분석 시작
+# 4) 대기열 이동  5) 결과 그래프 열기  6) 실패 메시지 읽기</code></pre>
+      <p>예상: 360px 너비에서도 가로 스크롤 없이 주요 버튼을 사용할 수 있고, 상태는 색과 문장을 함께 사용합니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 5. 코드맵, Ponytail 검토, 커밋</span></label>
+      <pre><code>"$DIAGNOSIS_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py
+"$DIAGNOSIS_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+# 현재 diff에 @ponytail-review 실행
+node /Users/mac/.codex/hooks/ponytail-review-gate.js approve
+git add \
+  services/time_series_anomaly_diagnosis/web/index.html \
+  services/time_series_anomaly_diagnosis/web/service_styles.css \
+  services/time_series_anomaly_diagnosis/web/application.js \
+  services/time_series_anomaly_diagnosis/tests/test_web_interface.py \
+  services/time_series_anomaly_diagnosis/tools/build_code_map.py \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.html \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.json \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.lock
+git commit -m "feat: apply task-focused diagnosis workspace"</code></pre>
+    </div>
+  </section>
+
+  <section class="task" id="task-5">
+    <h2><label><input type="checkbox" checked disabled><span>Task 5 — Windows·Mac 자체 포함 패키지</span></label></h2>
+    <p class="done">구현·독립 검토 완료 · 커밋 <code>f02d56eb</code> · 전체 테스트 178개 통과 · Mac 패키지에서 Hydra 분석 완료. Windows 실기기 검증은 아래에서 별도로 추적합니다.</p>
+    <p><strong>파일:</strong> Create <code>packaging/requirements-build.txt</code>, <code>packaging/service_app.spec</code>, <code>packaging/build_package.py</code>, <code>tests/test_packaging.py</code>.</p>
+    <p><strong>Consumes:</strong> Task 1의 resources, Task 2의 launcher, Task 4의 web 파일.</p>
+    <p><strong>Produces:</strong> 운영체제별 one-folder 패키지와 <code>runtime_manifest.json</code>.</p>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 1. 패키지 경계 테스트 작성</span></label>
+      <pre><code>def test_package_includes_code_resources_and_web_but_not_databases(self):
+    spec = SPEC.read_text("utf-8")
+    self.assertIn("service_launcher.py", spec)
+    self.assertIn("resources", spec)
+    self.assertIn("web", spec)
+    self.assertNotIn("univariate_ts.db", spec)
+    self.assertNotIn("analysis_history.sqlite3", spec)
+
+def test_direct_build_versions_are_pinned(self):
+    requirements = REQUIREMENTS.read_text("utf-8").splitlines()
+    self.assertIn("pyinstaller==6.22.2", requirements)
+    self.assertIn("pyinstaller-hooks-contrib==2026.7", requirements)
+    self.assertIn("torch==2.13.0", requirements)
+    self.assertTrue(all("==" in line for line in requirements if line))</code></pre>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 2. 패키지 파일이 없어 실패하는지 확인</span></label>
+      <pre><code>"$DIAGNOSIS_PYTHON" -m unittest \
+  services.time_series_anomaly_diagnosis.tests.test_packaging -v</code></pre>
+      <p>예상: spec과 빌드 requirements 파일 부재로 실패합니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 3. 직접 의존성 버전과 one-folder spec 작성</span></label>
+      <pre><code>numpy==2.3.5
+numba==0.63.1
+aeon==1.4.0
+scikit-learn==1.7.2
+pyinstaller==6.22.2
+pyinstaller-hooks-contrib==2026.7
+torch==2.13.0</code></pre>
+      <p>실제 패키지 검토에서 Hydra가 torch를 실행한다는 점을 확인했습니다. Hydra로 라우팅되는 88개 데이터셋을 그대로 지원하기 위해 torch를 포함하며, 패키지 크기를 줄이려고 모델이나 라우팅을 바꾸지 않습니다.</p>
+      <pre><code># service_app.spec 핵심
+service_root = Path(SPEC).resolve().parent.parent
+analysis = Analysis(
+    [str(service_root / "service_launcher.py")],
+    pathex=[str(service_root.parents[1])],
+    datas=[
+        (str(service_root / "web"), "services/time_series_anomaly_diagnosis/web"),
+        (str(service_root / "resources"), "services/time_series_anomaly_diagnosis/resources"),
+    ],
+    hiddenimports=[
+        "aeon.transformations.collection.convolution_based._minirocket",
+        "aeon.transformations.collection.convolution_based._multirocket",
+        "aeon.transformations.collection.convolution_based._hydra",
+    ],
+)
+pyz = PYZ(analysis.pure)
+executable = EXE(
+    pyz, analysis.scripts, [], exclude_binaries=True,
+    name="TimeSeriesAnomalyDiagnosis", console=True,
+)
+bundle = COLLECT(
+    executable, analysis.binaries, analysis.datas,
+    name="TimeSeriesAnomalyDiagnosis",
+)
+if sys.platform == "darwin":
+    app = BUNDLE(
+        bundle,
+        name="TimeSeriesAnomalyDiagnosis.app",
+        bundle_identifier="local.research.time-series-anomaly-diagnosis",
+    )</code></pre>
+      <p>one-file 압축은 1.6GB DB와 관계가 없고 시작 시간만 늘리므로 사용하지 않습니다. Mac build는 <code>BUNDLE</code>, Windows build는 <code>COLLECT</code> 결과를 사용합니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 4. 현재 운영체제에서 패키지를 만들고 manifest 기록</span></label>
+      <pre><code>"$DIAGNOSIS_PYTHON" -m pip install \
+  -r services/time_series_anomaly_diagnosis/packaging/requirements-build.txt
+"$DIAGNOSIS_PYTHON" services/time_series_anomaly_diagnosis/packaging/build_package.py \
+  --clean --output dist/time_series_anomaly_diagnosis</code></pre>
+      <p><code>build_package.py</code>는 PyInstaller를 실행한 뒤 Python·운영체제·직접 의존성 버전·모델 manifest 해시를 최종 배포 폴더의 <code>runtime_manifest.json</code>에 기록합니다. 같은 폴더에 빈 <code>data</code> 디렉터리도 만들어 관리자가 DB를 직접 넣을 위치를 분명히 합니다. 다른 운영체제 출력물을 요청하는 옵션은 제공하지 않습니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 5. 패키지 smoke, Ponytail 검토, 커밋</span></label>
+      <pre><code>"$DIAGNOSIS_PYTHON" -m unittest \
+  services.time_series_anomaly_diagnosis.tests.test_packaging -v
+
+# Mac: Finder에서 .app 실행 후
+curl --fail http://127.0.0.1:8485/api/status
+
+# Windows PowerShell: .exe 실행 후
+Invoke-RestMethod http://127.0.0.1:8485/api/status
+
+"$DIAGNOSIS_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py
+"$DIAGNOSIS_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+
+# 현재 diff에 @ponytail-review 실행
+node /Users/mac/.codex/hooks/ponytail-review-gate.js approve
+git add \
+  services/time_series_anomaly_diagnosis/packaging/requirements-build.txt \
+  services/time_series_anomaly_diagnosis/packaging/service_app.spec \
+  services/time_series_anomaly_diagnosis/packaging/build_package.py \
+  services/time_series_anomaly_diagnosis/tests/test_packaging.py \
+  services/time_series_anomaly_diagnosis/tools/build_code_map.py \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.html \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.json \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.lock
+git commit -m "build: package diagnosis service for desktop hosts"</code></pre>
+      <p>두 smoke의 예상 응답은 <code>{"status":"ready","backend":"cpu_numba"}</code>를 포함합니다. 실제 Windows 검증 전에는 Windows 완료 체크를 하지 않습니다.</p>
+    </div>
+  </section>
+
+  <section class="task" id="task-6">
+    <h2><label><input type="checkbox" disabled><span>Task 6 — 데이터베이스부터 결과까지 엔드투엔드 검증</span></label></h2>
+    <p><strong>파일:</strong> Create <code>tests/test_cross_platform_service.py</code>. Modify <code>service_launcher.py</code>, <code>application_server.py</code>, 해당 테스트, <code>docs/usage_guide.html</code>, <code>docs/cross_platform_service_design.html</code>, 대시보드, 이 계획서, 코드맵 생성기와 산출물.</p>
+    <p>설치본에서도 기존 등록기를 실행하도록 <code>--import-database</code>를 연결합니다. 시작 오류 검사에서 발견된 포트 충돌 처리와 중단 기록 복구 순서도 함께 보완합니다.</p>
+    <p><strong>Consumes:</strong> Task 1~5의 완성된 서비스와 실제 원본 DB.</p>
+    <p><strong>Produces:</strong> 운영체제별 검증 상태, 10개 동시 조회, 분석 결과 지속성, 최종 HTML 사용 안내. 실제 구현의 테스트 전용 <code>running_runtime</code>과 <code>request_json</code> 헬퍼는 <code>test_cross_platform_service.py</code> 안에만 둡니다. 아래 코드는 흐름을 설명하는 예시입니다.</p>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 1. 10명 조회와 금지 경계 테스트 작성</span></label>
+      <pre><code>def test_ten_clients_can_read_catalog_concurrently(self):
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        results = list(pool.map(lambda _: get_json(self.base_url + "/api/datasets"), range(10)))
+    self.assertTrue(all(result == results[0] for result in results))
+
+def test_network_upload_route_does_not_exist(self):
+    status, _ = request_json(self.base_url + "/api/upload", method="POST", body=b"{}")
+    self.assertEqual(status, HTTPStatus.NOT_FOUND)</code></pre>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 2. 임시 DB로 로컬 등록→시작→분석→재시작 흐름 작성</span></label>
+      <pre><code>summary = install_database(raw_database, data_directory, import_report)
+self.assertEqual(summary.datasets[0].name, "Trace_normal_2")
+first = start_service(data_directory)
+run = submit_analysis(first.url, "Trace_normal_2")
+completed = wait_for_completion(first.url, run["run_id"])
+first.stop()
+
+second = start_service(data_directory)
+restored = get_json(second.url + f"/api/analysis-runs/{run['run_id']}")
+self.assertEqual(restored["status"], "completed")
+self.assertEqual(restored["result"], completed["result"])</code></pre>
+      <p>새 이름에는 검증된 경로가 없으므로 등록 성공과 분석 불가 표시를 별도로 검사합니다. 실제 분석 성공은 현재 검증 목록에 있는 작은 데이터셋으로 검사합니다.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 3. 전체 단위·통합·코드맵 검사</span></label>
+      <p class="done">전체 184개 통과 후, 시작 처리 보완 영역의 30개 테스트를 다시 통과했습니다. 공유 기록 DB의 상태 보존과 오류 시 연결 정리를 독립 재검토했습니다.</p>
+      <pre><code>"$DIAGNOSIS_PYTHON" -m unittest discover \
+  -s services/time_series_anomaly_diagnosis/tests -v
+"$DIAGNOSIS_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py
+"$DIAGNOSIS_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+git diff --check</code></pre>
+      <p>예상: 전체 PASS, stale 코드맵 없음, diff 공백 오류 없음.</p>
+    </div>
+
+    <div class="step"><label><input type="checkbox" disabled><span>Step 4. 실제 Mac과 Windows에서 같은 판정 확인</span></label>
+      <p>Mac 설치본 검증과 Windows 실기기 비교를 각각 확인합니다. Windows 환경에서 실행하기 전에는 이 Step 전체를 완료로 표시하지 않습니다.</p>
+      <div class="checklist">
+        <label><input type="checkbox" checked disabled><span>최종 Mac 설치본: 로컬 등록·대표 5개 분석·소스 실행과 판정 일치</span></label>
+        <label><input type="checkbox" disabled><span>Windows 설치본: 같은 DB와 모델 자료로 Mac 판정과 비교</span></label>
+        <label><input type="checkbox" disabled><span>Python 없는 별도 시험 PC에서 아이콘으로 실행</span></label>
+      </div>
+      <ol>
+        <li>Python이 설치되지 않은 시험 PC에 운영체제용 one-folder 패키지와 같은 DB 복사본을 둡니다.</li>
+        <li>아이콘으로 실행하고 브라우저가 자동으로 열리는지 확인합니다.</li>
+        <li><code>Trace_normal_2</code>와 세 방법 대표 데이터셋을 각각 분석합니다.</li>
+        <li>Mac과 Windows의 자동 확정 인덱스, 표본 수 제한 경고 인덱스, 다중 증거 검토 후보 인덱스가 완전히 같은지 비교합니다.</li>
+        <li>완료 결과 JSON의 모든 수치가 유한하고 실제 backend가 <code>cpu_numba</code>인지 확인합니다.</li>
+        <li>서비스 재시작 후 기록이 남고 실행 중 강제 종료된 작업은 중단으로 표시되는지 확인합니다.</li>
+      </ol>
+    </div>
+
+    <div class="step"><label><input type="checkbox" checked disabled><span>Step 5. HTML 문서 체크, Ponytail 검토, 구현 커밋</span></label>
+      <p class="done">구현 커밋 <code>182d0448</code>. HTML·원자료 JSON·로컬 링크·코드맵 검사와 독립 코드 재검토를 마쳤습니다. Windows와 별도 시험 PC 검증 항목은 완료 체크를 하지 않았습니다.</p>
+      <pre><code># 완료된 항목에만 checked를 반영하고 HTML 구문을 검사합니다.
+"$DIAGNOSIS_PYTHON" -c "from html.parser import HTMLParser; from pathlib import Path; p=HTMLParser(); [p.feed(x.read_text('utf-8')) for x in Path('services/time_series_anomaly_diagnosis/docs').glob('*.html')]"
+
+# 현재 diff에 @ponytail-review 실행
+node /Users/mac/.codex/hooks/ponytail-review-gate.js approve
+git add \
+  services/time_series_anomaly_diagnosis/tests/test_cross_platform_service.py \
+  services/time_series_anomaly_diagnosis/docs/usage_guide.html \
+  services/time_series_anomaly_diagnosis/docs/cross_platform_service_design.html \
+  services/time_series_anomaly_diagnosis/docs/cross_platform_service_implementation_plan.html \
+  services/time_series_anomaly_diagnosis/tools/build_code_map.py \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.html \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.json \
+  services/time_series_anomaly_diagnosis/docs/code_map_v1.lock
+git commit -m "test: verify cross-platform diagnosis workflow"</code></pre>
+    </div>
+  </section>
+
+  <section>
+    <h2>완료 판정표</h2>
+    <table>
+      <thead><tr><th>사용자 행동</th><th>성공 기준</th><th>담당 Task</th></tr></thead>
+      <tbody>
+        <tr><td>관리자가 아이콘 클릭</td><td>DB·자료 검사 후 브라우저가 열리고 준비 상태 표시</td><td>2, 5</td></tr>
+        <tr><td>연구원이 Windows·Mac 브라우저 접속</td><td>같은 목록·대기열·기록 확인</td><td>2, 4, 6</td></tr>
+        <tr><td>관리자가 대용량 DB 등록</td><td>네트워크 전송 없이 로컬에서 검사·교체, 실패 시 기존 DB 보존</td><td>3, 6</td></tr>
+        <tr><td>사용자가 데이터셋 선택</td><td>DB가 보고한 개수·길이·분석 가능 여부 표시</td><td>1, 4</td></tr>
+        <tr><td>사용자가 분석 시작</td><td>한 건씩 처리되고 대기 순서가 모두에게 동일</td><td>2, 6</td></tr>
+        <tr><td>사용자가 결과 확인</td><td>그래프, 자동 확정, 표본 수 경고, 검토 후보, 성능 지표 표시</td><td>4, 6</td></tr>
+        <tr><td>CUDA 없는 PC에서 실행</td><td>CPU·Numba로 끝까지 완료</td><td>2, 5, 6</td></tr>
+        <tr><td>프로그램 재시작</td><td>완료 기록 보존, 중단 작업 상태 수정</td><td>2, 6</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>이번 범위에서 만들지 않는 것</h2>
+    <ul>
+      <li>웹 파일 업로드와 원격 DB 등록</li>
+      <li>사용자 계정·권한 관리</li>
+      <li>PostgreSQL, Redis, 별도 분석 서버</li>
+      <li>여러 분석을 동시에 돌리는 GPU 작업 큐</li>
+      <li>새 CUDA·MLX 점수 구현</li>
+      <li>CSV·Excel 형식 변환기</li>
+      <li>운영체제 부팅 시 자동 시작</li>
+      <li>커스텀 브랜드 아이콘과 자동 업데이트</li>
+    </ul>
+    <p class="note warning">이 항목들은 현재 10명 이내의 로컬 연구팀 서비스에 필요하지 않습니다. 실제 사용에서 요구가 생길 때 별도 설계로 추가합니다.</p>
+  </section>
+
+  <section>
+    <h2>참고한 공식 자료</h2>
+    <ul>
+      <li><a href="https://pyinstaller.org/en/stable/">PyInstaller 공식 설명서</a> — 자체 포함 패키지와 운영체제별 빌드 원칙</li>
+      <li><a href="https://pyinstaller.org/en/stable/man/pyinstaller.html">PyInstaller 명령 옵션</a> — one-folder, spec, 출력 경로</li>
+      <li><a href="https://pypi.org/project/pyinstaller/6.22.2/">PyInstaller 6.22.2 배포 정보</a></li>
+      <li><a href="https://pypi.org/project/pyinstaller-hooks-contrib/2026.7/">pyinstaller-hooks-contrib 2026.7 배포 정보</a></li>
+    </ul>
+    <p class="done">계획 작성과 자체 검토 완료</p>
+    <p class="pending">Task 6: 코드·자동 검사·Mac 설치본 검증 완료. Windows 실기기와 별도 시험 PC 검증 대기. <a href="dashboard.html#cross-platform-verification">검증 결과 보기</a></p>
+  </section>
+</main>
+</body>
+</html>

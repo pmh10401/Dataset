@@ -1,0 +1,999 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>시계열 이상 진단 서비스 진행 대시보드</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card-bg: #ffffff;
+      --border: #dbe3ed;
+      --text: #192434;
+      --muted: #5e6d82;
+      --blue: #2354cf;
+      --green: #107c41;
+      --green-bg: #eafaf1;
+      --amber: #995c00;
+      --amber-bg: #fff8e8;
+      --code-bg: #0f172a;
+      --code-fg: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 32px 16px;
+    }
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    header, section {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+    }
+    h1 { font-size: 28px; font-weight: 800; margin-bottom: 10px; color: var(--text); }
+    h2 { font-size: 20px; font-weight: 700; margin-bottom: 14px; border-bottom: 2px solid var(--bg); padding-bottom: 8px; }
+    h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    p { margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+    a { color: var(--blue); text-decoration: none; font-weight: 600; }
+    a:hover { text-decoration: underline; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-right: 6px;
+      margin-bottom: 8px;
+    }
+    .badge-blue { background: #eaf0ff; color: var(--blue); }
+    .badge-green { background: var(--green-bg); color: var(--green); }
+    .badge-amber { background: var(--amber-bg); color: var(--amber); }
+    .nav-links {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .nav-links a {
+      background: #f0f4fa;
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .task-list {
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fafcff;
+    }
+    .task-item.done {
+      background: #f4fbf7;
+      border-color: #c3e6d2;
+    }
+    .task-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green);
+    }
+    .grid-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .stat-card {
+      border: 1px solid var(--border);
+      background: #fbfdff;
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .stat-title { font-size: 13px; color: var(--muted); font-weight: 600; }
+    .stat-value { font-size: 24px; font-weight: 800; color: var(--text); margin-top: 4px; }
+    .stat-desc { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .callout {
+      border-left: 4px solid var(--amber);
+      background: var(--amber-bg);
+      padding: 14px 16px;
+      border-radius: 0 8px 8px 0;
+      margin: 14px 0;
+    }
+    .callout-title { font-weight: 700; color: var(--amber); margin-bottom: 4px; }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-fg);
+      padding: 14px 16px;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.5;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      margin-top: 8px;
+      margin-bottom: 12px;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      background: #eef3f9;
+      color: #0f2b6e;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+    .result-box {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      background: #fafcff;
+      margin-bottom: 14px;
+    }
+    #cross-platform-verification table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    #cross-platform-verification th, #cross-platform-verification td { padding: 10px 8px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+    #cross-platform-verification caption { text-align: left; margin: 14px 0 8px; font-weight: 600; }
+    @media (max-width: 700px) { #cross-platform-verification table { display: block; overflow-x: auto; } }
+  </style>
+</head>
+<body>
+<main>
+  <section id="windows-release">
+    <h2>Windows 전체 데이터 배포 · 2026-09-15</h2>
+    <p>분석 모델을 유지하고 검색·결과 이동을 개선한 Windows 오프라인 초기 배포본을 비공개 GitHub Releases에 게시했습니다.</p>
+    <p><label><input type="checkbox" checked disabled> 검색·가용성 필터·완료 결과 바로 열기 구현</label><br>
+    <label><input type="checkbox" checked disabled> 실제 DB 분석과 1440·1024·390px 화면 검증</label><br>
+    <label><input type="checkbox" checked disabled> 로컬 관련 테스트 38개 통과</label><br>
+    <label><input id="windows-build-done" type="checkbox" checked disabled> Windows 실행파일 빌드·분석·재시작 검증</label><br>
+    <label><input id="windows-upload-done" type="checkbox" checked disabled> 전체 DB 포함 분할 압축 검증·비공개 GitHub 배포</label></p>
+    <p><a href="https://github.com/pmh10401/Dataset/actions/runs/34921847388">Windows 실행 검증 결과</a> · <a href="windows_release_guide.html">설치와 실행 안내</a></p>
+    <p><a href="https://github.com/pmh10401/Dataset/releases/tag/diagnosis-windows-2026.09.15">Windows 실행본과 전체 데이터 다운로드</a> — 500MiB 조각 2개 + 28.3MiB 조각 1개. 총 1,078,294,878바이트입니다. 조각 3개와 restore.cmd, restore.ps1, manifest.json을 같은 폴더에 받고 restore.cmd를 실행하세요. START_HERE.html을 포함한 첨부파일 7개 모두 GitHub 서버와 로컬의 SHA-256 일치를 확인했습니다.</p>
+    <p>검증: Windows Server 2025 x64에서 테스트 34개, 실행파일의 합성 데이터 분석·재시작 결과 보존 검사 통과. 로컬에서 분할 파일 재조립, ZIP 전체 CRC, DB SHA-256·무결성·행 수 검사 통과. UI는 Playwright로 1440·1024·390px 화면의 검색·필터·실제 Trace 분석·결과 열기·그래프 선택·기록 복귀를 확인했고 JavaScript 오류는 없었습니다. Windows 10/11 사용자 실기기 및 조직별 실행 정책은 미검증입니다.</p>
+    <p>전체 DB: 데이터셋 1,119개 / 시계열 레코드 396,737개. 서비스 분석 가능 항목은 956개이며 나머지도 DB에 포함합니다. Windows 패키지의 분석·재시작 검사는 합성 데이터로 수행했고, 실제 Trace 데이터의 UI 분석은 Mac에서 확인했습니다. 1,119개 전체의 성능을 새로 평가한 것은 아닙니다.</p>
+    <p>원본 DB를 수정하지 않습니다. 개인 분석 기록·캐시는 배포하지 않습니다. Windows 사용자 PC의 조직별 실행 정책은 별도 확인이 필요합니다.</p>
+  </section>
+  <header>
+    <h1>시계열 이상 진단 서비스 진행 대시보드</h1>
+    <p>연구팀이 데이터베이스의 시계열 데이터셋을 선택해 자동 판정과 표본 수 제한 경고를 한 화면에서 살펴보는 서비스의 진행 상황입니다.</p>
+    <div>
+      <span class="badge badge-blue">Windows·Mac 설치본 통합 검증</span>
+      <span class="badge badge-green">DB 등록부터 결과 보존까지 연결</span>
+      <span class="badge badge-green">표본 수 제한 강한 후보 자동 확정</span>
+    </div>
+    <nav class="nav-links">
+      <a href="cross_platform_service_implementation_plan.html">설치형 서비스 진행 계획</a>
+      <a href="cross_platform_service_design.html">설치형 서비스 구조</a>
+      <a href="design.html">설계서 (design.html)</a>
+      <a href="live_end_to_end_analysis_design.html">실시간 엔드 투 엔드 전환 설계</a>
+      <a href="live_end_to_end_analysis_plan.html">실시간 엔드 투 엔드 구현 계획</a>
+      <a href="router_collapse_diagnosis.html">라우터 실패 원인 진단</a>
+      <a href="router_replay_qualification.html">잔여 FN 라우팅 재검증</a>
+      <a href="implementation_plan.html">구현 계획서 (implementation_plan.html)</a>
+      <a href="code_map_v1.html">코드맵 (code_map_v1.html)</a>
+      <a href="usage_guide.html">사용 안내서 (usage_guide.html)</a>
+    </nav>
+  </header>
+
+  <section id="cross-platform-verification">
+    <h2>설치형 서비스 — 최종 통합 검증</h2>
+    <p>2026-09-09 · 한 대의 서버에서 DB를 직접 등록하고, 연구팀이 브라우저에서 분석 결과를 확인하는 흐름을 검증합니다.</p>
+    <ul class="task-list">
+      <li class="task-item done"><label><input type="checkbox" checked disabled>Task 1~5 구현·검토·커밋 완료</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>동시 HTTP 조회 10개와 업로드 API 부재 확인</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>최빈 라벨 등록 → 실제 분석 → 재시작 후 결과 보존</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>Mac 설치본에서 등록 명령과 대표 데이터 분석 확인</label></li>
+      <li class="task-item"><label><input type="checkbox" disabled>Windows 실기기 빌드·실행과 Mac 판정 비교</label></li>
+      <li class="task-item"><label><input type="checkbox" disabled>Python 없는 별도 시험 PC와 실제 팀 PC 접속 확인</label></li>
+    </ul>
+    <p id="cross-platform-test-status">전체 184개 통과 후 시작 처리 보완 영역의 30개 테스트를 다시 통과했습니다. 독립 재검토 완료 · 구현 커밋 <code>182d0448</code>. 최종 Mac 설치본에서 등록 → 분석 → 재시작 후 결과 보존을 확인했습니다.</p>
+    <table>
+      <caption>실제 DB 대표 데이터 5개 · 설치본과 소스 실행의 판정 비교</caption>
+      <thead><tr><th scope="col">데이터셋 / 방법</th><th scope="col">평가 시계열</th><th scope="col">자동 이상 / 경고</th><th scope="col">검토 후보</th><th scope="col">정탐 / 미탐 / 오탐</th></tr></thead>
+      <tbody>
+        <tr><td>Trace_normal_2<br>MiniRocket</td><td>50개</td><td>#49 / #49</td><td>없음</td><td>1 / 0 / 0</td></tr>
+        <tr><td>ACSF1_normal_0<br>MiniRocket</td><td>50개</td><td>없음 / 없음</td><td>없음</td><td>0 / 1 / 0</td></tr>
+        <tr><td>EOGVerticalSignal_normal_12<br>Hydra</td><td>50개</td><td>#49 / #49</td><td>없음</td><td>1 / 0 / 0</td></tr>
+        <tr><td>DistalPhalanxTW_normal_7<br>MultiRocket</td><td>50개</td><td>없음 / 없음</td><td>#4</td><td>0 / 1 / 0</td></tr>
+        <tr><td>AllGestureWiimoteX_normal_1<br>MiniRocket · 길이 복구</td><td>100개</td><td>없음 / 없음</td><td>#99</td><td>0 / 2 / 0</td></tr>
+      </tbody>
+    </table>
+    <p>모든 대표 데이터에서 점수 차이는 0이었고 자동 판정·경고·검토 후보가 정확히 일치했습니다. 검토 후보는 자동 이상과 별도로 표시됩니다. 이 검증은 설치본에서 같은 결과가 나오는지 확인하며, 각 데이터의 미탐도 표에 함께 기록했습니다.</p>
+    <p>DB 목록 조회는 1,119개, 설치본과의 점수 비교는 대표 5개 데이터셋의 300개 평가 시계열을 대상으로 했습니다. 전체 데이터셋의 성능을 다시 계산한 결과로 해석하지 않습니다.</p>
+    <p><a href="cross_platform_verification.json">검증 수치·후보 인덱스 원자료(JSON)</a> · 모델 자료 SHA-256: <code>e10696f9…212202</code></p>
+    <p><a href="usage_guide.html">설치·DB 등록·실행 안내</a> · <a href="cross_platform_service_implementation_plan.html#task-6">Task 6 세부 체크박스</a></p>
+  </section>
+
+  <section id="current-live-service">
+    <h2><label><input type="checkbox" checked disabled>서비스의 자동 판정 기준</label></h2>
+    <p><strong>핵심 수정:</strong> 학습 정상 자료가 적어 p값이 0.005까지 내려갈 수 없는 경우, 가능한 최소 p값에 도달한 강한 후보를 <strong>자동 확정 이상</strong>으로 올리고 낮은 통계적 확신을 경고합니다.</p>
+    <div class="grid-stats">
+      <div class="stat-card"><div class="stat-title">Trace_normal_2 자동 확정</div><div class="stat-value">#49</div><div class="stat-desc">표본 수 제한 규칙 적용</div></div>
+      <div class="stat-card"><div class="stat-title">경고 대상</div><div class="stat-value" style="color: var(--blue);">#49</div><div class="stat-desc">현재 가능한 최소 p값 0.0244</div></div>
+      <div class="stat-card"><div class="stat-title">학습 정상 자료</div><div class="stat-value">40개</div><div class="stat-desc">최소 p = 1 / 41</div></div>
+      <div class="stat-card"><div class="stat-title">자동 평가</div><div class="stat-value">TP 1 · FN 0</div><div class="stat-desc">승격 결과를 실제 판정에 포함</div></div>
+    </div>
+    <ul class="task-list">
+      <li class="task-item done"><label><input type="checkbox" checked disabled>현재 DB 값으로 점수와 후보를 다시 계산</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>현재 자동 판정과 다중 증거 검토 후보를 구분해 표시</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>이전 결과 형식은 현재 값으로 재분석하도록 안내</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>실패 테스트 작성과 판정·API·화면 구현 완료</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>격리된 실제 DB → API → 화면 검증 완료</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>전체 테스트·코드맵 최종 통과</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>공식 8485 서비스 교체 및 Trace_normal_2 재검증</label></li>
+    </ul>
+    <p class="callout"><strong>현재 범위:</strong> 첫 버전은 DB에 등록된 데이터셋과 이미 검증된 최적 방법 매핑을 사용합니다. 성능 기준을 통과하지 못한 새 일반 라우터는 연결하지 않았습니다.</p>
+  </section>
+
+  <section>
+    <h2>초기 서비스 구축 기록 (10개 Task)</h2>
+    <p>아래는 초기 구축 이력입니다. 현재 실행과 검증 상태는 위의 “설치형 서비스 — 최종 통합 검증”과 사용 안내서를 기준으로 합니다.</p>
+    <ul class="task-list">
+      <li class="task-item done">
+        <label><input type="checkbox" checked disabled> <strong>Task 1 — 서비스 추적 기반과 대시보드</strong> (완료: 코드맵 도구, 단위 테스트, 대시보드 구축)</label>
+      </li>
+      <li class="task-item done">
+        <label><input type="checkbox" checked disabled> <strong>Task 2 — 검증 자료와 데이터 접근</strong> (완료: DB 목록 조회, 값 로더, Numba 평가 및 코드맵 연동)</label>
+      </li>
+      <li class="task-item done">
+        <label><input type="checkbox" checked disabled> <strong>Task 3 — 자동 이상 탐지와 평가 경계</strong> (완료: 검증 점수 계산, 자동 이상 후보, 독립 평가 경계)</label>
+      </li>
+      <li class="task-item done">
+        <label><input type="checkbox" checked disabled> <strong>Task 4 — 다중 증거 검토 후보</strong> (완료: 동결 증거 검증, 자동 탐지 중복 제거, P1·P2·P3 결정론적 정렬)</label>
+      </li>
+      <li class="task-item done">
+        <label><input type="checkbox" checked disabled> <strong>Task 5 — 분석 기록 영구 저장</strong> (완료: SQLite 기반 분석 이력 DB 및 복구 메커니즘)</label>
+      </li>
+      <li class="task-item done">
+        <label><input type="checkbox" checked disabled> <strong>Task 6 — 공용 대기열과 분석 API</strong> (완료: 단일 작업자 큐 및 REST JSON API)</label>
+      </li>
+      <li class="task-item done">
+        <label><input type="checkbox" checked disabled> <strong>Task 7 — 연구팀 분석 작업 공간</strong> (완료: 인터랙티브 웹 작업 공간, 정적 라우트 서빙, 캔버스 시계열 시각화)</label>
+      </li>
+      <li class="task-item done">
+        <label><input type="checkbox" checked disabled> <strong>Task 8 — 실제 데이터 검증과 서비스 실행</strong> (완료: 자동 테스트 48/48 통과, 대표 smoke 통과, 127.0.0.1:8485 라이브 서비스, 데스크톱 및 모바일 E2E, 서버 중단/복구 검증 완료)</label>
+      </li>
+      <li class="task-item done">
+        <label><input type="checkbox" checked disabled> <strong>Task 9 — 소표본 검토 우선 후보</strong> (완료: 자동 판정 기준을 유지하면서, 해상도 한계 후보를 별도 카드와 API에 반영)</label>
+      </li>
+      <li class="task-item done">
+        <label><input type="checkbox" checked disabled> <strong>Task 10 — 동결 Hard 일치 표시 검증</strong> (완료: 기능과 한계를 확인했으며, 현재 입력으로 재계산되지 않는 참고 자료이므로 실시간 전환 때 서비스 경로에서 제거 예정)</label>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>실시간 엔드 투 엔드 전환</h2>
+    <p>저장된 TEST 행 번호와 과거 증거를 제거하고, 현재 DB 값으로 점수와 검토 후보를 계산하는 구조로 전환했습니다. 일반 라우터는 성능 기준을 통과하지 못해 제외하고 등록 데이터셋의 검증된 방법 매핑을 유지합니다.</p>
+    <ul class="task-list">
+      <li class="task-item done"><label><input type="checkbox" checked disabled>완료 기준 확정</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>Hard 및 동결 증거 계보 조사</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>설계 방향 승인</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>HTML 설계서 작성</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>작성된 설계서 최종 검토 승인</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>구현 계획 작성</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>구현 계획 승인</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>Task 1 — 현재 값만 사용하는 공통 전처리</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>Task 2 — 세 점수 방법을 서비스 내부 코드로 고정</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>Task 3 — A·B·C와 현재 seed/method 증거</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>Task 4 — 공통 평가기, 재시작, 가속 사전검증</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>Task 5 — 공식 1,117개 정책 검증</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>Task 5 후속 — 라우팅과 검토 규칙의 영향 분리</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>Task 5 후속 — 잔여 FN 직접 라우팅 재검증</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>Task 6 — 현재 DB 판단 경계 서비스 통합</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>Task 7 Step 1–5 — 격리 환경 엔드 투 엔드 검증</label></li>
+      <li class="task-item done"><label><input type="checkbox" checked disabled>Task 7 Step 6 — 공식 8485 서비스 반영 및 재검증</label></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>실시간 전환 Task 2 검증 증거</h2>
+    <p>MiniRocket·MultiRocket·Hydra의 검증된 LocalGap 점수 코드를 서비스 내부로 옮기고, 일반·복구 준비 모두 초기값 <code>20260721</code>과 <code>20261721</code>을 사용하도록 고정했습니다.</p>
+    <ul>
+      <li><strong>TDD:</strong> 새 모듈과 <code>FIXED_SEEDS</code>가 없어서 실패하는 RED를 확인한 뒤, 집중 테스트 14건과 전체 서비스 테스트 68건을 통과했습니다.</li>
+      <li><strong>정확한 동등성:</strong> 세 방법·두 초기값의 작은 결정론적 fixture와 실제 DB 대표 4개에서 Exp449와 새 서비스의 TRAIN/TEST 점수, 최종 p값이 배열 단위로 정확히 일치했습니다.</li>
+      <li><strong>실제 결과:</strong> ACSF1 1.0, EOGVerticalSignal 1.0(검토 #49), DistalPhalanxTW 0.7142857142857143, AllGestureWiimoteX 0.9540816326530612이며 자동 후보는 모두 없습니다. 복구 경로의 두 초기값 전환도 이 대표에서는 AUC·후보 변화가 없습니다.</li>
+      <li><strong>가속 판정:</strong> aeon 1.4.0 변환기와 scikit-learn 1.7.2의 RobustScaler/NearestNeighbors는 동결 알고리즘 비교를 위해 공식 CPU 구현을 유지했습니다. Numba나 MLX로 재작성하면 feature·score 정의가 바뀌므로 채택하지 않았습니다. 환경은 NumPy 2.3.5, Numba 0.63.1이며 MLX는 설치되어 있지 않습니다. Task 1의 Numba 재표본화는 그대로 유지합니다.</li>
+      <li><strong>구조 검증:</strong> 서비스 실행 모듈의 <code>experiments.*</code> import를 제거하고 코드맵 JSON·HTML·lock을 재생성해 검증했습니다.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>실시간 전환 Task 3 검증 증거</h2>
+    <p>A·B·C 정책과 이름을 입력으로 사용하지 않는 TRAIN 특징 라우터를 추가하고, 저장된 과거 행 목록 대신 현재 두 초기값과 세 방법의 p값만으로 검토 후보를 계산합니다.</p>
+    <ul>
+      <li><label><input type="checkbox" checked disabled><strong>TDD:</strong> <code>routing_policy</code>가 없어 실패하는 RED를 확인한 뒤, 라우터·정책·원본 TRAIN 행 보존 집중 테스트 50건과 대표 실제 데이터 포함 테스트 51건을 통과했습니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>특징과 라우팅:</strong> 고정폭·가변폭 fixture가 동결 일곱 특징과 절대 오차 <code>1e-12</code> 안에서 일치했습니다. 익명 묶음 중복 제거, 안정 거리 동률, 최대 31개·최소 20개 지지, 결측 대체·표준화, 90% 비악화·0.20 분위·ZF 증가 및 MultiRocket 우선 동률을 검증했습니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>현재 증거:</strong> A·C의 선택 방법 지지와 B의 2-of-3 지지, seed/method 검토 집합의 중첩 허용·자동 이상 제외·자동 승격 금지, 정책별 p값 점수와 안정 정렬을 검증했습니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>호환성과 구조:</strong> 기존 다섯 위치 인자 준비 객체, 기존 탐지 행 4개 키, 평가 지표를 유지했습니다. 원본 유한 TRAIN 행은 독립 float64 읽기 전용 배열로 보존하며 C만 이를 요구합니다. 전체 서비스 테스트 82건과 코드맵 JSON·HTML·lock 검증을 통과했습니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>가속 판정:</strong> 일곱 특징은 행별 FFT와 통계, 라우터는 최대 31개 이웃의 제어 흐름으로 데이터셋당 한 번만 실행됩니다. 전체 수식을 그대로 지원하지 않는 Numba 재작성은 컴파일 비용과 알고리즘 변경 위험 때문에 채택하지 않았고 직접 NumPy를 유지했습니다. MLX는 로컬에 없고 이 작은 제어 흐름 단계는 대상이 아니므로 벤치마크하지 않았습니다.</label></li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>실시간 전환 Task 4 검증 증거</h2>
+    <p>라벨 없는 값 목록, 실행 계약, 재시작 가능한 공통 점수 캐시, 예측 고정과 성능 비교기를 만들고 승인된 대표 데이터 3개로만 확인했습니다. 공식 1,117개 실행은 Task 5 승인 전까지 시작하지 않습니다.</p>
+    <ul>
+      <li><label><input type="checkbox" checked disabled><strong>가속 사전검증:</strong> 현재 evaluator로 다시 측정한 컴파일 포함 첫 실행은 재표본화 0.183479초, 공개 경험적 p값 경로 0.052327초였고, 준비된 뒤 한 번 실행은 각각 0.000004초, 0.000609초였습니다. 전체 묶음 비교 속도는 Numba가 각각 5.15배, 3.24배였으며 유한 출력·절대 오차 1e-12·결정 일치를 모두 통과했습니다. MLX와 mlx-metal은 모두 설치되어 있지 않고 장치도 사용할 수 없어 cold/warm 측정을 실행하지 않았으며, 구체적인 사유와 함께 라우터 거리는 NumPy를 유지합니다. 설치 환경 경로는 NumPy와 MLX 각각 첫 실행을 포함한 동일 1,000회 전체 단계 시간으로 속도를 비교하며, 모의 시계 검증에서 warm만 빠른 경우는 탈락하고 전체 속도가 1.1배 이상인 경우만 선택됐습니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>최초 smoke:</strong> Trace, 가변 길이, Hydra 대표 3개에서 세 방법×두 초기값을 정확히 18회 계산해 캐시했고, 실제 경계 계측으로 값 → 점수 → 예측 고정 → 라벨 순서를 확인했습니다. 현재 실행 계약은 <code>403e47ff13041791ac2a80ec027f54c08e2edc22e7b6f8357f5e504cf5beb23b</code>이며 evaluator digest <code>5466a05b2d9423bf73b7d05e6052df40f62a81604fbf5fd7a472884ad5e680f3</code>와 현재 소스가 일치합니다. Trace #49는 자동 이상이 아니며 A의 현재 seed 합의 검토 전용 후보로 재현됐습니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>재시작 smoke:</strong> 전체 실행 계약 payload와 SHA를 저장·재로딩해 동일성을 감사한 뒤, 같은 체크포인트에서 점수기 호출 0회로 다시 실행했습니다. manifest와 실행 계약, 평가 결과가 같았고 baseline/A/B 예측 해시는 각각 <code>11c877ae…feb</code>, <code>a21fde84…3e7</code>, <code>89789100…1d4</code>로 일치했습니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>무결성 보강:</strong> TEST 인덱스는 bool·float를 허용하지 않는 정확한 비음수 정수로만 받아 manifest·checkpoint·동결 예측에서 같은 순서와 유일성을 검증합니다. 공식 평가 시간은 실제 단조 시계로 측정해 정책 지표와 진행 화면에 기록하되, 결과 재현 해시와 승자 계산에서는 진단용 벽시계 값을 분리했습니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>C 범위:</strong> 실제 데이터 C 품질은 주장하지 않습니다. 20개 익명 묶음 합성 자료로 전체 점수 고정 → 안쪽 라벨 → 라우터 학습 → 바깥 예측·해시 고정 → 바깥 라벨 순서를 실제 orchestration 함수로 실행했고, 같은 라우터 학습 해시로 재시작하면 바깥 예측을 다시 만들지 않고 동일 해시를 검증했습니다.</label></li>
+    </ul>
+  </section>
+
+  <section id="live-policy-qualification-result">
+    <h2><label><input type="checkbox" checked disabled>실시간 전환 Task 5 공식 정책 검증</label></h2>
+    <p><strong>완료:</strong> 승인된 공식 1,117개 모집단을 고정하고, 값 준비가 가능한 955개에서 세 후보와 현행 기준을 같은 예측·라벨 계약으로 비교했습니다. 준비 실패 162개와 방법 실패 0개를 전체 분모에 보존했습니다.</p>
+    <ul>
+      <li><label><input type="checkbox" checked disabled><strong>공식 점수:</strong> CPU 작업자 7개로 955개 데이터셋의 세 방법×두 초기값을 모두 완료했고, 실행 계약 <code>b0bc12e1…8aa2</code>와 체크포인트 행 해시를 검증했습니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>분리 평가:</strong> 현행 기준과 A·B 예측을 먼저 고정한 뒤 별도 연결에서 TEST 라벨을 열었고, C는 family 바깥 검증 순서를 지킨 고정 예측으로 평가했습니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>결론:</strong> A·B·C 모두 잔여 FN 수와 family 균형 잔여 FN 비율을 현행보다 동시에 낮추지 못해 선택 정책은 없습니다. <code>policy_id: null</code>이며 일반 라우터는 서비스에 연결하지 않습니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>결과 화면:</strong> 요청·가능·실패 수, 네 정책 지표, 통과 조건, 해시, 실행 환경과 한계를 <a href="live_analysis_qualification_dashboard.html">공식 검증 결과</a>에 기록했습니다.</label></li>
+    </ul>
+  </section>
+
+  <section id="router-collapse-diagnosis">
+    <h2><label><input type="checkbox" checked disabled>Task 5 후속 원인 진단</label></h2>
+    <p><strong>완료:</strong> 후보 C의 955개 MiniRocket 복귀와 현행 대비 잔여 FN 증가 57개를 라우팅과 검토 규칙으로 나누어 다시 계산했습니다.</p>
+    <ul>
+      <li><label><input type="checkbox" checked disabled><strong>핵심 원인:</strong> 같은 조건으로 분리하면 검토 후보 규칙 차이가 FN 56개, 라우팅 차이가 FN 1개를 설명합니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>관문 진단:</strong> 지원 수 부족은 0건이며, MultiRocket과 Hydra 모두 955개 전부에서 AUC 비악화율 90% 관문을 통과하지 못했습니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>다음 실험:</strong> 모든 방법에 같은 최종 p값 검토 규칙을 적용하고, 기존 동결 점수로 TRAIN 기반 신호만 짧게 재생 검증합니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>결과 화면:</strong> 수치, 원인 분해, 관문별 통과 수와 다음 실험 순서를 <a href="router_collapse_diagnosis.html">라우터 실패 원인 진단 보고서</a>에 기록했습니다.</label></li>
+    </ul>
+    <p><strong>서비스 통합 상태:</strong> 일반 라우터는 연결하지 않았습니다. 별도 승인된 첫 버전은 등록 데이터셋의 검증 방법을 유지하면서 현재 DB 판단 결과만 제공합니다.</p>
+  </section>
+
+  <section id="residual-fn-router-replay">
+    <h2><label><input type="checkbox" checked disabled>Task 5 후속 잔여 FN 직접 라우팅 재검증</label></h2>
+    <p><strong>완료:</strong> 새 점수를 계산하지 않고 공식 955개 동결 점수를 재사용해, 모든 방법에 같은 최종 p값 규칙을 적용한 두 라우터를 두 번씩 검증했습니다.</p>
+    <div class="grid-stats">
+      <div class="stat-card"><div class="stat-title">현행 잔여 FN</div><div class="stat-value">2,082</div><div class="stat-desc">비교 기준</div></div>
+      <div class="stat-card"><div class="stat-title">TRAIN 특징 7개</div><div class="stat-value" style="color: var(--amber);">2,105</div><div class="stat-desc">23개 증가 · 탈락</div></div>
+      <div class="stat-card"><div class="stat-title">TRAIN+점수 안정성 13개</div><div class="stat-value" style="color: var(--amber);">2,090</div><div class="stat-desc">8개 증가 · 탈락</div></div>
+    </div>
+    <ul>
+      <li><label><input type="checkbox" checked disabled><strong>평가 기준 일치:</strong> 각 이웃의 현행 방법과 비교하고, 통과 후보가 없으면 대상의 현행 방법으로 복귀합니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>이름 배제:</strong> 데이터셋·family 이름은 특징과 거리 동률 해소에 사용하지 않았습니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>Numba 평가:</strong> 결과와 이웃은 일치했지만 최초 실행 포함 속도비가 라우팅 0.954배, 추가 특징 0.315배여서 NumPy를 유지했습니다.</label></li>
+      <li><label><input type="checkbox" checked disabled><strong>반복성:</strong> 두 실행의 경로 해시와 예측 해시가 각각 정확히 일치했습니다.</label></li>
+    </ul>
+    <p><strong>결론:</strong> 두 후보 모두 필수 조건을 만족하지 못했습니다. 일반 라우터는 연결하지 않고 등록 데이터셋의 검증 방법을 유지합니다. <a href="router_replay_qualification.html">쉬운 설명과 전체 수치 보기</a></p>
+  </section>
+
+  <section>
+    <h2>Trace_normal_2 공식 재검증 결과</h2>
+    <p class="callout"><strong>공식 서비스 실제 결과:</strong> <code>http://127.0.0.1:8485/</code>에서 DB 선택부터 분석 결과 화면까지 다시 실행했습니다. 기존 분석 이력 25건도 그대로 보존했습니다.</p>
+    <div class="grid-stats">
+      <div class="stat-card">
+        <div class="stat-title">자동 확정 이상</div>
+        <div class="stat-value" style="color: var(--blue);">#49</div>
+        <div class="stat-desc">현재 DB 점수가 가능한 최소 p에 도달</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">표본 수 제한 경고</div>
+        <div class="stat-value">#49</div>
+        <div class="stat-desc">일반 자동 확정보다 통계적 확신이 낮음</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">현재 p값</div>
+        <div class="stat-value">0.0244</div>
+        <div class="stat-desc">학습 표본 40개에서 가능한 최소값</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">자동 평가</div>
+        <div class="stat-value">TP 1 · FN 0</div>
+        <div class="stat-desc">FP 0, AUC 1.0000</div>
+      </div>
+    </div>
+    <p><strong>무엇이 달라졌나:</strong> #49는 자동 확정 이상으로 올라가 TP·FP·FN 평가에도 포함됩니다. 학습 정상 자료 40개에서 가능한 최소 p값은 <code>1/41 ≈ 0.0244</code>이므로 일반 기준 0.005보다 통계적 확신이 낮다는 경고를 함께 보여줍니다.</p>
+    <p><strong>무엇을 유지했나:</strong> 정상 자료가 충분한 데이터셋은 기존 <code>p ≤ 0.005</code> 기준을 그대로 사용합니다. 경험적 p값 계산도 이미 검증된 Numba 경로를 그대로 사용합니다.</p>
+    <p><strong>검증:</strong> 공식 실행 결과 ID <code>e14cbfadeac040798e0554994ebad96f</code>에서 #49 자동 확정, 경고, <code>TP=1</code>, <code>FP=0</code>, <code>FN=0</code>을 확인했으며 브라우저 오류는 없었습니다.</p>
+  </section>
+
+  <section>
+    <h2>데이터셋 분류 및 분석 가능 범위</h2>
+    <p>연구 DB에 등록된 총 1,119개 데이터셋의 상태를 명확히 구분하여 제공합니다.</p>
+    <div class="grid-stats">
+      <div class="stat-card">
+        <div class="stat-title">전체 데이터셋</div>
+        <div class="stat-value">1,119개</div>
+        <div class="stat-desc">DB에 수록된 전체 시계열 모음</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">분석 실행 가능</div>
+        <div class="stat-value" style="color: var(--green);">956개</div>
+        <div class="stat-desc">일반 801개 + Numba 복구 155개</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">소표본 보류</div>
+        <div class="stat-value" style="color: var(--amber);">161개</div>
+        <div class="stat-desc">학습 샘플 수가 적어 판정 보류</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">라우팅 없음</div>
+        <div class="stat-value" style="color: var(--muted);">2개</div>
+        <div class="stat-desc">공식 검증 경로 미배정 (보류)</div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">핵심 원칙: 다중 증거의 자동 승격 없음 (No Automatic Promotion)</div>
+      <p>시스템이 제시하는 다중 증거(P1, P2, P3 등)는 연구자가 우선적으로 눈여겨봐야 할 <strong>검토 우선순위 후보</strong>를 뜻합니다. 시스템이 인공지능 결과만으로 데이터를 '이상'으로 자동 확정하지 않으며, 최종 결정 권한은 항상 전문 연구자에게 있습니다.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Task 1 검증 실행 증거 (TDD & 코드맵 정합성)</h2>
+    <p>이번 Task 1에서 실제로 수행한 검증 명령과 실제 출력 결과입니다.</p>
+
+    <div class="result-box">
+      <h3>1. 실패 확인 (RED Test)</h3>
+      <p>구현 전 테스트가 정상적으로 실패함을 확인했습니다 (코드맵 생성기 부재 확인):</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest services.time_series_anomaly_diagnosis.tests.test_code_map -v
+# Output:
+test_committed_code_map_is_current (services.time_series_anomaly_diagnosis.tests.test_code_map.CodeMapTest) ... ERROR
+FileNotFoundError: [Errno 2] No such file or directory: '.../tools/build_code_map.py'
+FAILED (errors=1)</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>2. 성공 확인 (GREEN Test)</h3>
+      <p>최소 생성기를 구현하고 코드맵을 생성한 뒤 단위 테스트를 통과시켰습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py
+$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest services.time_series_anomaly_diagnosis.tests.test_code_map -v
+# Output:
+test_committed_code_map_is_current (services.time_series_anomaly_diagnosis.tests.test_code_map.CodeMapTest) ... ok
+Ran 1 test in 0.054s
+OK</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>3. 코드맵 삼중 정합성 검증 (--validate)</h3>
+      <p>코드맵 JSON, Lock, HTML이 현재 구현과 1바이트 오차도 없이 일치하는지 검증했습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+# Output:
+Exit Code: 0 (모든 아티팩트가 최신 상태로 정합성 검증 통과)</code></pre>
+    </div>
+  </section>
+
+  <section>
+    <h2>Task 2 검증 실행 증거 및 Numba 가속 평가</h2>
+    <p>검증된 모델 라우팅 자료 고정, SQLite 원본 데이터베이스 읽기 전용 접근, 데이터셋 값 준비 및 Numba 가속 평가 결과입니다.</p>
+
+    <div class="result-box">
+      <h3>1. 실패 확인 (RED Test)</h3>
+      <p>구현 전 테스트를 먼저 작성하여 프로덕션 모듈 부재로 정상 실패함을 확인했습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest services.time_series_anomaly_diagnosis.tests.test_data_access -v
+# Output:
+ModuleNotFoundError: No module named 'services.time_series_anomaly_diagnosis.model_resources'
+FAILED (errors=1)</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>2. 성공 확인 (GREEN Test)</h3>
+      <p>모델 리소스 로더와 데이터셋 레포지토리를 최소 구현한 뒤 18개 단위 테스트를 모두 통과시켰습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest services.time_series_anomaly_diagnosis.tests.test_data_access -v
+# Output:
+Ran 18 tests in 2.088s
+OK</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>3. 전체 회귀 테스트 및 코드맵 정합성 검증</h3>
+      <p>코드맵 갱신 후 전체 테스트 19개 통과 및 삼중 코드맵 정합성을 확인했습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest discover -s services/time_series_anomaly_diagnosis/tests -p 'test_*.py' -v
+# Output:
+Ran 19 tests in 1.971s
+OK
+
+$ "$DIAGNOSIS_SERVICE_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+# Output:
+Exit Code: 0 (정합성 통과)</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>4. 데이터셋 1,119개 4분할 분류 및 데이터 접근 확인</h3>
+      <p>원본 데이터베이스 1,119개 데이터셋이 기준 규칙에 맞게 정확히 분류되었습니다:</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>일반 분석 가능 (standard)</strong>: 801개</li>
+        <li><strong>복구 전처리 분석 가능 (recovery_numba)</strong>: 155개 (총 분석 가능 956개)</li>
+        <li><strong>소표본 보류 (insufficient_training_data, 학습 5개 미만)</strong>: 161개</li>
+        <li><strong>라우팅 부재 (missing_verified_route)</strong>: 2개</li>
+      </ul>
+      <p><strong>확인 결과:</strong> 목록을 만들 때는 정답 라벨과 시계열 원본 값을 읽지 않았습니다. 원본 DB 연결은 읽기 전용으로 열리며, 값과 라벨 로더의 동작은 실제 정답 값을 출력하지 않고 합성 데이터로 확인했습니다.</p>
+    </div>
+
+    <div class="result-box">
+      <h3>5. Numba 가속 평가 및 채택 결정</h3>
+      <p>일반 데이터 경로의 시계열 행별 표준화(평균 0, 표준편차 1 변환)에 대해 동일한 입력 데이터(50행 × 1,460길이)에서 NumPy와 Numba JIT 후보의 성능 및 수치 정합성을 비교 평가했습니다.</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>Numba JIT 컴파일 웜업</strong>: 0.3212초</li>
+        <li><strong>수치 정합성 (Parity)</strong>: 최대 절대 오차 1.10e-13 (&lt; 1e-12 허용범위 만족), 유한값 및 인덱스 100% 일치</li>
+        <li><strong>1,000회 반복 실행 시간</strong>: NumPy 0.1671초 (0.167ms/회) vs Numba 0.1810초 (0.181ms/회)</li>
+        <li><strong>가속 배속</strong>: 0.924배 (Numba가 1.1배 가속 기준에 미달)</li>
+        <li><strong>결정 및 근거</strong>: 짧은 2차원 행렬 표준화는 이미 NumPy 내부의 고속 C 벡터화 루틴이 최적화되어 있어 Numba JIT 호출 오버헤드를 극복하지 못합니다. 따라서 프로젝트 정책에 따라 일반 표준화 경로는 <strong>NumPy C 백엔드를 유지</strong>하고, 복구 경로에 대해서만 검증된 <strong>기존 Numba 선형 재표본화</strong>를 사용합니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Task 3 검증 실행 증거 및 가속 판단</h2>
+    <p>준비된 시계열 값을 검증 점수기로 전달하여 이상 탐지 점수를 계산하고, 원본 인덱스 기반의 자동 이상 후보 확정 및 독립적인 정답 라벨 평가 경계를 구축한 결과입니다.</p>
+
+    <div class="result-box">
+      <h3>1. 실패 확인 (RED Test)</h3>
+      <p>구현에 앞서 합성 단위 테스트를 먼저 작성하고 실행하여 신규 모듈 부재에 따른 정상적인 실패를 확인했습니다:</p>
+      <pre><code>$ python -m unittest services.time_series_anomaly_diagnosis.tests.test_anomaly_detection -v
+# Output:
+ModuleNotFoundError: No module named 'services.time_series_anomaly_diagnosis.anomaly_detection'
+FAILED (errors=1)</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>2. 성공 확인 (GREEN Test)</h3>
+      <p>검증 점수기 호출, 다중 시드 중앙값 통합, 안정 정렬 및 라벨 평가 함수를 구현한 뒤 6개 단위 테스트를 모두 통과했습니다:</p>
+      <pre><code>$ python -m unittest services.time_series_anomaly_diagnosis.tests.test_anomaly_detection -v
+# Output:
+test_evaluation_metrics_raises_on_missing_label_or_single_class ... ok
+test_evaluation_metrics_success_example ... ok
+test_non_finite_scores_raise_value_error ... ok
+test_recovery_detection_uses_single_seed ... ok
+test_standard_detection_uses_two_seed_median_original_indices_and_stable_sort ... ok
+test_train_reference_and_target_length ... ok
+
+Ran 6 tests in 0.003s
+OK</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>3. 자동 이상 탐지 및 평가 안전 경계 검증</h3>
+      <p>실제 데이터와 정답 라벨에 직접 접근하지 않는 완전한 분리 원칙을 구현했습니다:</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>다중 시드 중앙값 통합</strong>: 일반 경로는 두 공식 시드의 학습 OOF 및 테스트 점수를 중앙값으로 산출하고, 복구 경로는 공식 단일 시드를 사용합니다.</li>
+        <li><strong>안정 정렬 및 원본 인덱스 매핑</strong>: 테스트 점수를 내림차순 병합 정렬(mergesort)하여 순위 일관성을 보장하고, 원본 데이터셋 인덱스를 정확히 보존합니다.</li>
+        <li><strong>정답 라벨의 엄격한 분리</strong>: 이상 탐지 실행 함수에는 정답 라벨을 일절 넘기지 않으며, 후보 추출이 완료된 후 별도의 평가 함수에서만 0/1 파생 라벨을 받아 정밀 지표(ROC AUC, TP, FP, TN, FN)를 산출합니다.</li>
+        <li><strong>엄격한 오류 처리</strong>: 라벨 인덱스 누락, 단일 클래스 입력, 비유한(NaN/Inf) 점수 발생 시 즉시 명확한 오류를 발생시킵니다.</li>
+      </ul>
+    </div>
+
+    <div class="result-box">
+      <h3>4. 가속 판단 및 하드웨어 정책 적용</h3>
+      <p>이상 탐지 점수 계산 및 후처리에 대한 성능 가속 여부를 검토했습니다.</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>기존 점수 산출 파이프라인 유지</strong>: 본 단계는 새로운 점수 알고리즘을 정의하지 않고, 이미 수학적·통계적으로 검증된 기존 점수 산출기와 경험적 보정 알고리즘을 그대로 연동합니다.</li>
+        <li><strong>가속 재작성 지양</strong>: 점수 통합과 분위수 계산은 표준 라이브러리와 고속 C 기반 벡터 연산(NumPy median/quantile)으로 즉시 완료되므로, 추가적인 Numba JIT 컴파일이나 MLX/MPS GPU 대체 구현을 도입하지 않습니다.</li>
+        <li><strong>복구 전처리 연계</strong>: 결측치 복구 데이터셋 전처리는 앞서 Task 2에서 검증된 기존 고속 Numba 경로를 일관되게 유지합니다.</li>
+      </ul>
+    </div>
+
+    <div class="result-box">
+      <h3>5. 코드맵 정합성 검증</h3>
+      <p>이상 탐지 모듈과 데이터셋 레포지토리 간의 의존 관계를 등록하고 코드맵 정합성을 검증했습니다:</p>
+      <pre><code>$ python services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+# Output:
+Exit Code: 0 (코드맵 HTML, JSON, Lock 삼중 정합성 검증 완료)</code></pre>
+    </div>
+  </section>
+
+  <section>
+    <h2>Task 4 검증 실행 증거 및 다중 증거 연결</h2>
+    <p>동결된 다중 증거 자료의 무결성을 검증하고, 라벨 누락 없는 안전한 로더와 자동 탐지 중복 제거 및 다중 키 정렬 기능을 구현한 결과입니다.</p>
+
+    <div class="result-box">
+      <h3>1. 실패 확인 (RED Test)</h3>
+      <p>구현 전 테스트를 먼저 실행하여 신규 모듈 부재로 정상 실패함을 확인했습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest services.time_series_anomaly_diagnosis.tests.test_multi_evidence_review -v
+# Output:
+ModuleNotFoundError: No module named 'services.time_series_anomaly_diagnosis.multi_evidence_review'
+FAILED (errors=1)</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>2. 성공 확인 (GREEN Test)</h3>
+      <p>최소 구현 후 8개 단위 테스트가 모두 정상 통과함을 확인했습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest services.time_series_anomaly_diagnosis.tests.test_multi_evidence_review -v
+# Output:
+test_frozen_evidence_coverage_and_counts ... ok
+test_manifest_validation_failures ... ok
+test_missing_evidence_dataset ... ok
+test_routing_and_evidence_catalog_intersection ... ok
+test_sample_dataset_structure_and_no_label_leakage ... ok
+test_synthetic_deduplication_and_priority_sorting ... ok
+test_unavailable_candidate_indices_reported_and_sorted ... ok
+test_within_tier_multikey_sorting ... ok
+
+Ran 8 tests in 0.017s
+OK</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>3. 1,117개 동결 증거 연결 및 카탈로그 무결성 검증</h3>
+      <p>사전 동결된 증거 자료와 매니페스트를 정확히 연결하고 수치를 상호 검증했습니다:</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>SHA-256 무결성</strong>: 동결 증거 파일 및 매니페스트 파일의 해시값을 1바이트 오차 없이 검증했습니다.</li>
+        <li><strong>데이터셋 수 및 우선순위 총계</strong>: 고유 데이터셋 정확히 1,117개, P1 총계 17개, P2 총계 57개, P3 총계 732개가 정확히 일치합니다.</li>
+        <li><strong>카탈로그 교집합</strong>: 라우팅 카탈로그(1,117개)와 동결 증거(1,117개) 간 공통 1,116개, 라우팅 전용 <code>Wafer_normal_1</code>, 증거 전용 <code>Phoneme_normal_39</code>의 분포를 확인했습니다.</li>
+        <li><strong>단일 표본 검증</strong>: <code>ChlorineConcentration_normal_3</code>의 P1 인덱스가 <code>(2326,)</code>이며 지원 증거군이 <code>('official_multirocket', 'structural')</code>임을 확인했습니다.</li>
+        <li><strong>라벨 및 평가 정보 누출 방지</strong>: 반환 객체에 정답 라벨, 평가 메트릭, 자동 판정 필드가 일절 포함되지 않도록 원천 차단했습니다.</li>
+      </ul>
+    </div>
+
+    <div class="result-box">
+      <h3>4. 핵심 원칙: 자동 승격 없음 (No Automatic Promotion) 및 정렬 규칙</h3>
+      <p>다중 증거 후보가 자동으로 이상으로 승격되지 않으며, 연구자가 체계적으로 검토할 수 있도록 명확한 우선순위 규칙을 적용했습니다:</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>다중 증거 자동 승격 없음</strong>: 다중 증거 결과의 <code>automatic_promotion</code> 플래그는 항상 <code>False</code>입니다. 표본 수 제한 자동 확정 규칙과는 별도입니다.</li>
+        <li><strong>자동 탐지 중복 제거</strong>: Task 3에서 이미 자동 탐지(automatic_anomaly=True)된 인덱스는 검토 후보 목록에서 자동으로 제외됩니다.</li>
+        <li><strong>5단계 정렬 순서</strong>: 우선순위(P1 → P2 → P3) 오름차순 → 지원 증거군 수 내림차순 → 이상 점수 내림차순 → p-value 오름차순 → 원본 인덱스 오름차순으로 안정 정렬됩니다.</li>
+        <li><strong>점수 부재 처리</strong>: 복구 전처리 등으로 점수가 없는 인덱스는 임의로 재매핑하지 않고 <code>unavailable_candidate_indices</code>에 정렬·중복 제거하여 투명하게 전달합니다.</li>
+      </ul>
+    </div>
+
+    <div class="result-box">
+      <h3>5. 가속 판단: 순수 Python 및 표준 라이브러리 정렬 유지</h3>
+      <p>다중 증거 후보 정렬 및 JSONL 검증 단계의 하드웨어 가속 적합성을 검토했습니다.</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>가속 배제 결정</strong>: 본 모듈은 JSONL 역직렬화, 필드 추출, 딕셔너리 조회 및 수십~수백 건 미만의 후보 행 정렬로 구성되어 있어 텐서 연산에 해당하지 않습니다.</li>
+        <li><strong>Numba/MLX 미도입 근거</strong>: Python 내장 Timsort(list.sort)가 C 수준에서 복합 키 정렬을 수 밀리초 이내에 처리하므로, Numba JIT 컴파일이나 MLX/MPS GPU 텐서 변환 시 장치 간 데이터 전송 오버헤드가 오히려 실행 시간을 지연시킵니다. 따라서 표준 라이브러리 기반의 순수 Python 구현을 유지합니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Task 5 검증 실행 증거 및 분석 기록 영구 저장</h2>
+    <p>연구팀의 분석 요청 상태와 완료 결과를 별도 SQLite 데이터베이스에 영구 보존하고, 서비스 재시작 시 안전하게 복구하며 비유한 JSON을 엄격히 방어하는 영구 저장 메커니즘을 구현한 결과입니다.</p>
+
+    <div class="result-box">
+      <h3>1. 실패 확인 (RED Test)</h3>
+      <p>구현 전 실제 임시 SQLite 파일을 사용하는 단위 테스트를 먼저 작성하여 신규 모듈 부재로 정상 실패함을 확인했습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest services.time_series_anomaly_diagnosis.tests.test_analysis_history -v
+# Output:
+test_analysis_history (unittest.loader._FailedTest.test_analysis_history) ... ERROR
+
+======================================================================
+ERROR: test_analysis_history (unittest.loader._FailedTest.test_analysis_history)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_analysis_history
+Traceback (most recent call last):
+  ...
+ModuleNotFoundError: No module named 'services.time_series_anomaly_diagnosis.analysis_history'
+
+Ran 1 test in 0.000s
+FAILED (errors=1)</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>2. 성공 확인 (GREEN Test)</h3>
+      <p>단일 SQLite 테이블(analysis_runs) 구조와 8개 필수 함수를 최소 구현한 뒤 단위 테스트 5건을 모두 통과시켰습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest services.time_series_anomaly_diagnosis.tests.test_analysis_history -v
+# Output:
+test_completed_results_survive_reopen_and_running_becomes_interrupted ... ok
+test_failed_analysis_saves_error_message_and_completed_at ... ok
+test_get_unknown_run_returns_none ... ok
+test_list_analysis_runs_recent_order_limit_200_and_excludes_result ... ok
+test_save_completed_analysis_rejects_non_finite_json ... ok
+
+Ran 5 tests in 0.082s
+OK</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>3. 전체 회귀 테스트 및 코드맵 정합성 검증</h3>
+      <p>신규 모듈을 코드맵에 등록한 후 전체 서비스 단위 테스트 38건 통과와 코드맵 삼중 정합성 검증을 확인했습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest discover -s services/time_series_anomaly_diagnosis/tests -p 'test_*.py' -v
+# Output:
+Ran 38 tests in 1.977s
+OK
+
+$ "$DIAGNOSIS_SERVICE_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+# Output:
+Exit Code: 0 (코드맵 HTML, JSON, Lock 삼중 정합성 검증 완료)</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>4. 데이터 지속성 및 재시작 복구 메커니즘</h3>
+      <p>단일 SQLite 파일에 즉시 커밋(commit)하는 구조로 서비스 신뢰성을 확보했습니다:</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>재시작 생존 보장 (Survive Reopen)</strong>: 연결을 닫고 다시 열어도 완료된 분석 결과가 유지되며, 단건 조회 시 JSON 문자열을 원래 객체 구조로 정확하게 복원합니다.</li>
+        <li><strong>비정상 종료 안전 복구</strong>: 서비스가 비정상적으로 종료되었다가 재시작되면 <code>mark_interrupted_runs</code>를 통해 남아 있는 <code>queued</code> 및 <code>running</code> 상태의 작업을 즉시 <code>interrupted</code>로 변경하고 변경 건수를 반환합니다.</li>
+        <li><strong>대기열 조회 경량화 및 정렬</strong>: 목록 조회(<code>list_analysis_runs</code>)는 크기가 큰 <code>result_json</code> 컬럼을 배제하여 메모리 부담을 없애고, 요청 시각 내림차순(<code>requested_at DESC</code>)으로 최근 200건까지만 제한하여 조회합니다.</li>
+        <li><strong>비유한 값 차단 (allow_nan=False)</strong>: 완료 결과 저장 시 <code>json.dumps(result, allow_nan=False)</code>를 적용하여 표준 JSON 사양을 벗어나는 <code>NaN</code>, <code>Infinity</code> 값이 데이터베이스에 들어가지 못하도록 사전에 차단합니다.</li>
+      </ul>
+    </div>
+
+    <div class="result-box">
+      <h3>5. 가속 판단: 순수 SQLite & 표준 라이브러리 채택</h3>
+      <p>분석 기록 저장 및 조회 단계에 대한 하드웨어 가속 적합성을 검토했습니다.</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>가속 배제 결정</strong>: 분석 기록 영구 저장은 트랜잭션 관리, 파일 입출력(I/O), 텍스트 기반 JSON 직렬화/역직렬화 작업으로 이루어져 있어 GPU나 행렬 가속 엔진의 처리 대상이 아닙니다.</li>
+        <li><strong>Numba/MLX 미도입 근거</strong>: Numba JIT 및 Apple MLX는 수치 행렬 연산과 신경망 텐서 계산에 특화되어 있으므로 SQLite B-Tree 인덱싱이나 JSON 문자열 처리에 적합하지 않습니다. 불필요한 의존성 없이 Python 표준 라이브러리(<code>sqlite3</code>, <code>json</code>, <code>uuid</code>)만으로 신뢰성과 이식성을 극대화했습니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Task 6 검증 실행 증거 및 공용 대기열·분석 API</h2>
+    <p>단일 작업자 백그라운드 스레드풀 기반의 순차 실행 대기열과 5개 REST JSON 엔드포인트를 구현하고, 엄격한 실행 계약과 생애주기 안전성을 검증한 결과입니다.</p>
+
+    <div class="result-box">
+      <h3>1. 실패 확인 (RED Test)</h3>
+      <p>프로덕션 모듈 작성 전에 단위·통합 테스트를 먼저 실행하여 신규 모듈 부재에 따른 정상 실패를 확인했습니다:</p>
+      <pre><code>$ python3 -m unittest services.time_series_anomaly_diagnosis.tests.test_application_server -v
+# Output:
+test_application_server (unittest.loader._FailedTest.test_application_server) ... ERROR
+ImportError: Failed to import test module: test_application_server
+ModuleNotFoundError: No module named 'services.time_series_anomaly_diagnosis.application_server'
+FAILED (errors=1)</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>2. 성공 확인 (GREEN Test)</h3>
+      <p>분석 실행 계약, 단일 작업자 큐, 5개 REST API 라우팅 및 중단 복구를 구현한 뒤 7개 단위·통합 테스트를 모두 통과했습니다:</p>
+      <pre><code>$ python3 -m unittest services.time_series_anomaly_diagnosis.tests.test_application_server -v
+# Output:
+test_analysis_run_failure_saves_error_and_allows_next_run ... ok
+test_http_api_validation_and_status_codes ... ok
+test_labels_open_only_after_detection_and_review_ranking ... ok
+test_main_cli_argument_parsing ... ok
+test_series_request_on_incomplete_run_returns_409 ... ok
+test_server_creation_recovers_interrupted_runs_and_server_close_closes_connections ... ok
+test_server_queue_isolation_and_sequential_execution ... ok
+
+Ran 7 tests
+OK</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>3. 전체 회귀 테스트 및 코드맵 정합성 검증</h3>
+      <p>신규 모듈과 Task 2–5 소비 관계를 코드맵에 등록한 후 전체 서비스 테스트 45건 전원 통과(45/45)와 삼중 정합성 검증을 확인했습니다:</p>
+      <pre><code>$ python3 -m unittest discover -s services/time_series_anomaly_diagnosis/tests -p 'test_*.py' -v
+# Output:
+Ran 45 tests
+OK
+
+$ python3 services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+# Output:
+Exit Code: 0 (코드맵 HTML, JSON, Lock 삼중 정합성 검증 완료)</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>4. 핵심 계약 및 API 상태 코드 검증</h3>
+      <p>설계서와 작업 지시서에 명시된 엄격한 실행 계약을 모두 만족하도록 구현되었습니다:</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>단일 작업자 큐 및 순차 실행 보장</strong>: <code>ThreadPoolExecutor(max_workers=1)</code>를 통해 두 개 이상의 분석 작업이 동시에 실행되지 않으며, 첫 작업 진행 중 두 번째 작업은 <code>queued</code> 상태로 안전하게 대기합니다.</li>
+        <li><strong>라벨 지연 조회 및 무결성 보장</strong>: <code>prepare -&gt; detect -&gt; rank -&gt; labels -&gt; evaluate</code>의 엄격한 순서를 적용하여, 다중 증거 순위 도출 전 정답 라벨이 메모리에 로드되지 않도록 차단합니다.</li>
+        <li><strong>정확한 REST 상태 코드</strong>: 잘못된 JSON/타입(400), 알 수 없는 데이터셋/인덱스/작업(404), 분석 불가 데이터셋 및 미완료 시계열 조회(409), 분석 요청 접수(202), 데이터셋/작업/시계열 데이터 반환(200)을 정확히 반환합니다.</li>
+        <li><strong>정확한 시계열 응답 구조</strong>: 시계열 조회 결과는 정확히 <code>{series_index, test_values, train_median, train_q10, train_q90}</code> 객체 구조로 반환됩니다.</li>
+        <li><strong>재시작 복구 및 정상 종료 안전성</strong>: 서버 생성 시 <code>mark_interrupted_runs()</code>를 호출하여 이전 미완료 작업을 <code>interrupted</code>로 자동 전환하고, <code>server_close()</code> 시 대기 작업 취소 및 DB 연결을 안전하게 해제합니다.</li>
+        <li><strong>정적 라우트 비노출</strong>: Task 7 이전에는 5개 API 경로 외의 모든 경로는 404로 원천 차단됩니다.</li>
+      </ul>
+    </div>
+
+    <div class="result-box">
+      <h3>5. 가속 판단: 순수 stdlib ThreadingHTTPServer & ThreadPoolExecutor 채택</h3>
+      <p>API 서빙 및 작업자 큐의 성능 가속 여부를 검토했습니다.</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>가속 배제 결정</strong>: 본 Task는 대기열 관리, JSON 직렬화, HTTP 소켓 통신을 담당하므로 텐서 또는 행렬 연산 가속 대상이 아닙니다.</li>
+        <li><strong>외부 프레임워크 배제 근거</strong>: FastAPI, Starlette, Tornado 등의 외부 프레임워크나 비동기 라이브러리를 추가하지 않고, Python 표준 라이브러리(<code>http.server</code>, <code>concurrent.futures</code>)만으로 단일 작업자 순차 실행 큐와 REST API를 견고하고 미니멀하게 완성했습니다.</li>
+      </ul>
+    </div>
+  </section>
+  <section>
+    <h2>Task 7 검증 실행 증거 및 연구팀 분석 작업 공간</h2>
+    <p>Task 6 JSON API와 동일 포트에서 구동되는 경량 순수 웹 작업 공간(HTML, CSS, JavaScript)을 구축하고, 12개 필수 ID 컨트롤, 5개 공개 JavaScript 함수, 3개 정적 경로 서빙 및 캔버스 기반 시계열 차트 렌더링을 검증한 결과입니다.</p>
+
+    <div class="result-box">
+      <h3>1. 실패 확인 (RED Test)</h3>
+      <p>웹 정적 파일 부재에 따른 정상적인 단위 테스트 실패를 확인했습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest services/time_series_anomaly_diagnosis/tests/test_web_interface.py -v
+# Output:
+FileNotFoundError: [Errno 2] No such file or directory: '.../web/index.html'
+FAILED (errors=2)</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>2. 성공 확인 (GREEN Test)</h3>
+      <p>웹 정적 파일 3종 및 application_server 고정 정적 파일 기본 제공 라우팅을 구현한 뒤 전용 웹 인터페이스 테스트를 통과했습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest services/time_series_anomaly_diagnosis/tests/test_web_interface.py -v
+# Output:
+test_static_file_http_routes_and_exact_mime_types ... ok
+test_workspace_has_required_controls_and_no_internal_experiment_names ... ok
+
+Ran 2 tests
+OK</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>3. 집중 테스트, application server 테스트, 전체 회귀 테스트 및 코드맵 정합성 검증</h3>
+      <p>웹 인터페이스 집중 테스트(2/2), 기존 application server 테스트(7/7), 전체 서비스 테스트(47/47) 및 코드맵 3중 정합성 검증을 전원 통과했습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest services/time_series_anomaly_diagnosis/tests/test_web_interface.py -v
+Ran 2 tests ... OK
+
+$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest services/time_series_anomaly_diagnosis/tests/test_application_server.py -v
+Ran 7 tests ... OK
+
+$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest discover -s services/time_series_anomaly_diagnosis/tests -p 'test_*.py' -v
+Ran 47 tests ... OK
+
+$ "$DIAGNOSIS_SERVICE_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+Exit Code: 0 (코드맵 HTML, JSON, Lock 삼중 정합성 검증 완료)</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>4. 핵심 제품 화면 계약 및 보안/접근성 검증</h3>
+      <p>지시서에 명시된 필수 UI 계약 및 안전성 원칙을 철저히 준수했습니다:</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>12개 필수 ID 컨트롤 완비</strong>: <code>dataset-search</code>, <code>dataset-list</code>, <code>start-analysis</code>, <code>queue-list</code>, <code>history-list</code>, <code>result-workspace</code>, <code>series-chart</code>, <code>automatic-detections</code>, <code>priority-one</code>, <code>priority-two</code>, <code>priority-three</code>, <code>model-evaluation</code>를 모두 제공합니다.</li>
+        <li><strong>상태 분리 및 자동 승격 차단</strong>: 완료 결과 화면에서 자동 탐지 이상치와 다중 증거 검토 후보(P1, P2, P3)를 엄격히 분리하여 렌더링하며, 다중 증거 후보를 자동 이상으로 승격하지 않습니다.</li>
+        <li><strong>5대 필수 공개 함수 계약</strong>: <code>loadDatasetCatalog()</code>, <code>submitAnalysis()</code>, <code>refreshAnalysisRuns()</code>, <code>openAnalysisRun()</code>, <code>drawSeriesChart()</code>를 군더더기 없이 전역 스코프에 선언했습니다.</li>
+        <li><strong>정적 서빙 MIME 타입 및 바이트 일치</strong>: <code>/</code> (text/html; charset=utf-8), <code>/application.js</code> (text/javascript; charset=utf-8), <code>/service_styles.css</code> (text/css; charset=utf-8)의 고정 경로 서빙을 검증했습니다.</li>
+        <li><strong>고정 매핑 외 경로 차단</strong>: 고정 매핑 밖의 임의 파일 경로를 조합하지 않으며, 미매핑 경로는 404를 반환합니다.</li>
+        <li><strong>오류 처리 및 접근성</strong>: fetch 실패 시 <code>role="alert"</code> 영역에 한글 메시지와 다시 시도 버튼을 노출하며, 반응형 <code>@media</code> 단일 열 배치와 키보드 포커스를 지원합니다.</li>
+        <li><strong>명명 규칙 준수</strong>: 파일명, 함수명, 변수명, 화면 문구에 내부 실험 번호나 비공개 식별자가 전혀 없습니다.</li>
+      </ul>
+    </div>
+
+    <div class="result-box">
+      <h3>5. 가속 판단: 번들러 및 외부 라이브러리 없는 순수 Canvas/JS 채택</h3>
+      <p>웹 인터페이스 및 시계열 시각화 단계의 성능 최적화와 가속 필요성을 검토했습니다.</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>가속 배제 결정</strong>: 웹 화면은 브라우저 표준 DOM 및 Canvas 2D 컨텍스트 위에서 동작하므로 Python 측 텐서/행렬 연산 가속 대상이 아닙니다.</li>
+        <li><strong>외부 차트 라이브러리 및 번들러 배제</strong>: Chart.js, D3, Webpack 등의 무거운 외부 의존성을 추가하지 않고, HTML5 Canvas 2D API와 <code>requestAnimationFrame</code>만을 활용하여 q10–q90 신뢰 대역, 학습 중앙값, 평가 시계열을 수 밀리초 내에 렌더링하도록 경량 구현했습니다. 빈 데이터 또는 상수 범위 입력에서도 0 나누기 오류(ZeroDivisionError) 없이 안전하게 처리됩니다.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>Task 8 검증 실행 증거 (실제 데이터 Smoke, 라이브 서비스, 브라우저 E2E)</h2>
+    <p>실제 대표 데이터셋 4개 경로 검증, 전체 자동화 테스트 스위트, 127.0.0.1:8485 라이브 서비스 구동, 데스크톱 및 모바일 브라우저 E2E, 서버 중단 및 복구 검증 결과입니다.</p>
+
+    <div class="result-box">
+      <h3>1. 실제 대표 데이터 smoke 검증 (test_real_data_smoke)</h3>
+      <p>실제 데이터베이스에서 대표 4경로를 단 1회씩 계산하여 유한성과 기대 성능을 검증했습니다 (28.691초 소요):</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest services.time_series_anomaly_diagnosis.tests.test_real_data_smoke -v
+# Output:
+test_representative_routes_produce_finite_aligned_results (services.time_series_anomaly_diagnosis.tests.test_real_data_smoke.RealDataSmokeTest.test_representative_routes_produce_finite_aligned_results) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 28.691s
+
+OK</code></pre>
+      <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
+        <thead>
+          <tr style="background:#f0f4fa;"><th style="padding:8px;border:1px solid #dbe3ed;">데이터셋</th><th style="padding:8px;border:1px solid #dbe3ed;">선택 방법</th><th style="padding:8px;border:1px solid #dbe3ed;">값 준비</th><th style="padding:8px;border:1px solid #dbe3ed;">실제 계산 AUC</th><th style="padding:8px;border:1px solid #dbe3ed;">기대 AUC</th><th style="padding:8px;border:1px solid #dbe3ed;">상태</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:8px;border:1px solid #dbe3ed;"><code>ACSF1_normal_0</code></td><td style="padding:8px;border:1px solid #dbe3ed;">minirocket_local_gap</td><td style="padding:8px;border:1px solid #dbe3ed;">standard</td><td style="padding:8px;border:1px solid #dbe3ed;">1.0</td><td style="padding:8px;border:1px solid #dbe3ed;">1.0</td><td style="padding:8px;border:1px solid #dbe3ed;color:var(--green);font-weight:700;">일치 (PASS)</td></tr>
+          <tr><td style="padding:8px;border:1px solid #dbe3ed;"><code>EOGVerticalSignal_normal_12</code></td><td style="padding:8px;border:1px solid #dbe3ed;">hydra_local_gap</td><td style="padding:8px;border:1px solid #dbe3ed;">standard</td><td style="padding:8px;border:1px solid #dbe3ed;">1.0</td><td style="padding:8px;border:1px solid #dbe3ed;">1.0</td><td style="padding:8px;border:1px solid #dbe3ed;color:var(--green);font-weight:700;">일치 (PASS)</td></tr>
+          <tr><td style="padding:8px;border:1px solid #dbe3ed;"><code>DistalPhalanxTW_normal_7</code></td><td style="padding:8px;border:1px solid #dbe3ed;">multirocket_local_gap</td><td style="padding:8px;border:1px solid #dbe3ed;">standard</td><td style="padding:8px;border:1px solid #dbe3ed;">0.7142857142857143</td><td style="padding:8px;border:1px solid #dbe3ed;">0.7142857142857143 (서비스 2시드) / 0.6938775510204082 (단일시드 기록)</td><td style="padding:8px;border:1px solid #dbe3ed;color:var(--green);font-weight:700;">일치 (PASS)</td></tr>
+          <tr><td style="padding:8px;border:1px solid #dbe3ed;"><code>AllGestureWiimoteX_normal_1</code></td><td style="padding:8px;border:1px solid #dbe3ed;">minirocket_local_gap</td><td style="padding:8px;border:1px solid #dbe3ed;">recovery_numba</td><td style="padding:8px;border:1px solid #dbe3ed;">0.9540816326530612</td><td style="padding:8px;border:1px solid #dbe3ed;">0.9540816326530612</td><td style="padding:8px;border:1px solid #dbe3ed;color:var(--green);font-weight:700;">일치 (PASS)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="result-box">
+      <h3>2. 전체 자동화 테스트 스위트 48건 전원 통과 (48/48 PASS)</h3>
+      <p>단위 테스트 및 회귀 테스트 48건이 32.755초 만에 전원 통과했습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" -m unittest discover -s services/time_series_anomaly_diagnosis/tests -p 'test_*.py' -v
+# Output:
+...
+Ran 48 tests in 32.755s
+
+OK</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>3. 코드맵 삼중 정합성 검증</h3>
+      <p>코드맵 생성 스크립트 검증 결과 정합성 이상 없음(exit 0)을 확인했습니다:</p>
+      <pre><code>$ "$DIAGNOSIS_SERVICE_PYTHON" services/time_series_anomaly_diagnosis/tools/build_code_map.py --validate
+# Output:
+Exit Code: 0 (HTML, JSON, Lock 삼중 정합성 일치)</code></pre>
+    </div>
+
+    <div class="result-box">
+      <h3>4. HTTP 엔드포인트 및 API 데이터셋 4분할 검증</h3>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>HTTP 루트 (/)</strong>: 서비스 타이틀("시계열 이상 진단")을 정상 응답합니다.</li>
+        <li><strong>데이터셋 카탈로그 (/api/datasets)</strong>: 데이터베이스의 총 1,119개 데이터셋을 빠짐없이 4개 영역으로 정확히 분할하여 반환합니다:
+          <ul>
+            <li>일반 분석 가능 (standard): 801개</li>
+            <li>Numba 복구 분석 가능 (recovery_numba): 155개 (총 분석 가능 956개)</li>
+            <li>학습 데이터 부족 (insufficient_training_data, 학습 5개 미만): 161개</li>
+            <li>검증된 경로 없음 (missing_verified_route): 2개</li>
+          </ul>
+        </li>
+        <li><strong>초기 분석 이력 (/api/analysis-runs)</strong>: 서버 시작 시 초기 이력 목록이 비어 있음을 확인했습니다.</li>
+      </ul>
+    </div>
+
+    <div class="result-box">
+      <h3>5. 브라우저 E2E 검증 (데스크톱 및 모바일 390×844)</h3>
+      <p>실제 웹 브라우저를 통해 데스크톱 뷰포트와 모바일 뷰포트(390×844) 환경 모두에서 전체 분석 흐름을 검증했습니다:</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>검색·선택·요청 흐름</strong>: 데이터셋 검색, 선택 후 분석 시작 버튼 활성화 및 비동기 분석 요청 정상 동작.</li>
+        <li><strong>상태 확인 및 테스트 분리</strong>: 브라우저 화면에서는 실행 중(running) 및 완료(completed) 상태가 시각적으로 확인되었으며, 대기 중(queued) 상태 및 순차 실행 동작은 자동화 테스트로 검증되었습니다(대기 상태의 화면 직접 관찰은 주장하지 않음).</li>
+        <li><strong>시계열 차트 렌더링</strong>: Canvas 기반으로 정상 신뢰 구간(q10–q90 대역), 정상 중앙값 곡선, 평가 시계열 곡선이 왜곡 없이 시각화됨.</li>
+        <li><strong>평가 지표 및 우선순위 분리</strong>: 모델 평가 지표(AUC, FN, FP, TP)와 다중 증거 검토 후보(P1, P2, P3) 섹션이 분리되어 렌더링됨.</li>
+        <li><strong>새로고침 및 영구 보존 기록 재열기</strong>: 브라우저를 새로고침한 뒤에도 SQLite에 보존된 이전 분석 기록을 열어 그래프와 지표를 즉시 재확인 가능.</li>
+        <li><strong>브라우저 콘솔 무결성</strong>: 검증 과정 중 브라우저 콘솔 로그에 일체의 자바스크립트 오류나 경고가 발생하지 않음(empty).</li>
+      </ul>
+    </div>
+
+    <div class="result-box">
+      <h3>6. 대표 실제 데이터셋 분석 결과 상세 검증</h3>
+      <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
+        <thead>
+          <tr style="background:#f0f4fa;"><th style="padding:8px;border:1px solid #dbe3ed;">데이터셋</th><th style="padding:8px;border:1px solid #dbe3ed;">지표 및 결과</th><th style="padding:8px;border:1px solid #dbe3ed;">후보 분류 및 자동 승격 여부</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding:8px;border:1px solid #dbe3ed;"><code>ACSF1_normal_0</code></td>
+            <td style="padding:8px;border:1px solid #dbe3ed;">AUC: <strong>1.0000</strong>, FP: 0, FN: 1, TP: 0</td>
+            <td style="padding:8px;border:1px solid #dbe3ed;">정상 완료</td>
+          </tr>
+          <tr>
+            <td style="padding:8px;border:1px solid #dbe3ed;"><code>Earthquakes_normal_0</code></td>
+            <td style="padding:8px;border:1px solid #dbe3ed;">AUC: <strong>0.9350270720533111</strong><br>TN: 342, FP: 1, FN: 7, TP: 0</td>
+            <td style="padding:8px;border:1px solid #dbe3ed;">
+              - 자동 탐지 인덱스: <strong>46</strong><br>
+              - P1 검토 후보: 인덱스 <strong>70</strong> (서로 다른 2개 증거군 지목)<br>
+              - P2 검토 후보: 자동 탐지 중복 분리 후 남은 후보 없음<br>
+              - P3 검토 후보: 인덱스 <strong>4, 24, 0</strong><br>
+              - <code>automatic_promotion</code>: <strong>false</strong> (검토 후보는 자동 이상으로 승격되지 않음)
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px;border:1px solid #dbe3ed;"><code>FiftyWords_normal_49</code></td>
+            <td style="padding:8px;border:1px solid #dbe3ed;">실행 불가 안내 표시</td>
+            <td style="padding:8px;border:1px solid #dbe3ed;">학습 시계열 수가 4개로 기준치(5개 미만)에 미달하여 실행 불가로 표시되며, '분석 시작' 버튼이 비활성화 상태 유지됨을 확인.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="result-box">
+      <h3>7. 의도적 서버 중단 및 장애 복구 검증</h3>
+      <p>서버 실행 중 의도적으로 프로세스를 중단하고 재기동하여 클라이언트 안내 및 영구 저장소 복원력을 확인했습니다:</p>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>서버 중단 시</strong>: 상단 연결 상태가 즉시 "연결 끊김"으로 바뀌고, 화면 알림 영역에 "네트워크 오류: Failed to fetch" 메시지와 "다시 시도" 버튼이 표시됨.</li>
+        <li><strong>서버 재기동 후</strong>: "다시 시도" 버튼을 클릭하자 상단 상태가 "연결됨"으로 정상 복원되고, 이전에 분석했던 2건의 기록이 그대로 로드됨.</li>
+      </ul>
+    </div>
+
+    <div class="result-box">
+      <h3>8. 구버전 프로세스 정리 및 launchd 실행 규명</h3>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>기존 자동 재시작 데몬 제거</strong>: 8485 포트를 점유하던 확인된 기존 뷰어 등록을 기존 파일과 결과를 전혀 삭제하지 않고 안전하게 등록 해제함.</li>
+        <li><strong>launchd 절대 경로 필수성 규명</strong>: launchd는 저장소 작업 디렉터리(cwd)를 보존하지 않으므로, 절대 <code>PYTHONPATH</code>와 절대 이력 DB 경로가 필수임을 규명함.</li>
+        <li><strong>새 서비스 검증 및 후보 등록 정리</strong>: 정정된 명령으로 새 라벨 <code>org.time-series-anomaly-diagnosis</code>가 로컬 <code>127.0.0.1:8485</code>에서 정상 작동함을 확인한 뒤, 최종 공식 워크트리 연동 시 재실행할 수 있도록 후보 등록만을 깔끔하게 해제 정리함.</li>
+      </ul>
+    </div>
+
+    <div class="result-box">
+      <h3>9. 네트워크 환경 및 핵심 정책 준수 확인</h3>
+      <ul style="margin: 8px 0 12px 20px;">
+        <li><strong>검증 주소 명시</strong>: 0.0.0.0 내부망 실행은 실제 수행하지 않았으므로 사실대로 주장하지 않으며, 실제 검증 완료된 주소는 <code>http://127.0.0.1:8485/</code>입니다.</li>
+        <li><strong>정상 라벨 정의 원칙</strong>: 데이터셋의 정상 기준은 특정 번호(라벨 0)를 고정하지 않고, 원본 데이터베이스에서 다수결(최빈 클래스)로 도출된 라벨 정의를 존중합니다.</li>
+        <li><strong>자동 승격 금지 및 점수식 보존</strong>: 다중 증거 후보의 자동 이상 승격은 일절 없으며(<code>automatic_promotion: false</code>), 기존에 검증된 점수 계산 규칙은 단 하나도 변경되지 않았습니다.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+</body>
+</html>

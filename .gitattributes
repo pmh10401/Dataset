@@ -5,3 +5,6 @@ outputs/**/*.md -diff
 # These source files are hash-pinned by the Exp163 manifest.
 experiments/exp163/exp163_io.py -diff
 docs/EXP163_PREREGISTRATION_KO.md -diff
+
+# Keep the workflow bytes stable for cross-platform service code-map verification.
+.github/workflows/windows_service_antigravity.yml text eol=lf
