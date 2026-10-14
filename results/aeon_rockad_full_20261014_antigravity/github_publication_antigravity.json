@@ -1,0 +1,14 @@
+{
+  "uploaded_at": "2026-10-14T06:05:14.309Z",
+  "repository": "pmh10401/Dataset",
+  "branch": "codex/aeon-rockad-full-comparison-antigravity",
+  "verified_result_commit": "348e40ed11fcbf7c4293cca5f2b2bcd7f51d5b16",
+  "excluded_datasets": [
+    "CornellWhaleChallenge"
+  ],
+  "effective_datasets": 1118,
+  "paired_automatic_datasets": 914,
+  "paired_ranking_datasets": 940,
+  "original_database_uploaded": false,
+  "service_changed": false
+}
