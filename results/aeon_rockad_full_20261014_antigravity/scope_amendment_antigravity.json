@@ -1,0 +1,10 @@
+{
+  "amended_at": "2026-10-14T05:59:22.771331+00:00",
+  "excluded_datasets": [
+    "CornellWhaleChallenge"
+  ],
+  "effective_datasets": 1118,
+  "reason": "user explicitly excluded CornellWhaleChallenge; incomplete computation stopped before score freeze and TEST-label evaluation",
+  "protocol_sha256": "cd7a735f618aa5f975ec6a8cf04b5285ad262b5854e2401f48bff16532abb67f",
+  "test_labels_read": false
+}

@@ -1,0 +1,95 @@
+<!doctype html><html lang=ko><meta charset=utf-8><title>ROCKAD 비교 코드 맵</title><h1>ROCKAD 비교 코드 맵</h1><pre>{
+  "schema": "aeon_rockad_full_code_map_v1",
+  "status": "CornellWhaleChallenge explicitly excluded; immutable scores frozen before evaluation",
+  "scope": "Standalone full-catalog benchmark; existing service code remains unchanged",
+  "nodes": [
+    {
+      "id": "runner",
+      "path": "experiments/aeon_rockad_full_comparison_antigravity/run_full_antigravity.py",
+      "caller": "explicit experiment CLI",
+      "effect": "scores every DB catalog entry, freezes all scores before labels, writes evaluation and HTML",
+      "tests": [
+        "experiments/aeon_rockad_full_comparison_antigravity/test_full_antigravity.py"
+      ],
+      "sha256": "c9597858a45503ee793d0e0ac788bd886bd8250c14a3e7fd271e252b5b94a667"
+    },
+    {
+      "id": "dataset_repository",
+      "path": "services/time_series_anomaly_diagnosis/dataset_repository.py",
+      "caller": "runner and service",
+      "effect": "read-only catalog, unchanged preparation and post-freeze binary TEST labels",
+      "tests": [
+        "services/time_series_anomaly_diagnosis/tests/test_data_access.py"
+      ],
+      "sha256": "479a703ac9d426eb05e29416dadabc62e6a0d156b51e14ca39b37d631c364fd9"
+    },
+    {
+      "id": "score_sources",
+      "path": "services/time_series_anomaly_diagnosis/score_sources.py",
+      "caller": "runner and anomaly_detection",
+      "effect": "frozen service score functions and identical crossfit indices",
+      "tests": [
+        "services/time_series_anomaly_diagnosis/tests/test_score_sources.py"
+      ],
+      "sha256": "82a48237a43e3d0c811b5e4929b9eb0af91f5ff8f779e7752922e2b288397742"
+    },
+    {
+      "id": "anomaly_detection",
+      "path": "services/time_series_anomaly_diagnosis/anomaly_detection.py",
+      "caller": "runner and service",
+      "effect": "same two-seed scores, p-values and small-sample warning policy",
+      "tests": [
+        "services/time_series_anomaly_diagnosis/tests/test_anomaly_detection.py"
+      ],
+      "sha256": "82ed06088cc3bad3736e219cbe9a18f61ccce98a1e45e4fcfd785d6076ac5a7f"
+    },
+    {
+      "id": "aeon_rockad",
+      "path": "aeon.anomaly_detection.collection.ROCKAD",
+      "caller": "runner",
+      "effect": "official aeon 1.4.0 whole-series score, unchanged defaults",
+      "tests": [
+        "runner selfcheck and real-data replay"
+      ]
+    },
+    {
+      "id": "publication_verifier",
+      "path": "experiments/aeon_rockad_full_comparison_antigravity/finalize_antigravity.py",
+      "caller": "explicit post-freeze CLI",
+      "effect": "explicit user exclusion without rescoring; checks frozen scope and all scores, independently validates metrics and real repeats; atomic publication outputs",
+      "tests": [
+        "experiments/aeon_rockad_full_comparison_antigravity/test_finalize_antigravity.py"
+      ],
+      "sha256": "3f872aae6cf73ae1f4f2dd2b7d17ae3c1eb0563315314f74cec650690b11919d"
+    }
+  ],
+  "edges": [
+    {
+      "from": "runner",
+      "to": "dataset_repository",
+      "type": "read-only preparation, labels only after full freeze"
+    },
+    {
+      "from": "runner",
+      "to": "score_sources",
+      "type": "baseline scores and shared folds"
+    },
+    {
+      "from": "runner",
+      "to": "anomaly_detection",
+      "type": "shared decision rule"
+    },
+    {
+      "from": "runner",
+      "to": "aeon_rockad",
+      "type": "independent score source"
+    },
+    {
+      "from": "publication_verifier",
+      "to": "runner",
+      "type": "reads frozen score files, never alters scorer or source DB"
+    }
+  ],
+  "runner_test_sha256": "617799c31a324d8fbb0bc47a955fbd599fb957242de1fd433a41a0d4ff60d456"
+}
+</pre></html>
