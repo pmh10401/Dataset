@@ -1,0 +1,158 @@
+{
+  "schema": "cross_platform_service_verification_v1",
+  "verified_on": "2026-09-09",
+  "runtime": {
+    "built_at_utc": "2026-09-09T00:40:46.665081+00:00",
+    "python_version": "3.14.6",
+    "platform": {
+      "machine": "arm64",
+      "release": "25.6.0",
+      "system": "Darwin"
+    },
+    "direct_dependencies": {
+      "aeon": "1.4.0",
+      "numba": "0.63.1",
+      "numpy": "2.3.5",
+      "pyinstaller": "6.22.2",
+      "pyinstaller-hooks-contrib": "2026.7",
+      "scikit-learn": "1.7.2",
+      "torch": "2.13.0"
+    },
+    "model_manifest_sha256": "e10696f90678e6e7b33eaf2248a1079f017c3c392557c89a8cad7b7285712202"
+  },
+  "catalog": {
+    "dataset_count": 1119,
+    "analysis_available": 956,
+    "availability": {
+      "standard": 801,
+      "recovery_numba": 155,
+      "missing_verified_route": 2,
+      "insufficient_training_data": 161
+    }
+  },
+  "compared_series_count": 300,
+  "full_catalog_scoring_rerun": false,
+  "tests": {
+    "full_before_startup_fix": {
+      "passed": 184,
+      "seconds": 63.163
+    },
+    "focused_after_final_startup_fix": {
+      "passed": 30,
+      "seconds": 7.053
+    },
+    "independent_review": "passed after fixes"
+  },
+  "mac_package_passed": true,
+  "offline_registration": true,
+  "registered_database_analysis_and_restart": true,
+  "ten_concurrent_readers": true,
+  "restart_persistence": true,
+  "source_package_parity": true,
+  "windows_validated": false,
+  "samples": [
+    {
+      "dataset_name": "Trace_normal_2",
+      "method": "minirocket_local_gap",
+      "availability": "standard",
+      "row_count": 50,
+      "automatic_indices": [
+        49
+      ],
+      "warning_indices": [
+        49
+      ],
+      "review_indices": [],
+      "metrics": {
+        "auc": 1,
+        "true_positives": 1,
+        "false_positives": 0,
+        "true_negatives": 49,
+        "false_negatives": 0
+      },
+      "maximum_score_difference": 0
+    },
+    {
+      "dataset_name": "ACSF1_normal_0",
+      "method": "minirocket_local_gap",
+      "availability": "standard",
+      "row_count": 50,
+      "automatic_indices": [],
+      "warning_indices": [],
+      "review_indices": [],
+      "metrics": {
+        "auc": 1,
+        "true_positives": 0,
+        "false_positives": 0,
+        "true_negatives": 49,
+        "false_negatives": 1
+      },
+      "maximum_score_difference": 0
+    },
+    {
+      "dataset_name": "EOGVerticalSignal_normal_12",
+      "method": "hydra_local_gap",
+      "availability": "standard",
+      "row_count": 50,
+      "automatic_indices": [
+        49
+      ],
+      "warning_indices": [
+        49
+      ],
+      "review_indices": [],
+      "metrics": {
+        "auc": 1,
+        "true_positives": 1,
+        "false_positives": 0,
+        "true_negatives": 49,
+        "false_negatives": 0
+      },
+      "maximum_score_difference": 0
+    },
+    {
+      "dataset_name": "DistalPhalanxTW_normal_7",
+      "method": "multirocket_local_gap",
+      "availability": "standard",
+      "row_count": 50,
+      "automatic_indices": [],
+      "warning_indices": [],
+      "review_indices": [
+        4
+      ],
+      "metrics": {
+        "auc": 0.7142857142857143,
+        "true_positives": 0,
+        "false_positives": 0,
+        "true_negatives": 49,
+        "false_negatives": 1
+      },
+      "maximum_score_difference": 0
+    },
+    {
+      "dataset_name": "AllGestureWiimoteX_normal_1",
+      "method": "minirocket_local_gap",
+      "availability": "recovery_numba",
+      "row_count": 100,
+      "automatic_indices": [],
+      "warning_indices": [],
+      "review_indices": [
+        99
+      ],
+      "metrics": {
+        "auc": 0.9540816326530612,
+        "true_positives": 0,
+        "false_positives": 0,
+        "true_negatives": 98,
+        "false_negatives": 2
+      },
+      "maximum_score_difference": 0
+    }
+  ],
+  "pending": [
+    "Windows build and execution",
+    "Windows versus macOS decision parity",
+    "Icon launch on separate Python-free test host",
+    "Actual research-team client PCs over LAN"
+  ]
+}

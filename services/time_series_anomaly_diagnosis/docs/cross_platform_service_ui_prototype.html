@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>시계열 이상 진단 · 새 분석</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #ffffff;
+      --sidebar: #f5f5f7;
+      --surface: #fbfbfd;
+      --line: #d9d9de;
+      --line-soft: #e9e9ed;
+      --text: #1d1d1f;
+      --muted: #6e6e73;
+      --blue: #0071e3;
+      --blue-soft: #edf6ff;
+      --green: #248a3d;
+      --warning: #8a5a00;
+      --danger: #b42318;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--page);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input { font: inherit; }
+
+    button:focus-visible, input:focus-visible {
+      outline: 3px solid rgba(0, 113, 227, .28);
+      outline-offset: 2px;
+    }
+
+    .topbar {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      border-bottom: 1px solid var(--line-soft);
+      background: rgba(255, 255, 255, .94);
+    }
+
+    .product-name {
+      font-size: 17px;
+      font-weight: 650;
+      letter-spacing: -.015em;
+    }
+
+    .connection {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .connection-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .app-shell {
+      min-height: calc(100vh - 64px);
+      display: grid;
+      grid-template-columns: 236px minmax(0, 1fr);
+    }
+
+    .sidebar {
+      padding: 28px 16px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--line-soft);
+    }
+
+    .nav-label {
+      margin: 0 12px 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .nav-button {
+      width: 100%;
+      min-height: 42px;
+      margin-bottom: 4px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #424245;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .nav-button:hover { background: rgba(0, 0, 0, .045); }
+
+    .nav-button.active {
+      background: #e8e8ed;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .sidebar-note {
+      margin: 30px 12px 0;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    main {
+      min-width: 0;
+      padding: 52px 6vw 64px;
+      background: var(--page);
+    }
+
+    .view {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    .view[hidden] { display: none; }
+
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(32px, 3.2vw, 48px);
+      line-height: 1.1;
+      letter-spacing: -.035em;
+      font-weight: 700;
+    }
+
+    .lede {
+      max-width: 630px;
+      margin: 14px 0 36px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.55;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(420px, 1.35fr) minmax(300px, .75fr);
+      gap: 40px;
+      align-items: start;
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: 17px;
+      font-weight: 650;
+      letter-spacing: -.01em;
+    }
+
+    .search-label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 46px;
+      padding: 0 14px;
+      border: 1px solid #b9b9bf;
+      border-radius: 9px;
+      background: #fff;
+      color: var(--text);
+      appearance: none;
+    }
+
+    .search-input:focus {
+      border-color: var(--blue);
+      outline: 3px solid rgba(0, 113, 227, .2);
+    }
+
+    .list-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 14px 0 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .dataset-list {
+      max-height: 460px;
+      overflow: auto;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .dataset-row {
+      width: 100%;
+      min-height: 72px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 18px;
+      padding: 12px 10px;
+      border: 0;
+      border-bottom: 1px solid var(--line-soft);
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .dataset-row:last-child { border-bottom: 0; }
+    .dataset-row:hover { background: var(--surface); }
+
+    .dataset-row.selected {
+      background: var(--blue-soft);
+      box-shadow: inset 3px 0 0 var(--blue);
+    }
+
+    .dataset-row:disabled {
+      cursor: not-allowed;
+      opacity: .52;
+    }
+
+    .dataset-name {
+      display: block;
+      overflow: hidden;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 620;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .dataset-detail {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .availability {
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .unavailable { color: var(--danger); }
+
+    .empty-state {
+      padding: 38px 10px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .selection-panel {
+      position: sticky;
+      top: 28px;
+      padding-left: 32px;
+      border-left: 1px solid var(--line);
+    }
+
+    .selection-kicker {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .selection-name {
+      min-height: 36px;
+      margin: 0;
+      overflow-wrap: anywhere;
+      font-size: 24px;
+      line-height: 1.25;
+      letter-spacing: -.025em;
+      font-weight: 680;
+    }
+
+    .selection-help {
+      min-height: 48px;
+      margin: 10px 0 24px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .facts {
+      margin: 0 0 28px;
+      border-top: 1px solid var(--line);
+    }
+
+    .fact {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 13px;
+    }
+
+    .fact dt { color: var(--muted); }
+    .fact dd { margin: 0; font-weight: 550; text-align: right; }
+
+    .primary-button {
+      width: 100%;
+      min-height: 46px;
+      border: 0;
+      border-radius: 9px;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 650;
+      cursor: pointer;
+    }
+
+    .primary-button:hover:not(:disabled) { background: #0068d1; }
+
+    .primary-button:disabled {
+      background: #d2d2d7;
+      color: #7d7d82;
+      cursor: not-allowed;
+    }
+
+    .notice {
+      margin-top: 14px;
+      color: var(--green);
+      font-size: 13px;
+      font-weight: 550;
+    }
+
+    .plain-list {
+      max-width: 860px;
+      margin-top: 32px;
+      border-top: 1px solid var(--line);
+    }
+
+    .plain-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .plain-row strong { display: block; margin-bottom: 4px; }
+    .plain-row span { color: var(--muted); font-size: 13px; }
+    .plain-status { align-self: center; color: var(--blue); font-size: 13px; font-weight: 600; }
+
+
+    @media (max-width: 900px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .sidebar {
+        display: flex;
+        gap: 4px;
+        padding: 10px 16px;
+        overflow-x: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line-soft);
+      }
+      .nav-label, .sidebar-note { display: none; }
+      .nav-button { width: auto; min-width: max-content; margin: 0; }
+      main { padding: 38px 24px 56px; }
+      .workspace { grid-template-columns: 1fr; gap: 34px; }
+      .selection-panel { position: static; padding: 28px 0 0; border-top: 1px solid var(--line); border-left: 0; }
+    }
+
+    @media (max-width: 560px) {
+      .topbar { padding: 0 18px; }
+      .connection span:last-child { display: none; }
+      main { padding: 32px 18px 48px; }
+      .dataset-row { grid-template-columns: 1fr; gap: 4px; }
+      .availability { justify-self: start; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="product-name">시계열 이상 진단</div>
+    <div class="connection" aria-label="분석 서버 연결됨">
+      <span class="connection-dot" aria-hidden="true"></span>
+      <span>분석 서버 연결됨</span>
+    </div>
+  </header>
+
+  <div class="app-shell">
+    <nav class="sidebar" aria-label="주요 기능">
+      <p class="nav-label">분석 작업</p>
+      <button class="nav-button active" type="button" data-view="analysis" aria-current="page">새 분석</button>
+      <button class="nav-button" type="button" data-view="queue">작업 대기열</button>
+      <button class="nav-button" type="button" data-view="history">분석 기록</button>
+      <p class="sidebar-note">데이터는 서버에 등록된 원본 DB에서 읽습니다.<br>현재 계산 장치: CPU · Numba</p>
+    </nav>
+
+    <main>
+      <section class="view" id="analysis-view" aria-labelledby="analysis-title">
+        <p class="eyebrow">새 분석</p>
+        <h1 id="analysis-title" tabindex="-1">데이터를 고르고<br>분석을 시작하세요.</h1>
+        <p class="lede">서버 DB에 등록된 데이터셋을 검색합니다. 하나를 선택하면 분석에 사용될 기준을 먼저 확인할 수 있습니다.</p>
+
+        <div class="workspace">
+          <section aria-labelledby="dataset-heading">
+            <h2 class="section-title" id="dataset-heading">데이터셋</h2>
+            <label class="search-label" for="dataset-search">데이터셋 이름 검색</label>
+            <input class="search-input" id="dataset-search" type="search" placeholder="예: Trace 또는 ECG5000" autocomplete="off">
+            <div class="list-meta"><span id="result-count">8개 표시</span><span>전체 1,119개</span></div>
+
+            <div class="dataset-list" id="dataset-list" role="listbox" aria-label="데이터셋 검색 결과">
+              <button class="dataset-row" type="button" role="option" aria-selected="false" data-name="Trace_normal_2" data-train="100" data-eval="100" data-length="275" data-route="표준 분석">
+                <span><span class="dataset-name">Trace_normal_2</span><span class="dataset-detail">학습 100 · 평가 100 · 길이 275</span></span><span class="availability">분석 가능</span>
+              </button>
+              <button class="dataset-row" type="button" role="option" aria-selected="false" data-name="ECG5000_normal_1" data-train="292" data-eval="4,500" data-length="140" data-route="표준 분석">
+                <span><span class="dataset-name">ECG5000_normal_1</span><span class="dataset-detail">학습 292 · 평가 4,500 · 길이 140</span></span><span class="availability">분석 가능</span>
+              </button>
+              <button class="dataset-row" type="button" role="option" aria-selected="false" data-name="CinCECGTorso_normal_1" data-train="284" data-eval="350" data-length="1,639" data-route="표준 분석">
+                <span><span class="dataset-name">CinCECGTorso_normal_1</span><span class="dataset-detail">학습 284 · 평가 350 · 길이 1,639</span></span><span class="availability">분석 가능</span>
+              </button>
+              <button class="dataset-row" type="button" role="option" aria-selected="false" data-name="ChlorineConcentration_normal_1" data-train="800" data-eval="1,000" data-length="166" data-route="표준 분석">
+                <span><span class="dataset-name">ChlorineConcentration_normal_1</span><span class="dataset-detail">학습 800 · 평가 1,000 · 길이 166</span></span><span class="availability">분석 가능</span>
+              </button>
+              <button class="dataset-row" type="button" role="option" aria-selected="false" data-name="ECG200_normal_-1" data-train="53" data-eval="50" data-length="96" data-route="표준 분석">
+                <span><span class="dataset-name">ECG200_normal_-1</span><span class="dataset-detail">학습 53 · 평가 50 · 길이 96</span></span><span class="availability">분석 가능</span>
+              </button>
+              <button class="dataset-row" type="button" role="option" aria-selected="false" data-name="Wafer_normal_-1" data-train="80" data-eval="100" data-length="152" data-route="복구 전처리">
+                <span><span class="dataset-name">Wafer_normal_-1</span><span class="dataset-detail">학습 80 · 평가 100 · 길이 152</span></span><span class="availability">분석 가능</span>
+              </button>
+              <button class="dataset-row" type="button" role="option" aria-selected="false" data-name="GunPoint_normal_1" data-train="80" data-eval="100" data-length="150" data-route="표준 분석">
+                <span><span class="dataset-name">GunPoint_normal_1</span><span class="dataset-detail">학습 80 · 평가 100 · 길이 150</span></span><span class="availability">분석 가능</span>
+              </button>
+              <button class="dataset-row" type="button" role="option" aria-selected="false" data-name="CornellWhaleChallenge" disabled>
+                <span><span class="dataset-name">CornellWhaleChallenge</span><span class="dataset-detail">학습 18,378 · 평가 23,400 · 길이 4,000</span></span><span class="availability unavailable">분석 경로 없음</span>
+              </button>
+              <div class="empty-state" id="empty-state" hidden>일치하는 데이터셋이 없습니다.</div>
+            </div>
+          </section>
+
+          <aside class="selection-panel" aria-labelledby="selection-heading">
+            <p class="selection-kicker">선택한 데이터셋</p>
+            <h2 class="selection-name" id="selection-heading">아직 선택하지 않음</h2>
+            <p class="selection-help" id="selection-help">왼쪽 목록에서 분석할 데이터셋을 선택하세요.</p>
+            <dl class="facts">
+              <div class="fact"><dt>학습 시계열</dt><dd id="fact-train">—</dd></div>
+              <div class="fact"><dt>평가 시계열</dt><dd id="fact-eval">—</dd></div>
+              <div class="fact"><dt>시계열 길이</dt><dd id="fact-length">—</dd></div>
+              <div class="fact"><dt>정상 기준</dt><dd>학습 데이터의 최다 라벨</dd></div>
+              <div class="fact"><dt>분석 경로</dt><dd id="fact-route">—</dd></div>
+            </dl>
+            <button class="primary-button" id="start-analysis" type="button" disabled>분석 시작</button>
+            <div class="notice" id="analysis-notice" role="status" aria-live="polite"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="view" id="queue-view" aria-labelledby="queue-title" hidden>
+        <p class="eyebrow">작업 대기열</p>
+        <h1 id="queue-title" tabindex="-1">진행 중인 분석</h1>
+        <p class="lede">분석은 서버 자원을 안정적으로 사용하도록 순서대로 실행됩니다.</p>
+        <div class="plain-list" id="queue-list">
+          <div class="plain-row"><div><strong>ECG5000_normal_1</strong><span>평가 시계열 4,500개 분석</span></div><div class="plain-status">분석 중</div></div>
+          <div class="plain-row"><div><strong>Wafer_normal_-1</strong><span>평가 시계열 100개 분석</span></div><div class="plain-status">대기 1번째</div></div>
+        </div>
+      </section>
+
+      <section class="view" id="history-view" aria-labelledby="history-title" hidden>
+        <p class="eyebrow">분석 기록</p>
+        <h1 id="history-title" tabindex="-1">최근 완료된 분석</h1>
+        <p class="lede">결과를 다시 열어 자동 탐지 이상과 검토 후보를 확인할 수 있습니다.</p>
+        <div class="plain-list">
+          <div class="plain-row"><div><strong>Trace_normal_2</strong><span>자동 확정 이상 1개 · 검토 후보 0개</span></div><div class="plain-status">결과 보기</div></div>
+          <div class="plain-row"><div><strong>GunPoint_normal_1</strong><span>자동 확정 이상 2개 · 검토 후보 1개</span></div><div class="plain-status">결과 보기</div></div>
+          <div class="plain-row"><div><strong>ECG200_normal_-1</strong><span>자동 확정 이상 4개 · 검토 후보 2개</span></div><div class="plain-status">결과 보기</div></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+
+  <script>
+    (function () {
+      var rows = Array.prototype.slice.call(document.querySelectorAll('.dataset-row:not(:disabled)'));
+      var search = document.getElementById('dataset-search');
+      var start = document.getElementById('start-analysis');
+      var notice = document.getElementById('analysis-notice');
+
+      function selectRow(row) {
+        rows.forEach(function (item) {
+          item.classList.toggle('selected', item === row);
+          item.setAttribute('aria-selected', item === row ? 'true' : 'false');
+        });
+        document.getElementById('selection-heading').textContent = row.dataset.name;
+        document.getElementById('selection-help').textContent = '분석 조건을 확인했습니다. 준비가 되면 분석을 시작하세요.';
+        document.getElementById('fact-train').textContent = row.dataset.train + '개';
+        document.getElementById('fact-eval').textContent = row.dataset.eval + '개';
+        document.getElementById('fact-length').textContent = row.dataset.length;
+        document.getElementById('fact-route').textContent = row.dataset.route;
+        start.disabled = false;
+        start.textContent = '분석 시작';
+        notice.textContent = '';
+      }
+
+      rows.forEach(function (row) {
+        row.addEventListener('click', function () { selectRow(row); });
+      });
+
+      search.addEventListener('input', function () {
+        var query = search.value.trim().toLocaleLowerCase('ko');
+        var visible = 0;
+        Array.prototype.slice.call(document.querySelectorAll('.dataset-row')).forEach(function (row) {
+          var match = row.dataset.name.toLocaleLowerCase('ko').indexOf(query) !== -1;
+          row.hidden = !match;
+          if (match) visible += 1;
+        });
+        document.getElementById('result-count').textContent = visible + '개 표시';
+        document.getElementById('empty-state').hidden = visible !== 0;
+      });
+
+      start.addEventListener('click', function () {
+        var name = document.getElementById('selection-heading').textContent;
+        start.disabled = true;
+        start.textContent = '대기열에 추가됨';
+        notice.textContent = name + ' 분석 요청을 안전하게 저장했습니다.';
+      });
+
+      document.querySelectorAll('.nav-button').forEach(function (button) {
+        button.addEventListener('click', function () {
+          document.querySelectorAll('.nav-button').forEach(function (item) {
+            var active = item === button;
+            item.classList.toggle('active', active);
+            if (active) item.setAttribute('aria-current', 'page');
+            else item.removeAttribute('aria-current');
+          });
+          document.querySelectorAll('.view').forEach(function (view) { view.hidden = true; });
+          var target = document.getElementById(button.dataset.view + '-view');
+          target.hidden = false;
+          target.querySelector('h1').focus();
+        });
+      });
+    }());
+  </script>
+</body>
+</html>

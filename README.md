@@ -2,6 +2,8 @@
 
 [연구 위키 (Exp481–539 · 2026-09-29)](docs/llm_wiki/index_antigravity.html) · HTML 문서이므로 저장소를 내려받아 열어 읽습니다. 최신 연구 기록은 위키에서 확인하고, 아래 보고서는 기존 연구 이력으로 보존합니다.
 
+[시계열 이상 진단 서비스: 소스 실행과 Windows 빌드](services/time_series_anomaly_diagnosis/docs/source_build_guide.html) · [Windows 배포본 시작 안내](services/time_series_anomaly_diagnosis/docs/windows_release_guide.html). 서비스 코드는 `services/time_series_anomaly_diagnosis/`에 있으며, 원본 DB와 개인 분석 기록은 별도로 보관합니다.
+
 **연구 주제**: 1D Convolutional Autoencoder를 활용한 다차원 시계열 이상치 탐지 모델 설계 및 통계적 임계값 선정 방법론 비교
 
 ---
